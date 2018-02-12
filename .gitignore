@@ -1,4 +1,8 @@
+# MacOS
 .DS_store
+
+#Intellij-Project files
+.idea
 
 # Binaries for programs and plugins
 *.exe
