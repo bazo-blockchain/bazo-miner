@@ -12,7 +12,7 @@ var (
 //Corresponds largely to server.go -> Init(...)
 func TestMain(m *testing.M) {
 
-	logInit()
+	initLogger()
 
 	//Used for some tests, the bootstarp server is listening at 8000 at the same time
 	localConn = "127.0.0.1:9000"
