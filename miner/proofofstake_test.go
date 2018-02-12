@@ -1,13 +1,13 @@
 package miner
 
 import (
-	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"testing"
 	"time"
 	"fmt"
 	"math/rand"
 	"reflect"
-	"github.com/mchetelat/bazo_miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func TestProofOfStake(t *testing.T) {

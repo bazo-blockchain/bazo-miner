@@ -3,7 +3,7 @@ package miner
 import (
 	"testing"
 	"reflect"
-	"github.com/mchetelat/bazo_miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func TestSlashingCondition(t *testing.T){

@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 var (

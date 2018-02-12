@@ -2,7 +2,7 @@ package miner
 
 import (
 	"fmt"
-	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"golang.org/x/crypto/sha3"
 	"math/rand"
 	"testing"

@@ -1,9 +1,9 @@
 package miner
 
 import (
-	"github.com/mchetelat/bazo_miner/p2p"
-	"github.com/mchetelat/bazo_miner/protocol"
-	"github.com/mchetelat/bazo_miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //The code in this source file communicates with the p2p package via channels

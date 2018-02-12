@@ -3,8 +3,8 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/mchetelat/bazo_miner/protocol"
-	"github.com/mchetelat/bazo_miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
 	"strings"
 )

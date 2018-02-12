@@ -6,8 +6,8 @@ import (
 	"golang.org/x/crypto/sha3"
 	"errors"
 	"bytes"
-	"github.com/mchetelat/bazo_miner/storage"
-	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 //Tests whether the first diff bits are zero

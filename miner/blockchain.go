@@ -3,8 +3,8 @@ package miner
 import (
 	"errors"
 	"fmt"
-	"github.com/mchetelat/bazo_miner/protocol"
-	"github.com/mchetelat/bazo_miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
 	"sync"

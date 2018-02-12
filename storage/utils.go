@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
 	"bufio"
 	"strings"
