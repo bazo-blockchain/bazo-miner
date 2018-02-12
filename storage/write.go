@@ -1,0 +1,70 @@
+package storage
+
+import (
+	"github.com/boltdb/bolt"
+	"github.com/mchetelat/bazo_miner/protocol"
+)
+
+func WriteOpenBlock(block *protocol.Block) (err error) {
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("openblocks"))
+		err := b.Put(block.Hash[:], block.Encode())
+		return err
+	})
+
+	return err
+}
+
+//TODO: What's the difference between write close WriteClosedBlock and WriteLastClosedBlock?
+func WriteClosedBlock(block *protocol.Block) (err error) {
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("closedblocks"))
+		err := b.Put(block.Hash[:], block.Encode())
+		return err
+	})
+
+	return err
+}
+
+func WriteLastClosedBlock(block *protocol.Block) (err error) {
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("lastclosedblock"))
+		err := b.Put(block.Hash[:], block.Encode())
+		return err
+	})
+
+	return err
+}
+
+//Changing the "tx" shortcut here and using "transaction" to distinguish between bolt's transactions
+func WriteOpenTx(transaction protocol.Transaction) {
+
+	txMemPool[transaction.Hash()] = transaction
+}
+
+func WriteClosedTx(transaction protocol.Transaction) (err error) {
+
+	var bucket string
+	switch transaction.(type) {
+	case *protocol.FundsTx:
+		bucket = "closedfunds"
+	case *protocol.AccTx:
+		bucket = "closedaccs"
+	case *protocol.ConfigTx:
+		bucket = "closedconfigs"
+	case *protocol.StakeTx:
+		bucket = "closedstakes"
+	}
+
+	hash := transaction.Hash()
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucket))
+		err := b.Put(hash[:], transaction.Encode())
+		return err
+	})
+
+	return err
+}
