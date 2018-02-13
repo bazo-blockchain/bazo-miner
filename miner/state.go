@@ -367,7 +367,7 @@ func collectSlashReward(reward uint64, block *protocol.Block) error {
 //For logging purposes
 func getState() (state string) {
 	for _, acc := range storage.State {
-		state += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Hash()), acc)
+		state += fmt.Sprintf("%v\n", acc)
 	}
 	return state
 }
