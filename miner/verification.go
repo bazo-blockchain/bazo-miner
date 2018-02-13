@@ -60,8 +60,8 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	pub1.SetBytes(accFrom.Address[:32])
 	pub2.SetBytes(accFrom.Address[32:])
 
-	r.SetBytes(tx.Sig[:32])
-	s.SetBytes(tx.Sig[32:])
+	r.SetBytes(tx.Sig1[:32])
+	s.SetBytes(tx.Sig1[32:])
 
 	tx.From = accFromHash
 	tx.To = accToHash
