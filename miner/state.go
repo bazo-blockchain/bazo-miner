@@ -11,7 +11,7 @@ import (
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
+			newAcc := protocol.NewAccount(tx.PubKey, 0, true, false, [32]byte{})
 			newAccHash := newAcc.Hash()
 			if acc := storage.GetAccount(newAccHash); acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
