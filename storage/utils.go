@@ -35,8 +35,8 @@ func GetRootAccount(hash [32]byte) *protocol.Account {
 }
 
 func GetInitRootPubKey() (pubKey [64]byte, pubKeyHash [32]byte) {
-	pub1, _ := new(big.Int).SetString(INITROOTKEY1, 16)
-	pub2, _ := new(big.Int).SetString(INITROOTKEY2, 16)
+	pub1, _ := new(big.Int).SetString(INITROOTPUBKEY1, 16)
+	pub2, _ := new(big.Int).SetString(INITROOTPUBKEY2, 16)
 
 	copy(pubKey[:32], pub1.Bytes())
 	copy(pubKey[32:], pub2.Bytes())

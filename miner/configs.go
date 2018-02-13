@@ -9,6 +9,8 @@ const (
 	TXFETCH_TIMEOUT    = 5
 	BLOCKFETCH_TIMEOUT = 40
 
+	INITIALINITROOTBALANCE = 1000
+
 	//Some prominent programming languages (e.g., Java) have not unsigned integer types
 	//Neglecting MSB simplifies compatibility
 	MAX_MONEY = 9223372036854775807 //(2^63)-1
