@@ -14,7 +14,7 @@ const (
 //when we broadcast transactions we need a way to distinguish with a type
 
 type FundsTx struct {
-	Header [32]byte
+	Header byte
 	Amount uint64
 	Fee    uint64
 	TxCnt  uint32
@@ -24,7 +24,7 @@ type FundsTx struct {
 	Sig2   [64]byte
 }
 
-func ConstrFundsTx(header [32]byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, key *ecdsa.PrivateKey) (tx *FundsTx, err error) {
+func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, key *ecdsa.PrivateKey) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header
@@ -51,7 +51,7 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 	}
 
 	txHash := struct {
-		Header [32]byte
+		Header byte
 		Amount uint64
 		Fee    uint64
 		TxCnt  uint32
@@ -85,14 +85,14 @@ func (tx *FundsTx) Encode() (encodedTx []byte) {
 
 	encodedTx = make([]byte, FUNDSTX_SIZE)
 
-	copy(encodedTx[0:32], tx.Header[:])
-	copy(encodedTx[32:40], amount[:])
-	copy(encodedTx[40:48], fee[:])
-	copy(encodedTx[48:52], txCnt[:])
-	copy(encodedTx[52:84], tx.From[:])
-	copy(encodedTx[84:116], tx.To[:])
-	copy(encodedTx[116:180], tx.Sig1[:])
-	copy(encodedTx[180:244], tx.Sig2[:])
+	encodedTx[0] = tx.Header
+	copy(encodedTx[1:9], amount[:])
+	copy(encodedTx[9:17], fee[:])
+	copy(encodedTx[17:21], txCnt[:])
+	copy(encodedTx[21:53], tx.From[:])
+	copy(encodedTx[53:85], tx.To[:])
+	copy(encodedTx[85:149], tx.Sig1[:])
+	copy(encodedTx[149:213], tx.Sig2[:])
 
 	return encodedTx
 }
@@ -104,14 +104,14 @@ func (*FundsTx) Decode(encodedTx []byte) (tx *FundsTx) {
 		return nil
 	}
 
-	copy(tx.Header[:], encodedTx[0:32])
-	tx.Amount = binary.BigEndian.Uint64(encodedTx[32:40])
-	tx.Fee = binary.BigEndian.Uint64(encodedTx[40:48])
-	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[48:52])
-	copy(tx.From[:], encodedTx[52:84])
-	copy(tx.To[:], encodedTx[84:116])
-	copy(tx.Sig1[:], encodedTx[116:180])
-	copy(tx.Sig2[:], encodedTx[180:244])
+	tx.Header= encodedTx[0]
+	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
+	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
+	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])
+	copy(tx.From[:], encodedTx[21:53])
+	copy(tx.To[:], encodedTx[53:85])
+	copy(tx.Sig1[:], encodedTx[85:149])
+	copy(tx.Sig2[:], encodedTx[149:213])
 
 	return tx
 }
@@ -121,7 +121,7 @@ func (tx *FundsTx) Size() uint64  { return FUNDSTX_SIZE }
 
 func (tx FundsTx) String() string {
 	return fmt.Sprintf(
-		"\nHeader: %x\n"+
+		"\nHeader: %v\n"+
 			"Amount: %v\n"+
 			"Fee: %v\n"+
 			"TxCnt: %v\n"+
