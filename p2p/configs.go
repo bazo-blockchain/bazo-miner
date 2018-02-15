@@ -2,13 +2,6 @@ package p2p
 
 //Package-wide constants and configuration parameters
 const (
-	//Aduno
-	BOOTSTRAP_SERVER = "104.40.213.93:8000"
-	//CSG
-	//BOOTSTRAP_SERVER = "192.41.136.199:8000"
-	//Local
-	//BOOTSTRAP_SERVER = "127.0.0.1:8000"
-
 	//MIN_MINERS is a lower bound of connections. If there are less, the system actively requests miner peers
 	//from neighbors and establishes connections to them
 	MIN_MINERS = 1

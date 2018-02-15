@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 )
 
 //Entry point for p2p package
-func Init(connTuple string) {
+func Init(ipport string) {
 	initLogger()
 
 	//Initialize peer map
@@ -39,20 +40,18 @@ func Init(connTuple string) {
 	go receiveBlockFromMiner()
 
 	//Set localPort global, this will be the listening port for incoming connection
-	localConn = connTuple
-	ipport := strings.Split(localConn, ":")
-	if ipport[1] != "8000" {
+	if ipport != storage.BOOTSTRAP_SERVER_PORT {
 		bootstrap()
 	}
 
 	//Listen for all subsequent incoming connections on specified local address/listening port
-	go listener(localConn)
+	go listener(ipport)
 }
 
 func bootstrap() {
 	//Connect to bootstrap server. To make it more fault-tolerant, we can increase the number of bootstrap servers in
 	//the future. initiateNewMinerConn(...) starts with MINER_PING to perform the initial handshake message
-	p, err := initiateNewMinerConnection(BOOTSTRAP_SERVER)
+	p, err := initiateNewMinerConnection(storage.BOOTSTRAP_SERVER)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v", err)
 	}
@@ -116,7 +115,7 @@ func prepareHandshake() ([]byte, error) {
 
 func listener(ipport string) {
 	//Listen on all interfaces, this NAT stuff easier
-	listener, err := net.Listen("tcp", ":"+strings.Split(ipport, ":")[1])
+	listener, err := net.Listen("tcp", ipport)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return

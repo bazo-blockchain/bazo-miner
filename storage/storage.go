@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"log"
 	"os"
-	"strings"
 	"time"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 var (
@@ -25,7 +24,7 @@ const (
 )
 
 //Entry function for the storage package
-func Init(connTuple string, dbname string) {
+func Init(ipport string, dbname string) {
 	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	var err error
@@ -35,8 +34,7 @@ func Init(connTuple string, dbname string) {
 	}
 
 	//Check if db file is empty for all non-bootstraping miners
-	ipport := strings.Split(connTuple, ":")
-	if ipport[1] != "8000" {
+	if ipport != BOOTSTRAP_SERVER_PORT {
 		err := db.View(func(tx *bolt.Tx) error {
 			err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
 				err := bkt.ForEach(func(k, v []byte) error {

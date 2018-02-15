@@ -9,13 +9,13 @@ import (
 )
 
 func main() {
-	var localConn, dbname, validatorAccFile string
+	var ipport, dbname, validatorAccFile string
 
 	dbname = os.Args[1]
-	localConn = os.Args[2]
+	ipport = os.Args[2]
 
-	storage.Init(localConn, dbname)
-	p2p.Init(localConn)
+	storage.Init(ipport, dbname)
+	p2p.Init(ipport)
 
 	//Validate from existing account possible by submitting the file name of the key file.
 	//Otherwise, a root account will be initialized.

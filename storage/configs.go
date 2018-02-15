@@ -1,6 +1,15 @@
 package storage
 
 const (
+	//Aduno
+	//BOOTSTRAP_SERVER = "104.40.213.93:8000"
+	//CSG
+	//BOOTSTRAP_SERVER = "192.41.136.199:8000"
+	//Local
+	BOOTSTRAP_SERVER = "127.0.0.1" + BOOTSTRAP_SERVER_PORT
+
+	BOOTSTRAP_SERVER_PORT = ":8000"
+
 	//Root Public Keys at initialization time. This is the only existing account at startup
 	//All other accounts are created
 	INITROOTPUBKEY1 = "f894ba7a24c1c324bc4b0a833d4b076a0e0f675a380fb7e782672c6568aaab06"
