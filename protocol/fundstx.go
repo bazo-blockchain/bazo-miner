@@ -24,7 +24,7 @@ type FundsTx struct {
 	Sig2   [64]byte
 }
 
-func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, key *ecdsa.PrivateKey) (tx *FundsTx, err error) {
+func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header
@@ -36,12 +36,25 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 
 	txHash := tx.Hash()
 
-	r, s, err := ecdsa.Sign(rand.Reader, key, txHash[:])
+	r, s, err := ecdsa.Sign(rand.Reader, sig1Key, txHash[:])
+	if err != nil {
+		return nil, err
+	}
 
 	copy(tx.Sig1[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig1[64-len(s.Bytes()):], s.Bytes())
 
-	return
+	if sig2Key != nil {
+		r, s, err := ecdsa.Sign(rand.Reader, sig2Key, txHash[:])
+		if err != nil {
+			return nil, err
+		}
+
+		copy(tx.Sig2[32-len(r.Bytes()):32], r.Bytes())
+		copy(tx.Sig2[64-len(s.Bytes()):], s.Bytes())
+	}
+
+	return tx, nil
 }
 
 func (tx *FundsTx) Hash() (hash [32]byte) {
@@ -104,7 +117,7 @@ func (*FundsTx) Decode(encodedTx []byte) (tx *FundsTx) {
 		return nil
 	}
 
-	tx.Header= encodedTx[0]
+	tx.Header = encodedTx[0]
 	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
 	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])

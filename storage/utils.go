@@ -1,16 +1,19 @@
 package storage
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"math/big"
 	"bufio"
-	"strings"
-	"fmt"
-	"errors"
-	"os"
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"golang.org/x/crypto/sha3"
+	"log"
+	"math/big"
+	"os"
+	"strings"
 )
 
 //Serializes the input in big endian and returns the sha3 hash function applied on ths input
@@ -34,14 +37,11 @@ func GetRootAccount(hash [32]byte) *protocol.Account {
 	return nil
 }
 
-func GetInitRootPubKey() (pubKey [64]byte, pubKeyHash [32]byte) {
-	pub1, _ := new(big.Int).SetString(INITROOTPUBKEY1, 16)
-	pub2, _ := new(big.Int).SetString(INITROOTPUBKEY2, 16)
+func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
+	pubKey, _ := GetPubKeyFromString(INITROOTPUBKEY1, INITROOTPUBKEY2)
+	address = GetAddressFromPubKey(&pubKey)
 
-	copy(pubKey[:32], pub1.Bytes())
-	copy(pubKey[32:], pub2.Bytes())
-
-	return pubKey, protocol.SerializeHashContent(pubKey)
+	return address, protocol.SerializeHashContent(address)
 }
 
 func IsRootKey(hash [32]byte) bool {
@@ -83,43 +83,7 @@ func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	return fundsTxPubKeys
 }
 
-func GetMyAccount(filename string)(*protocol.Account, error){
-	var (
-		myAcc			*protocol.Account
-		fromPubKey 		[64]byte
-		err 			error
-	)
-
-	hashFromFile, err := os.Open(filename)
-	if err != nil {
-		return myAcc, err
-	}
-
-	reader := bufio.NewReader(hashFromFile)
-
-	//We only need the public key
-	pub1, err := reader.ReadString('\n')
-	pub2, err2 := reader.ReadString('\n')
-	if err != nil || err2 != nil {
-		return myAcc, err
-	}
-
-	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
-	pub2Int, _ := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
-	copy(fromPubKey[0:32], pub1Int.Bytes())
-	copy(fromPubKey[32:64], pub2Int.Bytes())
-
-	myAcc = GetAccount(protocol.SerializeHashContent(fromPubKey))
-
-	if myAcc == nil{
-		return myAcc, errors.New(fmt.Sprintf("Could not find such an account"))
-	}
-
-
-	return myAcc, err
-}
-
-func GetAllAccounts()map[[32]byte]*protocol.Account{
+func GetAllAccounts() map[[32]byte]*protocol.Account {
 	return State
 }
 
@@ -128,4 +92,65 @@ func GetState() (state string) {
 		state += fmt.Sprintf("Is root: %v, %v\n", IsRootKey(acc.Hash()), acc)
 	}
 	return state
+}
+
+func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
+	filehandle, err := os.Open(filename)
+	if err != nil {
+		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
+	}
+
+	reader := bufio.NewReader(filehandle)
+
+	//Public Key
+	pub1, err := reader.ReadString('\n')
+	pub2, err := reader.ReadString('\n')
+	//Private Key
+	priv, err2 := reader.ReadString('\n')
+	if err != nil || err2 != nil {
+		return pubKey, privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
+	}
+
+	pubKey, err = GetPubKeyFromString(strings.Split(pub1, "\n")[0], strings.Split(pub2, "\n")[0])
+	if err != nil {
+		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
+	}
+
+	//File consists of public & private key
+	if err2 == nil {
+		privInt, b := new(big.Int).SetString(strings.Split(priv, "\n")[0], 16)
+		if !b {
+			return pubKey, privKey, errors.New("Failed to convert the key strings to big.Int.")
+		}
+
+		privKey = ecdsa.PrivateKey{
+			pubKey,
+			privInt,
+		}
+	}
+
+	return pubKey, privKey, nil
+}
+
+func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
+	copy(address[:32], pubKey.X.Bytes())
+	copy(address[32:], pubKey.Y.Bytes())
+
+	return address
+}
+
+func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey, err error) {
+	pub1Int, b := new(big.Int).SetString(pub1, 16)
+	pub2Int, b := new(big.Int).SetString(pub2, 16)
+	if !b {
+		return pubKey, errors.New("Failed to convert the key strings to big.Int.")
+	}
+
+	pubKey = ecdsa.PublicKey{
+		elliptic.P256(),
+		pub1Int,
+		pub2Int,
+	}
+
+	return pubKey, nil
 }

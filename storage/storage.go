@@ -24,7 +24,7 @@ const (
 )
 
 //Entry function for the storage package
-func Init(ipport string, dbname string) {
+func Init(dbname string, ipport string) {
 	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	var err error
