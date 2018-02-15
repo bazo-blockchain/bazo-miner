@@ -91,5 +91,5 @@ func (*Account) Decode(encodedAcc []byte) (acc *Account) {
 
 func (acc Account) String() string {
 	addressHash := SerializeHashContent(acc.Address)
-	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, IsStaking: %v, HashedSeed: %x, StakingBlockHeight: %v", addressHash[0:12], acc.Address[0:8], acc.TxCnt, acc.Balance, acc.IsStaking, acc.HashedSeed[0:8], acc.StakingBlockHeight)
+	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, IsStaking: %v, HashedSeed: %x, StakingBlockHeight: %v", addressHash[0:8], acc.Address[0:8], acc.TxCnt, acc.Balance, acc.IsStaking, acc.HashedSeed[0:8], acc.StakingBlockHeight)
 }

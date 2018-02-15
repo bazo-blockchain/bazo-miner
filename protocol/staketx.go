@@ -133,8 +133,8 @@ func (tx StakeTx) String() string {
 		tx.Header,
 		tx.Fee,
 		tx.IsStaking,
-		tx.HashedSeed[0:10],
-		tx.Account[0:10],
-		tx.Sig[0:10],
+		tx.HashedSeed[0:8],
+		tx.Account[0:8],
+		tx.Sig[0:8],
 	)
 }

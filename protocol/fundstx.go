@@ -146,9 +146,9 @@ func (tx FundsTx) String() string {
 		tx.Amount,
 		tx.Fee,
 		tx.TxCnt,
-		tx.From[0:10],
-		tx.To[0:10],
-		tx.Sig1[0:10],
-		tx.Sig2[0:10],
+		tx.From[0:8],
+		tx.To[0:8],
+		tx.Sig1[0:8],
+		tx.Sig2[0:8],
 	)
 }

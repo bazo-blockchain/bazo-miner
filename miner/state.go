@@ -15,7 +15,7 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 			newAccHash := newAcc.Hash()
 			if acc := storage.GetAccount(newAccHash); acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
-				errors.New("CRITICAL: Address already exists in the state")
+				errors.New("Address already exists in the state.")
 			}
 			//If acc does not exist, write to state
 			storage.State[newAccHash] = &newAcc
@@ -49,25 +49,21 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 
 		accSender, accReceiver := storage.GetAccount(tx.From), storage.GetAccount(tx.To)
 		if accSender == nil {
-			logger.Printf("CRITICAL: Sender does not exist in the State: %x\n", tx.From[0:8])
 			err = errors.New("Sender does not exist in the State.")
 		}
 
 		if accReceiver == nil {
-			logger.Printf("CRITICAL: Receiver does not exist in the State: %x\n", tx.To[0:8])
 			err = errors.New("Receiver does not exist in the State.")
 		}
 
 		//Check transaction counter
 		if tx.TxCnt != accSender.TxCnt {
-			logger.Printf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt)\n", tx.TxCnt, accSender.TxCnt)
-			err = errors.New("TxCnt mismatch!")
+			err = errors.New(fmt.Sprintf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt).", tx.TxCnt, accSender.TxCnt))
 		}
 
 		//Check sender balance
 		if (tx.Amount + tx.Fee) > accSender.Balance {
-			logger.Printf("Sender does not have enough balance: %x\n", accSender.Balance)
-			err = errors.New("Sender does not have enough funds for the transaction.")
+			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, tx.Amount, tx.Fee))
 		}
 
 		//TODO Please check & verify if statement:
@@ -75,14 +71,12 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		//if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM) > accSender.Balance)
 		//After Tx fees, account must still have more than the minimum staking amount
 		if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
-			logger.Printf("Sender is staking and does not have enough funds in order to fulfill the required staking minimum: %x\n%x", accSender.Balance, tx.Fee+tx.Amount+protocol.MIN_STAKING_MINIMUM)
 			err = errors.New("Sender is staking and does not have enough funds in order to fulfill the required staking minimum.")
 		}
 
 		//Overflow protection
 		if tx.Amount+accReceiver.Balance > MAX_MONEY {
-			logger.Printf("Transaction amount (%v) would lead to balance overflow at the receiver account (%v)\n", tx.Amount, accReceiver.Balance)
-			err = errors.New("Transaction amount would lead to balance overflow at the receiver account\n")
+			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
 		}
 
 		if err != nil {
@@ -449,8 +443,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 
 			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
 			if err := stateValidation(blockDataMap[blockToValidate.Hash]); err != nil {
-				logger.Printf("Received block (%x) could not be validated: %v\n", blockToValidate.Hash[0:12], err)
-				return nil, err
+				return nil, errors.New(fmt.Sprintf("Received block (%x) could not be validated: %v", blockToValidate.Hash[0:8], err))
 			}
 
 			configStateChange(blockDataMap[blockToValidate.Hash].configTxSlice, blockDataMap[blockToValidate.Hash].block.Hash)

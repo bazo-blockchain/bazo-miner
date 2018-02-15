@@ -7,7 +7,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
-	"os"
 	"sync"
 )
 
@@ -49,8 +48,8 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey) {
 	// Get the last closed block from DB or create genesis
 	initialBlock, err := SetUpInitialState(hashedSeed)
 	if err != nil {
-		logger.Printf("Could not validate all blocks. Get consistent chain and try again.\n")
-		os.Exit(1)
+		logger.Printf("Could not set up initial state: %v.\n", err)
+		return
 	}
 
 	logger.Printf("Active config params:%v", activeParameters)
@@ -77,7 +76,7 @@ func mining(initialBlock *protocol.Block) {
 			broadcastBlock(currentBlock)
 			err := validateBlock(currentBlock)
 			if err != nil {
-				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:12], err)
+				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
 		}
 

@@ -22,14 +22,14 @@ func processBlock(payload []byte) {
 
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
-		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:12])
+		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 		return
 	}
 
 	//Start validation process
 	err := validateBlock(block)
 	if err != nil {
-		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:12], err)
+		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 	} else {
 		broadcastBlock(block)
 	}

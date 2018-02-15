@@ -490,6 +490,7 @@ func timestampCheck(timestamp int64) error {
 			return errors.New("Timestamp was too far in the past. System time: " + strconv.FormatInt(systemTime, 10) + " vs. timestamp " + strconv.FormatInt(timestamp, 10) + "\n")
 		}
 	}
+
 	return nil
 }
 
@@ -802,6 +803,6 @@ func postValidation(data blockData) {
 	storage.DeleteOpenBlock(data.block.Hash)
 
 	if err := storage.WriteClosedBlock(data.block); err == nil {
-		logger.Printf("Closed block %x saved in DB\n", data.block.Hash[0:12])
+		logger.Printf("Closed block %x saved in DB\n", data.block.Hash[0:8])
 	}
 }
