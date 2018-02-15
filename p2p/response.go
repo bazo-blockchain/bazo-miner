@@ -214,25 +214,25 @@ func _neighborRes(ipportList []string) (payload []byte) {
 }
 
 func intermediateNodesRes(p *peer, payload []byte) {
-		var blockHash [32]byte
-		var txHash [32]byte
-		var nodeHashes [][32]byte
+	var blockHash [32]byte
+	var txHash [32]byte
+	var nodeHashes [][32]byte
 
-		copy(blockHash[:], payload[:32])
-		copy(txHash[:], payload[32:64])
+	copy(blockHash[:], payload[:32])
+	copy(txHash[:], payload[32:64])
 
-		merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
-		nodes, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash))
-		if nodes == nil {
-			packet := BuildPacket(NOT_FOUND, nil)
-			sendData(p, packet)
-			return
-		}
-
-		for _, node := range nodes {
-			nodeHashes = append(nodeHashes, node.Hash)
-		}
-
-		packet := BuildPacket(INTERMEDIATE_NODES_RES, protocol.SerializeSlice32(nodeHashes))
+	merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
+	nodes, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash))
+	if nodes == nil {
+		packet := BuildPacket(NOT_FOUND, nil)
 		sendData(p, packet)
+		return
+	}
+
+	for _, node := range nodes {
+		nodeHashes = append(nodeHashes, node.Hash)
+	}
+
+	packet := BuildPacket(INTERMEDIATE_NODES_RES, protocol.SerializeSlice32(nodeHashes))
+	sendData(p, packet)
 }

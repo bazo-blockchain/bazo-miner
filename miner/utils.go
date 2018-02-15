@@ -12,6 +12,6 @@ func InvertBlockArray(array []*protocol.Block) []*protocol.Block {
 	return array
 }
 
-func Prepend(arr [][32]byte, item [32]byte) ([][32]byte){
+func Prepend(arr [][32]byte, item [32]byte) [][32]byte {
 	return append([][32]byte{item}, arr...)
 }

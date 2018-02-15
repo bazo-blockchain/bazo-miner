@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/boltdb/bolt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/boltdb/bolt"
 )
 
 func WriteOpenBlock(block *protocol.Block) (err error) {

@@ -215,4 +215,3 @@ func TestReadWriteDeleteBlock(t *testing.T) {
 		t.Error("Failed to delete block from kv storage.\n")
 	}
 }
-

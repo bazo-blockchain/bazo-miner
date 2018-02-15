@@ -1,22 +1,21 @@
 package protocol
 
 import (
+	"io/ioutil"
+	"log"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 	"time"
-	"os"
-	"io/ioutil"
-	"log"
 )
-
 
 func TestStakeTxSerialization(t *testing.T) {
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 	accAHash := SerializeHashContent(accA.Address)
 	loopMax := int(rand.Uint32() % 10000)
 	for i := 0; i < loopMax; i++ {
-		fee := rand.Uint64()%10+1
+		fee := rand.Uint64()%10 + 1
 		isStaking := rand.Intn(2) != 0
 		seed := createRandomSeed()
 		hashedSeed := SerializeHashContent(seed)
@@ -52,7 +51,7 @@ func TestSeedCreation(t *testing.T) {
 	}
 }
 
-func createRandomSeed()([32]byte){
+func createRandomSeed() [32]byte {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	var seed [32]byte
@@ -64,9 +63,9 @@ func createRandomSeed()([32]byte){
 
 func readSeed(fileName string) ([32]byte, error) {
 	var (
-		seedByte	[]byte
-		seed 		[32]byte
-		err			error
+		seedByte []byte
+		seed     [32]byte
+		err      error
 	)
 
 	seedByte, err = ioutil.ReadFile(fileName)

@@ -200,8 +200,6 @@ func TestConfigTxStateChange(t *testing.T) {
 	configs2 = append(configs2, tx9)
 	configs2 = append(configs2, tx10)
 
-
-
 	configStateChange(configs2, [32]byte{})
 	if activeParameters.Block_size != 1000 ||
 		activeParameters.Diff_interval != 2000 ||
@@ -270,7 +268,6 @@ func TestConfigTxStateChangeUnknown(t *testing.T) {
 	}
 }
 
-
 //Testing state change, rollback and fee collection
 func TestStakeTxStateChange(t *testing.T) {
 	cleanAndPrepare()
@@ -309,5 +306,3 @@ func TestStakeTxStateChange(t *testing.T) {
 	}
 
 }
-
-

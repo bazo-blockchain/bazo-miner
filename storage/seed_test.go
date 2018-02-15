@@ -1,16 +1,16 @@
 package storage
 
 import (
-	"testing"
 	"fmt"
-	"reflect"
-	"time"
 	"math/rand"
+	"reflect"
+	"testing"
+	"time"
 
 	"bytes"
 	"encoding/binary"
-	"golang.org/x/crypto/sha3"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"golang.org/x/crypto/sha3"
 )
 
 //Write and Read test on the seed json store
@@ -19,15 +19,15 @@ func TestReadWriteJson(t *testing.T) {
 	seed := createRandomSeed()
 	hashedSeed := protocol.SerializeHashContent(seed)
 
-	err := AppendNewSeed("seeds_test.json", SeedJson{fmt.Sprintf("%x",string(hashedSeed[:])), string(seed[:])})
+	err := AppendNewSeed("seeds_test.json", SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
-	if err != nil{
+	if err != nil {
 		t.Errorf("Writing to JSON file failed.")
 	}
 
 	seedFromFile, err := GetSeed(hashedSeed, "seeds_test.json")
 
-	if err!= nil{
+	if err != nil {
 		t.Errorf("JSON Serialization failed.")
 	}
 
@@ -37,7 +37,7 @@ func TestReadWriteJson(t *testing.T) {
 	}
 }
 
-func createRandomSeed()([32]byte){
+func createRandomSeed() [32]byte {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	var seed [32]byte

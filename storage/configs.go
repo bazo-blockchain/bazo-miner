@@ -22,7 +22,7 @@ const (
 	GENESIS_SEED = "FfhHEtSNQO6JyAUcKPlrlWzUqFXo1EoB"
 
 	//File name under which the seed will be stored
-	SEED_FILE_NAME     = "seed.json"
+	SEED_FILE_NAME = "seed.json"
 
 	DEFAULT_KEY_FILE_NAME = "root"
 )

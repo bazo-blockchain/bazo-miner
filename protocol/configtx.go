@@ -11,16 +11,16 @@ import (
 const (
 	CONFIGTX_SIZE = 83
 
-	BLOCK_SIZE_ID     = 1
-	DIFF_INTERVAL_ID  = 2
-	FEE_MINIMUM_ID    = 3
-	BLOCK_INTERVAL_ID = 4
-	BLOCK_REWARD_ID   = 5
-	STAKING_MINIMUM_ID = 6
-	WAITING_MINIMUM_ID = 7
+	BLOCK_SIZE_ID           = 1
+	DIFF_INTERVAL_ID        = 2
+	FEE_MINIMUM_ID          = 3
+	BLOCK_INTERVAL_ID       = 4
+	BLOCK_REWARD_ID         = 5
+	STAKING_MINIMUM_ID      = 6
+	WAITING_MINIMUM_ID      = 7
 	ACCEPTANCE_TIME_DIFF_ID = 8
 	SLASHING_WINDOW_SIZE_ID = 9
-	SLASHING_REWARD_ID = 10
+	SLASHING_REWARD_ID      = 10
 
 	MIN_BLOCK_SIZE = 1000      //1KB
 	MAX_BLOCK_SIZE = 100000000 //100MB
@@ -31,27 +31,27 @@ const (
 	MIN_FEE_MINIMUM = 0
 	MAX_FEE_MINIMUM = 9223372036854775807
 
-	MIN_BLOCK_INTERVAL = 3    //30 seconds
+	MIN_BLOCK_INTERVAL = 3     //30 seconds
 	MAX_BLOCK_INTERVAL = 86400 //24 hours
 
 	MIN_BLOCK_REWARD = 0
 	MAX_BLOCK_REWARD = 1152921504606846976 //2^60
 
-	MIN_STAKING_MINIMUM = 5 //minimum number of coins for staking
+	MIN_STAKING_MINIMUM = 5                   //minimum number of coins for staking
 	MAX_STAKING_MINIMUM = 9223372036854775807 //2^60
 
 	MIN_WAITING_TIME = 0 //number of blocks that must a new validator must wait before it can start validating
 	MAX_WAITING_TIME = 100000
 
-	MIN_ACCEPTANCE_TIME_DIFF = 0 //semi-synchronous time difference between local clock of validators
+	MIN_ACCEPTANCE_TIME_DIFF = 0  //semi-synchronous time difference between local clock of validators
 	MAX_ACCEPTANCE_TIME_DIFF = 60 //1min
 
-	MIN_SLASHING_WINDOW_SIZE = 0 //window size where a node has to commit itself to a competing branch in case of a fork
+	MIN_SLASHING_WINDOW_SIZE = 0     //window size where a node has to commit itself to a competing branch in case of a fork
 	MAX_SLASHING_WINDOW_SIZE = 10000 //1000 Blocks (totally random)
 
-	MIN_SLASHING_REWARD = 0 // reward for providing a valid slashing proof
+	MIN_SLASHING_REWARD = 0                   // reward for providing a valid slashing proof
 	MAX_SLASHING_REWARD = 1152921504606846976 //2^60
-	)
+)
 
 type ConfigTx struct {
 	Header  byte

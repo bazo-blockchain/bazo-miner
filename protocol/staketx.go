@@ -15,12 +15,12 @@ const (
 //when we broadcast transactions we need a way to distinguish with a type
 
 type StakeTx struct {
-	Header 			byte			// 1 Byte
-	Fee    			uint64			// 8 Byte
-	IsStaking 		bool			// 1 Byte
-	HashedSeed	    [32]byte		// 32 Byte
-	Account			[32]byte		// 32 Byte
-	Sig    			[64]byte		// 64 Byte
+	Header     byte     // 1 Byte
+	Fee        uint64   // 8 Byte
+	IsStaking  bool     // 1 Byte
+	HashedSeed [32]byte // 32 Byte
+	Account    [32]byte // 32 Byte
+	Sig        [64]byte // 64 Byte
 }
 
 func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, key *ecdsa.PrivateKey) (tx *StakeTx, err error) {
@@ -49,11 +49,11 @@ func (tx *StakeTx) Hash() (hash [32]byte) {
 	}
 
 	txHash := struct {
-		Header 			byte
-		Fee    			uint64
-		IsStaking 		bool
-		hashedSeed		[32]byte
-		Account			[32]byte
+		Header     byte
+		Fee        uint64
+		IsStaking  bool
+		hashedSeed [32]byte
+		Account    [32]byte
 	}{
 		tx.Header,
 		tx.Fee,
@@ -76,7 +76,6 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 	var feeBuf [8]byte
 	var isStakingBuf [1]byte
 
-
 	//transfer integer values to byte arrays
 	binary.Write(&buf, binary.BigEndian, tx.Fee)
 	copy(feeBuf[:], buf.Bytes())
@@ -88,7 +87,6 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 
 	//fmt.Println("\n\nENCODING Hashed Secret: ", tx.HashedSeed)
 	//fmt.Println("\n\nEnCODING Hashed PubKey: ", tx.Account)
-
 
 	encodedTx = make([]byte, STAKETX_SIZE)
 	encodedTx[0] = tx.Header

@@ -60,11 +60,9 @@ func TestBlockTxDuplicates(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 
-
 	if err := finalizeBlock(b); err != nil {
 		t.Errorf("Block finalization failed. (%v)\n", err)
 	}
-
 
 	//This is a normal block validation, should pass
 	if err := validateBlock(b); err != nil {
@@ -74,7 +72,7 @@ func TestBlockTxDuplicates(t *testing.T) {
 
 	//Rollback the block and add a duplicate
 	err := validateBlockRollback(b)
-	if err != nil{
+	if err != nil {
 		t.Log(err)
 	}
 	t.Log(lastBlock)
@@ -200,7 +198,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 		}
 
 		//don't mess with the minimum fee, block size and staking minimum
-		if tx.Id == 3 || tx.Id == 1 || tx.Id == 6{
+		if tx.Id == 3 || tx.Id == 1 || tx.Id == 6 {
 			continue
 		}
 		if err := addTx(b, tx); err == nil {
