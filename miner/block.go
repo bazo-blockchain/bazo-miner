@@ -377,7 +377,6 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 		return nil, nil, nil, nil, errors.New("Block size too large.")
 	}
 
-	//TODO check stakeTx for duplicates
 	//Duplicates are not allowed, use tx hash hashmap to easily check for duplicates
 	duplicates := make(map[[32]byte]bool)
 	for _, txHash := range block.AccTxData {
@@ -473,7 +472,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 
 	//Merkle Tree validation
 	if protocol.BuildMerkleTree(block).MerkleRoot() != block.MerkleRoot {
-		return nil, nil, nil, nil, errors.New("Merkle Root incorrect.")
+		return nil, nil, nil, nil, errors.New("Merkle Root is incorrect.")
 	}
 
 	return accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
