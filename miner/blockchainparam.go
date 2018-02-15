@@ -20,17 +20,17 @@ var (
 //This is necessary, because the system records ALL config txs (even those who have no corresponding
 //code to execute [e.g., when they're running an older version of the code]).
 type Parameters struct {
-	BlockHash            [BLOCKHASH_SIZE]byte
-	Fee_minimum          uint64
-	Block_size           uint64
-	Diff_interval        uint64
-	Block_interval       uint64
-	Block_reward         uint64
-	Staking_minimum      uint64
-	Waiting_minimum      uint64 //number of blocks that must a new validator must wait before it can start validating
-	Accepted_time_diff   uint64 //number of seconds that a block can be received in the future
-	Slashing_window_size uint64 //number of blocks that a validator cannot vote on two competing chains
-	Slash_reward         uint64 //reward for providing the correct slashing proof
+	BlockHash               [BLOCKHASH_SIZE]byte
+	Fee_minimum             uint64
+	Block_size              uint64
+	Diff_interval           uint64
+	Block_interval          uint64
+	Block_reward            uint64
+	Staking_minimum         uint64
+	Waiting_minimum         uint64 //number of blocks that must a new validator must wait before it can start validating
+	Accepted_time_diff      uint64 //number of seconds that a block can be received in the future
+	Slashing_window_size    uint64 //number of blocks that a validator cannot vote on two competing chains
+	Slash_reward            uint64 //reward for providing the correct slashing proof
 	num_included_prev_seeds int
 }
 

@@ -4,12 +4,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (

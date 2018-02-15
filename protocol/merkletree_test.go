@@ -22,7 +22,7 @@ func TestBuildMerkleTree3N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
@@ -54,7 +54,7 @@ func TestBuildMerkleTree2N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
@@ -81,7 +81,7 @@ func TestBuildMerkleTree4N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
@@ -116,9 +116,9 @@ func TestBuildMerkleTree6N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
-	
+
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
 
@@ -157,9 +157,9 @@ func TestBuildMerkleTree8N(t *testing.T) {
 		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
-	
+
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
@@ -208,9 +208,9 @@ func TestBuildMerkleTree10N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
-	
+
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
 
@@ -265,9 +265,9 @@ func TestBuildMerkleTree11N(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
-	
+
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
 
@@ -328,9 +328,9 @@ func TestGetIntermediate(t *testing.T) {
 	}
 
 	b := Block{
-		FundsTxData:hashSlice,
+		FundsTxData: hashSlice,
 	}
-	
+
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
 

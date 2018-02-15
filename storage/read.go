@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/boltdb/bolt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/boltdb/bolt"
 )
 
 //Always return nil if requested hash is not in the storage. This return value is then checked against by the caller

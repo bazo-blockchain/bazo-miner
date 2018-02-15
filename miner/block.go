@@ -230,13 +230,9 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	myAcc, err := storage.GetMyAccount(validatorAccount)
-	if err != nil {
-		return err
-	}
-
-	myAccHash := myAcc.Hash()
-	copy(block.Beneficiary[:], myAccHash[:])
+	validatorAcc := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	validatorAccHash := validatorAcc.Hash()
+	copy(block.Beneficiary[:], validatorAccHash[:])
 
 	//TODO beneficiary must be dynamic right?
 	//BENEFICIARY is a config parameter set in config.go
@@ -248,12 +244,12 @@ func finalizeBlock(block *protocol.Block) error {
 	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
 
 	//get the current hash of the seed that is stored in my account
-	localSeed, err := storage.GetSeed(myAcc.HashedSeed, storage.SEED_FILE_NAME)
+	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, storage.SEED_FILE_NAME)
 	if err != nil {
 		return err
 	}
 
-	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, myAcc.Balance, localSeed)
+	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, validatorAcc.Balance, localSeed)
 	if err != nil {
 		return err
 	}

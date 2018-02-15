@@ -1,13 +1,13 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"testing"
-	"time"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"reflect"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"testing"
+	"time"
 )
 
 func TestProofOfStake(t *testing.T) {
@@ -15,7 +15,7 @@ func TestProofOfStake(t *testing.T) {
 	cleanAndPrepare()
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
-	balance := uint64(rand.Int()%1000)
+	balance := uint64(rand.Int() % 1000)
 
 	var prevSeeds [][32]byte
 	prevSeed1 := protocol.CreateRandomSeed()
@@ -26,7 +26,6 @@ func TestProofOfStake(t *testing.T) {
 	prevSeeds = append(prevSeeds, prevSeed3)
 	prevSeed4 := protocol.CreateRandomSeed()
 	prevSeeds = append(prevSeeds, prevSeed4)
-
 
 	seed := protocol.CreateRandomSeed()
 	height := uint32(rand.Int())
@@ -61,15 +60,14 @@ func TestGetLatestSeeds(t *testing.T) {
 
 	//Two new blocks are added with random seeds
 	b1 := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
-	if err :=finalizeBlock(b1);err != nil {
+	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
 	seeds = Prepend(seeds, b1.Seed)
 	validateBlock(b1)
 
-
 	b2 := newBlock(b1.Hash, [32]byte{}, [32]byte{}, b1.Height+1)
-	if err :=finalizeBlock(b2);err != nil {
+	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
 	validateBlock(b2)
@@ -77,7 +75,7 @@ func TestGetLatestSeeds(t *testing.T) {
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 
-	prevSeeds  = GetLatestSeeds(3, b3)
+	prevSeeds = GetLatestSeeds(3, b3)
 
 	//Two new blocks are added with random seeds
 	if !reflect.DeepEqual(prevSeeds, seeds) {
@@ -95,7 +93,6 @@ func TestGetLatestSeeds(t *testing.T) {
 	if !reflect.DeepEqual(2, len(prevSeeds)) {
 		t.Error("Could not retrieve the correct amount of previous seeds  (n < block height).", 2, len(prevSeeds))
 	}
-
 
 	//5 seeds are expected since only 5 blocks are in the blockchain
 	prevSeeds = GetLatestSeeds(5, b3)

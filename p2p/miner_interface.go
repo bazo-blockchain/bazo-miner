@@ -14,7 +14,7 @@ var (
 	FundsTxChan  = make(chan *protocol.FundsTx)
 	AccTxChan    = make(chan *protocol.AccTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
-	StakeTxChan = make(chan *protocol.StakeTx)
+	StakeTxChan  = make(chan *protocol.StakeTx)
 
 	BlockReqChan = make(chan []byte)
 )

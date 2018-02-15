@@ -30,7 +30,6 @@ type Block struct {
 	NrElementsBF   uint16
 	BloomFilter    *bloom.BloomFilter
 
-
 	//Body
 	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
 	Seed                  [32]byte
@@ -217,7 +216,7 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		encodedBFSize := len(encodedBF)
 
 		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedBlock[index:index+encodedBFSize])
+		b.BloomFilter.GobDecode(encodedBlock[index : index+encodedBFSize])
 		index += encodedBFSize
 	}
 
@@ -225,7 +224,7 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 
 	copy(b.Seed[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
-	b.Height = binary.BigEndian.Uint32(encodedBlock[index:index+4])
+	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+4])
 	index += 4
 	copy(b.HashedSeed[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN

@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -11,22 +12,26 @@ import (
 )
 
 var (
-	logger           *log.Logger
-	blockValidation  = &sync.Mutex{}
-	parameterSlice   []Parameters
-	activeParameters *Parameters
-	uptodate         bool
-	slashingDict     map[[32]byte]SlashingProof
-	validatorAccount string
+	logger              *log.Logger
+	blockValidation     = &sync.Mutex{}
+	parameterSlice      []Parameters
+	activeParameters    *Parameters
+	uptodate            bool
+	slashingDict        map[[32]byte]SlashingProof
+	validatorAccAddress [64]byte
+	multisigPubKey      *ecdsa.PublicKey
 )
 
 //Miner entry point
-func Init(validatorAccFile string) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey) {
 	var err error
 	var hashedSeed [32]byte
 
+	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
+	multisigPubKey = multisig
+
 	//Set up logger
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	logger = storage.InitLogger()
 
 	//Initialize root key
 	//the hashedSeed is necessary since it must be included in the initial block
@@ -34,8 +39,6 @@ func Init(validatorAccFile string) {
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
 	}
-
-	validatorAccount = validatorAccFile
 
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
@@ -92,7 +95,7 @@ func mining(initialBlock *protocol.Block) {
 
 //At least one root key needs to be set which is allowed to create new accounts
 func initRootKey() ([32]byte, error) {
-	pubKey, pubKeyHash := storage.GetInitRootPubKey()
+	address, addressHash := storage.GetInitRootPubKey()
 
 	//Create the key file
 	//file, _ := os.Create(storage.DEFAULT_KEY_FILE_NAME)
@@ -110,9 +113,9 @@ func initRootKey() ([32]byte, error) {
 	}
 
 	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(pubKey, INITIALINITROOTBALANCE, true, hashedSeed)
-	storage.State[pubKeyHash] = &rootAcc
-	storage.RootKeys[pubKeyHash] = &rootAcc
+	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed)
+	storage.State[addressHash] = &rootAcc
+	storage.RootKeys[addressHash] = &rootAcc
 
 	return hashedSeed, nil
 }

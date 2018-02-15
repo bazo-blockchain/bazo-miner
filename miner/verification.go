@@ -14,7 +14,6 @@ import (
 //should only be of concern to the miner, not to the protocol package. However, this has the disadvantage
 //that we have to do case distinction here.
 func verify(tx protocol.Transaction) bool {
-
 	var verified bool
 
 	switch tx.(type) {
@@ -27,16 +26,16 @@ func verify(tx protocol.Transaction) bool {
 	case *protocol.StakeTx:
 		verified = verifyStakeTx(tx.(*protocol.StakeTx))
 	}
+
 	return verified
 }
 
 func verifyFundsTx(tx *protocol.FundsTx) bool {
-
 	if tx == nil {
 		return false
 	}
 
-	pub1, pub2 := new(big.Int), new(big.Int)
+	pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
 
 	//fundsTx only makes sense if amount > 0
@@ -51,35 +50,48 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 
 	//Accounts non existant
 	if accFrom == nil || accTo == nil {
+		logger.Printf("At least one account does not exist in the state.")
 		return false
 	}
 
 	accFromHash := protocol.SerializeHashContent(accFrom.Address)
 	accToHash := protocol.SerializeHashContent(accTo.Address)
 
-	pub1.SetBytes(accFrom.Address[:32])
-	pub2.SetBytes(accFrom.Address[32:])
+	pubKey1Sig1.SetBytes(accFrom.Address[:32])
+	pubKey2Sig1.SetBytes(accFrom.Address[32:])
 
-	r.SetBytes(tx.Sig[:32])
-	s.SetBytes(tx.Sig[32:])
+	r.SetBytes(tx.Sig1[:32])
+	s.SetBytes(tx.Sig1[32:])
 
 	tx.From = accFromHash
 	tx.To = accToHash
 
 	txHash := tx.Hash()
 
-	pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) == true && !reflect.DeepEqual(accFrom, accTo) {
+	var validSig1, validSig2 bool
+
+	pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
+	if ecdsa.Verify(&pubKey, txHash[:], r, s) && !reflect.DeepEqual(accFrom, accTo) {
 		tx.From = accFromHash
 		tx.To = accToHash
-		return true
+		validSig1 = true
+	} else {
+		//	TODO error logging
 	}
 
-	return false
+	r.SetBytes(tx.Sig2[:32])
+	s.SetBytes(tx.Sig2[32:])
+
+	if ecdsa.Verify(multisigPubKey, txHash[:], r, s) {
+		validSig2 = true
+	} else {
+		//	TODO error logging
+	}
+
+	return validSig1 && validSig2
 }
 
 func verifyAccTx(tx *protocol.AccTx) bool {
-
 	if tx == nil {
 		return false
 	}
@@ -107,7 +119,6 @@ func verifyAccTx(tx *protocol.AccTx) bool {
 }
 
 func verifyConfigTx(tx *protocol.ConfigTx) bool {
-
 	if tx == nil {
 		return false
 	}
@@ -135,7 +146,7 @@ func verifyConfigTx(tx *protocol.ConfigTx) bool {
 
 func verifyStakeTx(tx *protocol.StakeTx) bool {
 	if tx == nil {
-		logger.Println("Transactions does not exist." )
+		logger.Println("Transactions does not exist.")
 		return false
 	}
 
@@ -176,7 +187,6 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 //Returns true if id is in the list of possible ids and rational value for payload parameter.
 //Some values just don't make any sense and have to be restricted accordingly
 func parameterBoundsChecking(id uint8, payload uint64) bool {
-
 	switch id {
 	case protocol.BLOCK_SIZE_ID:
 		if payload >= protocol.MIN_BLOCK_SIZE && payload <= protocol.MAX_BLOCK_SIZE {
@@ -219,5 +229,6 @@ func parameterBoundsChecking(id uint8, payload uint64) bool {
 			return true
 		}
 	}
+
 	return false
 }

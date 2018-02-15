@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/boltdb/bolt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/boltdb/bolt"
 )
 
 //There exist open/closed buckets and closed tx buckets for all types (open txs are in volatile storage)

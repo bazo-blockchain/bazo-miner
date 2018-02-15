@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -12,7 +13,6 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"fmt"
 )
 
 //Some user accounts for testing
@@ -38,7 +38,7 @@ var (
 	PrivKeyA, PrivKeyB, MinerPrivKey ecdsa.PrivateKey
 	PubKeyA, PubKeyB                 ecdsa.PublicKey
 	RootPrivKey                      ecdsa.PrivateKey
-	GenesisBlock					 *protocol.Block
+	GenesisBlock                     *protocol.Block
 )
 
 //Create some accounts that are used by the tests
@@ -134,7 +134,7 @@ func addRootAccounts() {
 	//create and store an initial seed for the root account
 	seed := protocol.CreateRandomSeed()
 	hashedSeed = protocol.SerializeHashContent(seed)
-	_ = storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x",string(hashedSeed[:])), string(seed[:])})
+	_ = storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 	rootAcc.HashedSeed = hashedSeed
 

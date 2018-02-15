@@ -27,5 +27,5 @@ const (
 	ACCEPTED_TIME_DIFF   = 60  //sec
 	SLASHING_WINDOW_SIZE = 100 //blocks
 	SLASH_REWARD         = 2   //coins
-	NUM_INCL_PREV_SEEDS  = 5 //number of previous seeds included in the PoS condition
+	NUM_INCL_PREV_SEEDS  = 5   //number of previous seeds included in the PoS condition
 )
