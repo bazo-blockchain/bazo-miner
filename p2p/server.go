@@ -142,6 +142,8 @@ func handleNewConn(p *peer) {
 	}
 
 	processIncomingMsg(p, header, payload)
+
+	p.conn.Close()
 }
 
 func minerConn(p *peer) {
