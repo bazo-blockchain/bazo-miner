@@ -53,8 +53,6 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			err = errors.New("Sender does not exist in the State.")
 		}
 
-		logger.Println(accSender.Balance)
-
 		if accReceiver == nil {
 			logger.Printf("CRITICAL: Receiver does not exist in the State: %x\n", tx.To[0:8])
 			err = errors.New("Receiver does not exist in the State.")
