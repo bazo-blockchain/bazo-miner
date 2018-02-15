@@ -3,11 +3,10 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 	"log"
-	"os"
 	"time"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 var (
@@ -25,7 +24,7 @@ const (
 
 //Entry function for the storage package
 func Init(dbname string, ipport string) {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	logger = InitLogger()
 
 	var err error
 	db, err = bolt.Open(dbname, 0600, &bolt.Options{Timeout: 5 * time.Second})

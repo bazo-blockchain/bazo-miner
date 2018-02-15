@@ -31,7 +31,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey) {
 	multisigPubKey = multisig
 
 	//Set up logger
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	logger = storage.InitLogger()
 
 	//Initialize root key
 	//the hashedSeed is necessary since it must be included in the initial block

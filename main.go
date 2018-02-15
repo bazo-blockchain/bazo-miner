@@ -8,6 +8,11 @@ import (
 )
 
 func main() {
+	logger := storage.InitLogger()
+	if len(os.Args) != 5 {
+		logger.Println("Usage: bazo-miner <dbname> <ipport> <validator> <multisig>")
+		return
+	}
 
 	dbname := os.Args[1]
 	ipport := os.Args[2]

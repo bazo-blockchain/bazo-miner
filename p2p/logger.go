@@ -1,8 +1,7 @@
 package p2p
 
 import (
-	"log"
-	"os"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -10,7 +9,7 @@ var (
 )
 
 func initLogger() {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	logger = storage.InitLogger()
 
 	//Instead of logging just the integer, we log the corresponding semantic meaning, makes scrolling through
 	//the log file more comfortable

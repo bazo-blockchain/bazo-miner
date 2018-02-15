@@ -16,6 +16,10 @@ import (
 	"strings"
 )
 
+func InitLogger() *log.Logger {
+	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 //Serializes the input in big endian and returns the sha3 hash function applied on ths input
 func SerializeHashContent(data interface{}) (hash [32]byte) {
 	var buf bytes.Buffer
