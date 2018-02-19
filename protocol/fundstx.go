@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	FUNDSTX_SIZE = 244
+	FUNDSTX_SIZE = 213
 )
 
 //when we broadcast transactions we need a way to distinguish with a type
