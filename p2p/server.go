@@ -15,7 +15,7 @@ import (
 var (
 	//List of ip addresses. A connection to a subset of the list will be established as soon as the network health
 	//monitor triggers.
-	localConn string
+	Ipport string
 	peers     peersStruct
 
 	logger *log.Logger
@@ -28,6 +28,7 @@ var (
 
 //Entry point for p2p package
 func Init(ipport string) {
+	Ipport = ipport
 	initLogger()
 
 	//Initialize peer map
@@ -40,12 +41,12 @@ func Init(ipport string) {
 	go receiveBlockFromMiner()
 
 	//Set localPort global, this will be the listening port for incoming connection
-	if ipport != storage.BOOTSTRAP_SERVER_PORT {
+	if Ipport != storage.BOOTSTRAP_SERVER_PORT {
 		bootstrap()
 	}
 
 	//Listen for all subsequent incoming connections on specified local address/listening port
-	go listener(ipport)
+	go listener(Ipport)
 }
 
 func bootstrap() {
@@ -59,22 +60,22 @@ func bootstrap() {
 	go minerConn(p)
 }
 
-func initiateNewMinerConnection(ipport string) (*peer, error) {
+func initiateNewMinerConnection(dial string) (*peer, error) {
 	var conn net.Conn
 
-	//Check if we already established a connection with that ip or if the ip belongs to us
-	if peerExists(ipport) {
-		return nil, errors.New(fmt.Sprintf("Connection with %v already established.", ipport))
+	//Check if we already established a dial with that ip or if the ip belongs to us
+	if peerExists(dial) {
+		return nil, errors.New(fmt.Sprintf("Connection with %v already established.", dial))
 	}
 
-	if peerSelfConn(ipport) {
-		return nil, errors.New(fmt.Sprintf("Cannot self-connect %v.", ipport))
+	if peerSelfConn(dial) {
+		return nil, errors.New(fmt.Sprintf("Cannot self-connect %v.", dial))
 	}
 
-	//Open up a tcp connection and instantiate a peer struct, wait for adding it to the peerStruct before we finalize
+	//Open up a tcp dial and instantiate a peer struct, wait for adding it to the peerStruct before we finalize
 	//the handshake
-	conn, err := net.Dial("tcp", ipport)
-	p := &peer{conn, nil, sync.Mutex{}, strings.Split(ipport, ":")[1], 0}
+	conn, err := net.Dial("tcp", dial)
+	p := &peer{conn, nil, sync.Mutex{}, strings.Split(dial, ":")[1], 0}
 
 	if err != nil {
 		return nil, err
@@ -102,7 +103,7 @@ func prepareHandshake() ([]byte, error) {
 	portBuf := make([]byte, PORT_SIZE)
 
 	//Extracts the port from our localConn variable (which is in the form IP:Port)
-	localPort, err := strconv.Atoi(strings.Split(localConn, ":")[1])
+	localPort, err := strconv.Atoi(strings.Split(Ipport, ":")[1])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Parsing port failed: %v\n", err))
 	}

@@ -52,7 +52,7 @@ func peerExists(newIpport string) bool {
 
 //Tested in server_test.go
 func peerSelfConn(newIpport string) bool {
-	return newIpport == localConn
+	return newIpport == Ipport
 }
 
 func BuildPacket(typeID uint8, payload []byte) (packet []byte) {
