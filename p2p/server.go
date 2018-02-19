@@ -76,7 +76,6 @@ func initiateNewMinerConnection(dial string) (*peer, error) {
 	//the handshake
 	conn, err := net.Dial("tcp", dial)
 	p := &peer{conn, nil, sync.Mutex{}, strings.Split(dial, ":")[1], 0}
-
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +142,9 @@ func handleNewConn(p *peer) {
 
 	processIncomingMsg(p, header, payload)
 
-	p.conn.Close()
+	if header.TypeID != MINER_PING {
+		p.conn.Close()
+	}
 }
 
 func minerConn(p *peer) {
