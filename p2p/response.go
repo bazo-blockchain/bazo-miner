@@ -81,13 +81,13 @@ func blockHeaderRes(p *peer, payload []byte) {
 		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block := storage.ReadClosedBlock(blockHash); block != nil {
-			block.InitBloomFilter(storage.GetTxPubKeys(block))
-			encodedHeader = block.Encode()
+			block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+			encodedHeader = block.EncodeHeader()
 		}
 	} else {
 		if block := storage.ReadLastClosedBlock(); block != nil {
-			block.InitBloomFilter(storage.GetTxPubKeys(block))
-			encodedHeader = block.Encode()
+			block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+			encodedHeader = block.EncodeHeader()
 		}
 	}
 

@@ -49,7 +49,7 @@ func TestGetSize(t *testing.T) {
 
 	txAmount := b.NrAccTx + b.NrFundsTx + uint16(b.NrConfigTx) + b.NrStakeTx
 
-	if b.GetSize() != uint64(txAmount)*HASH_LEN+128+4+MIN_BLOCKHEADER_SIZE {
-		fmt.Printf("Miscalculated block size: %v vs. %v\n", b.GetSize(), uint64(txAmount)*32+MIN_BLOCKHEADER_SIZE)
+	if b.GetSize() != uint64(txAmount)*HASH_LEN+128+4+MIN_BLOCK_SIZE {
+		fmt.Printf("Miscalculated block size: %v vs. %v\n", b.GetSize(), uint64(txAmount)*32+MIN_BLOCK_SIZE)
 	}
 }

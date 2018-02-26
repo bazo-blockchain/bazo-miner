@@ -10,37 +10,39 @@ import (
 
 const (
 	HASH_LEN                = 32
-	MIN_BLOCKHEADER_SIZE    = 185
+	MIN_BLOCKSIZE           = 317
+	MIN_BLOCKHEADER_SIZE    = 67
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
 type Block struct {
 	//Header
-	Hash           [32]byte
-	PrevHash       [32]byte
-	Nonce          [8]byte
-	Timestamp      int64
-	MerkleRoot     [32]byte
-	Beneficiary    [32]byte
-	NrFundsTx      uint16
-	NrAccTx        uint16
-	NrConfigTx     uint8
-	NrStakeTx      uint16
-	SlashedAddress [32]byte
-	NrElementsBF   uint16
-	BloomFilter    *bloom.BloomFilter
+	Hash         [32]byte
+	PrevHash     [32]byte
+	NrConfigTx   uint8
+	NrElementsBF uint16
+	BloomFilter  *bloom.BloomFilter
 
 	//Body
-	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
+	Nonce                 [8]byte
+	Timestamp             int64
+	MerkleRoot            [32]byte
+	Beneficiary           [32]byte
+	NrAccTx               uint16
+	NrFundsTx             uint16
+	NrStakeTx             uint16
+	SlashedAddress        [32]byte
 	Seed                  [32]byte
 	Height                uint32
 	HashedSeed            [32]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
-	AccTxData             [][32]byte
-	FundsTxData           [][32]byte
-	ConfigTxData          [][32]byte
-	StakeTxData           [][32]byte
+	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
+
+	AccTxData    [][32]byte
+	FundsTxData  [][32]byte
+	ConfigTxData [][32]byte
+	StakeTxData  [][32]byte
 }
 
 //TODO Block hashing for PoS changes
@@ -79,11 +81,22 @@ func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
 
 func (b *Block) GetSize() uint64 {
 	size :=
-		MIN_BLOCKHEADER_SIZE +
+		MIN_BLOCKSIZE +
 			int(b.NrAccTx)*HASH_LEN +
 			int(b.NrFundsTx)*HASH_LEN +
 			int(b.NrConfigTx)*HASH_LEN +
-			int(b.NrStakeTx)*HASH_LEN + 128 + 4
+			int(b.NrStakeTx)*HASH_LEN
+
+	if b.BloomFilter != nil {
+		encodedBF, _ := b.BloomFilter.GobEncode()
+		size += len(encodedBF)
+	}
+
+	return uint64(size)
+}
+
+func (b *Block) GetHeaderSize() uint64 {
+	size := MIN_BLOCKHEADER_SIZE
 
 	if b.BloomFilter != nil {
 		encodedBF, _ := b.BloomFilter.GobEncode()
@@ -113,8 +126,6 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	//Allocate memory
 	encodedBlock = make([]byte, b.GetSize())
 
-	//Serialize header
-
 	copy(encodedBlock[0:32], b.Hash[:])
 	copy(encodedBlock[32:64], b.PrevHash[:])
 	copy(encodedBlock[64:72], b.Nonce[:])
@@ -128,7 +139,7 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[151:183], b.SlashedAddress[:])
 	copy(encodedBlock[183:185], nrElementsBF[:])
 
-	index := MIN_BLOCKHEADER_SIZE
+	index := MIN_BLOCKSIZE
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -140,7 +151,7 @@ func (b *Block) Encode() (encodedBlock []byte) {
 		copy(encodedBlock[index:index+encodedBFSize], encodedBF)
 		index += encodedBFSize
 	}
-	//Serialize body
+
 	copy(encodedBlock[index:index+HASH_LEN], b.Seed[:])
 	index += HASH_LEN
 	copy(encodedBlock[index:index+4], height[:])
@@ -176,15 +187,47 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	return encodedBlock
 }
 
+func (b *Block) EncodeHeader() (encodedHeader []byte) {
+	if b == nil {
+		return nil
+	}
+
+	//Making byte array of all non-byte data
+	var nrElementsBF [2]byte
+
+	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
+
+	//Allocate memory
+	encodedHeader = make([]byte, b.GetHeaderSize())
+
+	copy(encodedHeader[0:32], b.Hash[:])
+	copy(encodedHeader[32:64], b.PrevHash[:])
+	encodedHeader[64] = byte(b.NrConfigTx)
+	copy(encodedHeader[65:67], nrElementsBF[:])
+
+	index := MIN_BLOCKHEADER_SIZE
+
+	if b.BloomFilter != nil {
+		//Encode BloomFilter
+		encodedBF, _ := b.BloomFilter.GobEncode()
+
+		encodedBFSize := len(encodedBF)
+
+		//Serialize BloomFilter
+		copy(encodedHeader[index:index+encodedBFSize], encodedBF)
+		index += encodedBFSize
+	}
+
+	return encodedHeader
+}
+
 func (*Block) Decode(encodedBlock []byte) (b *Block) {
 
 	b = new(Block)
 
-	if len(encodedBlock) < MIN_BLOCKHEADER_SIZE {
+	if len(encodedBlock) < MIN_BLOCKSIZE {
 		return nil
 	}
-
-	//Deserialize header
 
 	timeStampTmp := binary.BigEndian.Uint64(encodedBlock[72:80])
 	timeStamp := int64(timeStampTmp)
@@ -202,7 +245,7 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	copy(b.SlashedAddress[:], encodedBlock[151:183])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[183:185])
 
-	index := MIN_BLOCKHEADER_SIZE
+	index := MIN_BLOCKSIZE
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
@@ -219,8 +262,6 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		b.BloomFilter.GobDecode(encodedBlock[index : index+encodedBFSize])
 		index += encodedBFSize
 	}
-
-	//Deserialize body
 
 	copy(b.Seed[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
@@ -257,6 +298,40 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		copy(hash[:], encodedBlock[index:index+HASH_LEN])
 		b.StakeTxData = append(b.StakeTxData, hash)
 		index += HASH_LEN
+	}
+
+	return b
+}
+
+func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
+
+	b = new(Block)
+
+	if len(encodedHeader) < MIN_BLOCKHEADER_SIZE {
+		return nil
+	}
+
+	copy(b.Hash[:], encodedHeader[0:32])
+	copy(b.PrevHash[:], encodedHeader[32:64])
+	b.NrConfigTx = uint8(encodedHeader[64])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[65:67])
+
+	index := MIN_BLOCKHEADER_SIZE
+
+	if b.NrElementsBF > 0 {
+		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
+
+		//Initialize BloomFilter
+		b.BloomFilter = bloom.New(m, k)
+
+		//Encode BloomFilter
+		encodedBF, _ := b.BloomFilter.GobEncode()
+
+		encodedBFSize := len(encodedBF)
+
+		//Deserialize BloomFilter
+		b.BloomFilter.GobDecode(encodedHeader[index : index+encodedBFSize])
+		index += encodedBFSize
 	}
 
 	return b
