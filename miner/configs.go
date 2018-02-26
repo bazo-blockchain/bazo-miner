@@ -21,7 +21,7 @@ const (
 	BLOCK_SIZE           = 5000000 //byte
 	DIFF_INTERVAL        = 2016
 	BLOCK_INTERVAL       = 60  //sec
-	BLOCK_REWARD         = 1   //coins
+	BLOCK_REWARD         = 0   //coins
 	STAKING_MINIMUM      = 5   //coins
 	WAITING_MINIMUM      = 0   //blocks
 	ACCEPTED_TIME_DIFF   = 60  //sec
