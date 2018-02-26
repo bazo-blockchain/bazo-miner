@@ -139,7 +139,7 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[151:183], b.SlashedAddress[:])
 	copy(encodedBlock[183:185], nrElementsBF[:])
 
-	index := MIN_BLOCKSIZE
+	index := 185
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -245,7 +245,7 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	copy(b.SlashedAddress[:], encodedBlock[151:183])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[183:185])
 
-	index := MIN_BLOCKSIZE
+	index := 185
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
