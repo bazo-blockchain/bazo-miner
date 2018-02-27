@@ -767,26 +767,34 @@ func stateValidation(data blockData) error {
 }
 
 func postValidation(data blockData) {
+	var closedTxHashes [][32]byte
+
 	//Write all open transactions to closed/validated storage
 	for _, tx := range data.accTxSlice {
 		storage.WriteClosedTx(tx)
 		storage.DeleteOpenTx(tx)
+		closedTxHashes = append(closedTxHashes, tx.Hash())
 	}
 
 	for _, tx := range data.fundsTxSlice {
 		storage.WriteClosedTx(tx)
 		storage.DeleteOpenTx(tx)
+		closedTxHashes = append(closedTxHashes, tx.Hash())
 	}
 
 	for _, tx := range data.configTxSlice {
 		storage.WriteClosedTx(tx)
 		storage.DeleteOpenTx(tx)
+		closedTxHashes = append(closedTxHashes, tx.Hash())
 	}
 
 	for _, tx := range data.stakeTxSlice {
 		storage.WriteClosedTx(tx)
 		storage.DeleteOpenTx(tx)
+		closedTxHashes = append(closedTxHashes, tx.Hash())
 	}
+
+	p2p.SendClosedTxHashes(closedTxHashes)
 
 	//The new system parameters get active if the block was successfully validated
 	//This is done after state validation (in contrast to accTx/fundsTx).
