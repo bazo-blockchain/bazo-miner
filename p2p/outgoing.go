@@ -6,66 +6,38 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"log"
 	"net"
 	"time"
 )
 
-func SendClosedTxHashes(closedTxHashes [][32]byte) {
-	conn := connect(storage.BOOTSTRAP_SERVER_IP + ":8002")
+func SendVerifiedTxs(receivedTxs []*protocol.FundsTx) {
+	if conn := connect(storage.BOOTSTRAP_SERVER_IP + ":8002"); conn != nil {
+		encodedReceivedTxs := make([]byte, len(receivedTxs)*protocol.FUNDSTX_SIZE)
+		index := 0
 
-	packet := BuildPacket(CLOSEDTX_BRDCST, protocol.SerializeSlice32(closedTxHashes))
-	conn.Write(packet)
+		for _, tx := range receivedTxs {
+			copy(encodedReceivedTxs[index:index+protocol.FUNDSTX_SIZE], tx.Encode())
+			index += protocol.FUNDSTX_SIZE
+		}
 
-	_, _, err := rcvData2(conn)
-	if err != nil {
-		logger.Printf("sending closedtx failed: %v\n", err)
-		return
+		packet := BuildPacket(RECEIVEDTX_BRDCST, encodedReceivedTxs)
+		conn.Write(packet)
+
+		_, _, err := rcvData2(conn)
+		if err != nil {
+			logger.Printf("Could not send the verified transactions.\n")
+		}
+
+		conn.Close()
 	}
 }
-
-//func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
-//
-//	conn := Connect(storage.BOOTSTRAP_SERVER)
-//
-//	packet := p2p.BuildPacket(txType, txHash[:])
-//	conn.Write(packet)
-//
-//	header, payload, err := RcvData(conn)
-//	if err != nil {
-//		logger.Printf("Disconnected: %v\n", err)
-//		return
-//	}
-//
-//	switch header.TypeID {
-//	case p2p.ACCTX_RES:
-//		var accTx *protocol.AccTx
-//		accTx = accTx.Decode(payload)
-//		tx = accTx
-//	case p2p.CONFIGTX_RES:
-//		var configTx *protocol.ConfigTx
-//		configTx = configTx.Decode(payload)
-//		tx = configTx
-//	case p2p.FUNDSTX_RES:
-//		var fundsTx *protocol.FundsTx
-//		fundsTx = fundsTx.Decode(payload)
-//		tx = fundsTx
-//	case p2p.STAKETX_RES:
-//		var stakeTx *protocol.StakeTx
-//		stakeTx = stakeTx.Decode(payload)
-//		tx = stakeTx
-//	}
-//
-//	conn.Close()
-//
-//	return tx
-//}
 
 func connect(connectionString string) *net.TCPConn {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", connectionString)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		log.Fatal(err)
+		logger.Printf("Connection to %v failed.\n", connectionString)
+		return nil
 	}
 
 	conn.SetLinger(0)
