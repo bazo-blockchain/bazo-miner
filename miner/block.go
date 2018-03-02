@@ -140,7 +140,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Root accounts are exempt from balance requirements. All other accounts need to have (at least)
 	//fee + amount to spend as balance available
 	if !storage.IsRootKey(tx.From) {
-		if (tx.Amount + tx.Fee) >= b.StateCopy[tx.From].Balance {
+		if (tx.Amount + tx.Fee) > b.StateCopy[tx.From].Balance {
 			return errors.New("Not enough funds to complete the transaction!")
 		}
 	}
