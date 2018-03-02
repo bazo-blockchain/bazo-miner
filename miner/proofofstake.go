@@ -91,8 +91,6 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 	copy(hashArgs[index:index+32], localSeed[:])    //32 bytes
 	copy(hashArgs[index+32:index+36], heightBuf[:]) //4 bytes
 
-	logger.Println("Difficulty:", diff)
-
 	for _ = range time.Tick(time.Second) {
 		//lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		//block has been validated
