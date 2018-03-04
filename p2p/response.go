@@ -49,12 +49,13 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 
 //Here as well, checking open and closed block storage
 func blockRes(p *peer, payload []byte) {
+	var packet []byte
 	var block *protocol.Block
 
 	//If no specific block is requested, send latest
 	if len(payload) > 0 {
 		var blockHash [32]byte
-		copy(blockHash[:], payload[0:32])
+		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
 			block = storage.ReadOpenBlock(blockHash)
 		}
@@ -62,19 +63,18 @@ func blockRes(p *peer, payload []byte) {
 		block = storage.ReadLastClosedBlock()
 	}
 
-	if block == nil {
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
-		return
+	if block != nil {
+		packet = BuildPacket(BLOCK_RES, block.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
 	}
 
-	packet := BuildPacket(BLOCK_RES, block.Encode())
 	sendData(p, packet)
 }
 
 //Response the requested block SPV header
 func blockHeaderRes(p *peer, payload []byte) {
-	var encodedHeader []byte
+	var encodedHeader, packet []byte
 
 	//If no specific header is requested, send latest
 	if len(payload) > 0 {
@@ -92,12 +92,12 @@ func blockHeaderRes(p *peer, payload []byte) {
 	}
 
 	if len(encodedHeader) > 0 {
-		packet := BuildPacket(BlOCK_HEADER_RES, encodedHeader)
-		sendData(p, packet)
+		packet = BuildPacket(BlOCK_HEADER_RES, encodedHeader)
 	} else {
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
+		packet = BuildPacket(NOT_FOUND, nil)
 	}
+
+	sendData(p, packet)
 }
 
 //Responds to an account request from another miner
@@ -214,22 +214,22 @@ func _neighborRes(ipportList []string) (payload []byte) {
 func intermediateNodesRes(p *peer, payload []byte) {
 	var blockHash, txHash [32]byte
 	var nodeHashes [][]byte
+	var packet []byte
 
 	copy(blockHash[:], payload[:32])
 	copy(txHash[:], payload[32:64])
 
 	merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
-	intermediates, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash))
-	if intermediates == nil {
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
-		return
+
+	if intermediates, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash)); intermediates != nil {
+		for _, node := range intermediates {
+			nodeHashes = append(nodeHashes, node.Hash[:])
+		}
+
+		packet = BuildPacket(INTERMEDIATE_NODES_RES, protocol.Encode(nodeHashes, 32))
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
 	}
 
-	for _, node := range intermediates {
-		nodeHashes = append(nodeHashes, node.Hash[:])
-	}
-
-	packet := BuildPacket(INTERMEDIATE_NODES_RES, protocol.Encode(nodeHashes, 32))
 	sendData(p, packet)
 }
