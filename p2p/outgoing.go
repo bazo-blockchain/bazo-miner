@@ -1,31 +1,24 @@
 package p2p
 
 import (
-	"bufio"
-	"errors"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"net"
-	"time"
 )
 
-func SendVerifiedTxs(receivedTxs []*protocol.FundsTx) {
-	if conn := connect(storage.BOOTSTRAP_SERVER_IP + ":8002"); conn != nil {
-		encodedReceivedTxs := make([]byte, len(receivedTxs)*protocol.FUNDSTX_SIZE)
-		index := 0
+func SendVerifiedTxs(txs []*protocol.FundsTx) {
+	if conn := Connect(storage.BOOTSTRAP_SERVER_IP + ":8002"); conn != nil {
+		var verifiedTxs [][]byte
 
-		for _, tx := range receivedTxs {
-			copy(encodedReceivedTxs[index:index+protocol.FUNDSTX_SIZE], tx.Encode())
-			index += protocol.FUNDSTX_SIZE
+		for _, tx := range txs {
+			verifiedTxs = append(verifiedTxs, tx.Encode()[:])
 		}
 
-		packet := BuildPacket(RECEIVEDTX_BRDCST, encodedReceivedTxs)
+		packet := BuildPacket(VERIFIEDTX_BRDCST, protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE))
 		conn.Write(packet)
 
-		_, _, err := rcvData2(conn)
-		if err != nil {
-			logger.Printf("Could not send the verified transactions.\n")
+		header, _, err := RcvData(conn)
+		if err != nil || header.TypeID != TX_BRDCST_ACK {
+			logger.Printf("Sending verified tx failed.")
 		}
 
 		conn.Close()
