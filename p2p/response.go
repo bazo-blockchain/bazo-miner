@@ -102,32 +102,30 @@ func blockHeaderRes(p *peer, payload []byte) {
 
 //Responds to an account request from another miner
 func accRes(p *peer, payload []byte) {
+	var packet []byte
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
-	acc := storage.GetAccount(hash)
-	encodedAcc := acc.Encode()
 
-	if encodedAcc == nil {
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
-		return
+	if acc := storage.GetAccount(hash); acc != nil {
+		packet = BuildPacket(ACC_RES, acc.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
 	}
-	packet := BuildPacket(ACC_RES, encodedAcc)
+
 	sendData(p, packet)
 }
 
 func rootAccRes(p *peer, payload []byte) {
+	var packet []byte
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
-	acc := storage.GetRootAccount(hash)
-	encodedAcc := acc.Encode()
 
-	if encodedAcc == nil {
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
-		return
+	if acc := storage.GetRootAccount(hash); acc != nil {
+		packet = BuildPacket(ROOTACC_RES, acc.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
 	}
-	packet := BuildPacket(ROOTACC_RES, encodedAcc)
+
 	sendData(p, packet)
 }
 
@@ -214,25 +212,24 @@ func _neighborRes(ipportList []string) (payload []byte) {
 }
 
 func intermediateNodesRes(p *peer, payload []byte) {
-	var blockHash [32]byte
-	var txHash [32]byte
-	var nodeHashes [][32]byte
+	var blockHash, txHash [32]byte
+	var nodeHashes [][]byte
 
 	copy(blockHash[:], payload[:32])
 	copy(txHash[:], payload[32:64])
 
 	merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
-	nodes, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash))
-	if nodes == nil {
+	intermediates, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash))
+	if intermediates == nil {
 		packet := BuildPacket(NOT_FOUND, nil)
 		sendData(p, packet)
 		return
 	}
 
-	for _, node := range nodes {
-		nodeHashes = append(nodeHashes, node.Hash)
+	for _, node := range intermediates {
+		nodeHashes = append(nodeHashes, node.Hash[:])
 	}
 
-	packet := BuildPacket(INTERMEDIATE_NODES_RES, protocol.SerializeSlice32(nodeHashes))
+	packet := BuildPacket(INTERMEDIATE_NODES_RES, protocol.Encode(nodeHashes, 32))
 	sendData(p, packet)
 }
