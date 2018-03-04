@@ -17,27 +17,30 @@ func SerializeHashContent(data interface{}) (hash [32]byte) {
 	return sha3.Sum256(buf.Bytes())
 }
 
-func SerializeSlice32(slicedData [][32]byte) []byte {
-	serializedData := make([]byte, len(slicedData)*32)
+func Encode(data [][]byte, sliceSize int) []byte {
+	encodedData := make([]byte, len(data)*sliceSize)
+	index := 0
 
-	for i, slice := range slicedData {
-		copy(serializedData[i*32:(i+1)*32], slice[:])
+	for _, item := range data {
+		copy(encodedData[index:index+sliceSize], item)
+		index += sliceSize
 	}
 
-	return serializedData
+	return encodedData
 }
 
-func DeserializeSlice32(serializedData []byte) (slicedData [][32]byte) {
-	e := len(serializedData) / 32
+func Decode(encodedData []byte, sliceSize int) (data [][]byte) {
+	index := 0
+	cnt := 1
 
-	var slice [32]byte
+	for len(encodedData) >= cnt*sliceSize {
+		data = append(data, encodedData[index:index+sliceSize])
 
-	for i := 0; i < e; i++ {
-		copy(slice[:], serializedData[i*32:(i+1)*32])
-		slicedData = append(slicedData, slice)
+		index += sliceSize
+		cnt++
 	}
 
-	return slicedData
+	return data
 }
 
 func calculateBloomFilterParams(n float64, p float64) (uint, uint) {
