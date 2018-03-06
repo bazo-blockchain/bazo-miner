@@ -5,7 +5,25 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/storage"
+	"net"
+	"time"
 )
+
+func Connect(connectionString string) *net.TCPConn {
+	logger = storage.InitLogger()
+	tcpAddr, err := net.ResolveTCPAddr("tcp", connectionString)
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		logger.Printf("Connection to %v failed.\n", connectionString)
+		return nil
+	}
+
+	conn.SetLinger(0)
+	conn.SetDeadline(time.Now().Add(20 * time.Second))
+
+	return conn
+}
 
 func rcvData(p *peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
@@ -25,6 +43,26 @@ func rcvData(p *peer) (header *Header, payload []byte, err error) {
 	}
 
 	//logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[header.TypeID], len(payload))
+	return header, payload, nil
+}
+
+func RcvData(c net.Conn) (header *Header, payload []byte, err error) {
+	reader := bufio.NewReader(c)
+	header, err = ReadHeader(reader)
+	if err != nil {
+		c.Close()
+		return nil, nil, errors.New(fmt.Sprintf("Connection to aborted: (%v)\n", err))
+	}
+	payload = make([]byte, header.Len)
+
+	for cnt := 0; cnt < int(header.Len); cnt++ {
+		payload[cnt], err = reader.ReadByte()
+		if err != nil {
+			c.Close()
+			return nil, nil, errors.New(fmt.Sprintf("Connection to aborted: %v\n", err))
+		}
+	}
+
 	return header, payload, nil
 }
 

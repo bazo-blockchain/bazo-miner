@@ -6,12 +6,13 @@ const HEADER_LEN = 5
 
 //Mapping constants, used to parse incoming messages
 const (
-	FUNDSTX_BRDCST  = 1
-	ACCTX_BRDCST    = 2
-	CONFIGTX_BRDCST = 3
-	STAKETX_BRDCST  = 4
-	BLOCK_BRDCST    = 5
-	TX_BRDCST_ACK   = 6
+	FUNDSTX_BRDCST    = 1
+	ACCTX_BRDCST      = 2
+	CONFIGTX_BRDCST   = 3
+	STAKETX_BRDCST    = 4
+	VERIFIEDTX_BRDCST = 5
+	BLOCK_BRDCST      = 6
+	TX_BRDCST_ACK     = 7
 
 	FUNDSTX_REQ            = 10
 	ACCTX_REQ              = 11
