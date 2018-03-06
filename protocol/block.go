@@ -10,13 +10,14 @@ import (
 
 const (
 	HASH_LEN                = 32
-	MIN_BLOCKSIZE           = 317
-	MIN_BLOCKHEADER_SIZE    = 67
+	MIN_BLOCKSIZE           = 318
+	MIN_BLOCKHEADER_SIZE    = 68
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
 type Block struct {
 	//Header
+	Header       byte
 	Hash         [32]byte
 	PrevHash     [32]byte
 	NrConfigTx   uint8
@@ -126,20 +127,21 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	//Allocate memory
 	encodedBlock = make([]byte, b.GetSize())
 
-	copy(encodedBlock[0:32], b.Hash[:])
-	copy(encodedBlock[32:64], b.PrevHash[:])
-	copy(encodedBlock[64:72], b.Nonce[:])
-	copy(encodedBlock[72:80], timeStamp[:])
-	copy(encodedBlock[80:112], b.MerkleRoot[:])
-	copy(encodedBlock[112:144], b.Beneficiary[:])
-	copy(encodedBlock[144:146], nrFundsTx[:])
-	copy(encodedBlock[146:148], nrAccTx[:])
-	encodedBlock[148] = byte(b.NrConfigTx)
-	copy(encodedBlock[149:151], nrStakeTx[:])
-	copy(encodedBlock[151:183], b.SlashedAddress[:])
-	copy(encodedBlock[183:185], nrElementsBF[:])
+	encodedBlock[0] = b.Header
+	copy(encodedBlock[1:33], b.Hash[:])
+	copy(encodedBlock[33:65], b.PrevHash[:])
+	copy(encodedBlock[65:73], b.Nonce[:])
+	copy(encodedBlock[73:81], timeStamp[:])
+	copy(encodedBlock[81:113], b.MerkleRoot[:])
+	copy(encodedBlock[113:145], b.Beneficiary[:])
+	copy(encodedBlock[145:147], nrFundsTx[:])
+	copy(encodedBlock[147:149], nrAccTx[:])
+	encodedBlock[149] = byte(b.NrConfigTx)
+	copy(encodedBlock[150:152], nrStakeTx[:])
+	copy(encodedBlock[152:184], b.SlashedAddress[:])
+	copy(encodedBlock[184:186], nrElementsBF[:])
 
-	index := 185
+	index := 186
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -200,10 +202,11 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	//Allocate memory
 	encodedHeader = make([]byte, b.GetHeaderSize())
 
-	copy(encodedHeader[0:32], b.Hash[:])
-	copy(encodedHeader[32:64], b.PrevHash[:])
-	encodedHeader[64] = byte(b.NrConfigTx)
-	copy(encodedHeader[65:67], nrElementsBF[:])
+	encodedHeader[0] = b.Header
+	copy(encodedHeader[1:33], b.Hash[:])
+	copy(encodedHeader[33:65], b.PrevHash[:])
+	encodedHeader[65] = byte(b.NrConfigTx)
+	copy(encodedHeader[66:68], nrElementsBF[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -222,30 +225,30 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 }
 
 func (*Block) Decode(encodedBlock []byte) (b *Block) {
-
 	b = new(Block)
 
 	if len(encodedBlock) < MIN_BLOCKSIZE {
 		return nil
 	}
 
-	timeStampTmp := binary.BigEndian.Uint64(encodedBlock[72:80])
+	timeStampTmp := binary.BigEndian.Uint64(encodedBlock[73:81])
 	timeStamp := int64(timeStampTmp)
 
-	copy(b.Hash[:], encodedBlock[0:32])
-	copy(b.PrevHash[:], encodedBlock[32:64])
-	copy(b.Nonce[:], encodedBlock[64:72])
+	b.Header = encodedBlock[0]
+	copy(b.Hash[:], encodedBlock[1:33])
+	copy(b.PrevHash[:], encodedBlock[33:65])
+	copy(b.Nonce[:], encodedBlock[65:73])
 	b.Timestamp = timeStamp
-	copy(b.MerkleRoot[:], encodedBlock[80:112])
-	copy(b.Beneficiary[:], encodedBlock[112:144])
-	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[144:146])
-	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[146:148])
-	b.NrConfigTx = uint8(encodedBlock[148])
-	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[149:151])
-	copy(b.SlashedAddress[:], encodedBlock[151:183])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[183:185])
+	copy(b.MerkleRoot[:], encodedBlock[81:113])
+	copy(b.Beneficiary[:], encodedBlock[113:145])
+	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[145:147])
+	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[147:149])
+	b.NrConfigTx = uint8(encodedBlock[149])
+	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
+	copy(b.SlashedAddress[:], encodedBlock[152:184])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[184:186])
 
-	index := 185
+	index := 186
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
@@ -311,10 +314,11 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 		return nil
 	}
 
-	copy(b.Hash[:], encodedHeader[0:32])
-	copy(b.PrevHash[:], encodedHeader[32:64])
-	b.NrConfigTx = uint8(encodedHeader[64])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[65:67])
+	b.Header = encodedHeader[0]
+	copy(b.Hash[:], encodedHeader[1:33])
+	copy(b.PrevHash[:], encodedHeader[33:65])
+	b.NrConfigTx = uint8(encodedHeader[65])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
 
 	index := MIN_BLOCKHEADER_SIZE
 
