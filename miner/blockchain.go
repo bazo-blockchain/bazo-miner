@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"sync"
 )
@@ -19,15 +20,18 @@ var (
 	slashingDict        map[[32]byte]SlashingProof
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
+	seedFile		 	string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool,) {
 	var err error
 	var hashedSeed [32]byte
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
+
+	seedFile = seedFileName
 
 	//Set up logger
 	logger = storage.InitLogger()
@@ -53,6 +57,21 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey) {
 	}
 
 	logger.Printf("Active config params:%v", activeParameters)
+
+	//We must first update the state before we can start mining. In order to make PoS we must know our balance in the state
+	if !isBootstrap{
+		payload := <-p2p.BlockIn
+		processBlock(payload)
+
+		logger.Println("############################start mining############################")
+
+		go incomingData()
+		mining(lastBlock)
+	}else{
+		go incomingData()
+		mining(initialBlock)
+	}
+
 
 	//Start to listen to network inputs (txs and blocks)
 	go incomingData()
@@ -96,17 +115,14 @@ func mining(initialBlock *protocol.Block) {
 func initRootKey() ([32]byte, error) {
 	address, addressHash := storage.GetInitRootPubKey()
 
-	//Create the key file
-	//file, _ := os.Create(storage.DEFAULT_KEY_FILE_NAME)
-	//_, _ = file.WriteString(storage.INITROOTKEY1 + "\n" + storage.INITROOTKEY2 + "\n" + storage.INITPRIVKEY+ "\n")
-
-	//Create and store an initial seed for the root account
-	seed := protocol.CreateRandomSeed()
+	var seed [32]byte
+	copy(seed[:], storage.INIT_ROOT_SEED[:])
 
 	//Create the hash of the seed which will be included in the transaction
 	hashedSeed := protocol.SerializeHashContent(seed)
 
-	err := storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+
+	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 	if err != nil {
 		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
 	}

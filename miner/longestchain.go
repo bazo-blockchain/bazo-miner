@@ -5,18 +5,20 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"time"
+	"errors"
+	"fmt"
 )
 
 //Function to give a list of blocks to rollback (in the right order) and a list of blocks to validate.
 //Covers both cases (if block belongs to the longest chain or not to the longest chain)
-func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToValidate []*protocol.Block) {
+func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToValidate []*protocol.Block, err error) {
 
 	//Fetch all blocks that are needed to validate
 	ancestor, newChain := getNewChain(newBlock)
 
 	//Common ancestor not found, discard block
 	if ancestor == nil {
-		return nil, nil
+		return nil, nil, errors.New("common ancestor not found")
 	}
 
 	//Count how many blocks there are on the currently active chain
@@ -33,10 +35,10 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 	//Compare current length with new chain length
 	if len(blocksToRollback) >= len(newChain) {
 		//Current chain length is longer or equal (our consensus protocol states that in this case we reject the block)
-		return nil, nil
+		return nil, nil, errors.New(fmt.Sprintf("block belongs to shorter or equally long chain (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
 	} else {
 		//New chain is longer, rollback and validate new chain
-		return blocksToRollback, newChain
+		return blocksToRollback, newChain, nil
 	}
 }
 

@@ -48,9 +48,9 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	accFrom := storage.State[tx.From]
 	accTo := storage.State[tx.To]
 
-	//Accounts non existant
+	//Accounts non existent
 	if accFrom == nil || accTo == nil {
-		logger.Printf("At least one account does not exist in the state.")
+		logger.Printf("Account non existent. From: %v\nTo: %v\n", accFrom, accTo)
 		return false
 	}
 

@@ -9,15 +9,22 @@ import (
 
 func main() {
 	logger := storage.InitLogger()
-	if len(os.Args) != 5 {
-		logger.Println("Usage: bazo-miner <dbname> <ipport> <validator> <multisig>")
+
+	if len(os.Args) != 6 {
+		logger.Println("Usage: bazo-miner <dbname> <ipport> <validator> <seedfile> <multisig>")
 		return
 	}
 
 	dbname := os.Args[1]
 	ipport := os.Args[2]
 	validator := os.Args[3]
-	multisig := os.Args[4]
+	seedFileName := os.Args[4]
+	multisig := os.Args[5]
+	isBootstrap := false
+
+	if os.Args[2] == ":8000"{
+		isBootstrap = true
+	}
 
 	storage.Init(dbname, ipport)
 	p2p.Init(ipport)
@@ -34,5 +41,5 @@ func main() {
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey)
+	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName, isBootstrap)
 }

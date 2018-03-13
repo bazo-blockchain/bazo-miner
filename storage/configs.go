@@ -26,4 +26,7 @@ const (
 	SEED_FILE_NAME = "seed.json"
 
 	DEFAULT_KEY_FILE_NAME = "root"
+
+	INIT_ROOT_SEED = "GfhHEtSNQO6JyAUcKPlrlWzUqFXo1EoB"
+
 )
