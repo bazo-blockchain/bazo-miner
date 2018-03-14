@@ -202,6 +202,11 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 		}
 	}
 
+	//Account has bool already set to the desired value
+	if b.StateCopy[tx.Account].IsStaking == tx.IsStaking{
+		return errors.New("Account has bool already set to the desired value.")
+	}
+
 	//Update state copy
 	accSender := b.StateCopy[tx.Account]
 	accSender.IsStaking = tx.IsStaking

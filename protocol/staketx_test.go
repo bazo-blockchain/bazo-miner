@@ -26,10 +26,14 @@ func TestStakeTxSerialization(t *testing.T) {
 		decodedTx = decodedTx.Decode(data)
 
 		//this is done by verify() which is outside protocol package, we're just testing serialization here
-		decodedTx.Fee = fee
-		decodedTx.Account = accAHash
-		decodedTx.IsStaking = isStaking
-		decodedTx.HashedSeed = hashedSeed
+		//decodedTx.Fee = fee
+		//decodedTx.Account = accAHash
+		//decodedTx.IsStaking = false
+		//decodedTx.HashedSeed = hashedSeed
+
+		if !reflect.DeepEqual(tx.Hash(), decodedTx.Hash()) {
+			t.Errorf("StakeTx Serialization failed (%v) vs. (%v)\n", tx, decodedTx)
+		}
 
 		if !reflect.DeepEqual(tx, decodedTx) {
 			t.Errorf("StakeTx Serialization failed (%v) vs. (%v)\n", tx, decodedTx)

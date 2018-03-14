@@ -13,7 +13,7 @@ func TestFundsTxSerialization(t *testing.T) {
 	accBHash := SerializeHashContent(accB.Address)
 	loopMax := int(rand.Uint32() % 10000)
 	for i := 0; i < loopMax; i++ {
-		tx, _ := ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA,  &PrivKeyA)
 		data := tx.Encode()
 		var decodedTx *FundsTx
 		decodedTx = decodedTx.Decode(data)
