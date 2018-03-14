@@ -16,7 +16,6 @@ func WriteOpenBlock(block *protocol.Block) (err error) {
 	return err
 }
 
-//TODO: What's the difference between write close WriteClosedBlock and WriteLastClosedBlock?
 func WriteClosedBlock(block *protocol.Block) (err error) {
 
 	err = db.Update(func(tx *bolt.Tx) error {
