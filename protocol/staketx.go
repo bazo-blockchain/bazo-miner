@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/binary"
@@ -24,7 +23,6 @@ type StakeTx struct {
 }
 
 func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, key *ecdsa.PrivateKey) (tx *StakeTx, err error) {
-
 	tx = new(StakeTx)
 
 	tx.Header = header
@@ -32,17 +30,21 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account 
 	tx.IsStaking = isStaking
 	tx.HashedSeed = hashedSeed
 	tx.Account = account
+
 	txHash := tx.Hash()
 
 	r, s, err := ecdsa.Sign(rand.Reader, key, txHash[:])
+	if err != nil {
+		return nil, err
+	}
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
-	return
+
+	return tx, nil
 }
 
 func (tx *StakeTx) Hash() (hash [32]byte) {
-
 	if tx == nil {
 		//is returning nil better?
 		return [32]byte{}
@@ -61,61 +63,66 @@ func (tx *StakeTx) Hash() (hash [32]byte) {
 		tx.HashedSeed,
 		tx.Account,
 	}
+
 	return SerializeHashContent(txHash)
 }
 
 //when we serialize the struct with binary.Write, unexported field get serialized as well, undesired
 //behavior. Therefore, writing own encoder/decoder
 func (tx *StakeTx) Encode() (encodedTx []byte) {
-
 	if tx == nil {
 		return nil
 	}
 
-	var buf bytes.Buffer
-	var feeBuf [8]byte
-	var isStakingBuf [1]byte
+	var fee [8]byte
+	var isStaking byte
 
-	//transfer integer values to byte arrays
-	binary.Write(&buf, binary.BigEndian, tx.Fee)
-	copy(feeBuf[:], buf.Bytes())
-	buf.Reset()
-	binary.Write(&buf, binary.BigEndian, tx.IsStaking)
-	copy(isStakingBuf[:], buf.Bytes())
-	//fmt.Println("StakingBuf: ", isStakingBuf)
-	buf.Reset()
+	binary.BigEndian.PutUint64(fee[:], tx.Fee)
 
-	//fmt.Println("\n\nENCODING Hashed Secret: ", tx.HashedSeed)
-	//fmt.Println("\n\nEnCODING Hashed PubKey: ", tx.Account)
+	if tx.IsStaking == true {
+		isStaking = 1
+	} else {
+		isStaking = 0
+	}
 
 	encodedTx = make([]byte, STAKETX_SIZE)
+
 	encodedTx[0] = tx.Header
-	copy(encodedTx[1:9], feeBuf[:])
-	copy(encodedTx[9:10], isStakingBuf[:])
+	copy(encodedTx[1:9], fee[:])
+	encodedTx[9] = isStaking
 	copy(encodedTx[10:42], tx.HashedSeed[:])
 	copy(encodedTx[42:74], tx.Account[:])
 	copy(encodedTx[74:138], tx.Sig[:])
-	//fmt.Println("encoded: ", encodedTx)
+
+	fmt.Printf("encode - isStaking: %x\n", encodedTx[9])
 
 	return encodedTx
 }
 
 func (*StakeTx) Decode(encodedTx []byte) (tx *StakeTx) {
+	tx = new(StakeTx)
 
 	if len(encodedTx) != STAKETX_SIZE {
 		return nil
 	}
 
-	tx = new(StakeTx)
-	tx.Header = encodedTx[0]
+	var isStakingAsByte byte
 
+	tx.Header = encodedTx[0]
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[1:9])
-	tx.IsStaking = encodedTx[9:10][0] != 0
+	isStakingAsByte = encodedTx[9]
 	copy(tx.HashedSeed[:], encodedTx[10:42])
 	copy(tx.Account[:], encodedTx[42:74])
 	copy(tx.Sig[:], encodedTx[74:138])
 
-	//fmt.Println("\n\nDECODING: ", encodedTx)
+	if isStakingAsByte == 0 {
+		tx.IsStaking = false
+	} else {
+		tx.IsStaking = true
+	}
+
+	fmt.Printf("decode - isStaking: %v\n", tx.IsStaking)
+
 	return tx
 }
 
