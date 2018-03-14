@@ -234,17 +234,12 @@ func finalizeBlock(block *protocol.Block) error {
 	validatorAccHash := validatorAcc.Hash()
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
-	//TODO beneficiary must be dynamic right?
-	//BENEFICIARY is a config parameter set in config.go
-	//beneficiary, _ := new(big.Int).SetString(storage.BENEFICIARY, 16)
-	//copy(block.Beneficiary[:], beneficiary.Bytes())
-
 	partialHash := block.HashBlock()
 
 	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
 
 	//get the current hash of the seed that is stored in my account
-	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, storage.SEED_FILE_NAME)
+	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
 	if err != nil {
 		return err
 	}
@@ -275,7 +270,7 @@ func finalizeBlock(block *protocol.Block) error {
 	//create the hash of the seed
 	newHashedSeed := protocol.SerializeHashContent(newSeed)
 
-	storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
+	storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
 	copy(block.HashedSeed[0:32], newHashedSeed[:])
 
 	return nil
@@ -294,7 +289,9 @@ func validateBlock(b *protocol.Block) error {
 	blockDataMap := make(map[[32]byte]blockData)
 
 	//Get the right branch, and a list of blocks to rollback (if necessary)
-	blocksToRollback, blocksToValidate := getBlockSequences(b)
+	blocksToRollback, blocksToValidate, err := getBlockSequences(b)
+
+	//logger.Println(blocksToValidate)
 
 	//Verify block time is dynamic and corresponds to system time at the time of retrieval.
 	//If we're syncing or far behind, we cannot do this dynamic check
@@ -306,42 +303,36 @@ func validateBlock(b *protocol.Block) error {
 		uptodate = true
 	}
 
-	if blocksToValidate == nil {
-		return errors.New("Common ancestor not found or new chain shorter than current one.")
+	if err != nil {
+		return err
 	}
 
 	//If not the whole chain of blocks is valid, we don't do state changes on any of them before
 	//making sure they're properly formed. This avoids the attack to create a fake long chain with
 	//only some blocks valid
-	for _, block := range blocksToValidate {
-		//Fetching payload data from the txs (if necessary, ask other miners)
-		accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
-
-		//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
-		//the proof will be stored in the global slashing dictionary
-		if block.Height > 0 {
-			seekSlashingProof(block)
-		}
-
-		if err != nil {
-			return err
-		}
-		blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-	}
 
 	//No rollback needed, just a new block to validate
 	if len(blocksToRollback) == 0 {
 		for _, block := range blocksToValidate {
+			//Fetching payload data from the txs (if necessary, ask other miners)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
+
+			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
+			//the proof will be stored in the global slashing dictionary
+			if block.Height > 0 {
+				seekSlashingProof(block)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
+
 			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
 				return err
 			}
 
-			//update hashedSeed of the validator
-			acc := storage.GetAccount(b.Beneficiary)
-			acc.HashedSeed = b.HashedSeed
-			acc.StakingBlockHeight = b.Height
-
-			logger.Printf("Validating block: %vState:\n%v", block, getState())
 			postValidation(blockDataMap[block.Hash])
 		}
 	} else {
@@ -352,9 +343,24 @@ func validateBlock(b *protocol.Block) error {
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
 		for _, block := range blocksToValidate {
+			//Fetching payload data from the txs (if necessary, ask other miners)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
+
+			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
+			//the proof will be stored in the global slashing dictionary
+			if block.Height > 0 {
+				seekSlashingProof(block)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
 			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
 				return err
 			}
+
 			logger.Printf("Validating block: %vState:\n%v", block, getState())
 			postValidation(blockDataMap[block.Hash])
 		}
@@ -454,8 +460,8 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 
 	//invalid if pos is too far in the future
 	now := time.Now()
-	if block.Timestamp > now.Unix()+int64(activeParameters.Accepted_time_diff) || block.Timestamp+int64(activeParameters.Accepted_time_diff) < now.Unix() {
-		return nil, nil, nil, nil, errors.New("The nonce is too far in the future. " + string(binary.BigEndian.Uint64(block.Nonce[:])) + " vs " + string(now.Unix()))
+	if block.Timestamp > now.Unix() + int64(activeParameters.Accepted_time_diff) {
+		return nil, nil, nil, nil, errors.New("The timestamp is too far in the future. " + string(block.Timestamp) + " vs " + string(now.Unix()))
 	}
 
 	//check for minimum waiting time
@@ -763,6 +769,10 @@ func stateValidation(data blockData) error {
 		return err
 	}
 
+	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil{
+		return err
+	}
+
 	return nil
 }
 
@@ -808,5 +818,7 @@ func postValidation(data blockData) {
 
 	if err := storage.WriteClosedBlock(data.block); err == nil {
 		logger.Printf("Closed block %x saved in DB\n", data.block.Hash[0:8])
+		logger.Print(data.block)
+		logger.Printf("\n%s", storage.GetState())
 	}
 }

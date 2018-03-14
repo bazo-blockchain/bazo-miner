@@ -198,7 +198,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 
 				if rootAcc.Balance < activeParameters.Staking_minimum+tx.Fee {
 					rootAcc.Balance = activeParameters.Staking_minimum + tx.Fee
-					fmt.Println("Toot balance increased to:", rootAcc.Balance)
+					fmt.Println("Root balance increased to:", rootAcc.Balance)
 				}
 			}
 		}
@@ -453,4 +453,14 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 	logger.Printf("%v blocks up to this date are validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
 
 	return initialBlock, nil
+}
+
+func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
+	acc := storage.GetAccount(beneficiary)
+	if err != nil{
+		return err
+	}
+	acc.StakingBlockHeight = height
+
+	return err
 }

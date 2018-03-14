@@ -46,22 +46,31 @@ type Block struct {
 	StakeTxData  [][32]byte
 }
 
-//TODO Block hashing for PoS changes
 //Just Hash() conflicts with struct field
 func (b *Block) HashBlock() (hash [32]byte) {
 
 	var buf bytes.Buffer
 
 	blockToHash := struct {
-		prevHash    [32]byte
-		timestamp   int64
-		merkleRoot  [32]byte
-		beneficiary [32]byte
+		prevHash    			[32]byte
+		timestamp   			int64
+		merkleRoot  			[32]byte
+		beneficiary 			[32]byte
+		hashedSeed  			[32]byte
+		seed					[32]byte
+		slashedAddress 			[32]byte
+		conflictingBlockHash1 	[32]byte
+		conflictingBlockHash2 	[32]byte
 	}{
 		b.PrevHash,
 		b.Timestamp,
 		b.MerkleRoot,
 		b.Beneficiary,
+		b.HashedSeed,
+		b.Seed,
+		b.SlashedAddress,
+		b.ConflictingBlockHash1,
+		b.ConflictingBlockHash2,
 	}
 
 	binary.Write(&buf, binary.BigEndian, blockToHash)
