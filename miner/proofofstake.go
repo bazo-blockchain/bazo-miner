@@ -95,7 +95,6 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 		//lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		//block has been validated
 		if prevHash != lastBlock.Hash {
-			logger.Println(prevHash, lastBlock.Hash)
 			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 		}
 

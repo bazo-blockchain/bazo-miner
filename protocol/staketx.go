@@ -94,8 +94,6 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 	copy(encodedTx[42:74], tx.Account[:])
 	copy(encodedTx[74:138], tx.Sig[:])
 
-	fmt.Printf("encode - isStaking: %x\n", encodedTx[9])
-
 	return encodedTx
 }
 
@@ -120,8 +118,6 @@ func (*StakeTx) Decode(encodedTx []byte) (tx *StakeTx) {
 	} else {
 		tx.IsStaking = true
 	}
-
-	fmt.Printf("decode - isStaking: %v\n", tx.IsStaking)
 
 	return tx
 }
