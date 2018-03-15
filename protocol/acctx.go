@@ -21,21 +21,25 @@ type AccTx struct {
 	Sig    [64]byte
 }
 
-func ConstrAccTx(header byte, fee uint64, rootPrivKey *ecdsa.PrivateKey) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
+func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
 	tx = new(AccTx)
 	tx.Header = header
 	tx.Fee = fee
 
 	var newAccAddressString string
 
-	//Check if string representation of account address is 128 long. Else there will be problems when doing REST calls.
-	for len(newAccAddressString) != 128 {
-		newAccAddress, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		newAccPub1, newAccPub2 := newAccAddress.PublicKey.X.Bytes(), newAccAddress.PublicKey.Y.Bytes()
-		copy(tx.PubKey[32-len(newAccPub1):32], newAccPub1)
-		copy(tx.PubKey[64-len(newAccPub2):], newAccPub2)
+	if address != [64]byte{} {
+		copy(tx.PubKey[:], address[:])
+	} else {
+		//Check if string representation of account address is 128 long. Else there will be problems when doing REST calls.
+		for len(newAccAddressString) != 128 {
+			newAccAddress, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			newAccPub1, newAccPub2 := newAccAddress.PublicKey.X.Bytes(), newAccAddress.PublicKey.Y.Bytes()
+			copy(tx.PubKey[32-len(newAccPub1):32], newAccPub1)
+			copy(tx.PubKey[64-len(newAccPub2):], newAccPub2)
 
-		newAccAddressString = newAccAddress.X.Text(16) + newAccAddress.Y.Text(16)
+			newAccAddressString = newAccAddress.X.Text(16) + newAccAddress.Y.Text(16)
+		}
 	}
 
 	var rootPublicKey [64]byte
