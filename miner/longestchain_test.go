@@ -25,7 +25,7 @@ func TestGetBlockSequences(t *testing.T) {
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
 
-	rollback, validate := getBlockSequences(b3)
+	rollback, validate, _ := getBlockSequences(b3)
 
 	if len(rollback) != 0 {
 		t.Error("Rollback shouldn't execute here\n")
@@ -58,7 +58,7 @@ func TestGetBlockSequences(t *testing.T) {
 	lastBlock = b2
 	//Blockchain now: genesis <- b <- b2
 	//New Blockchain of longer size: genesis <- c <- c2 <- c3
-	rollback, validate = getBlockSequences(c3)
+	rollback, validate, _ = getBlockSequences(c3)
 
 	//Rollback slice needs to include b2 and b (in that order)
 	if len(rollback) != 2 ||
@@ -112,7 +112,7 @@ func TestGetBlockSequences(t *testing.T) {
 
 	//Make sure that the new blockchain of equal length does not get activated
 	lastBlock = b3
-	rollback, validate = getBlockSequences(c3)
+	rollback, validate, _ = getBlockSequences(c3)
 	if rollback != nil || validate != nil {
 		t.Error("Did not properly detect longest chain\n")
 	}

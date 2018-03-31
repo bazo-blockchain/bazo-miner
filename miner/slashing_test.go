@@ -10,7 +10,7 @@ func TestSlashingCondition(t *testing.T) {
 
 	cleanAndPrepare()
 
-	myAcc, _ := storage.GetMyAccount("root")
+	myAcc := storage.GetRootAccount(rootHash)
 	initBalance := myAcc.Balance
 
 	forkBlock := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
