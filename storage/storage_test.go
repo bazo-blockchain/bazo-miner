@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"fmt"
 )
 
 //In-memory, k/v storage is tested with the test below
@@ -23,14 +24,15 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	loopMax := testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
 		WriteOpenTx(tx)
 		hashFundsSlice = append(hashFundsSlice, tx)
 	}
 
 	loopMax = testsize
-	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, &RootPrivKey)
+	nullAddress := [64]byte{}
+	for i := 0; i < 1000; i++ {
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey)
 		tx.Hash()
 		WriteOpenTx(tx)
 		hashAccSlice = append(hashAccSlice, tx)
@@ -66,8 +68,11 @@ func TestReadWriteDeleteTx(t *testing.T) {
 	opentxs := ReadAllOpenTxs()
 
 	//Comparing the total number of txs should be enough
-	if len(opentxs) != len(hashConfigSlice)+len(hashFundsSlice)+len(hashAccSlice) {
-		t.Error("ReadAllOpenTxs() returned an invalid list of transactions\n")
+	lenTotalTxs := len(hashConfigSlice) + len(hashFundsSlice) + len(hashAccSlice)
+	if len(opentxs) != lenTotalTxs{
+		errorMsg := fmt.Sprintf("ReadAllOpenTxs() returned an invalid list of transactions\n" +
+			" (open: %d, total %d)\n", len(opentxs), lenTotalTxs)
+		t.Error(errorMsg )
 	}
 
 	//Deleting open txs
