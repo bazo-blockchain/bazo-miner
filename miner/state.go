@@ -3,8 +3,8 @@ package miner
 import (
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/sfontanach/bazo-miner/protocol"
+	"github.com/sfontanach/bazo-miner/storage"
 	"strconv"
 )
 

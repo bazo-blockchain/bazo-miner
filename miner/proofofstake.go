@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/sfontanach/bazo-miner/protocol"
+	"github.com/sfontanach/bazo-miner/storage"
 	"golang.org/x/crypto/sha3"
 	"time"
 )

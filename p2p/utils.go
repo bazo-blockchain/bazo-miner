@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/sfontanach/bazo-miner/storage"
 	"net"
 	"time"
 )

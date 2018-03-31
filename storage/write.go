@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/sfontanach/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 )
 

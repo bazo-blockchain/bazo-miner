@@ -2,8 +2,8 @@ package miner
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/sfontanach/bazo-miner/protocol"
+	"github.com/sfontanach/bazo-miner/storage"
 	"math/rand"
 	"reflect"
 	"testing"

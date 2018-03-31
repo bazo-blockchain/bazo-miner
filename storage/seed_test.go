@@ -9,7 +9,7 @@ import (
 
 	"bytes"
 	"encoding/binary"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/sfontanach/bazo-miner/protocol"
 	"golang.org/x/crypto/sha3"
 )
 
