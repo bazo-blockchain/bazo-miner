@@ -14,8 +14,8 @@ func TestMain(m *testing.M) {
 
 	initLogger()
 
-	//Used for some tests, the bootstarp server is listening at 8000 at the same time
-	localConn = "127.0.0.1:9000"
+	//Used for some tests, the bootstrap server is listening at 8000 at the same time
+	Ipport = "127.0.0.1:9000"
 
 	BlockIn = make(chan []byte)
 	BlockOut = make(chan []byte)
