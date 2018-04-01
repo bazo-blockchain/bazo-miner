@@ -20,6 +20,7 @@ func TestBlock(t *testing.T) {
 	err := finalizeBlock(b)
 	if err != nil {
 		t.Errorf("Block finalization failed (%v)\n", err)
+		return
 	}
 
 	encodedBlock := b.Encode()

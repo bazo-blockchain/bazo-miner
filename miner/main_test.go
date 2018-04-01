@@ -32,6 +32,7 @@ const (
 	RootPriv = "277ed539f56122c25a6fc115d07d632b47e71416c9aebf1beb54ee704f11842c"
 )
 
+//Validator account (multisig)
 var (
 	VerPub1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
 	VerPub2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
@@ -40,19 +41,20 @@ var (
 
 //Globally accessible values for all other tests, (root)account-related
 var (
-	accA, accB, minerAcc             *protocol.Account
+	accA, accB, minerAcc,
+	validatorAcc                     *protocol.Account
 	PrivKeyA, PrivKeyB, MinerPrivKey ecdsa.PrivateKey
 
 	PubKeyA, PubKeyB, multiSignTest  ecdsa.PublicKey
 	RootPrivKey, multiSignPrivKeyA   ecdsa.PrivateKey
 	GenesisBlock                     *protocol.Block
-	rootHash 						 [32]byte
+	rootHash                         [32]byte
 )
 
 //Create some accounts that are used by the tests
 func addTestingAccounts() {
 
-	accA, accB, minerAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account)
+	accA, accB, minerAcc, validatorAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account), new(protocol.Account)
 
 	puba1, _ := new(big.Int).SetString(PubA1, 16)
 	puba2, _ := new(big.Int).SetString(PubA2, 16)
@@ -89,7 +91,7 @@ func addTestingAccounts() {
 	copy(accB.Address[32:64], PrivKeyB.PublicKey.Y.Bytes())
 	hashB := protocol.SerializeHashContent(accB.Address)
 
-	// Another pubkey to simulate multisig
+	// Another pubkey to simulate multisig (Validator)
 	multiSignTest, _ = storage.GetPubKeyFromString(VerPub1, VerPub2)
 
 	multisigPubKey = &multiSignTest
@@ -98,6 +100,19 @@ func addTestingAccounts() {
 		multiSignTest,
 		multisignpriv,
 	}
+	copy(validatorAcc.Address[0:32], multiSignPrivKeyA.PublicKey.X.Bytes())
+	copy(validatorAcc.Address[32:64], multiSignPrivKeyA.PublicKey.Y.Bytes())
+	copy(validatorAccAddress[0:32], multiSignPrivKeyA.PublicKey.X.Bytes())
+	copy(validatorAccAddress[32:64], multiSignPrivKeyA.PublicKey.Y.Bytes())
+	validatorHash := protocol.SerializeHashContent(validatorAcc.Address)
+	storage.State[validatorHash] = validatorAcc
+	//create and store an initial seed for the validator account
+	seed := protocol.CreateRandomSeed()
+	hashedSeed := protocol.SerializeHashContent(seed)
+	_ = storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	validatorAcc.HashedSeed = hashedSeed
+	validatorAcc.Balance = 100000
+	validatorAcc.IsStaking = true
 
 	//just to bootstrap
 	storage.State[hashA] = accA
@@ -203,6 +218,7 @@ func cleanAndPrepare() {
 	storage.WriteClosedBlock(GenesisBlock)
 	storage.WriteLastClosedBlock(GenesisBlock)
 
+	seedFile = "seed.json"
 	addTestingAccounts()
 	addRootAccounts()
 
