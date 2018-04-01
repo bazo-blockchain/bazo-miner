@@ -17,8 +17,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	for cnt := 0; cnt < testsize; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, nil)
-		tx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accBHash, accAHash, &PrivKeyB, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		tx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA)
 
 		if verifyFundsTx(tx) {
 			storage.WriteOpenTx(tx)
