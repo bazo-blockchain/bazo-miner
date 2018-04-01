@@ -223,6 +223,7 @@ func cleanAndPrepare() {
 	}
 
 	seedFile = "seed.json"
+	activeParameters.num_included_prev_seeds = 0
 	addTestingAccounts()
 	addRootAccounts()
 

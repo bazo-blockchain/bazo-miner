@@ -23,7 +23,10 @@ func TestGetBlockSequences(t *testing.T) {
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 	createBlockWithTxs(b3)
-	finalizeBlock(b3)
+	if err := finalizeBlock(b3); err != nil {
+		t.Error(err)
+		return
+	}
 
 	rollback, validate, _ := getBlockSequences(b3)
 
@@ -39,14 +42,20 @@ func TestGetBlockSequences(t *testing.T) {
 	lastBlock = storage.ReadClosedBlock([32]byte{})
 	c := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(c)
-	finalizeBlock(c)
+	if err := finalizeBlock(c); err != nil {
+		t.Error(err)
+		return
+	}
 	storage.WriteOpenBlock(c)
 
 	//PoW needs lastBlock, have to set it manually
 	lastBlock = c
 	c2 := newBlock(c.Hash, [32]byte{}, [32]byte{}, c.Height+1)
 	createBlockWithTxs(c2)
-	finalizeBlock(c2)
+	if err := finalizeBlock(c2); err != nil {
+		t.Error(err)
+		return
+	}
 	storage.WriteOpenBlock(c2)
 
 	//PoW needs lastBlock, have to set it manually
