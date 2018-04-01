@@ -150,7 +150,7 @@ func addRootAccounts() {
 	copy(pubKey[32-len(pub1.Bytes()):32], pub1.Bytes())
 	copy(pubKey[64-len(pub2.Bytes()):], pub2.Bytes())
 
-	rootHash := protocol.SerializeHashContent(pubKey)
+	rootHash = protocol.SerializeHashContent(pubKey)
 
 	rootAcc := protocol.Account{Address: pubKey}
 
@@ -224,6 +224,8 @@ func cleanAndPrepare() {
 
 	seedFile = "seed.json"
 	activeParameters.num_included_prev_seeds = 0
+	activeParameters.Slash_reward = 1
+	activeParameters.Block_reward = 1
 	addTestingAccounts()
 	addRootAccounts()
 
