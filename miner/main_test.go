@@ -215,8 +215,12 @@ func cleanAndPrepare() {
 	GenesisBlock.Seed = genesisSeedSlice
 
 	collectStatistics(GenesisBlock)
-	storage.WriteClosedBlock(GenesisBlock)
-	storage.WriteLastClosedBlock(GenesisBlock)
+	if err := storage.WriteClosedBlock(GenesisBlock); err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	if err := storage.WriteLastClosedBlock(GenesisBlock); err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
 
 	seedFile = "seed.json"
 	addTestingAccounts()
