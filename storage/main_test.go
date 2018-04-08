@@ -3,7 +3,7 @@ package storage
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"github.com/sfontanach/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"io/ioutil"
 	"log"
 	"math/big"

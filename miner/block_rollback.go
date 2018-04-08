@@ -2,8 +2,8 @@ package miner
 
 import (
 	"errors"
-	"github.com/sfontanach/bazo-miner/protocol"
-	"github.com/sfontanach/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Already validated block but not part of the current longest chain
