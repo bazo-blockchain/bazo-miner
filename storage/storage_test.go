@@ -23,14 +23,14 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	loopMax := testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
 		WriteOpenTx(tx)
 		hashFundsSlice = append(hashFundsSlice, tx)
 	}
 
 	loopMax = testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, accA.Address, &RootPrivKey)
 		tx.Hash()
 		WriteOpenTx(tx)
 		hashAccSlice = append(hashAccSlice, tx)
@@ -66,7 +66,8 @@ func TestReadWriteDeleteTx(t *testing.T) {
 	opentxs := ReadAllOpenTxs()
 
 	//Comparing the total number of txs should be enough
-	if len(opentxs) != len(hashConfigSlice)+len(hashFundsSlice)+len(hashAccSlice) {
+	totaltxs := len(hashConfigSlice)+len(hashFundsSlice)+len(hashAccSlice)
+	if len(opentxs) != totaltxs {
 		t.Error("ReadAllOpenTxs() returned an invalid list of transactions\n")
 	}
 
