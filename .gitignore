@@ -18,3 +18,11 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+
+# Test files
+miner/root
+miner/seed.json
+miner/test.db
+protocol/testseed
+storage/seeds_test.json
