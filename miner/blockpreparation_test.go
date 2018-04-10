@@ -17,8 +17,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	for cnt := 0; cnt < testsize; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA)
-		tx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accBHash, accAHash, &PrivKeyB)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		tx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA)
 
 		if verifyFundsTx(tx) {
 			storage.WriteOpenTx(tx)
@@ -30,8 +30,9 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	}
 
 	//Add other tx types as well to make the test more challenging
+	nullAddress := [64]byte{}
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%100+1, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%100+1, nullAddress, &RootPrivKey)
 		if verifyAccTx(tx) {
 			storage.WriteOpenTx(tx)
 		}

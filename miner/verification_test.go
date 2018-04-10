@@ -14,7 +14,7 @@ func TestFundsTxVerification(t *testing.T) {
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
 		if verifyFundsTx(tx) == false {
 			t.Errorf("Tx could not be verified: \n%v", tx)
 		}
@@ -25,9 +25,10 @@ func TestAccTx(t *testing.T) {
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
 	//Creating some root-signed new accounts
+	nullAccount := [64]byte{1}
 	loopMax := int(rand.Uint64() % 1000)
 	for i := 0; i <= loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAccount, &RootPrivKey)
 		if verifyAccTx(tx) == false {
 			t.Errorf("AccTx could not be verified: %v\n", tx)
 		}

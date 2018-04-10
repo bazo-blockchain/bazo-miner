@@ -25,7 +25,6 @@ type peersStruct struct {
 }
 
 func (p *peer) getIPPort() string {
-
 	ip := strings.Split(p.conn.RemoteAddr().String(), ":")
 	//Cut off original port
 	port := p.listenerPort

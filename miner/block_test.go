@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"fmt"
 )
 
 //Tests block adding, verification, serialization and deserialization
@@ -20,6 +21,7 @@ func TestBlock(t *testing.T) {
 	err := finalizeBlock(b)
 	if err != nil {
 		t.Errorf("Block finalization failed (%v)\n", err)
+		return
 	}
 
 	encodedBlock := b.Encode()
@@ -165,7 +167,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
 		if err := addTx(b, tx); err == nil {
 			//Might  be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
@@ -173,26 +175,33 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 			}
 			hashFundsSlice = append(hashFundsSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+		} else {
+			fmt.Print(err)
 		}
 	}
 
+	nullAddress := [64]byte{}
 	loopMax = int(rand.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey)
 		if err := addTx(b, tx); err == nil {
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 				continue
 			}
 			hashAccSlice = append(hashAccSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+		} else {
+			fmt.Print(err)
 		}
 	}
 
 	//NrConfigTx is saved in a uint8, so testsize shouldn't be larger than 255
 	loopMax = int(rand.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%10+1), rand.Uint64()%2342873423, rand.Uint64()%1000+1, uint8(cnt), &RootPrivKey)
-
+		tx, err := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%10+1), rand.Uint64()%2342873423, rand.Uint64()%1000+1, uint8(cnt), &RootPrivKey)
+		if err != nil {
+			fmt.Print(err)
+		}
 		if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 			continue
 		}
@@ -205,6 +214,8 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 
 			hashConfigSlice = append(hashConfigSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+		} else {
+			fmt.Print(err)
 		}
 	}
 
@@ -219,6 +230,7 @@ func TestReadLastClosedBlock(t *testing.T) {
 
 	if !reflect.DeepEqual(lastClosedBlock, GenesisBlock) {
 		t.Errorf("Genesis Block is not read as a closed block:\n%v\n%v", lastClosedBlock, GenesisBlock)
+		return
 	}
 
 	var lastClosedBlocksAfterGenesis []*protocol.Block

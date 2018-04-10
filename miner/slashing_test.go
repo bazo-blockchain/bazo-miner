@@ -10,7 +10,7 @@ func TestSlashingCondition(t *testing.T) {
 
 	cleanAndPrepare()
 
-	myAcc, _ := storage.GetMyAccount("root")
+	myAcc := storage.GetRootAccount(rootHash)
 	initBalance := myAcc.Balance
 
 	forkBlock := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
@@ -70,7 +70,8 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	//Check whether the slashing reward is added after a slashing proof is provided
-	if !reflect.DeepEqual(initBalance+4*activeParameters.Block_reward+activeParameters.Slash_reward-activeParameters.Staking_minimum, myAcc.Balance) {
-		t.Error("Slashing reward is not properly added.", initBalance, myAcc.Balance)
+	expectedBalance := initBalance+4*activeParameters.Block_reward+activeParameters.Slash_reward-activeParameters.Staking_minimum
+	if !reflect.DeepEqual(expectedBalance, myAcc.Balance) {
+		t.Error("Slashing reward is not properly added.", initBalance, myAcc.Balance, expectedBalance)
 	}
 }

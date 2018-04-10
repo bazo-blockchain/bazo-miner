@@ -312,6 +312,8 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		index += HASH_LEN
 	}
 
+	b.StateCopy = make(map[[32]byte]*Account)
+
 	return b
 }
 
