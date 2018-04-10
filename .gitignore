@@ -1,7 +1,7 @@
 # MacOS
 .DS_store
 
-#Intellij-Project files
+# Intellij-Project files
 .idea
 
 # Binaries for programs and plugins

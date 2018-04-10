@@ -5,7 +5,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"fmt"
 )
 
 //The reason we use an additional listener port is because the port the miner connected to this peer
@@ -26,8 +25,6 @@ type peersStruct struct {
 }
 
 func (p *peer) getIPPort() string {
-	fmt.Print(p == nil)
-	fmt.Print(p.conn.RemoteAddr())
 	ip := strings.Split(p.conn.RemoteAddr().String(), ":")
 	//Cut off original port
 	port := p.listenerPort
