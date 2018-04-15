@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 	multisig := os.Args[5]
 	isBootstrap := false
 
-	if os.Args[2] == ":8000"{
+	if strings.HasSuffix(os.Args[2], storage.BOOTSTRAP_SERVER_PORT){
 		isBootstrap = true
 	}
 
