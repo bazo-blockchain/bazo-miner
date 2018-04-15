@@ -71,11 +71,6 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 		go incomingData()
 		mining(initialBlock)
 	}
-
-
-	//Start to listen to network inputs (txs and blocks)
-	go incomingData()
-	mining(initialBlock)
 }
 
 //Mining is a constant process, trying to come up with a successful PoW
