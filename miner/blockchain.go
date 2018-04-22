@@ -28,24 +28,15 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 	var err error
 	var hashedSeed [32]byte
 
-	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
-	multisigPubKey = multisig
-
-	seedFile = seedFileName
-
 	//Set up logger
 	logger = storage.InitLogger()
 
-	//Initialize root key
-	//the hashedSeed is necessary since it must be included in the initial block
-	hashedSeed, err = initRootKey()
-	if err != nil {
-		logger.Printf("Could not create a root account.\n")
-	}
-
+	// Initialise variables
+	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
+	multisigPubKey = multisig
+	seedFile = seedFileName
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
-
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
@@ -68,6 +59,19 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 		go incomingData()
 		mining(lastBlock)
 	}else{
+		//Initialize root key
+		//the hashedSeed is necessary since it must be included in the initial block
+		if hashedSeed, err = initRootKey(); err != nil {
+			logger.Printf("Could not create a root account.\n")
+			return
+		}
+		validatorAccount := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+		if validatorAccount == nil {
+			fmt.Printf("Error: Validator address not found in state!\n" +
+				"This means that you are trying to bootstrap with a key that is not part of the state.\n" +
+				"Validator address expected: %x\n", validatorAccAddress)
+			return
+		}
 		go incomingData()
 		mining(initialBlock)
 	}
@@ -116,14 +120,17 @@ func initRootKey() ([32]byte, error) {
 	//Create the hash of the seed which will be included in the transaction
 	hashedSeed := protocol.SerializeHashContent(seed)
 
+	newSeed := storage.SeedJson{
+		HashedSeed: fmt.Sprintf("%x", string(hashedSeed[:])),
+		Seed: string(seed[:])}
 
-	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
-	if err != nil {
+	if err := storage.AppendNewSeed(seedFile, newSeed); err != nil {
 		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
 	}
 
 	//Balance must be greater staking minimum
 	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed)
+	//Add root key to the state
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 
