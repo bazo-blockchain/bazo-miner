@@ -22,7 +22,8 @@
 
 # Test files
 miner/root
-miner/seed.json
+**/test_seed.json
+**/test_root
 miner/test.db
 protocol/testseed
 storage/seeds_test.json
