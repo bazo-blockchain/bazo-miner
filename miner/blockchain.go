@@ -25,8 +25,8 @@ var (
 
 //Miner entry point
 func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool,) {
-	var err error
 	var hashedSeed [32]byte
+	var blockToMine *protocol.Block
 
 	//Set up logger
 	logger = storage.InitLogger()
@@ -40,25 +40,18 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	// Get the last closed block from DB or create genesis
-	initialBlock, err := SetUpInitialState(hashedSeed)
-	if err != nil {
-		logger.Printf("Could not set up initial state: %v.\n", err)
-		return
-	}
-
 	logger.Printf("Active config params:%v", activeParameters)
 
-	//We must first update the state before we can start mining. In order to make PoS we must know our balance in the state
-	if !isBootstrap{
-		payload := <-p2p.BlockIn
-		processBlock(payload)
-
-		logger.Println("############################start mining############################")
-
-		go incomingData()
-		mining(lastBlock)
-	}else{
+	//We must first update the state before we can start mining.
+	// In order to make PoS we must know our balance in the state
+	if isBootstrap {
+		// Get the last closed block from DB or create genesis
+		initialBlock, err := SetUpInitialState(hashedSeed)
+		blockToMine = initialBlock
+		if err != nil {
+			logger.Printf("Could not set up initial state: %v.\n", err)
+			return
+		}
 		//Initialize root key
 		//the hashedSeed is necessary since it must be included in the initial block
 		if hashedSeed, err = initRootKey(); err != nil {
@@ -67,14 +60,22 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 		}
 		validatorAccount := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
 		if validatorAccount == nil {
-			fmt.Printf("Error: Validator address not found in state!\n" +
-				"This means that you are trying to bootstrap with a key that is not part of the state.\n" +
+			fmt.Printf("Error: Validator address not found in state!\n"+
+				"This means that you are trying to bootstrap with a key that is not part of the state.\n"+
 				"Validator address expected: %x\n", validatorAccAddress)
 			return
 		}
-		go incomingData()
-		mining(initialBlock)
+	} else {
+		payload := <-p2p.BlockIn
+		processBlock(payload)
+		blockToMine = lastBlock
+		logger.Println("############################start mining############################")
 	}
+
+	// Listen for incoming blocks
+	go incomingData()
+	// Start the mining
+	mining(blockToMine)
 }
 
 //Mining is a constant process, trying to come up with a successful PoW
