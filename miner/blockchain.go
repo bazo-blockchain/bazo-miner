@@ -88,10 +88,8 @@ func mining(initialBlock *protocol.Block) {
 			fmt.Printf("%v\n", err)
 		} else {
 			fmt.Println("Block mined")
-		}
-		//else a block was received meanwhile that was added to the chain, all the effort was in vain :(
-		//wait for lock here only
-		if err == nil {
+			//else a block was received meanwhile that was added to the chain, all the effort was in vain :(
+			//wait for lock here only
 			broadcastBlock(currentBlock)
 			err := validateBlock(currentBlock)
 			if err != nil {
