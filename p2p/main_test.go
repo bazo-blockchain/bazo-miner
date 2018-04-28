@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	go receiveBlockFromMiner()
 
 	//Bootstrap server
-	go listener("127.0.0.1:8000")
+	go listener(MINER_IPPORT)
 
 	os.Exit(m.Run())
 }

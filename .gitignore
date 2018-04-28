@@ -21,8 +21,8 @@
 
 
 # Test files
-miner/root
-miner/seed.json
-miner/test.db
-protocol/testseed
+**/test_seed.json
+**/test_root
+**/test.db
+**/testseed
 storage/seeds_test.json

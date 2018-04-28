@@ -15,6 +15,13 @@ import (
 	"testing"
 )
 
+const (
+	TestDBFileName		= "test.db"
+	TestIpPort     		= "127.0.0.1:8000"
+	TestSeedFileName 	= "test_seed.json"
+	TestKeyFileName 	= "test_root"
+)
+
 //Some user accounts for testing
 const (
 	PubA1 = "c2be9abbeaec39a066c2a09cee23bb9ab2a0b88f2880b1e785b4d317adf0dc7c"
@@ -109,7 +116,7 @@ func addTestingAccounts() {
 	//create and store an initial seed for the validator account
 	seed := protocol.CreateRandomSeed()
 	hashedSeed := protocol.SerializeHashContent(seed)
-	_ = storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	_ = storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 	validatorAcc.HashedSeed = hashedSeed
 	validatorAcc.Balance = 100000
 	validatorAcc.IsStaking = true
@@ -155,7 +162,7 @@ func addRootAccounts() {
 	rootAcc := protocol.Account{Address: pubKey}
 
 	//create root file
-	file, _ := os.Create(storage.DEFAULT_KEY_FILE_NAME)
+	file, _ := os.Create(TestKeyFileName)
 	_, _ = file.WriteString(RootPub1 + "\n")
 	_, _ = file.WriteString(RootPub2 + "\n")
 	_, _ = file.WriteString(RootPriv + "\n")
@@ -166,7 +173,7 @@ func addRootAccounts() {
 	//create and store an initial seed for the root account
 	seed := protocol.CreateRandomSeed()
 	hashedSeed = protocol.SerializeHashContent(seed)
-	_ = storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	_ = storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 	rootAcc.HashedSeed = hashedSeed
 
@@ -222,7 +229,7 @@ func cleanAndPrepare() {
 		fmt.Printf("Error: %v\n", err)
 	}
 
-	seedFile = "seed.json"
+	seedFile = TestSeedFileName
 	activeParameters.num_included_prev_seeds = 0
 	activeParameters.Slash_reward = 1
 	activeParameters.Block_reward = 1
@@ -238,15 +245,18 @@ func cleanAndPrepare() {
 }
 
 func TestMain(m *testing.M) {
-	storage.Init("test.db" , "127.0.0.1:8000")
-	p2p.Init("127.0.0.1:8000")
+	storage.Init(TestDBFileName, TestIpPort)
+	p2p.Init(TestIpPort)
 
 	addTestingAccounts()
 	addRootAccounts()
 	//We don't want logging msgs when testing, we have designated messages
 	logger = log.New(nil, "", 0)
 	logger.SetOutput(ioutil.Discard)
-	os.Exit(m.Run())
+	retCode := m.Run()
 
+	//Teardown
 	storage.TearDown()
+	os.Remove(TestDBFileName)
+	os.Exit(retCode)
 }

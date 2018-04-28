@@ -21,11 +21,7 @@ func main() {
 	validator := os.Args[3]
 	seedFileName := os.Args[4]
 	multisig := os.Args[5]
-	isBootstrap := false
-
-	if strings.HasSuffix(os.Args[2], storage.BOOTSTRAP_SERVER_PORT){
-		isBootstrap = true
-	}
+	isBootstrap := strings.HasSuffix(ipport, storage.BOOTSTRAP_SERVER_PORT)
 
 	storage.Init(dbname, ipport)
 	p2p.Init(ipport)
