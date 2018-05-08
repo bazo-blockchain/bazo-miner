@@ -1,13 +1,14 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
-	"fmt"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Tests block adding, verification, serialization and deserialization
@@ -183,7 +184,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	nullAddress := [64]byte{}
 	loopMax = int(rand.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey, nil, nil)
 		if err := addTx(b, tx); err == nil {
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 				continue

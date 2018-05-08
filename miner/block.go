@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"golang.org/x/crypto/sha3"
-	"strconv"
-	"time"
 )
 
 //Datastructure to fetch the payload of all transactions, needed for state validation
@@ -102,6 +103,7 @@ func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
 	}
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions)
+	//fmt.Println(tx.Hash())
 	b.AccTxData = append(b.AccTxData, tx.Hash())
 	logger.Printf("Added tx to the AccTxData slice: %v", *tx)
 	return nil
@@ -203,7 +205,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	}
 
 	//Account has bool already set to the desired value
-	if b.StateCopy[tx.Account].IsStaking == tx.IsStaking{
+	if b.StateCopy[tx.Account].IsStaking == tx.IsStaking {
 		return errors.New("Account has bool already set to the desired value.")
 	}
 
@@ -465,7 +467,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 
 	//invalid if pos is too far in the future
 	now := time.Now()
-	if block.Timestamp > now.Unix() + int64(activeParameters.Accepted_time_diff) {
+	if block.Timestamp > now.Unix()+int64(activeParameters.Accepted_time_diff) {
 		return nil, nil, nil, nil, errors.New("The timestamp is too far in the future. " + string(block.Timestamp) + " vs " + string(now.Unix()))
 	}
 
@@ -774,7 +776,7 @@ func stateValidation(data blockData) error {
 		return err
 	}
 
-	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil{
+	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil {
 		return err
 	}
 

@@ -3,10 +3,11 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
-	"golang.org/x/crypto/sha3"
 	"math"
 	"math/rand"
 	"time"
+
+	"golang.org/x/crypto/sha3"
 )
 
 //Serializes the input in big endian and returns the sha3 hash function applied on ths input

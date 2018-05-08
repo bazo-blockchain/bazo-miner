@@ -1,10 +1,11 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"reflect"
 	"testing"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Tests whether state is the same before validation and after rollback of a block
@@ -183,7 +184,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 // resetStakingBlockHeight sets the StackingBlockHeight of all accounts to 0.
 // This is needed so that the other fields can get tested.
 // TODO Remove this function if rollback of StakingBlockHeight gets implemented.
-func resetStakingBlockHeight(accounts map[[64]byte]protocol.Account) (map[[64]byte]protocol.Account) {
+func resetStakingBlockHeight(accounts map[[64]byte]protocol.Account) map[[64]byte]protocol.Account {
 	accountsNoStakingBlockHeight := make(map[[64]byte]protocol.Account)
 	for hash, acc := range accounts {
 		acc.StakingBlockHeight = 0

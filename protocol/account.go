@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strconv"
 )
 
@@ -12,12 +13,14 @@ const (
 )
 
 type Account struct {
-	Address            [64]byte // 64 Byte
-	Balance            uint64   // 8 Byte
-	TxCnt              uint32   // 4 Byte
-	IsStaking          bool     // 1 Byte
-	HashedSeed         [32]byte // 32 Byte
-	StakingBlockHeight uint32   // 4 Byte
+	Address            [64]byte  // 64 Byte
+	Balance            uint64    // 8 Byte
+	TxCnt              uint32    // 4 Byte
+	IsStaking          bool      // 1 Byte
+	HashedSeed         [32]byte  // 32 Byte
+	StakingBlockHeight uint32    // 4 Byte
+	Contract           []byte    // Arbitrary length
+	ContractVariables  []big.Int // Arbitrary length
 }
 
 func NewAccount(address [64]byte, balance uint64, isStaking bool, hashedSeed [32]byte) Account {
@@ -28,6 +31,8 @@ func NewAccount(address [64]byte, balance uint64, isStaking bool, hashedSeed [32
 		isStaking,
 		hashedSeed,
 		0,
+		[]byte{},
+		[]big.Int{},
 	}
 
 	return newAcc

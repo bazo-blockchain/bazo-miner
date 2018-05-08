@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
 	"github.com/willf/bloom"
 	"golang.org/x/crypto/sha3"
 )
@@ -52,15 +53,15 @@ func (b *Block) HashBlock() (hash [32]byte) {
 	var buf bytes.Buffer
 
 	blockToHash := struct {
-		prevHash    			[32]byte
-		timestamp   			int64
-		merkleRoot  			[32]byte
-		beneficiary 			[32]byte
-		hashedSeed  			[32]byte
-		seed					[32]byte
-		slashedAddress 			[32]byte
-		conflictingBlockHash1 	[32]byte
-		conflictingBlockHash2 	[32]byte
+		prevHash              [32]byte
+		timestamp             int64
+		merkleRoot            [32]byte
+		beneficiary           [32]byte
+		hashedSeed            [32]byte
+		seed                  [32]byte
+		slashedAddress        [32]byte
+		conflictingBlockHash1 [32]byte
+		conflictingBlockHash2 [32]byte
 	}{
 		b.PrevHash,
 		b.Timestamp,

@@ -5,8 +5,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
+	"math/big"
 )
 
 const (
@@ -14,17 +15,21 @@ const (
 )
 
 type AccTx struct {
-	Header byte
-	Issuer [32]byte
-	Fee    uint64
-	PubKey [64]byte
-	Sig    [64]byte
+	Header            byte
+	Issuer            [32]byte
+	Fee               uint64
+	PubKey            [64]byte
+	Sig               [64]byte
+	Contract          []byte
+	ContractVariables []big.Int
 }
 
-func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
+func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables []big.Int) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
 	tx = new(AccTx)
 	tx.Header = header
 	tx.Fee = fee
+	tx.Contract = contract
+	tx.ContractVariables = contractVariables
 
 	var newAccAddressString string
 
@@ -85,44 +90,37 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 
 func (tx *AccTx) Encode() (encodedTx []byte) {
 
-	if tx == nil {
-		return nil
+	// Encode
+	encodeData := AccTx{
+		tx.Header,
+		tx.Issuer,
+		tx.Fee,
+		tx.PubKey,
+		tx.Sig,
+		tx.Contract,
+		tx.ContractVariables,
 	}
 
-	var buf bytes.Buffer
-	var feeBuf [8]byte
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encodeData)
 
-	binary.Write(&buf, binary.BigEndian, tx.Fee)
-	copy(feeBuf[:], buf.Bytes())
-
-	encodedTx = make([]byte, ACCTX_SIZE)
-	encodedTx[0] = tx.Header
-	copy(encodedTx[1:33], tx.Issuer[:])
-	copy(encodedTx[33:41], feeBuf[:])
-	copy(encodedTx[41:105], tx.PubKey[:])
-	copy(encodedTx[105:169], tx.Sig[:])
-
-	return encodedTx
+	return buffer.Bytes()
 }
 
-func (*AccTx) Decode(encodedTx []byte) (tx *AccTx) {
+func (*AccTx) Decode(encodedTx []byte) *AccTx {
+	var decoded AccTx
 
-	if len(encodedTx) != ACCTX_SIZE {
-		return nil
-	}
+	buffer := bytes.NewBuffer(encodedTx)
+	decoder := gob.NewDecoder(buffer)
 
-	tx = new(AccTx)
-	tx.Header = encodedTx[0]
-	copy(tx.Issuer[:], encodedTx[1:33])
-	tx.Fee = binary.BigEndian.Uint64(encodedTx[33:41])
-	copy(tx.PubKey[:], encodedTx[41:105])
-	copy(tx.Sig[:], encodedTx[105:169])
+	decoder.Decode(&decoded)
 
-	return tx
+	return &decoded
 }
 
 func (tx *AccTx) TxFee() uint64 { return tx.Fee }
-func (tx *AccTx) Size() uint64  { return ACCTX_SIZE }
+
+func (tx *AccTx) Size() uint64 { return ACCTX_SIZE }
 
 func (tx AccTx) String() string {
 	return fmt.Sprintf(
@@ -130,10 +128,14 @@ func (tx AccTx) String() string {
 			"Issuer: %x\n"+
 			"Fee: %v\n"+
 			"PubKey: %x\n"+
-			"Sig: %x\n",
+			"Sig: %x\n"+
+			"Contract: %v\n"+
+			"ContractVariables: %v\n",
 		tx.Issuer[0:8],
 		tx.Fee,
 		tx.PubKey[0:8],
 		tx.Sig[0:8],
+		tx.Contract[:],
+		tx.ContractVariables[:],
 	)
 }

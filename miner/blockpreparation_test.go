@@ -1,11 +1,12 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func TestPrepareAndSortTxs(t *testing.T) {
@@ -32,7 +33,7 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	//Add other tx types as well to make the test more challenging
 	nullAddress := [64]byte{}
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%100+1, nullAddress, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%100+1, nullAddress, &RootPrivKey, nil, nil)
 		if verifyAccTx(tx) {
 			storage.WriteOpenTx(tx)
 		}

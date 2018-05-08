@@ -1,10 +1,11 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func TestFundsTxVerification(t *testing.T) {
@@ -28,7 +29,7 @@ func TestAccTx(t *testing.T) {
 	nullAccount := [64]byte{1}
 	loopMax := int(rand.Uint64() % 1000)
 	for i := 0; i <= loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAccount, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAccount, &RootPrivKey, nil, nil)
 		if verifyAccTx(tx) == false {
 			t.Errorf("AccTx could not be verified: %v\n", tx)
 		}
