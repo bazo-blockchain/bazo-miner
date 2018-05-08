@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-//Serializes the input in big endian and returns the sha3 hash function applied on ths input
+//Serializes the input and returns the sha3 hash function applied on ths input
 func SerializeHashContent(data interface{}) (hash [32]byte) {
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(data)

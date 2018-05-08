@@ -15,7 +15,7 @@ func TestFundsTxVerification(t *testing.T) {
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, nil)
 		if verifyFundsTx(tx) == false {
 			t.Errorf("Tx could not be verified: \n%v", tx)
 		}

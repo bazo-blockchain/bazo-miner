@@ -93,7 +93,6 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 }
 
 func (tx *AccTx) Encode() (encodedTx []byte) {
-
 	// Encode
 	encodeData := AccTx{
 		tx.Header,
@@ -104,21 +103,16 @@ func (tx *AccTx) Encode() (encodedTx []byte) {
 		tx.Contract,
 		tx.ContractVariables,
 	}
-
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)
-
 	return buffer.Bytes()
 }
 
 func (*AccTx) Decode(encodedTx []byte) *AccTx {
 	var decoded AccTx
-
 	buffer := bytes.NewBuffer(encodedTx)
 	decoder := gob.NewDecoder(buffer)
-
 	decoder.Decode(&decoded)
-
 	return &decoded
 }
 
