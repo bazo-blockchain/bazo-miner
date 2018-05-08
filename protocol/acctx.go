@@ -75,15 +75,19 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 	}
 
 	txHash := struct {
-		Header byte
-		Issuer [32]byte
-		Fee    uint64
-		PubKey [64]byte
+		Header            byte
+		Issuer            [32]byte
+		Fee               uint64
+		PubKey            [64]byte
+		Contract          []byte
+		ContractVariables []big.Int
 	}{
 		tx.Header,
 		tx.Issuer,
 		tx.Fee,
 		tx.PubKey,
+		tx.Contract,
+		tx.ContractVariables,
 	}
 	return SerializeHashContent(txHash)
 }
