@@ -25,7 +25,7 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	loopMax := testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
 		WriteOpenTx(tx)
 		hashFundsSlice = append(hashFundsSlice, tx)
 	}
