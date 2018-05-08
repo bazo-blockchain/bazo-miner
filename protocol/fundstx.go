@@ -107,53 +107,6 @@ func (tx *FundsTx) Encode() (encodedTx []byte) {
 	return buffer.Bytes()
 }
 
-/*
-func (tx *FundsTx) Encode() (encodedTx []byte) {
-	if tx == nil {
-		return nil
-	}
-
-	var amount, fee [8]byte
-	var txCnt [4]byte
-
-	binary.BigEndian.PutUint64(amount[:], tx.Amount)
-	binary.BigEndian.PutUint64(fee[:], tx.Fee)
-	binary.BigEndian.PutUint32(txCnt[:], tx.TxCnt)
-
-	encodedTx = make([]byte, FUNDSTX_SIZE)
-
-	encodedTx[0] = tx.Header
-	copy(encodedTx[1:9], amount[:])
-	copy(encodedTx[9:17], fee[:])
-	copy(encodedTx[17:21], txCnt[:])
-	copy(encodedTx[21:53], tx.From[:])
-	copy(encodedTx[53:85], tx.To[:])
-	copy(encodedTx[85:149], tx.Sig1[:])
-	copy(encodedTx[149:213], tx.Sig2[:])
-
-	return encodedTx
-}
-
-
-func (*FundsTx) Decode(encodedTx []byte) (tx *FundsTx) {
-	tx = new(FundsTx)
-
-	if len(encodedTx) != FUNDSTX_SIZE {
-		return nil
-	}
-
-	tx.Header = encodedTx[0]
-	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
-	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
-	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])
-	copy(tx.From[:], encodedTx[21:53])
-	copy(tx.To[:], encodedTx[53:85])
-	copy(tx.Sig1[:], encodedTx[85:149])
-	copy(tx.Sig2[:], encodedTx[149:213])
-
-	return tx
-}
-*/
 func (*FundsTx) Decode(encodedTx []byte) *FundsTx {
 	var decoded FundsTx
 	buffer := bytes.NewBuffer(encodedTx)
