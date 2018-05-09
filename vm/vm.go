@@ -10,21 +10,29 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+type Context2 interface {
+	GetContract() []byte
+	GetContractVariable(index int) big.Int
+	SetContractVariable(index int, value big.Int)
+}
+
 type VM struct {
 	code            []byte
 	pc              int // Program counter
 	evaluationStack *Stack
 	callStack       *CallStack
 	context         *Context
+	context2		Context2
 }
 
-func NewVM() VM {
+func NewTestVM(byteCode []byte) VM {
 	return VM{
 		code:            []byte{},
 		pc:              0,
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
 		context:         NewContext(),
+		context2:		 NewMockContext(byteCode),
 	}
 }
 
@@ -78,7 +86,7 @@ func (vm *VM) trace() {
 
 func (vm *VM) Exec(trace bool) bool {
 
-	vm.code = vm.context.ContractAccount.Contract
+	vm.code = vm.context2.GetContract()
 
 	if len(vm.code) > 100000 {
 		vm.evaluationStack.Push(StrToBigInt("Instruction set to big"))

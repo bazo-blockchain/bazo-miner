@@ -6,8 +6,9 @@ import (
 	"testing"
 )
 
-func TestVM_NewVM(t *testing.T) {
-	vm := NewVM()
+func TestVM_NewTestVM(t *testing.T) {
+	code := []byte{}
+	vm := NewTestVM(code)
 
 	if len(vm.code) > 0 {
 		t.Errorf("Actual code length is %v, should be 0 after initialization", len(vm.code))
@@ -26,7 +27,7 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.MaxGasAmount = 3
 	vm.context.ContractAccount.Contract = code
 
@@ -46,7 +47,7 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -71,7 +72,7 @@ func TestVM_Exec_Addition(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -95,7 +96,7 @@ func TestVM_Exec_Subtraction(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -119,7 +120,7 @@ func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -143,7 +144,7 @@ func TestVM_Exec_Multiplication(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -167,7 +168,7 @@ func TestVM_Exec_Modulo(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -190,7 +191,7 @@ func TestVM_Exec_Negate(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -214,7 +215,7 @@ func TestVM_Exec_Division(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -238,7 +239,7 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -263,7 +264,7 @@ func TestVM_Exec_Eq(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -287,7 +288,7 @@ func TestVM_Exec_Neq(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -311,7 +312,7 @@ func TestVM_Exec_Lt(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -335,7 +336,7 @@ func TestVM_Exec_Gt(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -359,7 +360,7 @@ func TestVM_Exec_Lte(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -381,7 +382,7 @@ func TestVM_Exec_Lte(t *testing.T) {
 		HALT,
 	}
 
-	vm1 := NewVM()
+	vm1 := NewTestVM(code)
 	vm1.context.ContractAccount.Contract = code1
 	vm1.context.MaxGasAmount = 50
 	vm1.Exec(false)
@@ -399,7 +400,7 @@ func TestVM_Exec_Gte(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -421,7 +422,7 @@ func TestVM_Exec_Gte(t *testing.T) {
 		HALT,
 	}
 
-	vm1 := NewVM()
+	vm1 := NewTestVM(code)
 	vm1.context.ContractAccount.Contract = code1
 	vm1.context.MaxGasAmount = 50
 	vm1.Exec(false)
@@ -438,7 +439,7 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.Exec(false)
 
@@ -456,7 +457,7 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -483,7 +484,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -504,7 +505,7 @@ func TestVM_Exec_Jmp(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -534,7 +535,7 @@ func TestVM_Exec_Call(t *testing.T) {
 		RET,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -563,7 +564,7 @@ func TestVM_Exec_TosSize(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -587,7 +588,7 @@ func TestVM_Exec_CallExt(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -600,7 +601,7 @@ func TestVM_Exec_Sload(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 
 	//TODO Contract Variables should not be modifyable in the VM only after execution
@@ -627,7 +628,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 
 	//TODO Contract Variables should not be modifyable in the VM only after execution
@@ -648,7 +649,7 @@ func TestVM_Exec_Sha3(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -671,7 +672,7 @@ func TestVM_Exec_Roll(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 	vm.Exec(false)
@@ -689,7 +690,7 @@ func TestVM_Exec_NewMap(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.Exec(false)
 
@@ -715,7 +716,7 @@ func TestVM_Exec_MapPush(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -768,7 +769,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -806,7 +807,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -843,7 +844,7 @@ func TestVM_Exec_NewArr(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -872,7 +873,7 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 	if !exec {
@@ -904,7 +905,7 @@ func TestVM_Exec_ArrInsert(t *testing.T){
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 	if !exec {
@@ -937,7 +938,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -989,7 +990,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	exec := vm.Exec(false)
 
@@ -1018,7 +1019,7 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 		89,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1036,7 +1037,7 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 		PUSH, 0x00, 0x00, PUSH, 0x0b, 0x01, 0x00, 0x03, 0x12, 0x05,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1054,7 +1055,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 		PUSH, 0x00, 0x01, SHA3, 0x05, 0x02, 0x03,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1073,7 +1074,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 		ROLL, 0,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1091,7 +1092,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 		CALLEXT, 231,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1109,7 +1110,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 		SLOAD, 0, 0, 33,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1127,7 +1128,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 		PUSH, 4, 46, 110, 66, 50, 255, SSTORE, 123, 119,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
@@ -1161,7 +1162,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 
@@ -1202,7 +1203,7 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 50
 
@@ -1226,7 +1227,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 		ADDRESS, ARRAT,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
@@ -1244,7 +1245,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 		CALLER, CALLER, ARRAPPEND,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
@@ -1262,7 +1263,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 		ADDRESS, CALLER, 39,
 	}
 
-	vm := NewVM()
+	vm := NewTestVM(code)
 
 	vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
