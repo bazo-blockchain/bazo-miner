@@ -628,15 +628,14 @@ func TestVM_Exec_Sstore(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewTestVM(code)
-	vm.context.ContractAccount.Contract = code
-
-	//TODO Contract Variables should not be modifyable in the VM only after execution
-	variable := []big.Int{StrToBigInt("Something")}
-	vm.context.ContractAccount.ContractVariables = variable
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.ContractVariables = []big.Int{StrToBigInt("Something")}
+	vm.context2 = mc
 	vm.Exec(false)
+	mc.PersistChanges()
 
-	result := BigIntToString(vm.context.ContractAccount.ContractVariables[0])
+	result := BigIntToString(vm.context2.GetContractVariable(0))
 	if result != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was '%v'", result)
 	}

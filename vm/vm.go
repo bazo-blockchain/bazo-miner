@@ -520,12 +520,12 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if len(vm.context.ContractAccount.ContractVariables) <= int(index) {
+			if len(vm.context2.GetContract()) <= int(index) {
 				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
 				return false
 			}
 
-			vm.context.ContractAccount.ContractVariables[int(index)] = value
+			vm.context2.SetContractVariable(int(index), value)
 
 		case STORE:
 			right, err := vm.evaluationStack.Pop()
