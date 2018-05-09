@@ -601,12 +601,11 @@ func TestVM_Exec_Sload(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewTestVM(code)
-	vm.context.ContractAccount.Contract = code
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.ContractVariables = []big.Int{StrToBigInt("Hi There!!")}
+	vm.context2 = mc
 
-	//TODO Contract Variables should not be modifyable in the VM only after execution
-	variable := []big.Int{}
-	vm.context.ContractAccount.ContractVariables = append(variable, StrToBigInt("Hi There!!"))
 	vm.Exec(false)
 
 	result, err := vm.evaluationStack.Pop()
@@ -635,7 +634,8 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	vm.Exec(false)
 	mc.PersistChanges()
 
-	result := BigIntToString(vm.context2.GetContractVariable(0))
+	v, _ := vm.context2.GetContractVariable(0)
+	result := BigIntToString(v)
 	if result != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was '%v'", result)
 	}
@@ -1110,7 +1110,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 	}
 
 	vm := NewTestVM(code)
-	vm.context.ContractAccount.Contract = code
+	//TODO vm.context.ContractAccount.Contract = code
 	vm.context.MaxGasAmount = 300
 	vm.Exec(false)
 

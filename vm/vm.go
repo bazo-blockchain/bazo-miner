@@ -12,8 +12,8 @@ import (
 
 type Context2 interface {
 	GetContract() []byte
-	GetContractVariable(index int) big.Int
-	SetContractVariable(index int, value big.Int)
+	GetContractVariable(index int) (big.Int, error)
+	SetContractVariable(index int, value big.Int) error
 }
 
 type VM struct {
@@ -520,12 +520,12 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if len(vm.context2.GetContract()) <= int(index) {
-				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+			err = vm.context2.SetContractVariable(int(index), value)
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
-
-			vm.context2.SetContractVariable(int(index), value)
 
 		case STORE:
 			right, err := vm.evaluationStack.Pop()
@@ -548,19 +548,19 @@ func (vm *VM) Exec(trace bool) bool {
 			callstackTos.variables[address] = right
 
 		case SLOAD:
-			const HASHLENGTH = 1
-			index, err := vm.fetchMany(HASHLENGTH)
+			index, err := vm.fetch()
 
-			if !vm.checkErrors([]error{err}) {
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
 
-			if len(vm.context.ContractAccount.ContractVariables) <= ByteArrayToInt(index) {
-				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+			value, err := vm.context2.GetContractVariable(int(index))
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
-
-			value := vm.context.ContractAccount.ContractVariables[ByteArrayToInt(index)]
 
 			err = vm.evaluationStack.Push(value)
 
