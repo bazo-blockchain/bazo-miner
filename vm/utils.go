@@ -8,7 +8,7 @@ import (
 	rand2 "math/rand"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const UINT16_MAX uint16 = 65535
