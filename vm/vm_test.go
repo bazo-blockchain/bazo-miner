@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math/big"
 	"testing"
+	"encoding/binary"
 )
 
 func TestVM_NewTestVM(t *testing.T) {
@@ -639,6 +640,34 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	if result != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was '%v'", result)
 	}
+}
+
+func TestVM_Exec_ADDRESS(t *testing.T) {
+	code := []byte{
+		ADDRESS,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	ba := [64]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	mc.Address = ba
+	vm.context2 = mc
+
+	vm.Exec(false)
+	tos, _ := vm.evaluationStack.Pop()
+
+	if len(tos.Bytes()) != 64 {
+		t.Errorf("Expected TOS size to be 64, but got %v", len(tos.Bytes()))
+	}
+
+	result := binary.LittleEndian.Uint64(tos.Bytes())
+
+	if result != 18446744073709551615 {
+		t.Errorf("Expected TOS size to be 18446744073709551615, but got %v", result)
+	}
+
+
 }
 
 func TestVM_Exec_Sha3(t *testing.T) {

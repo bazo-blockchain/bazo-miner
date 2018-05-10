@@ -14,6 +14,7 @@ type Context2 interface {
 	GetContract() []byte
 	GetContractVariable(index int) (big.Int, error)
 	SetContractVariable(index int, value big.Int) error
+	GetAddress() [64]byte
 }
 
 type VM struct {
@@ -588,8 +589,8 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case ADDRESS:
 			address := new(big.Int)
-			address.SetBytes(vm.context.ContractAccount.Address[:])
-
+			a := vm.context2.GetAddress()
+			address.SetBytes(a[:])
 			err := vm.evaluationStack.Push(*address)
 
 			if err != nil {

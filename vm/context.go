@@ -76,3 +76,7 @@ func (mc * MockContext) PersistChanges(){
 		mc.ContractVariables[i] = v
 	}
 }
+
+func (mc * MockContext) GetAddress() [64]byte {
+	return mc.Address
+}
