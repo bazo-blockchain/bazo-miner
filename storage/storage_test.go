@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"../protocol"
 )
 
 //In-memory, k/v storage is tested with the test below

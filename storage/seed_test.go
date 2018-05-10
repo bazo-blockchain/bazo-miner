@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"../protocol"
 )
 
 //Write and Read test on the seed json store

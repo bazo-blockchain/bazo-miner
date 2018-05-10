@@ -3,8 +3,8 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"../protocol"
+	"../storage"
 	"math/big"
 	"reflect"
 )

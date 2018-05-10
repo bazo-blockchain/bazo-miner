@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"../protocol"
 	"github.com/boltdb/bolt"
 	"log"
 	"time"

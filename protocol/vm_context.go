@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
 )
 
@@ -9,7 +8,7 @@ import (
 type Context struct {
 	transactionSender [32]byte
 	transactionData   []byte
-	account protocol.Account
+	account Account
 	changes []Change
 }
 
@@ -26,7 +25,7 @@ func (c * Change) GetChange() (int, big.Int){
 	return c.index, c.value
 }
 
-func NewVMContext(from [32]byte, data  []byte, account protocol.Account){
+func NewVMContext(from [32]byte, data  []byte, account Account){
 	c := Context{}
 	c.transactionSender = from
 	c.transactionData = data

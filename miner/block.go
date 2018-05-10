@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bazo-blockchain/bazo-miner/p2p"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"../p2p"
+	"../protocol"
+	"../storage"
 	"golang.org/x/crypto/sha3"
 )
 
