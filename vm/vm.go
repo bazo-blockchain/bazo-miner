@@ -121,7 +121,7 @@ func (vm *VM) Exec(trace bool) bool {
 			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
 			bytes, errArg2 := vm.fetchMany(byteCount)
 
-			if !vm.checkErrors([]error{errArg1, errArg2}) {
+			if !vm.checkErrors(errArg1, errArg2) {
 				return false
 			}
 
@@ -138,7 +138,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case DUP:
 			val, err := vm.evaluationStack.Peek()
 
-			if !vm.checkErrors([]error{err}) {
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -153,7 +153,7 @@ func (vm *VM) Exec(trace bool) bool {
 			arg, err := vm.fetch() // arg shows how many have to be rolled
 			index := vm.evaluationStack.GetLength() - (int(arg) + 2)
 
-			if !vm.checkErrors([]error{err}) {
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -181,7 +181,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case POP:
 			_, rerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr}) {
+			if !vm.checkErrors(rerr) {
 				return false
 			}
 
@@ -189,7 +189,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -205,7 +205,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -221,7 +221,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -237,7 +237,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -258,7 +258,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -291,7 +291,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -305,7 +305,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -319,7 +319,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -333,7 +333,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -347,7 +347,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -361,7 +361,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{rerr, lerr}) {
+			if !vm.checkErrors(rerr, lerr) {
 				return false
 			}
 
@@ -375,7 +375,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nrOfShifts, errArg := vm.fetch()
 			tos, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{errArg, errStack}) {
+			if !vm.checkErrors(errArg, errStack) {
 				return false
 			}
 
@@ -391,7 +391,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nrOfShifts, errArg := vm.fetch()
 			tos, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{errArg, errStack}) {
+			if !vm.checkErrors(errArg, errStack) {
 				return false
 			}
 
@@ -414,8 +414,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case JMP:
 			nextInstruction, err := vm.fetchMany(2)
 
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -428,7 +427,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nextInstruction, errArg := vm.fetchMany(2)
 			right, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{errArg, errStack}) {
+			if !vm.checkErrors(errArg, errStack) {
 				return false
 			}
 
@@ -441,9 +440,9 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALL:
 			returnAddressBytes, errArg1 := vm.fetchMany(2) // Shows where to jump after executing
-			argsToLoad, errArg2 := vm.fetch()    // Shows how many elements have to be popped from evaluationStack
+			argsToLoad, errArg2 := vm.fetch()              // Shows how many elements have to be popped from evaluationStack
 
-			if !vm.checkErrors([]error{errArg1, errArg2}) {
+			if !vm.checkErrors(errArg1, errArg2) {
 				return false
 			}
 
@@ -473,7 +472,7 @@ func (vm *VM) Exec(trace bool) bool {
 			functionHash, errArg2 := vm.fetchMany(4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
 			argsToLoad, errArg3 := vm.fetch()               // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 
-			if !vm.checkErrors([]error{errArg1, errArg2, errArg3}) {
+			if !vm.checkErrors(errArg1, errArg2, errArg3) {
 				return false
 			}
 
@@ -483,8 +482,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case RET:
 			callstackTos, err := vm.callStack.Peek()
 
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -494,8 +492,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case SIZE:
 			right, err := vm.evaluationStack.Pop()
 
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -507,16 +504,10 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case SSTORE:
-			index, err := vm.fetch()
+			index, errArgs := vm.fetch()
+			value, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors([]error{err}) {
-				return false
-			}
-
-			value, err := vm.evaluationStack.Pop()
-
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+			if !vm.checkErrors(errArgs, errStack) {
 				return false
 			}
 
@@ -528,15 +519,12 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.context.ContractAccount.ContractVariables[int(index)] = value
 
 		case STORE:
-			right, err := vm.evaluationStack.Pop()
+			address, errArgs := vm.fetch()
+			right, errStack := vm.evaluationStack.Pop()
 
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+			if !vm.checkErrors(errArgs, errStack) {
 				return false
 			}
-
-			vm.pc++
-			address := vm.pc
 
 			callstackTos, err := vm.callStack.Peek()
 
@@ -545,13 +533,13 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			callstackTos.variables[address] = right
+			callstackTos.variables[int(address)] = right
 
 		case SLOAD:
 			const HASHLENGTH = 1
 			index, err := vm.fetchMany(HASHLENGTH)
 
-			if !vm.checkErrors([]error{err}) {
+			if !vm.checkErrors(err) {
 				return false
 			}
 
@@ -573,7 +561,7 @@ func (vm *VM) Exec(trace bool) bool {
 			address, errArg := vm.fetch()
 			callstackTos, errCallStack := vm.callStack.Peek()
 
-			if !vm.checkErrors([]error{errArg, errCallStack}) {
+			if !vm.checkErrors(errArg, errCallStack) {
 				return false
 			}
 
@@ -667,26 +655,11 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case MAPPUSH:
 			k, kerr := vm.evaluationStack.Pop()
-			if kerr != nil {
-				vm.evaluationStack.Push(StrToBigInt(kerr.Error()))
-				return false
-			}
-
 			v, verr := vm.evaluationStack.Pop()
-			if verr != nil {
-				vm.evaluationStack.Push(StrToBigInt(verr.Error()))
-				return false
-			}
-
 			mbi, mbierr := vm.evaluationStack.Pop()
-			if mbierr != nil {
-				vm.evaluationStack.Push(StrToBigInt(mbierr.Error()))
-				return false
-			}
-
 			m, merr := MapFromBigInt(mbi)
-			if merr != nil {
-				vm.evaluationStack.Push(StrToBigInt(merr.Error()))
+
+			if !vm.checkErrors(kerr, verr, mbierr, merr) {
 				return false
 			}
 
@@ -700,27 +673,12 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case MAPGETVAL:
 			kbi, kerr := vm.evaluationStack.Pop()
-			if kerr != nil {
-				vm.evaluationStack.Push(StrToBigInt(kerr.Error()))
-				return false
-			}
-
 			mbi, mbierr := vm.evaluationStack.Pop()
-			if mbierr != nil {
-				vm.evaluationStack.Push(StrToBigInt(mbierr.Error()))
-				return false
-			}
-
 			k := kbi.Bytes()
 			m, merr := MapFromBigInt(mbi)
-			if merr != nil {
-				vm.evaluationStack.Push(StrToBigInt(merr.Error()))
-				return false
-			}
-
 			v, err := m.GetVal(k)
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+
+			if !vm.checkErrors(kerr, mbierr, merr, err) {
 				return false
 			}
 
@@ -734,11 +692,11 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPREMOVE:
-			kbi, err1 := vm.evaluationStack.Pop()
-			mbi, err2 := vm.evaluationStack.Pop()
-			m, err3 := MapFromBigInt(mbi)
+			kbi, kbierr := vm.evaluationStack.Pop()
+			mbi, mbierr := vm.evaluationStack.Pop()
+			m, merr := MapFromBigInt(mbi)
 
-			if !vm.checkErrors([]error{err1, err2, err3}) {
+			if !vm.checkErrors(kbierr, mbierr, merr) {
 				return false
 			}
 
@@ -758,13 +716,7 @@ func (vm *VM) Exec(trace bool) bool {
 			v, verr := vm.evaluationStack.Pop()
 			a, aerr := vm.evaluationStack.Pop()
 
-			if aerr != nil {
-				vm.evaluationStack.Push(StrToBigInt(aerr.Error()))
-				return false
-			}
-
-			if verr != nil {
-				vm.evaluationStack.Push(StrToBigInt(verr.Error()))
+			if !vm.checkErrors(verr, aerr) {
 				return false
 			}
 
@@ -775,12 +727,18 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			err = arr.Append(v)
+
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt("Invalid argument size of ARRAPPEND"))
 				return false
 			}
 
-			vm.evaluationStack.Push(arr.ToBigInt())
+			err = vm.evaluationStack.Push(arr.ToBigInt())
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
 		/*case ARRINSERT:
 		i, err := vm.evaluationStack.Pop()
@@ -817,20 +775,10 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case ARRREMOVE:
 			a, aerr := vm.evaluationStack.Pop()
-			if aerr != nil {
-				vm.evaluationStack.Push(StrToBigInt(aerr.Error()))
-				return false
-			}
-			ba, ferr := vm.fetchMany(2)
+			ba, errArgs := vm.fetchMany(2)
 			index, err := ByteArrayToUI16(ba)
 
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(ferr.Error()))
-				return false
-			}
-
-			if ferr != nil {
-				vm.evaluationStack.Push(StrToBigInt(ferr.Error()))
+			if !vm.checkErrors(aerr, errArgs) {
 				return false
 			}
 
@@ -852,7 +800,12 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			vm.evaluationStack.Push(arr.ToBigInt())
+			err = vm.evaluationStack.Push(arr.ToBigInt())
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
 		case ARRAT:
 			a, err := vm.evaluationStack.Peek()
@@ -892,7 +845,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 			result := big.Int{}
 			result.SetBytes(e)
-			vm.evaluationStack.Push(result)
+
+			err = vm.evaluationStack.Push(result)
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
 		case SHA3:
 			right, err := vm.evaluationStack.Pop()
@@ -920,7 +879,7 @@ func (vm *VM) Exec(trace bool) bool {
 			publicKeySig, errArg1 := vm.evaluationStack.Pop() // PubKeySig
 			hash, errArg2 := vm.evaluationStack.Pop()         // Hash
 
-			if !vm.checkErrors([]error{errArg1, errArg2}) {
+			if !vm.checkErrors(errArg1, errArg2) {
 				return false
 			}
 
@@ -981,7 +940,7 @@ func (vm *VM) fetchMany(argument int) (elements []byte, err error) {
 	}
 }
 
-func (vm *VM) checkErrors(errors []error) bool {
+func (vm *VM) checkErrors(errors ...error) bool {
 	for i, err := range errors {
 		if err != nil {
 			vm.evaluationStack.Push(StrToBigInt(errors[i].Error()))

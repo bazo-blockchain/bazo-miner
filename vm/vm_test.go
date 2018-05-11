@@ -528,7 +528,7 @@ func TestVM_Exec_Call(t *testing.T) {
 		HALT,
 		NOP,
 		NOP,
-		LOAD, 0, // Begin of called function at address 13
+		LOAD, 0, // Begin of called function at address 14
 		LOAD, 1,
 		SUB,
 		RET,
