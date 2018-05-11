@@ -80,3 +80,7 @@ func (mc * MockContext) PersistChanges(){
 func (mc * MockContext) GetAddress() [64]byte {
 	return mc.Address
 }
+
+func (mc * MockContext) GetBalance() uint64 {
+	return mc.Balance
+}

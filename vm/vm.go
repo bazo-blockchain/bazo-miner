@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"golang.org/x/crypto/sha3"
+	"encoding/binary"
 )
 
 type Context2 interface {
@@ -15,6 +16,7 @@ type Context2 interface {
 	GetContractVariable(index int) (big.Int, error)
 	SetContractVariable(index int, value big.Int) error
 	GetAddress() [64]byte
+	GetBalance() uint64
 }
 
 type VM struct {
@@ -600,13 +602,9 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case BALANCE:
 			balance := new(big.Int)
-
-			if vm.context.ContractTx.Amount == 0 {
-				balance.SetUint64(0)
-				continue
-			}
-
-			balance.SetUint64(vm.context.ContractAccount.Balance)
+			ba := make([]byte, 8)
+			binary.LittleEndian.PutUint64(ba, vm.context2.GetBalance())
+			balance.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*balance)
 
