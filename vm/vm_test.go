@@ -725,6 +725,31 @@ func TestVM_Exec_CALLER(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_CALLVAL(t *testing.T) {
+	code := []byte{
+		CALLVAL,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Amount = uint64(100)
+	vm.context2 = mc
+
+	vm.Exec(false)
+	tos, _ := vm.evaluationStack.Pop()
+
+	if len(tos.Bytes()) != 8 {
+		t.Errorf("Expected TOS size to be 8, but got %v", len(tos.Bytes()))
+	}
+
+	result := binary.LittleEndian.Uint64(tos.Bytes())
+
+	if result != 100 {
+		t.Errorf("Expected value to be 100, but got %v", result)
+	}
+}
+
 func TestVM_Exec_Sha3(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 3,

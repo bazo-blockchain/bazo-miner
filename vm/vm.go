@@ -18,6 +18,7 @@ type Context2 interface {
 	GetAddress() [64]byte
 	GetBalance() uint64
 	GetSender() [32]byte
+	GetAmount() uint64
 }
 
 type VM struct {
@@ -629,12 +630,9 @@ func (vm *VM) Exec(trace bool) bool {
 		case CALLVAL:
 			value := new(big.Int)
 
-			if vm.context.ContractTx.Amount == 0 {
-				value.SetUint64(0)
-				continue
-			}
-
-			value.SetUint64(vm.context.ContractTx.Amount)
+			ba := make([]byte, 8)
+			binary.LittleEndian.PutUint64(ba, vm.context2.GetAmount())
+			value.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*value)
 

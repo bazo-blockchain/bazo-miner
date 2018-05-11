@@ -89,3 +89,7 @@ func (mc * MockContext) GetBalance() uint64 {
 func (mc * MockContext) GetSender() [32]byte {
 	return mc.From
 }
+
+func (mc * MockContext) GetAmount() uint64 {
+	return mc.Amount
+}

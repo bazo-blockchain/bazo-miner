@@ -1,5 +1,5 @@
 package vm
-/*
+
 import (
 	"log"
 	"testing"
@@ -27,4 +27,3 @@ func TestFuzz(t *testing.T) {
 		Fuzz()
 	}
 }
-*/
