@@ -657,7 +657,7 @@ func TestVM_Exec_ADDRESS(t *testing.T) {
 	vm.Exec(false)
 	tos, _ := vm.evaluationStack.Pop()
 
-	
+
 	if len(tos.Bytes()) != 64 {
 		t.Errorf("Expected TOS size to be 64, but got %v", len(tos.Bytes()))
 	}
@@ -692,6 +692,36 @@ func TestVM_Exec_BALANCE(t *testing.T) {
 
 	if result != 100 {
 		t.Errorf("Expected TOS to be 100, but got %v", result)
+	}
+}
+
+func TestVM_Exec_CALLER(t *testing.T) {
+	code := []byte{
+		CALLER,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	from := [32]byte{
+		0xFF, 0xFF, 0xFF, 0xFF,		0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF,		0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF,		0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF,		0xFF, 0xFF, 0xFF, 0xFF,
+	}
+	mc.From = from
+	vm.context2 = mc
+
+	vm.Exec(false)
+	tos, _ := vm.evaluationStack.Pop()
+
+	result := tos.Bytes()
+	if len(result) != 32 {
+		t.Errorf("Expected TOS size to be 32, but got %v", len(result))
+	}
+
+	if !bytes.Equal(result, from[:]) {
+		t.Errorf("Retrieved unexpected value")
 	}
 }
 
