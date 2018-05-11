@@ -496,7 +496,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 func TestVM_Exec_Jmp(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 3,
-		JMP, 13,
+		JMP, 0, 14,
 		PUSH, 0, 4,
 		ADD,
 		PUSH, 0, 15,

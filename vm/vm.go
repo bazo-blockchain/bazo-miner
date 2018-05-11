@@ -412,15 +412,17 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case JMP:
-			nextInstruction, err := vm.fetch()
+			nextInstruction, err := vm.fetchMany(2)
+
+			var jumpTo big.Int
+			jumpTo.SetBytes(nextInstruction)
 
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
 
-			jumpTo := int(nextInstruction)
-			vm.pc = jumpTo
+			vm.pc = int(jumpTo.Int64())
 
 		case JMPIF:
 			nextInstruction, errArg := vm.fetch()
