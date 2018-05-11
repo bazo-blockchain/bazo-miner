@@ -524,7 +524,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 10,
 		PUSH, 0, 8,
-		CALL, 13, 2,
+		CALL, 0, 14, 2,
 		HALT,
 		NOP,
 		NOP,

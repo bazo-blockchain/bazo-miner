@@ -440,14 +440,17 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALL:
-			returnAddress, errArg1 := vm.fetch() // Shows where to jump after executing
+			returnAddressBytes, errArg1 := vm.fetchMany(2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch()    // Shows how many elements have to be popped from evaluationStack
 
 			if !vm.checkErrors([]error{errArg1, errArg2}) {
 				return false
 			}
 
-			if int(returnAddress) == 0 || int(returnAddress) > len(vm.code) {
+			var returnAddress big.Int
+			returnAddress.SetBytes(returnAddressBytes)
+
+			if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
 				vm.evaluationStack.Push(StrToBigInt("ReturnAddress out of bounds"))
 				return false
 			}
@@ -463,7 +466,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			vm.callStack.Push(frame)
-			vm.pc = int(returnAddress) - 1
+			vm.pc = int(returnAddress.Int64()) - 1
 
 		case CALLEXT:
 			transactionAddress, errArg1 := vm.fetchMany(32) // Addresses are 32 bytes (var name: transactionAddress)
