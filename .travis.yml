@@ -8,3 +8,5 @@ notifications:
 
 script:
 - go test -v ./...
+
+go_import_path: bazo-miner
