@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"golang.org/x/crypto/sha3"
 	"encoding/binary"
+	"golang.org/x/crypto/sha3"
 )
 
 type Context2 interface {
@@ -20,6 +20,7 @@ type Context2 interface {
 	GetSender() [32]byte
 	GetAmount() uint64
 	GetTransactionData() []byte
+	GetFee() uint64
 }
 
 type VM struct {
@@ -28,7 +29,7 @@ type VM struct {
 	evaluationStack *Stack
 	callStack       *CallStack
 	context         *Context
-	context2		Context2
+	context2        Context2
 }
 
 func NewTestVM(byteCode []byte) VM {
@@ -38,7 +39,7 @@ func NewTestVM(byteCode []byte) VM {
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
 		context:         NewContext(),
-		context2:		 NewMockContext(byteCode),
+		context2:        NewMockContext(byteCode),
 	}
 }
 
@@ -99,6 +100,8 @@ func (vm *VM) Exec(trace bool) bool {
 		return false
 	}
 
+	fee := vm.context2.GetFee()
+
 	// Infinite Loop until return called
 	for {
 		if trace {
@@ -120,11 +123,11 @@ func (vm *VM) Exec(trace bool) bool {
 		}
 
 		// Subtract gas used for operation
-		if vm.context.MaxGasAmount < OpCodes[int(opCode)].gasPrice {
+		if fee < OpCodes[int(opCode)].gasPrice {
 			vm.evaluationStack.Push(StrToBigInt("out of gas"))
 			return false
 		} else {
-			vm.context.MaxGasAmount -= OpCodes[int(opCode)].gasPrice
+			fee -= OpCodes[int(opCode)].gasPrice
 		}
 
 		// Decode
