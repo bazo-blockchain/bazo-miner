@@ -9,9 +9,10 @@ import (
 // so the specific failing test can be recreated
 func Fuzz() {
 	code := RandomBytes()
-	vm := NewTestVM(code)
-	vm.context.MaxGasAmount = 10000
-	vm.context.ContractAccount.Contract = code
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 10000
+	vm.context = mc
 
 	defer func() {
 		if err := recover(); err != nil {

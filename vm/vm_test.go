@@ -30,7 +30,7 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	mc.Fee = 3
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 	ba, _ := vm.evaluationStack.Pop()
@@ -50,7 +50,7 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -75,7 +75,7 @@ func TestVM_Exec_Addition(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -99,7 +99,7 @@ func TestVM_Exec_Subtraction(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -123,7 +123,7 @@ func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -147,7 +147,7 @@ func TestVM_Exec_Multiplication(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -171,7 +171,7 @@ func TestVM_Exec_Modulo(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -194,7 +194,7 @@ func TestVM_Exec_Negate(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -218,7 +218,7 @@ func TestVM_Exec_Division(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -242,7 +242,7 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	result, err := vm.evaluationStack.Pop()
@@ -267,7 +267,7 @@ func TestVM_Exec_Eq(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -291,7 +291,7 @@ func TestVM_Exec_Neq(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -315,7 +315,7 @@ func TestVM_Exec_Lt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -339,7 +339,7 @@ func TestVM_Exec_Gt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -363,7 +363,7 @@ func TestVM_Exec_Lte(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -385,7 +385,7 @@ func TestVM_Exec_Lte(t *testing.T) {
 
 	vm1 := NewTestVM([]byte{})
 	mc1 := NewMockContext(code1)
-	vm1.context2 = mc1
+	vm1.context = mc1
 	vm1.Exec(false)
 
 	if tos.Int64() != 1 {
@@ -403,7 +403,7 @@ func TestVM_Exec_Gte(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -425,7 +425,7 @@ func TestVM_Exec_Gte(t *testing.T) {
 
 	vm1 := NewTestVM([]byte{})
 	mc1 := NewMockContext(code1)
-	vm1.context2 = mc1
+	vm1.context = mc1
 	vm1.Exec(false)
 
 	if tos.Int64() != 1 {
@@ -442,7 +442,7 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -461,7 +461,7 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -488,7 +488,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	if vm.evaluationStack.GetLength() != 0 {
@@ -509,7 +509,7 @@ func TestVM_Exec_Jmp(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -539,7 +539,7 @@ func TestVM_Exec_Call(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
@@ -568,7 +568,7 @@ func TestVM_Exec_TosSize(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Pop()
@@ -592,7 +592,7 @@ func TestVM_Exec_CallExt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 }
@@ -606,7 +606,7 @@ func TestVM_Exec_Sload(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	mc.ContractVariables = []big.Int{StrToBigInt("Hi There!!")}
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 
@@ -632,11 +632,11 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	mc.ContractVariables = []big.Int{StrToBigInt("Something")}
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 	mc.PersistChanges()
 
-	v, _ := vm.context2.GetContractVariable(0)
+	v, _ := vm.context.GetContractVariable(0)
 	result := BigIntToString(v)
 	if result != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was '%v'", result)
@@ -653,7 +653,7 @@ func TestVM_Exec_ADDRESS(t *testing.T) {
 	mc := NewMockContext(code)
 	ba := [64]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 	mc.Address = ba
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 	tos, _ := vm.evaluationStack.Pop()
@@ -679,7 +679,7 @@ func TestVM_Exec_BALANCE(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	mc.Balance = uint64(100)
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 	tos, _ := vm.evaluationStack.Pop()
@@ -710,7 +710,7 @@ func TestVM_Exec_CALLER(t *testing.T) {
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	}
 	mc.From = from
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 	tos, _ := vm.evaluationStack.Pop()
@@ -734,7 +734,7 @@ func TestVM_Exec_CALLVAL(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	mc.Amount = uint64(100)
-	vm.context2 = mc
+	vm.context = mc
 
 	vm.Exec(false)
 	tos, _ := vm.evaluationStack.Pop()
@@ -767,7 +767,7 @@ func TestVM_Exec_CALLDATA(t *testing.T) {
 	}
 	mc.transactionData = td
 
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 	functionHash, _ := vm.evaluationStack.Pop()
 
@@ -795,7 +795,7 @@ func TestVM_Exec_Sha3(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	val, _ := vm.evaluationStack.Pop()
@@ -818,7 +818,7 @@ func TestVM_Exec_Roll(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -836,7 +836,7 @@ func TestVM_Exec_NewMap(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	r, err := vm.evaluationStack.Pop()
@@ -863,7 +863,7 @@ func TestVM_Exec_MapPush(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -917,7 +917,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -956,7 +956,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -994,7 +994,7 @@ func TestVM_Exec_NewArr(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -1024,7 +1024,7 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
@@ -1057,7 +1057,7 @@ func TestVM_Exec_ArrInsert(t *testing.T){
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
@@ -1091,7 +1091,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -1144,7 +1144,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	exec := vm.Exec(false)
 
 	if !exec {
@@ -1174,7 +1174,7 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1192,7 +1192,7 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1210,7 +1210,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1229,7 +1229,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1247,7 +1247,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1265,7 +1265,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1283,7 +1283,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1324,7 +1324,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 		0, 16, // Function hash
 	}
 
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1365,7 +1365,7 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 		0, 1, // Function hash
 	}
 
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1382,7 +1382,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1399,7 +1399,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1416,7 +1416,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	vm.context2 = mc
+	vm.context = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()

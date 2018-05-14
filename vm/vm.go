@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-type Context2 interface {
+type Context interface {
 	GetContract() []byte
 	GetContractVariable(index int) (big.Int, error)
 	SetContractVariable(index int, value big.Int) error
@@ -29,8 +29,7 @@ type VM struct {
 	pc              int // Program counter
 	evaluationStack *Stack
 	callStack       *CallStack
-	context         *Context
-	context2        Context2
+	context         Context
 }
 
 func NewTestVM(byteCode []byte) VM {
@@ -39,8 +38,7 @@ func NewTestVM(byteCode []byte) VM {
 		pc:              0,
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
-		context:         NewContext(),
-		context2:        NewMockContext(byteCode),
+		context:         NewMockContext(byteCode),
 	}
 }
 
@@ -94,14 +92,14 @@ func (vm *VM) trace() {
 
 func (vm *VM) Exec(trace bool) bool {
 
-	vm.code = vm.context2.GetContract()
+	vm.code = vm.context.GetContract()
 
 	if len(vm.code) > 100000 {
 		vm.evaluationStack.Push(StrToBigInt("Instruction set to big"))
 		return false
 	}
 
-	fee := vm.context2.GetFee()
+	fee := vm.context.GetFee()
 
 	// Infinite Loop until return called
 	for {
@@ -530,7 +528,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			err = vm.context2.SetContractVariable(int(index), value)
+			err = vm.context.SetContractVariable(int(index), value)
 
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(err.Error()))
@@ -565,7 +563,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			value, err := vm.context2.GetContractVariable(int(index))
+			value, err := vm.context.GetContractVariable(int(index))
 
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(err.Error()))
@@ -598,7 +596,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case ADDRESS:
 			address := new(big.Int)
-			a := vm.context2.GetAddress()
+			a := vm.context.GetAddress()
 			address.SetBytes(a[:])
 			err := vm.evaluationStack.Push(*address)
 
@@ -610,7 +608,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case BALANCE:
 			balance := new(big.Int)
 			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context2.GetBalance())
+			binary.LittleEndian.PutUint64(ba, vm.context.GetBalance())
 			balance.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*balance)
@@ -622,7 +620,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALLER:
 			address := new(big.Int)
-			a := vm.context2.GetSender()
+			a := vm.context.GetSender()
 			address.SetBytes(a[:])
 
 			err := vm.evaluationStack.Push(*address)
@@ -636,7 +634,7 @@ func (vm *VM) Exec(trace bool) bool {
 			value := new(big.Int)
 
 			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context2.GetAmount())
+			binary.LittleEndian.PutUint64(ba, vm.context.GetAmount())
 			value.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*value)
@@ -647,7 +645,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLDATA:
-			td := vm.context2.GetTransactionData()
+			td := vm.context.GetTransactionData()
 			for i := 0; i < len(td); i++ {
 				length := int(td[i]) // Length of parameters
 
@@ -945,7 +943,7 @@ func (vm *VM) Exec(trace bool) bool {
 			pubKey1Sig1.SetBytes(publicKeySig.Bytes()[:32])
 			pubKey2Sig1.SetBytes(publicKeySig.Bytes()[32:])
 
-			sig1 := vm.context2.GetSig1()
+			sig1 := vm.context.GetSig1()
 			r.SetBytes(sig1[:32])
 			s.SetBytes(sig1[32:])
 
