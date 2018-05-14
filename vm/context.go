@@ -39,6 +39,7 @@ type MockContext struct {
 	protocol.Account
 	changes []protocol.Change
 	protocol.FundsTx
+	transactionData []byte
 }
 
 func NewMockContext(byteCode []byte) *MockContext{
@@ -92,4 +93,8 @@ func (mc * MockContext) GetSender() [32]byte {
 
 func (mc * MockContext) GetAmount() uint64 {
 	return mc.Amount
+}
+
+func (mc * MockContext) GetTransactionData() []byte {
+	return mc.transactionData
 }

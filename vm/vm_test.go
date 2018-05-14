@@ -750,6 +750,43 @@ func TestVM_Exec_CALLVAL(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_CALLDATA(t *testing.T) {
+	code := []byte{
+		CALLDATA,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 50
+
+	td := []byte{
+		0, 0x02,
+		0, 0x05,
+		0, 0x10, // Function hash
+	}
+	mc.transactionData = td
+
+
+	vm.context2 = mc
+	vm.Exec(false)
+	functionHash, _ := vm.evaluationStack.Pop()
+
+	if !bytes.Equal(functionHash.Bytes(), td[5:]) {
+		t.Errorf("expected '%# x' but got '%# x'",td[5:], functionHash.Bytes())
+	}
+
+	arg1, _ := vm.evaluationStack.Pop()
+	if !bytes.Equal(arg1.Bytes(), td[3:4]) {
+		t.Errorf("expected '%# x' but got '%# x'", td[3:4], arg1.Bytes())
+	}
+
+	arg2, _ := vm.evaluationStack.Pop()
+	if !bytes.Equal(arg2.Bytes(), td[1:2]) {
+		t.Errorf("expected '%# x' but got '%# x'", td[1:2], arg2.Bytes())
+	}
+}
+
 func TestVM_Exec_Sha3(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 3,
@@ -1270,22 +1307,23 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewTestVM(code)
-	vm.context.ContractAccount.Contract = code
-	vm.context.MaxGasAmount = 50
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 50
 
-	vm.context.TransactionData = []byte{
+	mc.transactionData = []byte{
 		0, 2,
 		0, 5,
 		0, 16, // Function hash
 	}
 
+	vm.context2 = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
 
 	if tos.Uint64() != 3 {
-		t.Errorf("Expected tos to be '3' error message but was %v", tos)
+		t.Errorf("Expected tos to be '3' error message but was %v", tos.Uint64())
 	}
 }
 
@@ -1311,22 +1349,23 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 		HALT,
 	}
 
-	vm := NewTestVM(code)
-	vm.context.ContractAccount.Contract = code
-	vm.context.MaxGasAmount = 50
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 50
 
-	vm.context.TransactionData = []byte{
+	mc.transactionData = []byte{
 		0, 2,
 		0, 5,
 		0, 1, // Function hash
 	}
 
+	vm.context2 = mc
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
 
 	if tos.Uint64() != 7 {
-		t.Errorf("Expected tos to be '7' error message but was %v", tos)
+		t.Errorf("Expected tos to be '7' error message but was %v", tos.Uint64())
 	}
 }
 

@@ -19,6 +19,7 @@ type Context2 interface {
 	GetBalance() uint64
 	GetSender() [32]byte
 	GetAmount() uint64
+	GetTransactionData() []byte
 }
 
 type VM struct {
@@ -642,17 +643,18 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLDATA:
-			for i := 0; i < len(vm.context.TransactionData); i++ {
-				length := int(vm.context.TransactionData[i]) // Length of parameters
+			td := vm.context2.GetTransactionData()
+			for i := 0; i < len(td); i++ {
+				length := int(td[i]) // Length of parameters
 
-				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(vm.context.TransactionData[i+1 : i+length+2]))
+				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(td[i+1 : i+length+2]))
 
 				if err != nil {
 					vm.evaluationStack.Push(StrToBigInt(err.Error()))
 					return false
 				}
 
-				i += int(vm.context.TransactionData[i]) + 1 // Increase to next parameter length
+				i += int(td[i]) + 1 // Increase to next parameter length
 			}
 
 		case NEWMAP:
