@@ -8,7 +8,19 @@ import (
 	"math/big"
 
 	"golang.org/x/crypto/sha3"
+	"encoding/binary"
 )
+
+type Context2 interface {
+	GetContract() []byte
+	GetContractVariable(index int) (big.Int, error)
+	SetContractVariable(index int, value big.Int) error
+	GetAddress() [64]byte
+	GetBalance() uint64
+	GetSender() [32]byte
+	GetAmount() uint64
+	GetTransactionData() []byte
+}
 
 type VM struct {
 	code            []byte
@@ -16,15 +28,17 @@ type VM struct {
 	evaluationStack *Stack
 	callStack       *CallStack
 	context         *Context
+	context2		Context2
 }
 
-func NewVM() VM {
+func NewTestVM(byteCode []byte) VM {
 	return VM{
 		code:            []byte{},
 		pc:              0,
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
 		context:         NewContext(),
+		context2:		 NewMockContext(byteCode),
 	}
 }
 
@@ -78,7 +92,7 @@ func (vm *VM) trace() {
 
 func (vm *VM) Exec(trace bool) bool {
 
-	vm.code = vm.context.ContractAccount.Contract
+	vm.code = vm.context2.GetContract()
 
 	if len(vm.code) > 100000 {
 		vm.evaluationStack.Push(StrToBigInt("Instruction set to big"))
@@ -511,12 +525,12 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if len(vm.context.ContractAccount.ContractVariables) <= int(index) {
-				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+			err = vm.context2.SetContractVariable(int(index), value)
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
-
-			vm.context.ContractAccount.ContractVariables[int(index)] = value
 
 		case STORE:
 			address, errArgs := vm.fetch()
@@ -536,19 +550,18 @@ func (vm *VM) Exec(trace bool) bool {
 			callstackTos.variables[int(address)] = right
 
 		case SLOAD:
-			const HASHLENGTH = 1
-			index, err := vm.fetchMany(HASHLENGTH)
+			index, err := vm.fetch()
 
 			if !vm.checkErrors(err) {
 				return false
 			}
 
-			if len(vm.context.ContractAccount.ContractVariables) <= ByteArrayToInt(index) {
-				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+			value, err := vm.context2.GetContractVariable(int(index))
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
 				return false
 			}
-
-			value := vm.context.ContractAccount.ContractVariables[ByteArrayToInt(index)]
 
 			err = vm.evaluationStack.Push(value)
 
@@ -576,8 +589,8 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case ADDRESS:
 			address := new(big.Int)
-			address.SetBytes(vm.context.ContractAccount.Address[:])
-
+			a := vm.context2.GetAddress()
+			address.SetBytes(a[:])
 			err := vm.evaluationStack.Push(*address)
 
 			if err != nil {
@@ -587,13 +600,9 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case BALANCE:
 			balance := new(big.Int)
-
-			if vm.context.ContractTx.Amount == 0 {
-				balance.SetUint64(0)
-				continue
-			}
-
-			balance.SetUint64(vm.context.ContractAccount.Balance)
+			ba := make([]byte, 8)
+			binary.LittleEndian.PutUint64(ba, vm.context2.GetBalance())
+			balance.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*balance)
 
@@ -604,7 +613,8 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALLER:
 			address := new(big.Int)
-			address.SetBytes(vm.context.ContractTx.From[:])
+			a := vm.context2.GetSender()
+			address.SetBytes(a[:])
 
 			err := vm.evaluationStack.Push(*address)
 
@@ -616,12 +626,9 @@ func (vm *VM) Exec(trace bool) bool {
 		case CALLVAL:
 			value := new(big.Int)
 
-			if vm.context.ContractTx.Amount == 0 {
-				value.SetUint64(0)
-				continue
-			}
-
-			value.SetUint64(vm.context.ContractTx.Amount)
+			ba := make([]byte, 8)
+			binary.LittleEndian.PutUint64(ba, vm.context2.GetAmount())
+			value.SetBytes(ba)
 
 			err := vm.evaluationStack.Push(*value)
 
@@ -631,17 +638,18 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLDATA:
-			for i := 0; i < len(vm.context.TransactionData); i++ {
-				length := int(vm.context.TransactionData[i]) // Length of parameters
+			td := vm.context2.GetTransactionData()
+			for i := 0; i < len(td); i++ {
+				length := int(td[i]) // Length of parameters
 
-				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(vm.context.TransactionData[i+1 : i+length+2]))
+				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(td[i+1 : i+length+2]))
 
 				if err != nil {
 					vm.evaluationStack.Push(StrToBigInt(err.Error()))
 					return false
 				}
 
-				i += int(vm.context.TransactionData[i]) + 1 // Increase to next parameter length
+				i += int(td[i]) + 1 // Increase to next parameter length
 			}
 
 		case NEWMAP:

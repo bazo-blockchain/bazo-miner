@@ -1,4 +1,4 @@
-package vm
+package shared
 
 import (
 	rand1 "crypto/rand"
