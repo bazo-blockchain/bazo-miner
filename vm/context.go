@@ -103,3 +103,7 @@ func (mc *MockContext) GetTransactionData() []byte {
 func (mc *MockContext) GetFee() uint64 {
 	return mc.Fee
 }
+
+func (mc *MockContext) GetSig1() [64]byte {
+	return mc.Sig1
+}

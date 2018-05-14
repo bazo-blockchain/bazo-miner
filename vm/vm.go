@@ -21,6 +21,7 @@ type Context2 interface {
 	GetAmount() uint64
 	GetTransactionData() []byte
 	GetFee() uint64
+	GetSig1() [64]byte
 }
 
 type VM struct {
@@ -944,8 +945,9 @@ func (vm *VM) Exec(trace bool) bool {
 			pubKey1Sig1.SetBytes(publicKeySig.Bytes()[:32])
 			pubKey2Sig1.SetBytes(publicKeySig.Bytes()[32:])
 
-			r.SetBytes(vm.context.ContractTx.Sig1[:32])
-			s.SetBytes(vm.context.ContractTx.Sig1[32:])
+			sig1 := vm.context2.GetSig1()
+			r.SetBytes(sig1[:32])
+			s.SetBytes(sig1[32:])
 
 			pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
 
