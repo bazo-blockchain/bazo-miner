@@ -2,8 +2,8 @@ package p2p
 
 import (
 	"encoding/binary"
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
 )
 

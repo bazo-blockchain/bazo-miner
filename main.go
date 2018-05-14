@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./miner"
-	"./p2p"
-	"./storage"
+	"github.com/bazo-blockchain/bazo-miner/miner"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
 	"strings"
 )

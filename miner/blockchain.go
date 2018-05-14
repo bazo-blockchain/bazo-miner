@@ -4,9 +4,9 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"../protocol"
-	"../storage"
-	"../p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"sync"
 )

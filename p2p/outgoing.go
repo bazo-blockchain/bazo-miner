@@ -1,8 +1,8 @@
 package p2p
 
 import (
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func SendVerifiedTxs(txs []*protocol.FundsTx) {

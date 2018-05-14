@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"../protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"golang.org/x/crypto/sha3"
 	"log"
 	"math/big"

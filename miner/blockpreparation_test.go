@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func TestPrepareAndSortTxs(t *testing.T) {

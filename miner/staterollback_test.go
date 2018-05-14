@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Rollback tests for all tx types

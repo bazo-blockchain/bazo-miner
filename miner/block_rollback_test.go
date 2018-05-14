@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Tests whether state is the same before validation and after rollback of a block

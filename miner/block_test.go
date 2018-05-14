@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Tests block adding, verification, serialization and deserialization

@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"../protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 var (

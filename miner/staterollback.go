@@ -1,8 +1,8 @@
 package miner
 
 import (
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func accStateChangeRollback(txSlice []*protocol.AccTx) {

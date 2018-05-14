@@ -1,7 +1,7 @@
 package miner
 
 import (
-	"../protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"testing"
 )
 

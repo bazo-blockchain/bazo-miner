@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"../protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func TestFundsTxVerification(t *testing.T) {

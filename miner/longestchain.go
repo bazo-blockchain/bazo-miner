@@ -1,9 +1,9 @@
 package miner
 
 import (
-	"../p2p"
-	"../protocol"
-	"../storage"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"time"
 	"errors"
 	"fmt"
