@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"../protocol"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
 	"errors"
 )
