@@ -3,12 +3,14 @@ package vm
 import (
 	"log"
 	"testing"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 // Function generates random bytes, if an exception occurs, it is catched and printed out with the random bytes,
 // so the specific failing test can be recreated
 func Fuzz() {
-	code := RandomBytes()
+	code := protocol.RandomBytes()
 	vm := NewTestVM(code)
 	vm.context.MaxGasAmount = 10000
 	vm.context.ContractAccount.Contract = code

@@ -7,6 +7,9 @@ import (
 	"math/rand"
 	"time"
 
+	rand1 "crypto/rand"
+	rand2 "math/rand"
+
 	"golang.org/x/crypto/sha3"
 )
 
@@ -62,4 +65,15 @@ func CreateRandomSeed() [32]byte {
 		seed[i] = chars[r.Intn(len(chars))]
 	}
 	return seed
+}
+
+func RandomBytes() []byte {
+	byteArray := make([]byte, randomInt())
+	rand1.Read(byteArray)
+	return byteArray
+}
+
+func randomInt() int {
+	rand2.Seed(time.Now().Unix())
+	return rand2.Intn(1000)
 }

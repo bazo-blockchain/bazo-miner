@@ -1,12 +1,9 @@
 package vm
 
 import (
-	rand1 "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"math/big"
-	rand2 "math/rand"
-	"time"
 
 	"errors"
 )
@@ -48,23 +45,4 @@ func ByteArrayToInt(element []byte) int {
 func BigIntToString(element big.Int) string {
 	ba := element.Bytes()
 	return string(ba[:])
-}
-
-func StrToByteArray(element string) []byte {
-	return []byte(element)
-}
-
-func ByteArrayToString(element []byte) string {
-	return string(element[:])
-}
-
-func RandomBytes() []byte {
-	byteArray := make([]byte, RandomInt())
-	rand1.Read(byteArray)
-	return byteArray
-}
-
-func RandomInt() int {
-	rand2.Seed(time.Now().Unix())
-	return rand2.Intn(1000)
 }
