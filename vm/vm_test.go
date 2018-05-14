@@ -478,7 +478,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 		ADD,
 		PUSH, 0, 20,
 		LT,
-		JMPIF, 17,
+		JMPIF, 0, 18,
 		PUSH, 0, 3,
 		NOP,
 		NOP,
@@ -499,7 +499,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 func TestVM_Exec_Jmp(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 3,
-		JMP, 13,
+		JMP, 0, 14,
 		PUSH, 0, 4,
 		ADD,
 		PUSH, 0, 15,
@@ -527,11 +527,11 @@ func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 10,
 		PUSH, 0, 8,
-		CALL, 13, 2,
+		CALL, 0, 14, 2,
 		HALT,
 		NOP,
 		NOP,
-		LOAD, 0, // Begin of called function at address 13
+		LOAD, 0, // Begin of called function at address 14
 		LOAD, 1,
 		SUB,
 		RET,
@@ -1298,13 +1298,13 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 		// start ABI
 		CALLDATA,
 		DUP,
-		PUSH, 0, 16,
+		PUSH, 0, 1,
 		EQ,
-		JMPIF, 16,
+		JMPIF, 0, 18,
 		DUP,
-		PUSH, 0, 19,
+		PUSH, 0, 2,
 		EQ,
-		JMPIF, 19,
+		JMPIF, 0, 21,
 		HALT,
 		// end ABI
 		POP,
@@ -1321,7 +1321,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	mc.transactionData = []byte{
 		0, 2,
 		0, 5,
-		0, 16, // Function hash
+		0, 1, // Function hash
 	}
 
 	vm.context = mc
@@ -1339,20 +1339,20 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 		// start ABI
 		CALLDATA,
 		DUP,
-		PUSH, 0, 1, // Function hash
+		PUSH, 0, 1,
 		EQ,
-		JMPIF, 16,
+		JMPIF, 0, 18,
 		DUP,
-		PUSH, 0, 2, // Function hash
+		PUSH, 0, 2,
 		EQ,
-		JMPIF, 19,
+		JMPIF, 0, 21,
 		HALT,
 		// end ABI
 		POP,
-		ADD,
+		SUB,
 		HALT,
 		POP,
-		SUB,
+		ADD,
 		HALT,
 	}
 
@@ -1362,7 +1362,7 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 	mc.transactionData = []byte{
 		0, 2,
 		0, 5,
-		0, 1, // Function hash
+		0, 2, // Function hash
 	}
 
 	vm.context = mc
