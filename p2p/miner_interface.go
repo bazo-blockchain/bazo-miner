@@ -6,9 +6,9 @@ import (
 
 var (
 	//Block from the network, to the miner
-	BlockIn chan []byte = make(chan []byte)
+	BlockIn = make(chan []byte)
 	//Block from the miner, to the network
-	BlockOut chan []byte = make(chan []byte)
+	BlockOut = make(chan []byte)
 
 	//Data requested by miner, to allow parallelism, we have a chan for every tx type
 	FundsTxChan  = make(chan *protocol.FundsTx)

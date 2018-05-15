@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"encoding/binary"
+
 	"golang.org/x/crypto/sha3"
 )
 
@@ -30,6 +31,16 @@ type VM struct {
 	evaluationStack *Stack
 	callStack       *CallStack
 	context         Context
+}
+
+func NewVM(context Context) VM {
+	return VM{
+		code:            []byte{},
+		pc:              0,
+		evaluationStack: NewStack(),
+		callStack:       NewCallStack(),
+		context:         context,
+	}
 }
 
 func NewTestVM(byteCode []byte) VM {
@@ -959,4 +970,12 @@ func (vm *VM) checkErrors(errors ...error) bool {
 		}
 	}
 	return true
+}
+
+func (vm *VM) GetErrorMsg() string {
+	tos, err := vm.evaluationStack.Peek()
+	if err != nil {
+		return "Peek on empty Stack"
+	}
+	return BigIntToString(tos)
 }

@@ -161,7 +161,6 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	var hashStakeSlice [][32]byte
 
 	//in order to create valid funds transactions we need to know the tx count of acc A
-
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 	loopMax := int(rand.Uint32()%testSize) + 1
 	loopMax += int(accA.TxCnt)

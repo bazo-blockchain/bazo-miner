@@ -1,15 +1,14 @@
 package protocol
 
 import (
+	"errors"
 	"math/big"
 )
 
-
 type Context struct {
-	transactionSender [32]byte
-	transactionData   []byte
-	account Account
+	Account
 	changes []Change
+	FundsTx
 }
 
 type Change struct {
@@ -17,46 +16,74 @@ type Change struct {
 	value big.Int
 }
 
-func NewChange(index int, value big.Int) Change{
+func NewChange(index int, value big.Int) Change {
 	return Change{index, value}
 }
 
-func (c * Change) GetChange() (int, big.Int){
+func (c *Change) GetChange() (int, big.Int) {
 	return c.index, c.value
 }
 
-func NewVMContext(from [32]byte, data  []byte, account Account){
-	c := Context{}
-	c.transactionSender = from
-	c.transactionData = data
-	c.account = account
-	c.changes = []Change{}
+func NewContext(account Account, fundsTx FundsTx) *Context {
+	newContext := Context{
+		Account: account,
+		changes: []Change{},
+		FundsTx: fundsTx,
+	}
+	return &newContext
 }
 
-func (c * Context) GetContract(){
-
+func (c *Context) GetContract() []byte {
+	return c.Contract
 }
 
-func (c * Context) GetContractVariable(index int) big.Int {
-	return big.Int{}
+func (c *Context) GetContractVariable(index int) (big.Int, error) {
+	if index >= len(c.ContractVariables) {
+		return big.Int{}, errors.New("Index out of bounds")
+	}
+	return c.ContractVariables[index], nil
 }
 
-func (c * Context) GetTransactionSender() [32]byte {
-	return [32]byte{}
+func (c *Context) SetContractVariable(index int, value big.Int) error {
+	if len(c.ContractVariables) <= index {
+		return errors.New("Index out of bounds")
+	}
+	change := NewChange(index, value)
+	c.changes = append(c.changes, change)
+	return nil
 }
 
-func (c * Context) GetTransactionData() []byte {
-	return []byte{}
+func (c *Context) PersistChanges() {
+	for _, change := range c.changes {
+		i, value := change.GetChange()
+		c.ContractVariables[i] = value
+	}
 }
 
-func (c * Context) SetContractVariable(index int, value big.Int){
-
+func (c *Context) GetAddress() [64]byte {
+	return c.Address
 }
 
-
-
-func (c * Context) GetBalance(){
-
+func (c *Context) GetBalance() uint64 {
+	return c.Balance
 }
 
+func (c *Context) GetSender() [32]byte {
+	return c.From
+}
 
+func (c *Context) GetAmount() uint64 {
+	return c.Amount
+}
+
+func (c *Context) GetTransactionData() []byte {
+	return c.Data
+}
+
+func (c *Context) GetFee() uint64 {
+	return c.Fee
+}
+
+func (c *Context) GetSig1() [64]byte {
+	return c.Sig1
+}

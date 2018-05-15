@@ -4,11 +4,12 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"sync"
+
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -20,11 +21,11 @@ var (
 	slashingDict        map[[32]byte]SlashingProof
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
-	seedFile		 	string
+	seedFile            string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool,) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
 	var hashedSeed [32]byte
 	var blockToMine *protocol.Block
 
@@ -121,14 +122,14 @@ func initRootKey() ([32]byte, error) {
 
 	newSeed := storage.SeedJson{
 		HashedSeed: fmt.Sprintf("%x", string(hashedSeed[:])),
-		Seed: string(seed[:])}
+		Seed:       string(seed[:])}
 
 	if err := storage.AppendNewSeed(seedFile, newSeed); err != nil {
 		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
 	}
 
 	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed)
+	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed, nil, nil)
 	//Add root key to the state
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc

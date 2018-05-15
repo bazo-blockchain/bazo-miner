@@ -2,14 +2,9 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"math/big"
-	"strconv"
-)
-
-const (
-	ACC_SIZE = 113
 )
 
 type Account struct {
@@ -23,7 +18,7 @@ type Account struct {
 	ContractVariables  []big.Int // Arbitrary length
 }
 
-func NewAccount(address [64]byte, balance uint64, isStaking bool, hashedSeed [32]byte) Account {
+func NewAccount(address [64]byte, balance uint64, isStaking bool, hashedSeed [32]byte, contract []byte, contractVariables []big.Int) Account {
 	newAcc := Account{
 		address,
 		balance,
@@ -31,10 +26,9 @@ func NewAccount(address [64]byte, balance uint64, isStaking bool, hashedSeed [32
 		isStaking,
 		hashedSeed,
 		0,
-		[]byte{},
-		[]big.Int{},
+		contract,
+		contractVariables,
 	}
-
 	return newAcc
 }
 
@@ -42,59 +36,39 @@ func (acc *Account) Hash() (hash [32]byte) {
 	if acc == nil {
 		return [32]byte{}
 	}
-
 	return SerializeHashContent(acc.Address)
 }
 
 func (acc *Account) Encode() (encodedAcc []byte) {
-
 	if acc == nil {
 		return nil
 	}
 
-	encodedAcc = make([]byte, ACC_SIZE)
+	encodeData := Account{
+		Address:            acc.Address,
+		Balance:            acc.Balance,
+		TxCnt:              acc.TxCnt,
+		IsStaking:          acc.IsStaking,
+		HashedSeed:         acc.HashedSeed,
+		StakingBlockHeight: acc.StakingBlockHeight,
+		Contract:           acc.Contract,
+		ContractVariables:  acc.ContractVariables,
+	}
 
-	var balanceBuf [8]byte
-	var txCntBuf [4]byte
-	var isStakingBuf [1]byte
-	var stakingBlockHeightBuf [4]byte
-
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, acc.IsStaking)
-	copy(isStakingBuf[:], buf.Bytes())
-
-	binary.BigEndian.PutUint64(balanceBuf[:], acc.Balance)
-	binary.BigEndian.PutUint32(txCntBuf[:], acc.TxCnt)
-	binary.BigEndian.PutUint32(stakingBlockHeightBuf[:], acc.StakingBlockHeight)
-
-	copy(encodedAcc[0:64], acc.Address[:])
-	copy(encodedAcc[64:72], balanceBuf[:])
-	copy(encodedAcc[72:76], txCntBuf[:])
-	copy(encodedAcc[76:77], isStakingBuf[:])
-	copy(encodedAcc[77:109], acc.HashedSeed[:])
-	copy(encodedAcc[109:113], stakingBlockHeightBuf[:])
-
-	return encodedAcc
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encodeData)
+	return buffer.Bytes()
 }
 
 func (*Account) Decode(encodedAcc []byte) (acc *Account) {
-
-	if len(encodedAcc) != ACC_SIZE {
-		return nil
-	}
-
-	acc = new(Account)
-	copy(acc.Address[:], encodedAcc[0:64])
-	acc.Balance = binary.BigEndian.Uint64(encodedAcc[64:72])
-	acc.TxCnt = binary.BigEndian.Uint32(encodedAcc[72:76])
-	acc.IsStaking, _ = strconv.ParseBool(string(encodedAcc[76:77]))
-	copy(acc.HashedSeed[:], encodedAcc[77:109])
-	acc.StakingBlockHeight = binary.BigEndian.Uint32(encodedAcc[109:113])
-
-	return acc
+	var decoded Account
+	buffer := bytes.NewBuffer(encodedAcc)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
 }
 
 func (acc Account) String() string {
 	addressHash := SerializeHashContent(acc.Address)
-	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, IsStaking: %v, HashedSeed: %x, StakingBlockHeight: %v", addressHash[0:8], acc.Address[0:8], acc.TxCnt, acc.Balance, acc.IsStaking, acc.HashedSeed[0:8], acc.StakingBlockHeight)
+	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, IsStaking: %v, HashedSeed: %x, StakingBlockHeight: %v, Contract: %v, ContractVariables: %v", addressHash[0:8], acc.Address[0:8], acc.TxCnt, acc.Balance, acc.IsStaking, acc.HashedSeed[0:8], acc.StakingBlockHeight, acc.Contract, acc.ContractVariables)
 }

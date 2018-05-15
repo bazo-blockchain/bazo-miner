@@ -131,19 +131,19 @@ func (a *Array) goToIndex(index uint16, f action) ([]byte, error) {
 	//Since the Elements can be of variable size,
 	//each Element has to be visited to know how many bytes it occupies
 
-	var indexOnByteArrray uint16 = offset
-	for ; indexOnByteArrray < uint16(len(*a)) && currentElement <= index; currentElement++ {
-		elementSize, err := ByteArrayToUI16((*a)[indexOnByteArrray : indexOnByteArrray+2])
+	var indexOnByteArray = offset
+	for ; indexOnByteArray < uint16(len(*a)) && currentElement <= index; currentElement++ {
+		elementSize, err := ByteArrayToUI16((*a)[indexOnByteArray : indexOnByteArray+2])
 
 		if err != nil {
 			return []byte{}, err
 		}
 
 		if currentElement == index {
-			result, err := f(a, indexOnByteArrray, elementSize)
+			result, err := f(a, indexOnByteArray, elementSize)
 			return result, err
 		}
-		indexOnByteArrray += 2 + elementSize
+		indexOnByteArray += 2 + elementSize
 	}
 
 	return []byte{}, errors.New("array internals error")
