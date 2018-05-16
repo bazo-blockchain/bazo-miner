@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"bytes"
 	"errors"
 	"log"
 	"math/big"
@@ -79,6 +80,7 @@ func (a *Array) At(index uint16) ([]byte, error) {
 }
 
 func (a *Array) Insert(index uint16, e big.Int) error {
+	a.Remove(index)
 	var f action = func(array *Array, k uint16, s uint16) ([]byte, error) {
 		tmp := Array{}
 		tmp = append(tmp, (*a)[:k]...)
@@ -92,6 +94,9 @@ func (a *Array) Insert(index uint16, e big.Int) error {
 
 func (a *Array) Append(e big.Int) error {
 	ba := e.Bytes()
+	if bytes.Equal(ba, []byte{}) {
+		ba = []byte{0x00, 0x00}
+	}
 	s := len(ba)
 
 	if s > int(UINT16_MAX) {
@@ -112,6 +117,7 @@ func (a *Array) Remove(index uint16) error {
 		return []byte{}, nil
 	}
 	_, err := a.goToIndex(index, f)
+	a.DecrementSize()
 	return err
 }
 

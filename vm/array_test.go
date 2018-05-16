@@ -94,8 +94,8 @@ func TestArray_Insert(t *testing.T) {
 	v := big.NewInt(1)
 	a.Insert(0, *v)
 
-	expected0 := []byte{0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	actual0, err0 := a.At(1)
+	expected0 := []byte{0x01}
+	actual0, err0 := a.At(0)
 	if err0 != nil {
 		t.Errorf("%v", err0)
 	}
@@ -104,12 +104,17 @@ func TestArray_Insert(t *testing.T) {
 	}
 
 	expected1 := []byte{0x65, 0x00, 0x00, 0x00}
-	actual1, err1 := a.At(2)
+	actual1, err1 := a.At(1)
 	if err1 != nil {
 		t.Errorf("%v", err1)
 	}
 	if !bytes.Equal(actual1, expected1) {
 		t.Errorf("Invalid element, expected %v after insert at pos 0 but got %v", expected1, actual1)
+	}
+
+	size, _ := a.getSize()
+	if size != uint16(3) {
+		t.Errorf("Expected Array size to be 3 but got %v", size)
 	}
 }
 
@@ -117,13 +122,40 @@ func TestArray_Append(t *testing.T) {
 	a := NewArray()
 	el := big.NewInt(12345678910111213)
 	err := a.Append(*el)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
 
+	el = big.NewInt(12345678)
+	err = a.Append(*el)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
 	size, err := a.getSize()
-	if size != 1 || err != nil {
+	if size != 2 || err != nil {
 		t.Errorf("Invalid Array Size, Expected 1 after append but got %v", size)
+	}
+}
+
+func TestArray_Remove(t *testing.T) {
+	a := NewArray()
+	el := big.NewInt(12345678910111213)
+
+	err := a.Append(*el)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	err = a.Append(*el)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	a.Remove(1)
+
+	size, err := a.getSize()
+	if size != 1 || err != nil {
+		t.Errorf("Invalid Array Size, Expected 1 after appending 2 elements and removing one but got %v", size)
 	}
 }

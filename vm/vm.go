@@ -655,7 +655,7 @@ func (vm *VM) Exec(trace bool) bool {
 			for i := 0; i < len(td); i++ {
 				length := int(td[i]) // Length of parameters
 
-				if length > len(td)+i {
+				if len(td)-i-1 <= length {
 					vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
 					return false
 				}
@@ -766,38 +766,64 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		/*case ARRINSERT:
-		i, err := vm.evaluationStack.Pop()
-		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(err.Error()))
-			return false
-		}
-		if len(i.Bytes()) != 2 {
-			vm.evaluationStack.Push(StrToBigInt("Wrong index size"))
-			return false
-		}
+		case ARRINSERT:
+			i, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
-		e, err := vm.evaluationStack.Pop()
-		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(err.Error()))
-			return false
-		}
+			if len(i.Bytes()) > 2 {
+				vm.evaluationStack.Push(StrToBigInt("Wrong index size"))
+				return false
+			}
 
-		a, err := vm.evaluationStack.Pop()
-		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(err.Error()))
-			return false
-		}
+			e, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
-		arr, err := ArrayFromBigInt(a)
-		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(err.Error()))
-			return false
-		}
+			a, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
+			arr, err := ArrayFromBigInt(a)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
+			index, err := ByteArrayToUI16(i.Bytes())
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
-		arr.Insert(ByteArrayToUI16(i.Bytes()), e)*/
+			size, err := arr.getSize()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
+
+			if index >= size {
+				vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+				return false
+			}
+
+			err = arr.Insert(index, e)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(arr.ToBigInt())
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
 
 		case ARRREMOVE:
 			a, aerr := vm.evaluationStack.Pop()
@@ -817,12 +843,6 @@ func (vm *VM) Exec(trace bool) bool {
 			rerr := arr.Remove(index)
 			if rerr != nil {
 				vm.evaluationStack.Push(StrToBigInt(rerr.Error()))
-				return false
-			}
-
-			derr := arr.DecrementSize()
-			if derr != nil {
-				vm.evaluationStack.Push(StrToBigInt(derr.Error()))
 				return false
 			}
 
