@@ -1043,10 +1043,11 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 	}
 }
 
-/*
-func TestVM_Exec_ArrInsert(t *testing.T){
+func TestVM_Exec_ArrInsert(t *testing.T) {
 	code := []byte{
 		NEWARR,
+		PUSH, 0x01, 0xFF, 0x00,
+		ARRAPPEND,
 		PUSH, 0x01, 0xFF, 0x00,
 		ARRAPPEND,
 		PUSH, 0x01, 0x00, 0x00,
@@ -1069,12 +1070,17 @@ func TestVM_Exec_ArrInsert(t *testing.T){
 		t.Errorf("%v", err)
 	}
 
-	actual := arr.Bytes()[1:2]
-	expected := []byte{0xFF, 0x00,}
-	if !bytes.Equal(expected, actual) {
-		t.Errorf("invalid element appended, Expected '%# x' but was '%# x'", expected, actual)
+	actual := arr.Bytes()
+	expectedSize := []byte{0x02}
+	if !bytes.Equal(expectedSize, actual[1:2]) {
+		t.Errorf("invalid element appended, Expected '%# x' but was '%# x'", expectedSize, actual)
 	}
-}*/
+
+	expectedValue := []byte{0x00, 0x00}
+	if !bytes.Equal(expectedValue, actual[5:7]) {
+		t.Errorf("invalid element appended, Expected '%# x' but was '%# x'", expectedValue, actual)
+	}
+}
 
 func TestVM_Exec_ArrRemove(t *testing.T) {
 	code := []byte{
@@ -1103,6 +1109,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v", err)
 	}
+
 	arr, bierr := ArrayFromBigInt(a)
 	if bierr != nil {
 		t.Errorf("%v", err)
