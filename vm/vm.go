@@ -655,6 +655,11 @@ func (vm *VM) Exec(trace bool) bool {
 			for i := 0; i < len(td); i++ {
 				length := int(td[i]) // Length of parameters
 
+				if length > len(td)+i {
+					vm.evaluationStack.Push(StrToBigInt("Index out of bounds"))
+					return false
+				}
+
 				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(td[i+1 : i+length+2]))
 
 				if err != nil {
