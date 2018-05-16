@@ -1,11 +1,10 @@
 package vm
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"math/big"
-
-	"errors"
 )
 
 const UINT16_MAX uint16 = 65535
@@ -23,8 +22,8 @@ func UInt16ToByteArray(element uint16) []byte {
 }
 
 func ByteArrayToUI16(element []byte) (uint16, error) {
-	if len(element) != 2 {
-		return 0, errors.New("not a valid uint16 representation")
+	if bytes.Equal([]byte{}, element) {
+		return 0, nil
 	}
 	return binary.LittleEndian.Uint16(element), nil
 }
