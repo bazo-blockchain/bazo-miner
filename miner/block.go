@@ -166,9 +166,8 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		virtualMachine := vm.NewVM(context)
 
 		// Check if vm execution run without error
-		if !virtualMachine.Exec(true) {
-			err := virtualMachine.GetErrorMsg()
-			return errors.New(err)
+		if !virtualMachine.Exec(false) {
+			return errors.New(virtualMachine.GetErrorMsg())
 		}
 
 		//Update changes vm has made to the contract variables

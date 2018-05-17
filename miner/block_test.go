@@ -218,7 +218,6 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 			fmt.Print(err)
 		}
 	}
-
 	return hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice
 }
 
