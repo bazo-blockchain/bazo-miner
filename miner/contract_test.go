@@ -3,6 +3,7 @@ package miner
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"testing"
 
 	"math/big"
@@ -69,9 +70,53 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	}
 }
 
+// This test is similar to the TestMultipleBlocksWithStateChangeContractTx. The difference is, that after the first state change
+// transaction, a second one is called, which changes the state again.
+func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
+	cleanAndPrepare()
+
+	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	contract := []byte{
+		33,    // CALLDATA
+		28, 0, // SLOAD
+		4,     // ADD
+		26, 0, // SSTORE
+		46, // HALT
+	}
+	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
+	finalizeBlock(b)
+	if err := validateBlock(b); err != nil {
+		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
+	}
+
+	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	transactionData := []byte{
+		0, 15,
+	}
+	createBlockWithSingleContractCallTx(b2, transactionData)
+	finalizeBlock(b2)
+	if err := validateBlock(b2); err != nil {
+		t.Errorf("Block validation failed: %v\n", err)
+	}
+
+	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
+	transactionData = []byte{
+		0, 15,
+	}
+	hash := createBlockWithSingleContractCallTx(b3, transactionData)
+	finalizeBlock(b3)
+	if err := validateBlock(b3); err != nil {
+		t.Errorf("Block validation failed: %v\n", err)
+	}
+
+	contractVariables := storage.GetAccount(hash).ContractVariables
+	if !reflect.DeepEqual(contractVariables, []big.Int{*big.NewInt(32)}) {
+		t.Errorf("State change not persisted, expected: [{false [32]}], is %v.", contractVariables)
+	}
+}
+
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []big.Int) {
 	tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, [64]byte{}, &RootPrivKey, contract, contractVariables)
-
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {
@@ -79,7 +124,7 @@ func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, c
 	}
 }
 
-func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) {
+func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) [32]byte {
 	for hash := range storage.GetAllAccounts() {
 		if storage.GetAccount(hash).Contract != nil {
 			accAHash := protocol.SerializeHashContent(accA.Address)
@@ -91,6 +136,8 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 			} else {
 				fmt.Print(err)
 			}
+			return accBHash
 		}
 	}
+	return [32]byte{}
 }
