@@ -1,5 +1,7 @@
 package storage
 
+import "os"
+
 const (
 	//Aduno
 	//BOOTSTRAP_SERVER_IP = "104.40.213.93"
@@ -11,10 +13,6 @@ const (
 
 	BOOTSTRAP_SERVER = BOOTSTRAP_SERVER_IP + BOOTSTRAP_SERVER_PORT
 
-	//Root Public Keys at initialization time. This is the only existing account at startup
-	//All other accounts are created
-	INITROOTPUBKEY1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
-	INITROOTPUBKEY2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
 
 	GENESIS_SEED = "FfhHEtSNQO6JyAUcKPlrlWzUqFXo1EoB"
 
@@ -24,4 +22,12 @@ const (
 	DEFAULT_KEY_FILE_NAME = "root"
 
 	INIT_ROOT_SEED = "GfhHEtSNQO6JyAUcKPlrlWzUqFXo1EoB"
+)
+
+
+var (
+	//Root Public Keys at initialization time. This is the only existing account at startup
+	//All other accounts are created
+	INITROOTPUBKEY1 = os.Getenv("INITROOTPUBKEY1")
+	INITROOTPUBKEY2 = os.Getenv("INITROOTPUBKEY2")
 )

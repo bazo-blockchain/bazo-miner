@@ -156,9 +156,11 @@ func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
 }
 
 func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey, err error) {
-	pub1Int, b := new(big.Int).SetString(pub1, 16)
-	pub2Int, b := new(big.Int).SetString(pub2, 16)
-	if !b {
+	pub1Int, b1 := new(big.Int).SetString(pub1, 16)
+	pub2Int, b2 := new(big.Int).SetString(pub2, 16)
+	if !b1 || !b2 {
+		fmt.Printf("Failed to convert the key strings to big.Int. " +
+			"Pub1: %v\nPub2: %v\n", pub1, pub2)
 		return pubKey, errors.New("Failed to convert the key strings to big.Int.")
 	}
 

@@ -440,7 +440,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 	//Does the beneficiary exist in the state
 	acc := storage.GetAccount(block.Beneficiary)
 	if acc == nil {
-		return nil, nil, nil, nil, errors.New("Beneficiary not in the State.")
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Beneficiary %x not in the State.", block.Beneficiary))
 	}
 
 	//PoS validation

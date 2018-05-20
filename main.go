@@ -6,6 +6,8 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
 	"strings"
+	"fmt"
+	"strconv"
 )
 
 func main() {
@@ -16,6 +18,11 @@ func main() {
 		return
 	}
 
+	if envInitRootBalance := os.Getenv("INITROOTBALANCE"); envInitRootBalance != "" {
+		fmt.Printf("Using root balance from env %v\n", envInitRootBalance)
+		parsedInitBalance, _  := strconv.ParseUint(envInitRootBalance, 0, 64)
+		miner.InitialRootBalance = uint64(parsedInitBalance)
+	}
 	dbname := os.Args[1]
 	ipport := os.Args[2]
 	validator := os.Args[3]

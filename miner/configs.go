@@ -29,3 +29,7 @@ const (
 	SLASH_REWARD         = 2   //coins
 	NUM_INCL_PREV_SEEDS  = 5   //number of previous seeds included in the PoS condition
 )
+
+var (
+	InitialRootBalance uint64 = INITIALINITROOTBALANCE
+)

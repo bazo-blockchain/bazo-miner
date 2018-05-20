@@ -44,28 +44,29 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 
 	//We must first update the state before we can start mining.
 	// In order to make PoS we must know our balance in the state
-	if isBootstrap {
-		// Get the last closed block from DB or create genesis
-		initialBlock, err := SetUpInitialState(hashedSeed)
-		blockToMine = initialBlock
-		if err != nil {
-			logger.Printf("Could not set up initial state: %v.\n", err)
-			return
-		}
-		//Initialize root key
-		//the hashedSeed is necessary since it must be included in the initial block
-		if hashedSeed, err = initRootKey(); err != nil {
-			logger.Printf("Could not create a root account.\n")
-			return
-		}
-		validatorAccount := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
-		if validatorAccount == nil {
-			fmt.Printf("Error: Validator address not found in state!\n"+
-				"This means that you are trying to bootstrap with a key that is not part of the state.\n"+
-				"Validator address expected: %x\n", validatorAccAddress)
-			return
-		}
-	} else {
+	// Get the last closed block from DB or create genesis
+	initialBlock, err := SetUpInitialState(hashedSeed)
+	blockToMine = initialBlock
+	if err != nil {
+		logger.Printf("Could not set up initial state: %v.\n", err)
+		return
+	}
+
+	//Initialize root key
+	//the hashedSeed is necessary since it must be included in the initial block
+	if hashedSeed, err = initRootKey(); err != nil {
+		logger.Printf("Could not create a root account.\n")
+		return
+	}
+
+	validatorAccount := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	if validatorAccount == nil {
+		fmt.Printf("Error: Validator address not found in state!\n"+
+			"This means that you are trying to bootstrap with a key that is not part of the state.\n"+
+			"Validator address expected: %x\n", validatorAccAddress)
+		return
+	}
+	if !isBootstrap {
 		payload := <-p2p.BlockIn
 		processBlock(payload)
 		blockToMine = lastBlock
@@ -128,7 +129,7 @@ func initRootKey() ([32]byte, error) {
 	}
 
 	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed)
+	rootAcc := protocol.NewAccount(address, InitialRootBalance, true, hashedSeed)
 	//Add root key to the state
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
