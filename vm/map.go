@@ -82,6 +82,15 @@ func (m *Map) Append(key []byte, value []byte) error {
 	return nil
 }
 
+func (m *Map) SetVal(key []byte, value []byte) error {
+	err := m.Remove(key)
+	m.Append(key, value)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *Map) GetVal(key []byte) ([]byte, error) {
 	offset := 3
 	l := len(*m)

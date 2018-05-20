@@ -717,6 +717,29 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
+		case MAPSETVAL:
+			k, kerr := vm.evaluationStack.Pop()
+			v, verr := vm.evaluationStack.Pop()
+			mbi, mbierr := vm.evaluationStack.Pop()
+			m, merr := MapFromBigInt(mbi)
+
+			if !vm.checkErrors(kerr, verr, mbierr, merr) {
+				return false
+			}
+
+			err := m.SetVal(k.Bytes(), v.Bytes())
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m.ToBigInt())
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
+
 		case MAPREMOVE:
 			kbi, kbierr := vm.evaluationStack.Pop()
 			mbi, mbierr := vm.evaluationStack.Pop()

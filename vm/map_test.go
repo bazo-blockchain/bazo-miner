@@ -91,6 +91,36 @@ func TestMap_GetVal(t *testing.T) {
 	if !bytes.Equal(expected3, actual3) {
 		t.Errorf("Unexpected value, Expected '%# x' but was '%# x'", expected3, actual3)
 	}
+}
+
+func TestMap_SetVal(t *testing.T) {
+	actual := NewMap()
+	actual.Append([]byte{0x00}, []byte{0x00})
+	actual.Append([]byte{0x02, 0x00}, []byte{0x02, 0x02, 0x02})
+
+	size, err := actual.getSize()
+	if size != 2 || err != nil {
+		t.Errorf("Expected map size to be '4' but was '%v'", size)
+	}
+
+	expected := NewMap()
+	expected.Append([]byte{0x00}, []byte{0x00})
+	expected.Append([]byte{0x02, 0x00}, []byte{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04})
+
+	err = actual.SetVal([]byte{0x02, 0x00}, []byte{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04})
+
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	size, err = actual.getSize()
+	if size != 2 || err != nil {
+		t.Errorf("Expected map size to be '4' but was '%v'", size)
+	}
+
+	if !bytes.Equal(expected, actual) {
+		t.Errorf("Expected map to be '[%# x]' but was '[%# x]' after setVal", expected, actual)
+	}
 
 }
 

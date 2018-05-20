@@ -938,6 +938,53 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_MapSetVal(t *testing.T) {
+	code := []byte{
+		NEWMAP,
+		PUSH, 0x01, 0x48, 0x69,
+		PUSH, 0x00, 0x03,
+		MAPPUSH,
+		PUSH, 0x01, 0x69, 0x69,
+		PUSH, 0x00, 0x02,
+		MAPPUSH,
+		PUSH, 0x01, 0x55, 0x55,
+		PUSH, 0x00, 0x03,
+		MAPSETVAL,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	exec := vm.Exec(false)
+
+	if !exec {
+		errorMessage, _ := vm.evaluationStack.Pop()
+		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+	}
+
+	mbi, err := vm.evaluationStack.Pop()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+	m, err := MapFromBigInt(mbi)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	e := []byte{0x01,
+		0x02, 0x00,
+		0x01, 0x00, 0x02,
+		0x02, 0x00, 0x69, 0x69,
+		0x01, 0x00, 0x03,
+		0x02, 0x00, 0x55, 0x55,
+	}
+
+	if !bytes.Equal(m, e) {
+		t.Errorf("invalid datastructure, Expected %# x but was '%# x'", e, m)
+	}
+}
+
 func TestVM_Exec_MapRemove(t *testing.T) {
 	code := []byte{
 		NEWMAP,
@@ -1396,7 +1443,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 	tos, _ := vm.evaluationStack.Pop()
 
 	if BigIntToString(tos) != "instructionSet out of bounds" {
-		t.Errorf("instructionSet out of bounds %v", tos)
+		t.Errorf("instructionSet out of bounds %v", BigIntToString(tos))
 	}
 }
 
@@ -1413,13 +1460,13 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 	tos, _ := vm.evaluationStack.Pop()
 
 	if BigIntToString(tos) != "not a valid array" {
-		t.Errorf("not a valid array %v", tos)
+		t.Errorf("not a valid array %v", BigIntToString(tos))
 	}
 }
 
 func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	code := []byte{
-		ADDRESS, CALLER, 39,
+		ADDRESS, CALLER, ARRAPPEND,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1430,6 +1477,6 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	tos, _ := vm.evaluationStack.Pop()
 
 	if BigIntToString(tos) != "not a valid array" {
-		t.Errorf("not a valid array %v", tos)
+		t.Errorf("not a valid array %v", BigIntToString(tos))
 	}
 }
