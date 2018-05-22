@@ -494,6 +494,37 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.callStack.Push(frame)
 			vm.pc = int(returnAddress.Int64()) - 1
 
+		case CALLIF:
+			returnAddressBytes, errArg1 := vm.fetchMany(2) // Shows where to jump after executing
+			argsToLoad, errArg2 := vm.fetch()              // Shows how many elements have to be popped from evaluationStack
+			right, errStack := vm.evaluationStack.Pop()
+
+			if !vm.checkErrors(errArg1, errArg2, errStack) {
+				return false
+			}
+
+			if right.Int64() == 1 {
+				var returnAddress big.Int
+				returnAddress.SetBytes(returnAddressBytes)
+
+				if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
+					vm.evaluationStack.Push(StrToBigInt("ReturnAddress out of bounds"))
+					return false
+				}
+
+				frame := &Frame{returnAddress: vm.pc, variables: make(map[int]big.Int)}
+
+				for i := int(argsToLoad) - 1; i >= 0; i-- {
+					frame.variables[i], err = vm.evaluationStack.Pop()
+					if err != nil {
+						vm.evaluationStack.Push(StrToBigInt(err.Error()))
+						return false
+					}
+				}
+				vm.callStack.Push(frame)
+				vm.pc = int(returnAddress.Int64()) - 1
+			}
+
 		case CALLEXT:
 			transactionAddress, errArg1 := vm.fetchMany(32) // Addresses are 32 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
