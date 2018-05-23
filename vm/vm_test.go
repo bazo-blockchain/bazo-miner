@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -559,6 +560,82 @@ func TestVM_Exec_Call(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Callif(t *testing.T) {
+	code := []byte{
+		PUSH, 0, 10,
+		PUSH, 0, 8,
+		PUSH, 0, 10,
+		PUSH, 0, 10,
+		EQ,
+		CALLIF, 0, 21, 2,
+		HALT,
+		NOP,
+		NOP,
+		LOAD, 0, // Begin of called function at address 21
+		LOAD, 1,
+		SUB,
+		RET,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, err := vm.evaluationStack.Peek()
+
+	if err != nil {
+		t.Errorf("Expected empty Stack to throw an error when using peek() but it didn't")
+	}
+
+	if tos.Int64() != 2 {
+		t.Errorf("Actual value is %v, sould be 3 after jumping to halt", tos)
+	}
+
+	callStackLenght := vm.callStack.GetLength()
+
+	if callStackLenght != 0 {
+		t.Errorf("After calling and returning, callStack lenght should be 0, but is %v", callStackLenght)
+	}
+
+	code1 := []byte{
+		PUSH, 0, 10,
+		PUSH, 0, 8,
+		PUSH, 0, 10,
+		PUSH, 0, 2,
+		EQ,
+		CALLIF, 0, 21, 2,
+		HALT,
+		NOP,
+		NOP,
+		LOAD, 0, // Begin of called function at address 21
+		LOAD, 1,
+		SUB,
+		RET,
+	}
+
+	vm1 := NewTestVM([]byte{})
+	mc1 := NewMockContext(code1)
+	vm1.context = mc1
+	vm1.Exec(false)
+
+	tos1, err := vm1.evaluationStack.Peek()
+
+	if err != nil {
+		t.Errorf("Expected empty Stack to throw an error when using peek() but it didn't")
+	}
+
+	if tos1.Int64() != 8 {
+		t.Errorf("Actual value is %v, sould be 8 after ignoring callif", tos)
+	}
+
+	callStackLenght1 := vm1.callStack.GetLength()
+
+	if callStackLenght1 != 0 {
+		t.Errorf("After skipping callif, callStack lenght should be 0, but is %v", callStackLenght)
+	}
+}
+
 func TestVM_Exec_TosSize(t *testing.T) {
 	code := []byte{
 		PUSH, 2, 10, 4, 5,
@@ -643,7 +720,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_ADDRESS(t *testing.T) {
+func TestVM_Exec_Address(t *testing.T) {
 	code := []byte{
 		ADDRESS,
 		HALT,
@@ -670,7 +747,7 @@ func TestVM_Exec_ADDRESS(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_BALANCE(t *testing.T) {
+func TestVM_Exec_Balance(t *testing.T) {
 	code := []byte{
 		BALANCE,
 		HALT,
@@ -695,7 +772,7 @@ func TestVM_Exec_BALANCE(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_CALLER(t *testing.T) {
+func TestVM_Exec_Caller(t *testing.T) {
 	code := []byte{
 		CALLER,
 		HALT,
@@ -725,7 +802,7 @@ func TestVM_Exec_CALLER(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_CALLVAL(t *testing.T) {
+func TestVM_Exec_Callval(t *testing.T) {
 	code := []byte{
 		CALLVAL,
 		HALT,
@@ -750,7 +827,7 @@ func TestVM_Exec_CALLVAL(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_CALLDATA(t *testing.T) {
+func TestVM_Exec_Calldata(t *testing.T) {
 	code := []byte{
 		CALLDATA,
 		HALT,
@@ -1222,7 +1299,6 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 }
 
 func TestVM_Exec_NonValidOpCode(t *testing.T) {
-
 	code := []byte{
 		89,
 	}
@@ -1240,7 +1316,6 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 }
 
 func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
-
 	code := []byte{
 		PUSH, 0x00, 0x00, PUSH, 0x0b, 0x01, 0x00, 0x03, 0x12, 0x05,
 	}
@@ -1258,7 +1333,6 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 }
 
 func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
-
 	code := []byte{
 		PUSH, 0x00, 0x01, SHA3, 0x05, 0x02, 0x03,
 	}
@@ -1276,7 +1350,6 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 }
 
 func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
-
 	code := []byte{
 		PUSH, 0, 20,
 		ROLL, 0,
@@ -1295,7 +1368,6 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 }
 
 func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
-
 	code := []byte{
 		CALLEXT, 231,
 	}
@@ -1313,7 +1385,6 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 }
 
 func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
-
 	code := []byte{
 		SLOAD, 0, 0, 33,
 	}
@@ -1331,7 +1402,6 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 }
 
 func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
-
 	code := []byte{
 		PUSH, 4, 46, 110, 66, 50, 255, SSTORE, 123, 119,
 	}
@@ -1475,6 +1545,8 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
+
+	fmt.Println(BigIntToString(tos))
 
 	if BigIntToString(tos) != "not a valid array" {
 		t.Errorf("not a valid array %v", BigIntToString(tos))

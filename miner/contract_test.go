@@ -18,10 +18,10 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		33,      // CALLDATA
+		34,      // CALLDATA
 		0, 0, 5, // PUSH 5
 		4,  // ADD
-		45, // HALT
+		47, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
@@ -47,11 +47,11 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		33,    // CALLDATA
-		28, 0, // SLOAD
+		34,    // CALLDATA
+		29, 0, // SLOAD
 		4,     // ADD
-		26, 0, // SSTORE
-		46, // HALT
+		27, 0, // SSTORE
+		47, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
 	finalizeBlock(b)
@@ -63,10 +63,15 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	transactionData := []byte{
 		0, 15,
 	}
-	createBlockWithSingleContractCallTx(b2, transactionData)
+	hash := createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
 	if err := validateBlock(b2); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
+	}
+
+	contractVariables := storage.GetAccount(hash).ContractVariables
+	if !reflect.DeepEqual(contractVariables, []big.Int{*big.NewInt(17)}) {
+		t.Errorf("State change not persisted, expected: [{false [17]}], is %v.", contractVariables)
 	}
 }
 
@@ -77,11 +82,11 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		33,    // CALLDATA
-		28, 0, // SLOAD
+		34,    // CALLDATA
+		29, 0, // SLOAD
 		4,     // ADD
-		26, 0, // SSTORE
-		46, // HALT
+		27, 0, // SSTORE
+		47, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
 	finalizeBlock(b)
