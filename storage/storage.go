@@ -33,24 +33,24 @@ func Init(dbname string, ipport string) {
 	}
 
 	//Check if db file is empty for all non-bootstrapping miners
-	if ipport != BOOTSTRAP_SERVER_PORT {
-		err := db.View(func(tx *bolt.Tx) error {
-			err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
-				err := bkt.ForEach(func(k, v []byte) error {
-					if k != nil && v != nil {
-						return errors.New("Non-empty database given.")
-					}
-					return nil
-				})
-				return err
-			})
-			return err
-		})
-
-		if err != nil {
-			logger.Fatal(ERROR_MSG, err)
-		}
-	}
+	//if ipport != BOOTSTRAP_SERVER {
+	//	err := db.View(func(tx *bolt.Tx) error {
+	//		err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
+	//			err := bkt.ForEach(func(k, v []byte) error {
+	//				if k != nil && v != nil {
+	//					return errors.New("Non-empty database given.")
+	//				}
+	//				return nil
+	//			})
+	//			return err
+	//		})
+	//		return err
+	//	})
+	//
+	//	if err != nil {
+	//		logger.Fatal(ERROR_MSG, err)
+	//	}
+	//}
 
 	db.Update(func(tx *bolt.Tx) error {
 		_, err = tx.CreateBucket([]byte("openblocks"))
