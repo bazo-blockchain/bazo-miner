@@ -33,6 +33,7 @@ func Init(dbname string, ipport string) {
 	}
 
 	//Check if db file is empty for all non-bootstrapping miners
+	//TODO Enable again if needed
 	//if ipport != BOOTSTRAP_SERVER {
 	//	err := db.View(func(tx *bolt.Tx) error {
 	//		err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
