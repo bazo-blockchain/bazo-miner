@@ -21,7 +21,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 		34,      // CALLDATA
 		0, 0, 5, // PUSH 5
 		4,  // ADD
-		47, // HALT
+		48, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
@@ -51,7 +51,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		29, 0, // SLOAD
 		4,     // ADD
 		27, 0, // SSTORE
-		47, // HALT
+		48, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
 	finalizeBlock(b)
@@ -86,7 +86,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		29, 0, // SLOAD
 		4,     // ADD
 		27, 0, // SSTORE
-		47, // HALT
+		48, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
 	finalizeBlock(b)

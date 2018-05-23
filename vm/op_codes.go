@@ -114,6 +114,6 @@ var OpCodes = map[int]OpCode{
 	ARRAT:     {"arrat", 0, nil, 1},
 	SHA3:      {"sha3", 0, nil, 1},
 	CHECKSIG:  {"checksig", 0, nil, 1},
-	HALT:      {"halt", 0, nil, 0},
 	ERRHALT:   {"errhalt", 0, nil, 0},
+	HALT:      {"halt", 0, nil, 0},
 }
