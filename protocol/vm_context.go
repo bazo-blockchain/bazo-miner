@@ -64,6 +64,10 @@ func (c *Context) GetAddress() [64]byte {
 	return c.Address
 }
 
+func (c *Context) GetIssuer() [32]byte {
+	return c.Issuer
+}
+
 func (c *Context) GetBalance() uint64 {
 	return c.Balance
 }

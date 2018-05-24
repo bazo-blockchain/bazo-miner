@@ -129,7 +129,7 @@ func initRootKey() ([32]byte, error) {
 	}
 
 	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed, nil, nil)
+	rootAcc := protocol.NewAccount(address, [32]byte{}, INITIALINITROOTBALANCE, true, hashedSeed, nil, nil)
 	//Add root key to the state
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc

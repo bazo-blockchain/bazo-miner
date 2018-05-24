@@ -17,6 +17,7 @@ type Context interface {
 	GetContractVariable(index int) (big.Int, error)
 	SetContractVariable(index int, value big.Int) error
 	GetAddress() [64]byte
+	GetIssuer() [32]byte
 	GetBalance() uint64
 	GetSender() [32]byte
 	GetAmount() uint64
@@ -492,7 +493,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			vm.callStack.Push(frame)
-			vm.pc = int(returnAddress.Int64()) - 1
+			vm.pc = int(returnAddress.Int64())
 
 		case CALLIF:
 			returnAddressBytes, errArg1 := vm.fetchMany(2) // Shows where to jump after executing
@@ -522,7 +523,7 @@ func (vm *VM) Exec(trace bool) bool {
 					}
 				}
 				vm.callStack.Push(frame)
-				vm.pc = int(returnAddress.Int64()) - 1
+				vm.pc = int(returnAddress.Int64())
 			}
 
 		case CALLEXT:
@@ -642,6 +643,17 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
+		case ISSUER:
+			issuer := new(big.Int)
+			i := vm.context.GetIssuer()
+			issuer.SetBytes(i[:])
+			err := vm.evaluationStack.Push(*issuer)
+
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(err.Error()))
+				return false
+			}
+
 		case BALANCE:
 			balance := new(big.Int)
 			ba := make([]byte, 8)
@@ -656,11 +668,10 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLER:
-			address := new(big.Int)
-			a := vm.context.GetSender()
-			address.SetBytes(a[:])
-
-			err := vm.evaluationStack.Push(*address)
+			caller := new(big.Int)
+			c := vm.context.GetSender()
+			caller.SetBytes(c[:])
+			err := vm.evaluationStack.Push(*caller)
 
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(err.Error()))

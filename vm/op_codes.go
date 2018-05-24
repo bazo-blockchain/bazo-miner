@@ -32,6 +32,7 @@ const (
 	LOAD
 	SLOAD
 	ADDRESS // Address of account
+	ISSUER  // Owner of smart contract account
 	BALANCE // Balance of account
 	CALLER
 	CALLVAL  // Amount of bazo coins transacted in transaction
@@ -98,6 +99,7 @@ var OpCodes = map[int]OpCode{
 	LOAD:      {"load", 1, []int{BYTE}, 1},
 	SLOAD:     {"sload", 1, []int{INT}, 1},
 	ADDRESS:   {"address", 0, nil, 1},
+	ISSUER:    {"issuer", 0, nil, 1},
 	BALANCE:   {"balance", 0, nil, 1},
 	CALLER:    {"caller", 0, nil, 1},
 	CALLVAL:   {"callval", 0, nil, 1},

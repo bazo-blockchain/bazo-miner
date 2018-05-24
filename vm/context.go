@@ -55,6 +55,10 @@ func (mc *MockContext) GetAddress() [64]byte {
 	return mc.Address
 }
 
+func (mc *MockContext) GetIssuer() [32]byte {
+	return mc.Issuer
+}
+
 func (mc *MockContext) GetBalance() uint64 {
 	return mc.Balance
 }

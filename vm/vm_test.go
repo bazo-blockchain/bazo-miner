@@ -3,7 +3,6 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"testing"
 )
@@ -528,7 +527,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 10,
 		PUSH, 0, 8,
-		CALL, 0, 14, 2,
+		CALL, 0, 13, 2,
 		HALT,
 		NOP,
 		NOP,
@@ -541,7 +540,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
 
 	tos, err := vm.evaluationStack.Peek()
 
@@ -567,11 +566,11 @@ func TestVM_Exec_Callif(t *testing.T) {
 		PUSH, 0, 10,
 		PUSH, 0, 10,
 		EQ,
-		CALLIF, 0, 21, 2,
+		CALLIF, 0, 20, 2,
 		HALT,
 		NOP,
 		NOP,
-		LOAD, 0, // Begin of called function at address 21
+		LOAD, 0, // Begin of called function at address 20
 		LOAD, 1,
 		SUB,
 		RET,
@@ -580,7 +579,7 @@ func TestVM_Exec_Callif(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
 
 	tos, err := vm.evaluationStack.Peek()
 
@@ -1545,8 +1544,6 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
-
-	fmt.Println(BigIntToString(tos))
 
 	if BigIntToString(tos) != "not a valid array" {
 		t.Errorf("not a valid array %v", BigIntToString(tos))
