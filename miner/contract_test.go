@@ -10,6 +10,7 @@ import (
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/vm"
 )
 
 // This test deploys a smart contract in the first block and calls the smart contract in the second block
@@ -151,9 +152,25 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 31, 33, 10, 22, 0, 24, 2, 24, 28, 1, 29, 0, 0, 38, 28, 0, 4, 39, 27, 0, 0, 24,
+		//35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 0, 0, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 0, 2, 38, 28, 1, 4, 39, 27, 0, 2, 24,
+		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 24, 2, 24, 29, 2, 28, 1, 38, 28, 0, 4, 28, 1, 29, 2, 39, 27, 2, 24,
 	}
-	issuer := createBlockWithSingleContractDeployTx(b, contract, nil)
+
+	contractVariables := make([]big.Int, 3)
+	var receiver byte = 0x2a
+	r := big.Int{}
+	r.SetBytes([]byte{receiver})
+	contractVariables[0] = r
+
+	minter := big.Int{}
+	minter.SetBytes([]byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2})
+	contractVariables[1] = minter
+
+	m := vm.NewMap()
+	m.Append([]byte{receiver}, []byte{0x00})
+	contractVariables[2] = m.ToBigInt()
+
+	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
 	if err := validateBlock(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -162,10 +179,9 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
 		0, 100, // Amount
-		31, // Length of next parameter (receiver address)
+		0, receiver, // receiver address
+		0, 1, // function Hash
 	}
-	transactionData = append(transactionData, issuer[:]...) // append receiver address
-	transactionData = append(transactionData, 0, 1)         // append function hash
 	createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
 	if err := validateBlock(b1); err != nil {
