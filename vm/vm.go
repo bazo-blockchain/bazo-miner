@@ -80,7 +80,6 @@ func (vm *VM) trace() {
 	*/
 
 	case "mappush":
-	case "mapgetval":
 	case "newarr":
 	case "arrappend":
 	case "arrinsert":
@@ -90,8 +89,8 @@ func (vm *VM) trace() {
 		fmt.Printf("%04d: %-6s %v ", addr, opCode.Name, args)
 
 		for _, e := range stack.Stack {
-			fmt.Printf("%# x", e.Bytes())
-			fmt.Printf("\n")
+			fmt.Printf("[%# x]", e.Bytes())
+			fmt.Printf(" ")
 		}
 
 		fmt.Printf("\n")
@@ -760,10 +759,11 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPSETVAL:
-			k, kerr := vm.evaluationStack.Pop()
-			v, verr := vm.evaluationStack.Pop()
 			mbi, mbierr := vm.evaluationStack.Pop()
 			m, merr := MapFromBigInt(mbi)
+
+			k, kerr := vm.evaluationStack.Pop()
+			v, verr := vm.evaluationStack.Pop()
 
 			if !vm.checkErrors(kerr, verr, mbierr, merr) {
 				return false
