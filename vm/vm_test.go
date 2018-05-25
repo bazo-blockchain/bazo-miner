@@ -675,16 +675,28 @@ func TestVM_Exec_CallExt(t *testing.T) {
 
 func TestVM_Exec_Sload(t *testing.T) {
 	code := []byte{
+		SLOAD, 1,
 		SLOAD, 0,
+		SLOAD, 2,
 		HALT,
 	}
 
+	v1 := big.NewInt(26)
+	v2 := big.NewInt(0)
+
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = []big.Int{StrToBigInt("Hi There!!")}
+	mc.ContractVariables = []big.Int{StrToBigInt("Hi There!!"), *v1, *v2}
 	vm.context = mc
 
 	vm.Exec(false)
+
+	expected := big.NewInt(0)
+	actual, _ := vm.evaluationStack.Pop()
+
+	if actual.Cmp(expected) != 0 {
+		t.Errorf("Unexpected value retrieved")
+	}
 
 	result, err := vm.evaluationStack.Pop()
 
@@ -695,6 +707,13 @@ func TestVM_Exec_Sload(t *testing.T) {
 	resultString := BigIntToString(result)
 	if resultString != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was %v", resultString)
+	}
+
+	expected = big.NewInt(26)
+	actual, _ = vm.evaluationStack.Pop()
+
+	if actual.Cmp(expected) != 0 {
+		t.Errorf("Unexpected value retrieved")
 	}
 }
 
@@ -1016,6 +1035,8 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
+		PUSH, 0x01, 0x55, 0x55,
+		PUSH, 0x00, 0x03,
 		NEWMAP,
 		PUSH, 0x01, 0x48, 0x69,
 		PUSH, 0x00, 0x03,
@@ -1023,8 +1044,6 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 		PUSH, 0x01, 0x69, 0x69,
 		PUSH, 0x00, 0x02,
 		MAPPUSH,
-		PUSH, 0x01, 0x55, 0x55,
-		PUSH, 0x00, 0x03,
 		MAPSETVAL,
 		HALT,
 	}
