@@ -252,9 +252,10 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	e := BigIntToString(result)
-	if e != "Division by Zero" {
-		t.Errorf("Expected Error Message to be returned but got: %v", e)
+	expected := "div: Division by Zero"
+	actual := BigIntToString(result)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -541,7 +542,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
 
@@ -580,7 +581,7 @@ func TestVM_Exec_Callif(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	tos, err := vm.evaluationStack.Peek()
 
@@ -1329,8 +1330,10 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "Not a valid opCode" {
-		t.Errorf("Expected tos to be 'Not a valid opCode' error message but was %v", BigIntToString(tos))
+	expected := "vm.exec(): Not a valid opCode"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1385,7 +1388,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "instructionSet out of bounds"
+	expected := "vm.exec(): instructionSet out of bounds"
 	actual := BigIntToString(tos)
 	if actual != expected {
 		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
@@ -1423,8 +1426,10 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "Index out of bounds" {
-		t.Errorf("Expected tos to be 'Index out of bounds' error message but was %v", BigIntToString(tos))
+	expected := "sload: Index out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1440,8 +1445,10 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "Index out of bounds" {
-		t.Errorf("Expected tos to be 'Index out of bounds' error message but was %v", BigIntToString(tos))
+	expected := "sstore: Index out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1539,8 +1546,10 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "instructionSet out of bounds" {
-		t.Errorf("instructionSet out of bounds %v", BigIntToString(tos))
+	expected := "arrat: instructionSet out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1556,8 +1565,10 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "not a valid array" {
-		t.Errorf("not a valid array %v", BigIntToString(tos))
+	expected := "arrappend: not a valid array"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1573,8 +1584,10 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "not a valid array" {
-		t.Errorf("not a valid array %v", BigIntToString(tos))
+	expected := "arrappend: not a valid array"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1590,7 +1603,7 @@ func TestVm_Exec_FuzzReproduction_indexOutOfRange(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "Not a valid opCode"
+	expected := "vm.exec(): Not a valid opCode"
 	if BigIntToString(tos) != expected {
 		t.Errorf("expected: '%v' but was '%v'", expected, BigIntToString(tos))
 	}
