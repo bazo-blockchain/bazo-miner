@@ -1568,3 +1568,21 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 		t.Errorf("not a valid array %v", BigIntToString(tos))
 	}
 }
+
+func TestVm_Exec_FuzzReproduction_indexOutOfRange(t *testing.T) {
+	code := []byte{
+		50,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := "Not a valid opCode"
+	if BigIntToString(tos) != expected {
+		t.Errorf("expected: '%v' but was '%v'", expected, BigIntToString(tos))
+	}
+}

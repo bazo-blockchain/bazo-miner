@@ -58,7 +58,14 @@ func NewTestVM(byteCode []byte) VM {
 func (vm *VM) trace() {
 	stack := vm.evaluationStack
 	addr := vm.pc
-	opCode := OpCodes[int(vm.code[vm.pc])]
+
+	byteCode := int(vm.code[vm.pc])
+	if len(OpCodes) <= byteCode {
+		stack.Push(StrToBigInt("Trace: invalid opcode "))
+		return
+	}
+	opCode := OpCodes[byteCode]
+
 	var args []byte
 
 	switch opCode.Name {
@@ -119,29 +126,28 @@ func (vm *VM) Exec(trace bool) bool {
 		}
 
 		// Fetch
-		opCode, err := vm.fetch()
-
+		byteCode, err := vm.fetch()
 		if err != nil {
 			vm.evaluationStack.Push(StrToBigInt(err.Error()))
 			return false
 		}
-
 		// Return false if instruction is not an opCode
-		if len(OpCodes) < int(opCode) {
+		if len(OpCodes) <= int(byteCode) {
 			vm.evaluationStack.Push(StrToBigInt("Not a valid opCode"))
 			return false
 		}
 
+		opCode := OpCodes[byteCode]
 		// Subtract gas used for operation
-		if fee < OpCodes[int(opCode)].gasPrice {
+		if fee < opCode.gasPrice {
 			vm.evaluationStack.Push(StrToBigInt("out of gas"))
 			return false
 		} else {
-			fee -= OpCodes[int(opCode)].gasPrice
+			fee -= opCode.gasPrice
 		}
 
 		// Decode
-		switch opCode {
+		switch opCode.code {
 
 		case PUSH:
 			arg, errArg1 := vm.fetch()
