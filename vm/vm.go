@@ -153,8 +153,8 @@ func (vm *VM) Exec(trace bool) bool {
 			arg, errArg1 := vm.fetch()
 			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
 			bytes, errArg2 := vm.fetchMany(byteCount)
-
-			if !vm.checkErrors(errArg1, errArg2) {
+			
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
@@ -171,7 +171,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case DUP:
 			val, err := vm.evaluationStack.Peek()
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -186,7 +186,7 @@ func (vm *VM) Exec(trace bool) bool {
 			arg, err := vm.fetch() // arg shows how many have to be rolled
 			index := vm.evaluationStack.GetLength() - (int(arg) + 2)
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -214,7 +214,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case POP:
 			_, rerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr) {
+			if !vm.checkErrors(opCode.Name, rerr) {
 				return false
 			}
 
@@ -222,7 +222,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -238,7 +238,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -254,7 +254,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -270,7 +270,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -291,7 +291,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -324,7 +324,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -338,7 +338,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -352,7 +352,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -366,7 +366,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -380,7 +380,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -394,7 +394,7 @@ func (vm *VM) Exec(trace bool) bool {
 			right, rerr := vm.evaluationStack.Pop()
 			left, lerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(rerr, lerr) {
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
@@ -408,7 +408,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nrOfShifts, errArg := vm.fetch()
 			tos, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArg, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
@@ -424,7 +424,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nrOfShifts, errArg := vm.fetch()
 			tos, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArg, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
@@ -447,7 +447,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case JMP:
 			nextInstruction, err := vm.fetchMany(2)
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -460,7 +460,7 @@ func (vm *VM) Exec(trace bool) bool {
 			nextInstruction, errArg := vm.fetchMany(2)
 			right, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArg, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
@@ -475,7 +475,7 @@ func (vm *VM) Exec(trace bool) bool {
 			returnAddressBytes, errArg1 := vm.fetchMany(2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch()              // Shows how many elements have to be popped from evaluationStack
 
-			if !vm.checkErrors(errArg1, errArg2) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
@@ -505,7 +505,7 @@ func (vm *VM) Exec(trace bool) bool {
 			argsToLoad, errArg2 := vm.fetch()              // Shows how many elements have to be popped from evaluationStack
 			right, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArg1, errArg2, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
 				return false
 			}
 
@@ -536,7 +536,7 @@ func (vm *VM) Exec(trace bool) bool {
 			functionHash, errArg2 := vm.fetchMany(4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
 			argsToLoad, errArg3 := vm.fetch()               // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 
-			if !vm.checkErrors(errArg1, errArg2, errArg3) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3) {
 				return false
 			}
 
@@ -546,7 +546,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case RET:
 			callstackTos, err := vm.callStack.Peek()
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -556,7 +556,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case SIZE:
 			right, err := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -571,7 +571,7 @@ func (vm *VM) Exec(trace bool) bool {
 			index, errArgs := vm.fetch()
 			value, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArgs, errStack) {
+			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
 
@@ -586,7 +586,7 @@ func (vm *VM) Exec(trace bool) bool {
 			address, errArgs := vm.fetch()
 			right, errStack := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(errArgs, errStack) {
+			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
 
@@ -602,7 +602,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case SLOAD:
 			index, err := vm.fetch()
 
-			if !vm.checkErrors(err) {
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
@@ -624,7 +624,7 @@ func (vm *VM) Exec(trace bool) bool {
 			address, errArg := vm.fetch()
 			callstackTos, errCallStack := vm.callStack.Peek()
 
-			if !vm.checkErrors(errArg, errCallStack) {
+			if !vm.checkErrors(opCode.Name, errArg, errCallStack) {
 				return false
 			}
 
@@ -732,7 +732,7 @@ func (vm *VM) Exec(trace bool) bool {
 			mbi, mbierr := vm.evaluationStack.Pop()
 			m, merr := MapFromBigInt(mbi)
 
-			if !vm.checkErrors(kerr, verr, mbierr, merr) {
+			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
 				return false
 			}
 
@@ -751,7 +751,7 @@ func (vm *VM) Exec(trace bool) bool {
 			m, merr := MapFromBigInt(mbi)
 			v, err := m.GetVal(k)
 
-			if !vm.checkErrors(kerr, mbierr, merr, err) {
+			if !vm.checkErrors(opCode.Name, kerr, mbierr, merr, err) {
 				return false
 			}
 
@@ -771,7 +771,7 @@ func (vm *VM) Exec(trace bool) bool {
 			k, kerr := vm.evaluationStack.Pop()
 			v, verr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(kerr, verr, mbierr, merr) {
+			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
 				return false
 			}
 
@@ -793,7 +793,7 @@ func (vm *VM) Exec(trace bool) bool {
 			mbi, mbierr := vm.evaluationStack.Pop()
 			m, merr := MapFromBigInt(mbi)
 
-			if !vm.checkErrors(kbierr, mbierr, merr) {
+			if !vm.checkErrors(opCode.Name, kbierr, mbierr, merr) {
 				return false
 			}
 
@@ -813,7 +813,7 @@ func (vm *VM) Exec(trace bool) bool {
 			v, verr := vm.evaluationStack.Pop()
 			a, aerr := vm.evaluationStack.Pop()
 
-			if !vm.checkErrors(verr, aerr) {
+			if !vm.checkErrors(opCode.Name, verr, aerr) {
 				return false
 			}
 
@@ -901,7 +901,7 @@ func (vm *VM) Exec(trace bool) bool {
 			ba, errArgs := vm.fetchMany(2)
 			index, err := ByteArrayToUI16(ba)
 
-			if !vm.checkErrors(aerr, errArgs) {
+			if !vm.checkErrors(opCode.Name, aerr, errArgs) {
 				return false
 			}
 
@@ -996,7 +996,7 @@ func (vm *VM) Exec(trace bool) bool {
 			publicKeySig, errArg1 := vm.evaluationStack.Pop() // PubKeySig
 			hash, errArg2 := vm.evaluationStack.Pop()         // Hash
 
-			if !vm.checkErrors(errArg1, errArg2) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
@@ -1058,10 +1058,10 @@ func (vm *VM) fetchMany(argument int) (elements []byte, err error) {
 	}
 }
 
-func (vm *VM) checkErrors(errors ...error) bool {
+func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 	for i, err := range errors {
 		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(errors[i].Error()))
+			vm.evaluationStack.Push(StrToBigInt(errorLocation + ": " + errors[i].Error()))
 			return false
 		}
 	}

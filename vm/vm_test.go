@@ -59,9 +59,10 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	e := BigIntToString(tos)
-	if e != "instructionSet out of bounds" {
-		t.Errorf("Expected Error Message to be returned but got: %v", e)
+	actual := BigIntToString(tos)
+	expected := "push: instructionSet out of bounds"
+	if actual != expected {
+		t.Errorf("Expected '%v' to be returned but got '%v'",expected, actual)
 	}
 }
 
@@ -1345,8 +1346,10 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "instructionSet out of bounds" {
-		t.Errorf("Expected tos to be 'instructionSet out of bounds' error message but was %v", BigIntToString(tos))
+	expected := "push: instructionSet out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1362,8 +1365,10 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "pop() on empty stack" {
-		t.Errorf("Expected tos to be 'pop() on empty stack' error message but was %v", BigIntToString(tos))
+	expected := "sub: pop() on empty stack"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1380,8 +1385,10 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "instructionSet out of bounds" {
-		t.Errorf("Expected tos to be 'pop() on empty stack' error message but was %v", BigIntToString(tos))
+	expected := "instructionSet out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
@@ -1397,8 +1404,10 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	if BigIntToString(tos) != "instructionSet out of bounds" {
-		t.Errorf("Expected tos to be 'pop() on empty stack' error message but was %v", BigIntToString(tos))
+	expected := "callext: instructionSet out of bounds"
+	actual := BigIntToString(tos)
+	if actual != expected {
+		t.Errorf("Expected tos to be '%v' error message but was '%v'", expected, actual)
 	}
 }
 
