@@ -8,11 +8,13 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"io/ioutil"
-	"log"
+	//"io/ioutil"
+	//"log"
 	"math/big"
 	"os"
 	"testing"
+	"log"
+	"io/ioutil"
 )
 
 const (
