@@ -61,7 +61,7 @@ const (
 )
 
 type OpCode struct {
-	code 	 byte
+	code     byte
 	Name     string
 	Nargs    int
 	ArgTypes []int
@@ -71,11 +71,11 @@ type OpCode struct {
 var OpCodes = []OpCode{
 	{PUSH, "push", 1, []int{INT}, 1},
 	{DUP, "dup", 0, nil, 1},
-	{ROLL,"roll", 1, []int{INT}, 1},
+	{ROLL, "roll", 1, []int{INT}, 1},
 	{POP, "pop", 0, nil, 1},
 	{ADD, "add", 0, nil, 1},
 	{SUB, "sub", 0, nil, 1},
-	{MULT,"mult", 0, nil, 1},
+	{MULT, "mult", 0, nil, 1},
 	{DIV, "div", 0, nil, 1},
 	{MOD, "mod", 0, nil, 1},
 	{NEG, "neg", 0, nil, 1},
@@ -103,14 +103,14 @@ var OpCodes = []OpCode{
 	{ISSUER, "issuer", 0, nil, 1},
 	{BALANCE, "balance", 0, nil, 1},
 	{CALLER, "caller", 0, nil, 1},
-	{CALLVAL,   "callval", 0, nil, 1},
-	{CALLDATA,  "calldata", 0, nil, 1},
-	{NEWMAP,    "newmap", 0, nil, 1},
-	{MAPPUSH,   "mappush", 0, nil, 1},
+	{CALLVAL, "callval", 0, nil, 1},
+	{CALLDATA, "calldata", 0, nil, 1},
+	{NEWMAP, "newmap", 0, nil, 1},
+	{MAPPUSH, "mappush", 0, nil, 1},
 	{MAPGETVAL, "mapgetval", 0, nil, 1},
-	{MAPSETVAL, "mapgetval", 0, nil, 1},
+	{MAPSETVAL, "mapsetval", 0, nil, 1},
 	{MAPREMOVE, "mapremove", 0, nil, 1},
-	{NEWARR,    "newarr", 0, nil, 1},
+	{NEWARR, "newarr", 0, nil, 1},
 	{ARRAPPEND, "arrappend", 0, nil, 1},
 	{ARRINSERT, "arrinsert", 0, nil, 1},
 	{ARRREMOVE, "arrremove", 0, nil, 1},

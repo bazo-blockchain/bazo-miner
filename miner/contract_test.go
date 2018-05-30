@@ -167,7 +167,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
-	m.Append([]byte{receiver}, []byte{0x00})
+	m.Append([]byte{receiver}, []byte{0x01})
 	contractVariables[2] = m.ToBigInt()
 
 	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
@@ -182,10 +182,28 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		0, receiver, // receiver address
 		0, 1, // function Hash
 	}
-	createBlockWithSingleContractCallTx(b1, transactionData)
+	hash := createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
 	if err := validateBlock(b1); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
+	}
+
+	m, err := vm.MapFromBigInt(storage.GetAccount(hash).ContractVariables[2])
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	tmp1 := big.Int{}
+	tmp2, err := m.GetVal([]byte{receiver})
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	tmp1.SetBytes(tmp2)
+
+	actual := tmp1.Uint64()
+	expected := uint64(101)
+	if expected != actual {
+		t.Errorf("State change not persisted, expected: '%v', but is: '%v'", expected, actual)
 	}
 }
 
