@@ -86,7 +86,6 @@ func (vm *VM) trace() {
 	fmt.Printf("%04d: %-6s %x %x %v %v\n", addr, opCode.Name, address, functionHash, nargs, stack)
 	*/
 
-	case "mappush":
 	case "newarr":
 	case "arrappend":
 	case "arrinsert":
@@ -719,87 +718,150 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case NEWMAP:
 			m := NewMap()
-			err = vm.evaluationStack.Push(m.ToBigInt())
 
+			err = vm.evaluationStack.Push(m.ToBigInt())
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPPUSH:
-			k, kerr := vm.evaluationStack.Pop()
-			v, verr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
+			mbi, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			m.Append(k.Bytes(), v.Bytes())
-			err := vm.evaluationStack.Push(m.ToBigInt())
+			k, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
 
+			v, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			m, err := MapFromBigInt(mbi)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.Append(k.Bytes(), v.Bytes())
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m.ToBigInt())
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPGETVAL:
-			kbi, kerr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			k := kbi.Bytes()
-			m, merr := MapFromBigInt(mbi)
-			v, err := m.GetVal(k)
+			bigIntWrappedMap, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
 
-			if !vm.checkErrors(opCode.Name, kerr, mbierr, merr, err) {
+			kbi, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			k := kbi.Bytes()
+
+			m, err := MapFromBigInt(bigIntWrappedMap)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			v, err := m.GetVal(k)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			result := big.Int{}
-			result.SetBytes(v)
-			err = vm.evaluationStack.Push(result)
 
+			result.SetBytes(v)
+
+			err = vm.evaluationStack.Push(result)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPSETVAL:
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			k, kerr := vm.evaluationStack.Pop()
-			v, verr := vm.evaluationStack.Pop()
-
-			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
+			bigIntWrappedMap, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err := m.SetVal(k.Bytes(), v.Bytes())
+			m, err := MapFromBigInt(bigIntWrappedMap)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			k, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			v, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.SetVal(k.Bytes(), v.Bytes())
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = vm.evaluationStack.Push(m.ToBigInt())
-
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPREMOVE:
-			kbi, kbierr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			if !vm.checkErrors(opCode.Name, kbierr, mbierr, merr) {
+			mbi, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			m.Remove(kbi.Bytes())
-			err = vm.evaluationStack.Push(m.ToBigInt())
+			kbi, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
 
+			m, err := MapFromBigInt(mbi)
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.Remove(kbi.Bytes())
+			if err != nil {
+				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m.ToBigInt())
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false

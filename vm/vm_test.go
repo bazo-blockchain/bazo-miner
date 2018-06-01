@@ -954,9 +954,9 @@ func TestVM_Exec_NewMap(t *testing.T) {
 
 func TestVM_Exec_MapPush(t *testing.T) {
 	code := []byte{
-		NEWMAP,
 		PUSH, 1, 72, 105,
 		PUSH, 0, 0x03,
+		NEWMAP,
 		MAPPUSH,
 		HALT,
 	}
@@ -1000,33 +1000,39 @@ func TestVM_Exec_MapPush(t *testing.T) {
 
 func TestVM_Exec_MapGetVAL(t *testing.T) {
 	code := []byte{
-		NEWMAP,
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
-		MAPPUSH,
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
-		MAPPUSH,
+		PUSH, 0x00, 0x01, //The key for MAPGETVAL
+
 		PUSH, 0x01, 0x48, 0x48,
 		PUSH, 0x00, 0x01,
+
+		PUSH, 0x01, 0x69, 0x69,
+		PUSH, 0x00, 0x02,
+
+		PUSH, 0x01, 0x48, 0x69,
+		PUSH, 0x00, 0x03,
+
+		NEWMAP,
+
 		MAPPUSH,
-		PUSH, 0x00, 0x01,
+		MAPPUSH,
+		MAPPUSH,
+
 		MAPGETVAL,
+
 		HALT,
 	}
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	exec := vm.Exec(false)
 
+	exec := vm.Exec(false)
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
 	}
 
 	v, err := vm.evaluationStack.Pop()
-
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -1039,16 +1045,22 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x55, 0x55,
+		PUSH, 0x01, 0x55, 0x55,  //Value to be reset by MAPSETVAL
 		PUSH, 0x00, 0x03,
-		NEWMAP,
+
 		PUSH, 0x01, 0x48, 0x69,
 		PUSH, 0x00, 0x03,
-		MAPPUSH,
+
 		PUSH, 0x01, 0x69, 0x69,
 		PUSH, 0x00, 0x02,
+
+		NEWMAP,
+
 		MAPPUSH,
+		MAPPUSH,
+
 		MAPSETVAL,
+
 		HALT,
 	}
 
@@ -1086,17 +1098,23 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 func TestVM_Exec_MapRemove(t *testing.T) {
 	code := []byte{
-		NEWMAP,
+		PUSH, 0x00, 0x03, // The Key to be removed with MAPREMOVE
+
 		PUSH, 0x01, 0x48, 0x69,
 		PUSH, 0x00, 0x03,
-		MAPPUSH,
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
-		MAPPUSH,
+
 		PUSH, 0x01, 0x48, 0x48,
 		PUSH, 0x00, 0x01,
+
+		PUSH, 0x01, 0x69, 0x69,
+		PUSH, 0x00, 0x02,
+
+		NEWMAP,
+
 		MAPPUSH,
-		PUSH, 0x00, 0x03,
+		MAPPUSH,
+		MAPPUSH,
+
 		MAPREMOVE,
 		HALT,
 	}
@@ -1104,8 +1122,8 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
-	exec := vm.Exec(false)
 
+	exec := vm.Exec(false)
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
@@ -1115,12 +1133,13 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	m, err := MapFromBigInt(mbi)
+
+	actual, err := MapFromBigInt(mbi)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	e := []byte{0x01,
+	expected := []byte{0x01,
 		0x02, 0x00,
 		0x01, 0x00, 0x02,
 		0x02, 0x00, 0x69, 0x69,
@@ -1128,8 +1147,8 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 		0x02, 0x00, 0x48, 0x48,
 	}
 
-	if !bytes.Equal(m, e) {
-		t.Errorf("invalid datastructure, Expected %v but was '%v'", e, m)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("invalid datastructure, Expected '[%# x]' but was '[%# x]'", expected, actual)
 	}
 }
 
