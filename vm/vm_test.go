@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"math/big"
 	"testing"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func TestVM_NewTestVM(t *testing.T) {
@@ -62,7 +64,7 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 	actual := BigIntToString(tos)
 	expected := "push: instructionSet out of bounds"
 	if actual != expected {
-		t.Errorf("Expected '%v' to be returned but got '%v'",expected, actual)
+		t.Errorf("Expected '%v' to be returned but got '%v'", expected, actual)
 	}
 }
 
@@ -1607,4 +1609,43 @@ func TestVm_Exec_FuzzReproduction_indexOutOfRange(t *testing.T) {
 	if BigIntToString(tos) != expected {
 		t.Errorf("expected: '%v' but was '%v'", expected, BigIntToString(tos))
 	}
+}
+
+func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
+	var base big.Int
+	var exponent big.Int
+	var modulus big.Int
+
+	//base.SetInt64(4)
+	for n := 0; n < b.N; n++ {
+		base.SetBytes(protocol.RandomBytesWithLength(10000))
+		exponent.SetBytes(protocol.RandomBytesWithLength(1))
+		modulus.SetBytes(protocol.RandomBytesWithLength(2))
+
+		modularExp(base, exponent, modulus)
+	}
+}
+
+func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
+	if modulus.CmpAbs(big.NewInt(int64(1))) == 0 {
+		return big.NewInt(0)
+	}
+	start := big.NewInt(1)
+	c := big.NewInt(1)
+	for i := new(big.Int).Set(start); i.Cmp(&exponent) < 0; i.Add(i, big.NewInt(1)) {
+		c = c.Mul(c, &base)
+		c = c.Mod(c, &modulus)
+	}
+	return start
+}
+
+func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
+	code := []byte{
+		0, 0, 13, 1, 0, 0, 0, 2, 0, 0, 1, 2, 0, 1, 0, 0, 1, 4, 12, 20, 0, 7, 49,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
 }

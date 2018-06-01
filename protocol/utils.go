@@ -73,6 +73,12 @@ func RandomBytes() []byte {
 	return byteArray
 }
 
+func RandomBytesWithLength(length int) []byte {
+	byteArray := make([]byte, length)
+	rand1.Read(byteArray)
+	return byteArray
+}
+
 func randomInt() int {
 	rand2.Seed(time.Now().Unix())
 	return rand2.Intn(1000)
