@@ -33,6 +33,13 @@ func (s *Stack) Push(element big.Int) error {
 	}
 }
 
+func (s *Stack) PushBytes(element []byte) error {
+	var bigInt big.Int
+	bigInt.SetBytes(element)
+
+	return s.Push(bigInt)
+}
+
 func (s *Stack) PopIndexAt(index int) (element big.Int, err error) {
 	if (*s).GetLength() >= index {
 		element = (*s).Stack[index]
@@ -53,6 +60,11 @@ func (s *Stack) Pop() (element big.Int, err error) {
 	} else {
 		return *new(big.Int).SetInt64(0), errors.New("pop() on empty stack")
 	}
+}
+
+func (s *Stack) PopBytes() (element []byte, err error) {
+	bigInt, err := s.Pop()
+	return bigInt.Bytes(), err
 }
 
 func (s *Stack) Peek() (element big.Int, err error) {
