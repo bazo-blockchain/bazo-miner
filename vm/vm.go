@@ -712,37 +712,37 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPPUSH:
-			mbi, err := vm.evaluationStack.Pop()
+			mba, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			v, err := vm.evaluationStack.Pop()
+			v, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			m, err := MapFromBigInt(mbi)
+			m, err := MapFromByteArray(mba)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = m.Append(k.Bytes(), v.Bytes())
+			err = m.Append(k, v)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(m.ToBigInt())
+			err = vm.evaluationStack.PushBytes(m)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false

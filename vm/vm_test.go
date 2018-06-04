@@ -782,16 +782,17 @@ func TestVM_Exec_Balance(t *testing.T) {
 	vm.context = mc
 
 	vm.Exec(false)
-	tos, _ := vm.evaluationStack.Pop()
+	tos, _ := vm.evaluationStack.PopBytes()
 
-	if len(tos.Bytes()) != 8 {
-		t.Errorf("Expected TOS size to be 64, but got %v", len(tos.Bytes()))
+	if len(tos) != 8 {
+		t.Errorf("Expected TOS size to be 64, but got %v", len(tos))
 	}
 
-	result := binary.LittleEndian.Uint64(tos.Bytes())
+	actual := binary.LittleEndian.Uint64(tos)
+	var expected uint64 = 100
 
-	if result != 100 {
-		t.Errorf("Expected TOS to be 100, but got %v", result)
+	if actual != expected {
+		t.Errorf("Expected TOS to be '%v', but got '%v'", expected, actual)
 	}
 }
 
@@ -813,14 +814,13 @@ func TestVM_Exec_Caller(t *testing.T) {
 	vm.context = mc
 
 	vm.Exec(false)
-	tos, _ := vm.evaluationStack.Pop()
+	tos, _ := vm.evaluationStack.PopBytes()
 
-	result := tos.Bytes()
-	if len(result) != 32 {
-		t.Errorf("Expected TOS size to be 32, but got %v", len(result))
+	if len(tos) != 32 {
+		t.Errorf("Expected TOS size to be 32, but got %v", len(tos))
 	}
 
-	if !bytes.Equal(result, from[:]) {
+	if !bytes.Equal(tos, from[:]) {
 		t.Errorf("Retrieved unexpected value")
 	}
 }
@@ -837,13 +837,13 @@ func TestVM_Exec_Callval(t *testing.T) {
 	vm.context = mc
 
 	vm.Exec(false)
-	tos, _ := vm.evaluationStack.Pop()
+	tos, _ := vm.evaluationStack.PopBytes()
 
-	if len(tos.Bytes()) != 8 {
-		t.Errorf("Expected TOS size to be 8, but got %v", len(tos.Bytes()))
+	if len(tos) != 8 {
+		t.Errorf("Expected TOS size to be 8, but got %v", len(tos))
 	}
 
-	result := binary.LittleEndian.Uint64(tos.Bytes())
+	result := binary.LittleEndian.Uint64(tos)
 
 	if result != 100 {
 		t.Errorf("Expected value to be 100, but got %v", result)
@@ -870,20 +870,20 @@ func TestVM_Exec_Calldata(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	functionHash, _ := vm.evaluationStack.Pop()
+	functionHash, _ := vm.evaluationStack.PopBytes()
 
-	if !bytes.Equal(functionHash.Bytes(), td[5:]) {
-		t.Errorf("expected '%# x' but got '%# x'", td[5:], functionHash.Bytes())
+	if !bytes.Equal(functionHash, td[5:]) {
+		t.Errorf("expected '%# x' but got '%# x'", td[5:], functionHash)
 	}
 
-	arg1, _ := vm.evaluationStack.Pop()
-	if !bytes.Equal(arg1.Bytes(), td[3:4]) {
-		t.Errorf("expected '%# x' but got '%# x'", td[3:4], arg1.Bytes())
+	arg1, _ := vm.evaluationStack.PopBytes()
+	if !bytes.Equal(arg1, td[3:4]) {
+		t.Errorf("expected '%# x' but got '%# x'", td[3:4], arg1)
 	}
 
-	arg2, _ := vm.evaluationStack.Pop()
-	if !bytes.Equal(arg2.Bytes(), td[1:2]) {
-		t.Errorf("expected '%# x' but got '%# x'", td[1:2], arg2.Bytes())
+	arg2, _ := vm.evaluationStack.PopBytes()
+	if !bytes.Equal(arg2, td[1:2]) {
+		t.Errorf("expected '%# x' but got '%# x'", td[1:2], arg2)
 	}
 }
 
@@ -899,9 +899,9 @@ func TestVM_Exec_Sha3(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	val, _ := vm.evaluationStack.Pop()
+	val, _ := vm.evaluationStack.PopBytes()
 
-	if !bytes.Equal(val.Bytes(), []byte{227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178}) {
+	if !bytes.Equal(val, []byte{227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178}) {
 		t.Errorf("Actual value is %v, should be {227, 237, 86, 189...} after jumping to halt", val)
 	}
 }
@@ -940,16 +940,15 @@ func TestVM_Exec_NewMap(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	r, err := vm.evaluationStack.Pop()
-
+	actual, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	result := r.Bytes()
+
 	expected := []byte{0x01, 0x00, 0x00}
 
-	if !bytes.Equal(expected, result) {
-		t.Errorf("expected the Value of the new Map to be %v but was %v", expected, result)
+	if !bytes.Equal(expected, actual) {
+		t.Errorf("expected the Value of the new Map to be '[%v]' but was '[%v]'", expected, actual)
 	}
 }
 
@@ -968,16 +967,16 @@ func TestVM_Exec_MapPush(t *testing.T) {
 	exec := vm.Exec(false)
 
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	m, err := vm.evaluationStack.Pop()
+	m, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	mp, err2 := MapFromBigInt(m)
+	mp, err2 := MapFromByteArray(m)
 	if err2 != nil {
 		t.Errorf("%v", err)
 	}

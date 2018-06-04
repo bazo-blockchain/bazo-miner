@@ -38,7 +38,6 @@ const (
 	CALLVAL  // Amount of bazo coins transacted in transaction
 	CALLDATA // Parameters and function signature hash
 	NEWMAP
-	MAPCONTAINSKEY
 	MAPPUSH
 	MAPGETVAL
 	MAPSETVAL
@@ -52,6 +51,7 @@ const (
 	CHECKSIG
 	ERRHALT
 	HALT
+	//	MAPCONTAINSKEY
 )
 
 const (
@@ -107,7 +107,7 @@ var OpCodes = []OpCode{
 	{CALLVAL, "callval", 0, nil, 1},
 	{CALLDATA, "calldata", 0, nil, 1},
 	{NEWMAP, "newmap", 0, nil, 1},
-	{MAPCONTAINSKEY, "mapcontainskey", 0, nil, 1},
+//	{MAPCONTAINSKEY, "mapcontainskey", 0, nil, 1},
 	{MAPPUSH, "mappush", 0, nil, 1},
 	{MAPGETVAL, "mapgetval", 0, nil, 1},
 	{MAPSETVAL, "mapsetval", 0, nil, 1},

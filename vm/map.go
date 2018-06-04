@@ -38,6 +38,16 @@ func MapFromBigInt(m big.Int) (Map, error) {
 	return Map(ba), nil
 }
 
+func MapFromByteArray(m []byte) (Map, error) {
+	if len(m) <= 0 {
+		return Map{}, errors.New("empty map")
+	}
+	if m[0] != 0x01 {
+		return Map{}, errors.New("invalid datatype supplied")
+	}
+	return Map(m), nil
+}
+
 func (m *Map) getSize() (uint16, error) {
 	value, err := ByteArrayToUI16((*m)[1:3])
 	if err != nil {
