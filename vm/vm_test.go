@@ -55,13 +55,13 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
+	tos, err := vm.evaluationStack.PopBytes()
 
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	actual := BigIntToString(tos)
+	actual := string(tos)
 	expected := "push: instructionSet out of bounds"
 	if actual != expected {
 		t.Errorf("Expected '%v' to be returned but got '%v'", expected, actual)
@@ -1614,7 +1614,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 func TestVm_Exec_FuzzReproduction_indexOutOfRange(t *testing.T) {
 	code := []byte{
-		50,
+		51,
 	}
 
 	vm := NewTestVM([]byte{})

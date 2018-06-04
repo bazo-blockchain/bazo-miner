@@ -157,13 +157,10 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			var bigInt big.Int
-			bigInt.SetBytes(bytes)
-
-			err = vm.evaluationStack.Push(bigInt)
+			err = vm.evaluationStack.PushBytes(bytes)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
