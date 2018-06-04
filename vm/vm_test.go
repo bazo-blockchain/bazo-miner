@@ -1032,14 +1032,14 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
 	}
 
-	v, err := vm.evaluationStack.Pop()
+	actual, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	e := []byte{72, 72}
-	if !bytes.Equal(v.Bytes(), e) {
-		t.Errorf("invalid value, Expected %v but was '%v'", e, v)
+	expected := []byte{72, 72}
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("invalid value, Expected '%v' but was '%v'", expected, actual)
 	}
 }
 
@@ -1070,20 +1070,20 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 	exec := vm.Exec(false)
 
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	mbi, err := vm.evaluationStack.Pop()
+	mbi, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	m, err := MapFromBigInt(mbi)
+	actual, err := MapFromByteArray(mbi)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	e := []byte{0x01,
+	expected := []byte{0x01,
 		0x02, 0x00,
 		0x01, 0x00, 0x02,
 		0x02, 0x00, 0x69, 0x69,
@@ -1091,8 +1091,8 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 		0x02, 0x00, 0x55, 0x55,
 	}
 
-	if !bytes.Equal(m, e) {
-		t.Errorf("invalid datastructure, Expected %# x but was '%# x'", e, m)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("invalid datastructure, Expected '[%# x]' but was '[%# x]'", expected, actual)
 	}
 }
 
@@ -1129,12 +1129,12 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
 	}
 
-	mbi, err := vm.evaluationStack.Pop()
+	mapAsByteArray, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	actual, err := MapFromBigInt(mbi)
+	actual, err := MapFromByteArray(mapAsByteArray)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
