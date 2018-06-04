@@ -634,13 +634,11 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ADDRESS:
-			address := new(big.Int)
-			a := vm.context.GetAddress()
-			address.SetBytes(a[:])
-			err := vm.evaluationStack.Push(*address)
+			address := vm.context.GetAddress()
+			err := vm.evaluationStack.PushBytes(address[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 

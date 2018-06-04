@@ -755,17 +755,18 @@ func TestVM_Exec_Address(t *testing.T) {
 	vm.context = mc
 
 	vm.Exec(false)
-	tos, _ := vm.evaluationStack.Pop()
+	tos, _ := vm.evaluationStack.PopBytes()
 
-	if len(tos.Bytes()) != 64 {
-		t.Errorf("Expected TOS size to be 64, but got %v", len(tos.Bytes()))
+	if len(tos) != 64 {
+		t.Errorf("Expected TOS size to be 64, but got %v", len(tos))
 	}
 
 	//This just tests 1/8 of the address as Uint64 are 64 bits and the address is 64 bytes
-	result := binary.LittleEndian.Uint64(tos.Bytes())
+	actual := binary.LittleEndian.Uint64(tos)
+	var expected uint64 = 18446744073709551615
 
-	if result != 18446744073709551615 {
-		t.Errorf("Expected TOS size to be 18446744073709551615, but got %v", result)
+	if expected != actual {
+		t.Errorf("Expected TOS size to be '%v', but got '%v'", expected, actual)
 	}
 }
 
