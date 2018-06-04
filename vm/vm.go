@@ -14,8 +14,8 @@ import (
 
 type Context interface {
 	GetContract() []byte
-	GetContractVariable(index int) (big.Int, error)
-	SetContractVariable(index int, value big.Int) error
+	GetContractVariable(index int) ([]byte, error)
+	SetContractVariable(index int, value []byte) error
 	GetAddress() [64]byte
 	GetIssuer() [32]byte
 	GetBalance() uint64
@@ -565,14 +565,13 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case SSTORE:
 			index, errArgs := vm.fetch(opCode.Name)
-			value, errStack := vm.evaluationStack.Pop()
+			value, errStack := vm.evaluationStack.PopBytes()
 
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
 
 			err = vm.context.SetContractVariable(int(index), value)
-
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -597,20 +596,17 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case SLOAD:
 			index, err := vm.fetch(opCode.Name)
-
 			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
 			value, err := vm.context.GetContractVariable(int(index))
-
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(value)
-
+			err = vm.evaluationStack.PushBytes(value)
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false

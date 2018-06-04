@@ -37,18 +37,21 @@ func (c *Context) GetContract() []byte {
 	return c.Contract
 }
 
-func (c *Context) GetContractVariable(index int) (big.Int, error) {
+func (c *Context) GetContractVariable(index int) ([]byte, error) {
 	if index >= len(c.ContractVariables) {
-		return big.Int{}, errors.New("Index out of bounds")
+		return []byte{}, errors.New("Index out of bounds")
 	}
-	return c.ContractVariables[index], nil
+	return c.ContractVariables[index].Bytes(), nil
 }
 
-func (c *Context) SetContractVariable(index int, value big.Int) error {
+func (c *Context) SetContractVariable(index int, value []byte) error {
 	if len(c.ContractVariables) <= index {
 		return errors.New("Index out of bounds")
 	}
-	change := NewChange(index, value)
+
+	bigInt := big.Int{}
+	bigInt.SetBytes(value[:])
+	change := NewChange(index, bigInt)
 	c.changes = append(c.changes, change)
 	return nil
 }

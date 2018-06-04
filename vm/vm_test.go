@@ -736,7 +736,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	mc.PersistChanges()
 
 	v, _ := vm.context.GetContractVariable(0)
-	result := BigIntToString(v)
+	result := string(v)
 	if result != "Hi There!!" {
 		t.Errorf("The String on the Stack should be 'Hi There!!' but was '%v'", result)
 	}
