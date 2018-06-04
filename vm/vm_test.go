@@ -1168,13 +1168,12 @@ func TestVM_Exec_NewArr(t *testing.T) {
 		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
 	}
 
-	arr, err := vm.evaluationStack.Pop()
-	ba := arr.Bytes()
+	arr, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 	expectedSize := []byte{0x00, 0x00}
-	actualSize := ba[1:3]
+	actualSize := arr[1:3]
 	if !bytes.Equal(expectedSize, actualSize) {
 		t.Errorf("invalid size, Expected %v but was '%v'", expectedSize, actualSize)
 	}
@@ -1193,16 +1192,16 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	arr, err := vm.evaluationStack.Pop()
+	arr, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	actual := arr.Bytes()[5:7]
+	actual := arr[5:7]
 	expected := []byte{0xFF, 0x00}
 	if !bytes.Equal(expected, actual) {
 		t.Errorf("invalid element appended, Expected '%v' but was '%v'", expected, actual)
@@ -1227,24 +1226,23 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	arr, err := vm.evaluationStack.Pop()
+	actual, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	actual := arr.Bytes()
 	expectedSize := []byte{0x02}
 	if !bytes.Equal(expectedSize, actual[1:2]) {
-		t.Errorf("invalid element appended, Expected '%# x' but was '%# x'", expectedSize, actual)
+		t.Errorf("invalid element appended, Expected '[%# x]' but was '[%# x]'", expectedSize, actual[1:2])
 	}
 
 	expectedValue := []byte{0x00, 0x00}
 	if !bytes.Equal(expectedValue, actual[5:7]) {
-		t.Errorf("invalid element appended, Expected '%# x' but was '%# x'", expectedValue, actual)
+		t.Errorf("invalid element appended, Expected '[%# x' but was '[%# x]'", expectedValue, actual[5:7])
 	}
 }
 
@@ -1267,22 +1265,21 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 	exec := vm.Exec(false)
 
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	a, err := vm.evaluationStack.Pop()
+	a, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	arr, bierr := ArrayFromBigInt(a)
+	arr, bierr := ArrayFromByteArray(a)
 	if bierr != nil {
 		t.Errorf("%v", err)
 	}
 
 	size, err := arr.getSize()
-
 	if err != nil {
 		t.Error(err)
 	}
@@ -1298,7 +1295,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 	}
 
 	if !bytes.Equal(expectedSecondElement, actualSecondElement) {
-		t.Errorf("invalid element on second index, Expected %# x but was %# x", expectedSecondElement, actualSecondElement)
+		t.Errorf("invalid element on second index, Expected '[%# x]' but was '[%# x]'", expectedSecondElement, actualSecondElement)
 	}
 }
 
@@ -1321,20 +1318,19 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 	exec := vm.Exec(false)
 
 	if !exec {
-		errorMessage, _ := vm.evaluationStack.Pop()
-		t.Errorf("VM.Exec terminated with Error: %v", BigIntToString(errorMessage))
+		errorMessage, _ := vm.evaluationStack.PopBytes()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
 
-	v1, err1 := vm.evaluationStack.Pop()
+	actual, err1 := vm.evaluationStack.PopBytes()
 
 	if err1 != nil {
 		t.Errorf("%v", err1)
 	}
 
-	expected1 := []byte{0xBB, 0x00}
-	actual1 := v1.Bytes()
-	if !bytes.Equal(expected1, actual1) {
-		t.Errorf("invalid element on first index, Expected %# x but was %# x", expected1, actual1)
+	expected := []byte{0xBB, 0x00}
+	if !bytes.Equal(expected, actual) {
+		t.Errorf("invalid element on first index, Expected '[%# x]' but was '[%# x]'", expected, actual)
 	}
 
 }

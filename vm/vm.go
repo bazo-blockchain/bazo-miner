@@ -850,67 +850,64 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case NEWARR:
 			a := NewArray()
-			vm.evaluationStack.Push(a.ToBigInt())
+			vm.evaluationStack.PushBytes(a)
 
 		case ARRAPPEND:
-			v, verr := vm.evaluationStack.Pop()
-			a, aerr := vm.evaluationStack.Pop()
-
+			v, verr := vm.evaluationStack.PopBytes()
+			a, aerr := vm.evaluationStack.PopBytes()
 			if !vm.checkErrors(opCode.Name, verr, aerr) {
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = arr.Append(v)
-
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Invalid argument size of ARRAPPEND"))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
-
+			err = vm.evaluationStack.PushBytes(arr)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ARRINSERT:
-			i, err := vm.evaluationStack.Pop()
+			i, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			if len(i.Bytes()) > 2 {
+			if len(i) > 2 {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Wrong index size"))
 				return false
 			}
 
-			e, err := vm.evaluationStack.Pop()
+			element, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			a, err := vm.evaluationStack.Pop()
+			a, err := vm.evaluationStack.PopBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			index, err := ByteArrayToUI16(i.Bytes())
+			index, err := ByteArrayToUI16(i)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
@@ -927,28 +924,27 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			err = arr.Insert(index, e)
+			err = arr.Insert(index, element)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
+			err = vm.evaluationStack.PushBytes(arr)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ARRREMOVE:
-			a, aerr := vm.evaluationStack.Pop()
+			a, aerr := vm.evaluationStack.PopBytes()
 			ba, errArgs := vm.fetchMany(opCode.Name, 2)
 			index, err := ByteArrayToUI16(ba)
-
 			if !vm.checkErrors(opCode.Name, aerr, errArgs, err) {
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
@@ -960,54 +956,44 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
-
+			err = vm.evaluationStack.PushBytes(arr)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ARRAT:
-			a, err := vm.evaluationStack.Peek()
+			a, err := vm.evaluationStack.PeekBytes()
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			ba, err := vm.fetchMany(opCode.Name, 2)
-			index, conversionErr := ByteArrayToUI16(ba)
-
-			if conversionErr != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
+			index, err := ByteArrayToUI16(ba)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			e, err := arr.At(index)
+			element, err := arr.At(index)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
 			}
-			result := big.Int{}
-			result.SetBytes(e)
 
-			err = vm.evaluationStack.Push(result)
-
+			err = vm.evaluationStack.PushBytes(element)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false

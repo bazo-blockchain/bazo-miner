@@ -76,6 +76,11 @@ func (s *Stack) Peek() (element big.Int, err error) {
 	}
 }
 
+func (s *Stack) PeekBytes() (element []byte, err error) {
+	bigInt, err := s.Peek()
+	return bigInt.Bytes(), err
+}
+
 // Function turns bit into bytes and rounds up
 func getElementMemoryUsage(element int) uint32 {
 	return uint32(((element + 7) / 8) + 1)

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"log"
-	"math/big"
 )
 
 type action func(array *Array, k uint16, s uint16) ([]byte, error)
@@ -16,23 +15,15 @@ func NewArray() Array {
 	return append(ba, size...)
 }
 
-func ArrayFromBigInt(arr big.Int) (Array, error) {
-	ba := arr.Bytes()
-
-	if len(ba) == 0 {
+func ArrayFromByteArray(arr []byte) (Array, error) {
+	if len(arr) == 0 {
 		return Array{}, errors.New("not a valid array")
 	}
 
-	if ba[0] != 0x02 {
+	if arr[0] != 0x02 {
 		return Array{}, errors.New("invalid data type supplied")
 	}
-	return Array(ba), nil
-}
-
-func (a *Array) ToBigInt() big.Int {
-	arr := big.Int{}
-	arr.SetBytes(*a)
-	return arr
+	return Array(arr), nil
 }
 
 func (a *Array) getSize() (uint16, error) {
@@ -79,12 +70,12 @@ func (a *Array) At(index uint16) ([]byte, error) {
 	return result, err
 }
 
-func (a *Array) Insert(index uint16, e big.Int) error {
+func (a *Array) Insert(index uint16, element []byte) error {
 	a.Remove(index)
 	var f action = func(array *Array, k uint16, s uint16) ([]byte, error) {
 		tmp := Array{}
 		tmp = append(tmp, (*a)[:k]...)
-		tmp.Append(e)
+		tmp.Append(element)
 		*a = append(tmp, (*a)[k:]...)
 		return []byte{}, nil
 	}
@@ -92,8 +83,7 @@ func (a *Array) Insert(index uint16, e big.Int) error {
 	return err
 }
 
-func (a *Array) Append(e big.Int) error {
-	ba := e.Bytes()
+func (a *Array) Append(ba []byte) error {
 	if bytes.Equal(ba, []byte{}) {
 		ba = []byte{0x00, 0x00}
 	}
