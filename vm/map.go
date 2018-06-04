@@ -13,6 +13,14 @@ func NewMap() Map {
 	return []byte{0x01, 0x00, 0x00}
 }
 
+func (m *Map) MapContainsKey() big.Int {
+
+	result := big.Int{}
+	result.SetUint64(0)
+
+	return result
+}
+
 func (m *Map) ToBigInt() big.Int {
 	mp := big.Int{}
 	mp.SetBytes(*m)
