@@ -3,7 +3,6 @@ package vm
 import (
 	"errors"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"math/big"
 )
 
 type MockContext struct {
@@ -32,7 +31,7 @@ func (mc *MockContext) GetContractVariable(index int) ([]byte, error) {
 	if index >= len(mc.ContractVariables) {
 		return []byte{}, errors.New("Index out of bounds")
 	}
-	return mc.ContractVariables[index].Bytes(), nil
+	return mc.ContractVariables[index], nil
 }
 
 func (mc *MockContext) SetContractVariable(index int, value []byte) error {
@@ -40,9 +39,7 @@ func (mc *MockContext) SetContractVariable(index int, value []byte) error {
 		return errors.New("Index out of bounds")
 	}
 
-	bigInt := big.Int{}
-	bigInt.SetBytes(value[:])
-	change := protocol.NewChange(index, bigInt)
+	change := protocol.NewChange(index, value)
 	mc.changes = append(mc.changes, change)
 	return nil
 }

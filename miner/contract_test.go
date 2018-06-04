@@ -54,7 +54,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		49, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
+	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
 	finalizeBlock(b)
 	if err := validateBlock(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -71,8 +71,8 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	}
 
 	contractVariables := storage.GetAccount(hash).ContractVariables
-	if !reflect.DeepEqual(contractVariables, []big.Int{*big.NewInt(17)}) {
-		t.Errorf("State change not persisted, expected: [{false [17]}], is %v.", contractVariables)
+	if !reflect.DeepEqual(contractVariables, []protocol.ByteArray{[]byte{17}}) {
+		t.Errorf("State change not persisted, expected: [[17]], is %v.", contractVariables)
 	}
 }
 
@@ -89,7 +89,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		49, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []big.Int{*big.NewInt(2)})
+	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
 	finalizeBlock(b)
 	if err := validateBlock(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -116,8 +116,8 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	}
 
 	contractVariables := storage.GetAccount(hash).ContractVariables
-	if !reflect.DeepEqual(contractVariables, []big.Int{*big.NewInt(32)}) {
-		t.Errorf("State change not persisted, expected: [{false [32]}], is %v.", contractVariables)
+	if !reflect.DeepEqual(contractVariables, []protocol.ByteArray{[]byte{32}}) {
+		t.Errorf("State change not persisted, expected: [[32]], is %v.", contractVariables)
 	}
 }
 
@@ -156,19 +156,16 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 1, 29, 2, 38, 28, 0, 4, 28, 1, 29, 2, 39, 27, 2, 24,
 	}
 
-	contractVariables := make([]big.Int, 3)
-	var receiver byte = 0x2a
-	r := big.Int{}
-	r.SetBytes([]byte{receiver})
-	contractVariables[0] = r
+	contractVariables := make([]protocol.ByteArray, 3)
+	receiver := []byte{0x2a}
+	contractVariables[0] = receiver
 
-	minter := big.Int{}
-	minter.SetBytes([]byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2})
+	minter := []byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2}
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
-	m.Append([]byte{receiver}, []byte{0x01})
-	contractVariables[2] = m.ToBigInt()
+	m.Append(receiver, []byte{0x01})
+	contractVariables[2] = []byte(m)
 
 	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
@@ -179,7 +176,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
 		0, 100, // Amount
-		0, receiver, // receiver address
+		0, receiver[0], // receiver address
 		0, 1, // function Hash
 	}
 	hash := createBlockWithSingleContractCallTx(b1, transactionData)
@@ -188,26 +185,24 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	m, err := vm.MapFromBigInt(storage.GetAccount(hash).ContractVariables[2])
+	m, err := vm.MapFromByteArray(storage.GetAccount(hash).ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	tmp1 := big.Int{}
-	tmp2, err := m.GetVal([]byte{receiver})
+	tmp, err := m.GetVal(receiver)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	tmp1.SetBytes(tmp2)
 
-	actual := tmp1.Uint64()
+	actual := uint64(tmp[0])
 	expected := uint64(101)
 	if expected != actual {
 		t.Errorf("State change not persisted, expected: '%v', but is: '%v'", expected, actual)
 	}
 }
 
-func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []big.Int) [32]byte {
+func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
 	tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, [64]byte{}, &RootPrivKey, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)

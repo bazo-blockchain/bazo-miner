@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"math/big"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -30,7 +29,7 @@ func TestAccTx_Serialization_Contract(t *testing.T) {
 	nullAddress := [64]byte{}
 	loopMax := int(rand.Uint32() % 10000)
 	for i := 1; i < loopMax; i++ {
-		tx, _, _ := ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey, RandomBytes(), []big.Int{*big.NewInt(1)})
+		tx, _, _ := ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey, RandomBytes(), []ByteArray{[]byte{1}})
 		data := tx.Encode()
 		var decodedTx *AccTx
 		decodedTx = decodedTx.Decode(data)

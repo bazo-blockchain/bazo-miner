@@ -685,12 +685,9 @@ func TestVM_Exec_Sload(t *testing.T) {
 		HALT,
 	}
 
-	v1 := big.NewInt(26)
-	v2 := big.NewInt(0)
-
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = []big.Int{StrToBigInt("Hi There!!"), *v1, *v2}
+	mc.ContractVariables = []protocol.ByteArray{[]byte("Hi There!!"), []byte{26}, []byte{0}}
 	vm.context = mc
 
 	vm.Exec(false)
@@ -730,7 +727,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = []big.Int{StrToBigInt("Something")}
+	mc.ContractVariables = []protocol.ByteArray{[]byte("Something")}
 	vm.context = mc
 	vm.Exec(false)
 	mc.PersistChanges()

@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"errors"
-	"math/big"
 )
 
 type Context struct {
@@ -13,14 +12,14 @@ type Context struct {
 
 type Change struct {
 	index int
-	value big.Int
+	value []byte
 }
 
-func NewChange(index int, value big.Int) Change {
+func NewChange(index int, value []byte) Change {
 	return Change{index, value}
 }
 
-func (c *Change) GetChange() (int, big.Int) {
+func (c *Change) GetChange() (int, []byte) {
 	return c.index, c.value
 }
 
@@ -41,7 +40,7 @@ func (c *Context) GetContractVariable(index int) ([]byte, error) {
 	if index >= len(c.ContractVariables) {
 		return []byte{}, errors.New("Index out of bounds")
 	}
-	return c.ContractVariables[index].Bytes(), nil
+	return c.ContractVariables[index], nil
 }
 
 func (c *Context) SetContractVariable(index int, value []byte) error {
@@ -49,9 +48,7 @@ func (c *Context) SetContractVariable(index int, value []byte) error {
 		return errors.New("Index out of bounds")
 	}
 
-	bigInt := big.Int{}
-	bigInt.SetBytes(value[:])
-	change := NewChange(index, bigInt)
+	change := NewChange(index, value)
 	c.changes = append(c.changes, change)
 	return nil
 }

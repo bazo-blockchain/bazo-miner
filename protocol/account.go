@@ -4,22 +4,21 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"math/big"
 )
 
 type Account struct {
-	Address            [64]byte  // 64 Byte
-	Issuer             [32]byte  // 32 Byte
-	Balance            uint64    // 8 Byte
-	TxCnt              uint32    // 4 Byte
-	IsStaking          bool      // 1 Byte
-	HashedSeed         [32]byte  // 32 Byte
-	StakingBlockHeight uint32    // 4 Byte
-	Contract           []byte    // Arbitrary length
-	ContractVariables  []big.Int // Arbitrary length
+	Address            [64]byte    // 64 Byte
+	Issuer             [32]byte    // 32 Byte
+	Balance            uint64      // 8 Byte
+	TxCnt              uint32      // 4 Byte
+	IsStaking          bool        // 1 Byte
+	HashedSeed         [32]byte    // 32 Byte
+	StakingBlockHeight uint32      // 4 Byte
+	Contract           []byte      // Arbitrary length
+	ContractVariables  []ByteArray // Arbitrary length
 }
 
-func NewAccount(address [64]byte, issuer [32]byte, balance uint64, isStaking bool, hashedSeed [32]byte, contract []byte, contractVariables []big.Int) Account {
+func NewAccount(address [64]byte, issuer [32]byte, balance uint64, isStaking bool, hashedSeed [32]byte, contract []byte, contractVariables []ByteArray) Account {
 	newAcc := Account{
 		address,
 		issuer,
