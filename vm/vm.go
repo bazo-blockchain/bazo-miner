@@ -643,51 +643,42 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ISSUER:
-			issuer := new(big.Int)
-			i := vm.context.GetIssuer()
-			issuer.SetBytes(i[:])
-			err := vm.evaluationStack.Push(*issuer)
+			issuer := vm.context.GetIssuer()
+			err := vm.evaluationStack.PushBytes(issuer[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case BALANCE:
-			balance := new(big.Int)
-			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context.GetBalance())
-			balance.SetBytes(ba)
+			balance := make([]byte, 8)
+			binary.LittleEndian.PutUint64(balance, vm.context.GetBalance())
 
-			err := vm.evaluationStack.Push(*balance)
+			err := vm.evaluationStack.PushBytes(balance)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case CALLER:
-			caller := new(big.Int)
-			c := vm.context.GetSender()
-			caller.SetBytes(c[:])
-			err := vm.evaluationStack.Push(*caller)
+			caller := vm.context.GetSender()
+			err := vm.evaluationStack.PushBytes(caller[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case CALLVAL:
-			value := new(big.Int)
+			value := make([]byte, 8)
+			binary.LittleEndian.PutUint64(value , vm.context.GetAmount())
 
-			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context.GetAmount())
-			value.SetBytes(ba)
-
-			err := vm.evaluationStack.Push(*value)
+			err := vm.evaluationStack.PushBytes(value[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -697,14 +688,14 @@ func (vm *VM) Exec(trace bool) bool {
 				length := int(td[i]) // Length of parameters
 
 				if len(td)-i-1 <= length {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Index out of bounds"))
+					vm.evaluationStack.PushBytes([]byte(opCode.Name + ": Index out of bounds"))
 					return false
 				}
 
-				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(td[i+1 : i+length+2]))
+				err := vm.evaluationStack.PushBytes(td[i+1 : i+length+2])
 
 				if err != nil {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+					vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 
@@ -714,7 +705,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case NEWMAP:
 			m := NewMap()
 
-			err = vm.evaluationStack.Push(m.ToBigInt())
+			err = vm.evaluationStack.PushBytes(m)
 			if err != nil {
 				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
 				return false
