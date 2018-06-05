@@ -61,7 +61,7 @@ func (vm *VM) trace() {
 
 	byteCode := int(vm.code[vm.pc])
 	if len(OpCodes) <= byteCode {
-		stack.Push(StrToBigInt("Trace: invalid opcode "))
+		stack.PushBytes([]byte("Trace: invalid opcode "))
 		return
 	}
 	opCode := OpCodes[byteCode]
@@ -165,14 +165,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case DUP:
-			val, err := vm.evaluationStack.Peek()
-
-			if !vm.checkErrors(opCode.Name, err) {
+			tos, err := vm.evaluationStack.PeekBytes()
+			if err != nil {
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(val)
-
+			err = vm.evaluationStack.PushBytes(tos)
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -199,7 +198,7 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 
-				err = vm.evaluationStack.Push(newTos)
+				err = vm.evaluationStack.PushBytes(ConvertToByteArray(newTos))
 
 				if err != nil {
 					vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -222,7 +221,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			left.Add(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(left))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -238,7 +237,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			left.Sub(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(left))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -254,7 +253,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			left.Mul(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(left))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -275,7 +274,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			left.Div(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(left))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -296,7 +295,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			left.Mod(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(left))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -313,7 +312,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			tos.Neg(&tos)
 
-			vm.evaluationStack.Push(tos)
+			vm.evaluationStack.PushBytes(ConvertToByteArray(tos))
 
 		case EQ:
 			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
@@ -384,7 +383,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			tos.Lsh(&tos, uint(nrOfShifts))
-			err = vm.evaluationStack.Push(tos)
+			err = vm.evaluationStack.PushBytes(ConvertToByteArray(tos))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -400,7 +399,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			tos.Rsh(&tos, uint(nrOfShifts))
-			err = vm.evaluationStack.Push(tos)
+			err = vm.evaluationStack.PushBytes(ConvertToByteArray(tos))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -531,7 +530,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			err = vm.evaluationStack.Push(*big.NewInt(int64(getElementMemoryUsage(right.BitLen()))))
+			err = vm.evaluationStack.PushBytes(ConvertToByteArray(*big.NewInt(int64(getElementMemoryUsage(right.BitLen())))))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -597,7 +596,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			val := callstackTos.variables[int(address)]
 
-			err := vm.evaluationStack.Push(val)
+			err := vm.evaluationStack.PushBytes(ConvertToByteArray(val))
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -982,10 +981,7 @@ func (vm *VM) Exec(trace bool) bool {
 			hasher.Write(right.Bytes())
 			hash := hasher.Sum(nil)
 
-			var bigInt big.Int
-			bigInt.SetBytes(hash)
-
-			err = vm.evaluationStack.Push(bigInt)
+			err = vm.evaluationStack.PushBytes(hash)
 
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -1022,12 +1018,8 @@ func (vm *VM) Exec(trace bool) bool {
 
 			pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
 
-			if ecdsa.Verify(&pubKey, hash.Bytes(), r, s) {
-				fmt.Println("Valid Sig", pubKey, hash.Bytes())
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := ecdsa.Verify(&pubKey, hash.Bytes(), r, s)
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case ERRHALT:
 			return false
@@ -1069,9 +1061,9 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 }
 
 func (vm *VM) GetErrorMsg() string {
-	tos, err := vm.evaluationStack.Peek()
+	tos, err := vm.evaluationStack.PeekBytes()
 	if err != nil {
 		return "Peek on empty Stack"
 	}
-	return BigIntToString(tos)
+	return string(tos)
 }

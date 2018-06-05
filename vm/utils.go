@@ -64,7 +64,7 @@ func ConvertToBigInt(ba []byte, err error) (big.Int, error) {
 	return result, err
 }
 
-func ConvertToByteArray(bi big.Int, err error) ([]byte, error) {
+func ConvertToByteArray(bi big.Int) ([]byte) {
 	result := bi.Bytes()
-	return result, err
+	return result
 }
