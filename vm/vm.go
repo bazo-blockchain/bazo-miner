@@ -319,62 +319,62 @@ func (vm *VM) Exec(trace bool) bool {
 		case EQ:
 			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
-
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 0))
+			result := left.Cmp(&right) == 0
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case NEQ:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) != 0))
+			result := left.Cmp(&right) != 0
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case LT:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == -1))
+			result := left.Cmp(&right) == -1
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case GT:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 1))
+			result := left.Cmp(&right) == 1
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case LTE:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == -1 || left.Cmp(&right) == 0))
+			result := left.Cmp(&right) == -1 || left.Cmp(&right) == 0
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case GTE:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 1 || left.Cmp(&right) == 0))
+			result := left.Cmp(&right) == 1 || left.Cmp(&right) == 0
+			vm.evaluationStack.PushBytes(BoolToByteArray(result))
 
 		case SHIFTL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
