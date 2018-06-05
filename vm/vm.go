@@ -315,8 +315,8 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 		case EQ:
-			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
-			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			right, rerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
@@ -325,8 +325,8 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case NEQ:
-			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
-			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			right, rerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
