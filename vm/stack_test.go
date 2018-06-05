@@ -119,8 +119,8 @@ func TestStack_PushAndPopElement(t *testing.T) {
 func TestStack_MemoryUsage(t *testing.T) {
 	s := NewStack()
 
-	byteArray1 := []byte{123, 48, 56, 126}           // 4 + 1
-	byteArray2 := []byte{175, 135, 44, 132, 48, 134} // 6 + 1
+	byteArray1 := []byte{123, 48, 56, 126}
+	byteArray2 := []byte{175, 135, 44, 132, 48, 134}
 	byteArray3 := []byte{123, 132}
 	byteArray4 := []byte{123, 48, 56, 126, 123, 48, 56, 126, 123, 48, 56, 126, 123, 48, 56, 126}
 
@@ -130,56 +130,49 @@ func TestStack_MemoryUsage(t *testing.T) {
 
 	s.PushBytes(byteArray1)
 
-	if s.memoryUsage != uint32(5) {
-		t.Errorf("Expected memory usage to be 5 after pushing big.Int made from 4 bytes but was %v", s.memoryUsage)
+	expected := uint32(4)
+	actual := s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
 	s.PushBytes(byteArray2)
 
-	if s.memoryUsage != uint32(12) {
-		t.Errorf("Expected memory usage to be 12 after pushing big.Int made from 6 bytes but was %v", s.memoryUsage)
+	expected = uint32(10)
+	actual = s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
 	s.PushBytes(byteArray3)
 
-	if s.memoryUsage != uint32(15) {
-		t.Errorf("Expected memory usage to be 15 after pushing big.Int made from 6 bytes but was %v", s.memoryUsage)
+	expected = uint32(12)
+	actual = s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
 	s.PushBytes(byteArray4)
 
-	if s.memoryUsage != uint32(32) {
-		t.Errorf("Expected memory usage to be 32 after pushing big.Int made from 16 bytes but was %v", s.memoryUsage)
+	expected = uint32(28)
+	actual = s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
 	s.PopBytes()
 
-	if s.memoryUsage != uint32(15) {
-		t.Errorf("Expected memory usage to be 15 after pushing big.Int made from 6 bytes but was %v", s.memoryUsage)
+	expected = uint32(12)
+	actual = s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
 	s.PopBytes()
 
-	if s.memoryUsage != uint32(12) {
-		t.Errorf("Expected memory usage to be 12 after pushing big.Int made from 6 bytes but was %v", s.memoryUsage)
+	expected = uint32(10)
+	actual = s.memoryUsage
+	if expected != actual {
+		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
-}
-
-func TestStack_RoundingFunction(t *testing.T) {
-	if getElementMemoryUsage(456) != 58 {
-		t.Errorf("Expected memory usage to be 58 bytes, after adding 8 to 456, dividing by 8 and rounding up, but got %v", getElementMemoryUsage(456))
-	}
-
-	if getElementMemoryUsage(457) != 59 {
-		t.Errorf("Expected memory usage to be 59 bytes, after adding 8 to 457, dividing by 8 and rounding up, but got %v", getElementMemoryUsage(457))
-	}
-
-	if getElementMemoryUsage(8) != 2 {
-		t.Errorf("Expected memory usage to be 2 bytes, after adding 8 to 8, dividing by 8 and rounding up, but got %v", getElementMemoryUsage(8))
-	}
-
-	if getElementMemoryUsage(32) != 5 {
-		t.Errorf("Expected memory usage to be 5 bytes, after adding 8 to 456, dividing by 8 and rounding up, but got %v", getElementMemoryUsage(32))
-	}
-
 }
