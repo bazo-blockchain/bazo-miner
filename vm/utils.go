@@ -11,7 +11,7 @@ const UINT16_MAX uint16 = 65535
 
 func UInt64ToByteArray(element uint64) []byte {
 	ba := make([]byte, 8)
-	binary.LittleEndian.PutUint64(ba, uint64(element))
+	binary.BigEndian.PutUint64(ba, uint64(element))
 	return ba
 }
 
@@ -36,9 +36,9 @@ func StrToBigInt(element string) big.Int {
 }
 
 func ByteArrayToInt(element []byte) int {
-	ba := make([]byte, 64-len(element))
-	ba = append(element, ba...)
-	return int(binary.LittleEndian.Uint64(ba))
+	ba := make([]byte, 8-len(element))
+	ba = append(ba, element...)
+	return int(binary.BigEndian.Uint64(ba))
 }
 
 func BigIntToString(element big.Int) string {
