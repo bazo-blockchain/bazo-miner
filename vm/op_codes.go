@@ -90,7 +90,7 @@ var OpCodes = []OpCode{
 	{SHIFTR, "shiftl", 1, []int{BYTE}, 1},
 	{NOP, "nop", 0, nil, 1},
 	{JMP, "jmp", 1, []int{LABEL}, 1},
-	{JMPIF, "jmpif", 1, []int{LABEL}, 1},
+	{JMPIF, "jmpif", 2, []int{LABEL}, 1},
 	{CALL, "call", 2, []int{LABEL, BYTE}, 1},
 	{CALLIF, "callif", 2, []int{LABEL, BYTE}, 1},
 	{CALLEXT, "callext", 3, []int{BYTES, BYTES, BYTE}, 1},

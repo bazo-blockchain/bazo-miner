@@ -23,8 +23,8 @@ func TestVM_NewTestVM(t *testing.T) {
 
 func TestVM_Exec_GasConsumption(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 8,
-		PUSH, 0, 8,
+		PUSH, 1, 0, 8,
+		PUSH, 1, 0, 8,
 		ADD,
 		HALT,
 	}
@@ -70,8 +70,8 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 
 func TestVM_Exec_Addition(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 125,
-		PUSH, 1, 168, 22,
+		PUSH, 1, 0, 125,
+		PUSH, 2, 0, 168, 22,
 		ADD,
 		HALT,
 	}
@@ -93,8 +93,8 @@ func TestVM_Exec_Addition(t *testing.T) {
 
 func TestVM_Exec_Subtraction(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 3,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 3,
 		SUB,
 		HALT,
 	}
@@ -114,11 +114,10 @@ func TestVM_Exec_Subtraction(t *testing.T) {
 	}
 }
 
-/* TODO
 func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 3,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 3,
+		PUSH, 1, 0, 6,
 		SUB,
 		HALT,
 	}
@@ -131,17 +130,21 @@ func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 	tos, _ := vm.evaluationStack.Pop()
 
 	expected := -3
-	actual := ByteArrayToInt(tos)
+	actual := ByteArrayToInt(tos[1:])
+
+	if tos[0] == 0x01 {
+		actual = actual * -1
+	}
 
 	if expected != actual {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
-} */
+}
 
 func TestVM_Exec_Multiplication(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 5,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 5,
+		PUSH, 1, 0, 2,
 		MULT,
 		HALT,
 	}
@@ -163,8 +166,8 @@ func TestVM_Exec_Multiplication(t *testing.T) {
 
 func TestVM_Exec_Modulo(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 5,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 5,
+		PUSH, 1, 0, 2,
 		MOD,
 		HALT,
 	}
@@ -209,8 +212,8 @@ func TestVM_Exec_Negate(t *testing.T) {
 
 func TestVM_Exec_Division(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 2,
 		DIV,
 		HALT,
 	}
@@ -232,8 +235,8 @@ func TestVM_Exec_Division(t *testing.T) {
 
 func TestVM_Exec_DivisionByZero(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 0,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 0,
 		DIV,
 		HALT,
 	}
@@ -257,8 +260,8 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 
 func TestVM_Exec_Eq(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 6,
 		EQ,
 		HALT,
 	}
@@ -280,8 +283,8 @@ func TestVM_Exec_Eq(t *testing.T) {
 
 func TestVM_Exec_Neq(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 5,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 5,
 		NEQ,
 		HALT,
 	}
@@ -303,8 +306,8 @@ func TestVM_Exec_Neq(t *testing.T) {
 
 func TestVM_Exec_Lt(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 4,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 4,
+		PUSH, 1, 0, 6,
 		LT,
 		HALT,
 	}
@@ -327,7 +330,7 @@ func TestVM_Exec_Lt(t *testing.T) {
 
 func TestVM_Exec_Gt(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
+		PUSH, 1, 0, 6,
 		PUSH, 1, 0, 4,
 		GT,
 		HALT,
@@ -350,8 +353,8 @@ func TestVM_Exec_Gt(t *testing.T) {
 
 func TestVM_Exec_Lte_islower(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 4,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 4,
+		PUSH, 1, 0, 6,
 		LTE,
 		HALT,
 	}
@@ -375,8 +378,8 @@ func TestVM_Exec_Lte_islower(t *testing.T) {
 
 func TestVM_Exec_Lte_isequals(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 6,
 		LTE,
 		HALT,
 	}
@@ -398,8 +401,8 @@ func TestVM_Exec_Lte_isequals(t *testing.T) {
 
 func TestVM_Exec_Gte_isGreater(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 4,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 4,
 		GTE,
 		HALT,
 	}
@@ -421,8 +424,8 @@ func TestVM_Exec_Gte_isGreater(t *testing.T) {
 
 func TestVM_Exec_Gte_isEqual(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 6,
-		PUSH, 0, 6,
+		PUSH, 1, 0, 6,
+		PUSH, 1, 0, 6,
 		GTE,
 		HALT,
 	}
@@ -444,7 +447,7 @@ func TestVM_Exec_Gte_isEqual(t *testing.T) {
 
 func TestVM_Exec_Shiftl(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 1,
+		PUSH, 1, 0, 1,
 		SHIFTL, 3,
 		HALT,
 	}
@@ -466,7 +469,7 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 
 func TestVM_Exec_Shiftr(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 8,
+		PUSH, 1, 0, 8,
 		SHIFTR, 3,
 		HALT,
 	}
@@ -488,12 +491,12 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 
 func TestVM_Exec_Jmpif(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 3,
-		PUSH, 0, 4,
+		PUSH, 1, 0, 3,
+		PUSH, 1, 0, 4,
 		ADD,
-		PUSH, 0, 20,
+		PUSH, 1, 0, 20,
 		LT,
-		JMPIF, 0, 18,
+		JMPIF, 0, 21,
 		PUSH, 0, 3,
 		NOP,
 		NOP,
@@ -574,12 +577,12 @@ func TestVM_Exec_Call(t *testing.T) {
 
 func TestVM_Exec_Callif_true(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 10,
-		PUSH, 0, 8,
-		PUSH, 0, 10,
-		PUSH, 0, 10,
+		PUSH, 1, 0, 10,
+		PUSH, 1, 0, 8,
+		PUSH, 1, 0, 10,
+		PUSH, 1, 0, 10,
 		EQ,
-		CALLIF, 0, 20, 2,
+		CALLIF, 0, 24, 2,
 		HALT,
 		NOP,
 		NOP,
@@ -612,12 +615,12 @@ func TestVM_Exec_Callif_true(t *testing.T) {
 
 func TestVM_Exec_Callif_false(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 10,
-		PUSH, 0, 8,
-		PUSH, 0, 10,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 10,
+		PUSH, 1, 0, 8,
+		PUSH, 1, 0, 10,
+		PUSH, 1, 0, 2,
 		EQ,
-		CALLIF, 0, 21, 2,
+		CALLIF, 0, 25, 2,
 		HALT,
 		NOP,
 		NOP,
@@ -907,10 +910,10 @@ func TestVM_Exec_Sha3(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	val, _ := vm.evaluationStack.Pop()
-
-	if !bytes.Equal(val, []byte{227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178}) {
-		t.Errorf("Actual value is %v, should be {227, 237, 86, 189...} after jumping to halt", val)
+	actual, _ := vm.evaluationStack.Pop()
+	expected := []byte{227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178}
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("Expected value to be \n '%v', \n but was \n '%v' \n after jumping to halt", expected, actual)
 	}
 }
 
@@ -1385,7 +1388,9 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x01, SHA3, 0x05, 0x02, 0x03,
+		PUSH, 0x00, 0x01,
+		SHA3,
+		SUB, 0x02, 0x03,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1395,7 +1400,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "sub: pop() on empty stack"
+	expected := "sub: Invalid signing bit"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1484,13 +1489,13 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 		// start ABI
 		CALLDATA,
 		DUP,
-		PUSH, 0, 1,
+		PUSH, 1, 0, 1,
 		EQ,
-		JMPIF, 0, 18,
+		JMPIF, 0, 20,
 		DUP,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 2,
 		EQ,
-		JMPIF, 0, 21,
+		JMPIF, 0, 23,
 		HALT,
 		// end ABI
 		POP,
@@ -1505,9 +1510,9 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	mc := NewMockContext(code)
 
 	mc.transactionData = []byte{
-		0, 2,
-		0, 5,
-		0, 1, // Function hash
+		1, 0, 5,
+		1, 0, 2,
+		1, 0, 1, // Function hash
 	}
 
 	vm.context = mc
@@ -1527,13 +1532,13 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 		// start ABI
 		CALLDATA,
 		DUP,
-		PUSH, 0, 1,
+		PUSH, 1, 0, 1,
 		EQ,
-		JMPIF, 0, 18,
+		JMPIF, 0, 20,
 		DUP,
-		PUSH, 0, 2,
+		PUSH, 1, 0, 2,
 		EQ,
-		JMPIF, 0, 21,
+		JMPIF, 0, 23,
 		HALT,
 		// end ABI
 		POP,
@@ -1548,9 +1553,9 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 	mc := NewMockContext(code)
 
 	mc.transactionData = []byte{
-		0, 2,
-		0, 5,
-		0, 2, // Function hash
+		1, 0, 2,
+		1, 0, 5,
+		1, 0, 2, // Function hash
 	}
 
 	vm.context = mc
