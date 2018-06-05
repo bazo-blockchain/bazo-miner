@@ -23,11 +23,11 @@ func TestStack_PopWhenEmpty(t *testing.T) {
 func TestStack_PopIfRemoves(t *testing.T) {
 	s := NewStack()
 
-	s.PushBytes(UInt64ToByteArray(454))
-	s.PushBytes(UInt64ToByteArray(46542))
-	s.PushBytes(UInt64ToByteArray(841324768))
+	s.Push(UInt64ToByteArray(454))
+	s.Push(UInt64ToByteArray(46542))
+	s.Push(UInt64ToByteArray(841324768))
 
-	tos, _ := s.PopBytes()
+	tos, _ := s.Pop()
 
 	expected := 841324768
 	actual := ByteArrayToInt(tos)
@@ -36,8 +36,8 @@ func TestStack_PopIfRemoves(t *testing.T) {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PopBytes()
-	s.PopBytes()
+	s.Pop()
+	s.Pop()
 
 	expected = 0
 	actual = s.GetLength()
@@ -49,7 +49,7 @@ func TestStack_PopIfRemoves(t *testing.T) {
 func TestStack_Peek(t *testing.T) {
 	s := NewStack()
 
-	s.PushBytes([]byte{0x01, 0x00})
+	s.Push([]byte{0x01, 0x00})
 	s.PeekBytes()
 
 	expected := 1
@@ -63,10 +63,10 @@ func TestStack_Peek(t *testing.T) {
 func TestStack_PopIndexAt(t *testing.T) {
 	s := NewStack()
 
-	s.PushBytes([]byte{0x01, 0x00})
-	s.PushBytes([]byte{0x02, 0x00})
-	s.PushBytes([]byte{0x05})
-	s.PushBytes([]byte{0x04, 0x00})
+	s.Push([]byte{0x01, 0x00})
+	s.Push([]byte{0x02, 0x00})
+	s.Push([]byte{0x05})
+	s.Push([]byte{0x04, 0x00})
 	element, _ := s.PopIndexAt(2)
 
 	expected := 3
@@ -91,7 +91,7 @@ func TestStack_PushAndPopElement(t *testing.T) {
 		t.Errorf("Expected size before push to be '%v', but was '%v'", expected, actual)
 	}
 
-	s.PushBytes([]byte{0x02})
+	s.Push([]byte{0x02})
 
 	expected = 1
 	actual = s.GetLength()
@@ -99,7 +99,7 @@ func TestStack_PushAndPopElement(t *testing.T) {
 		t.Errorf("Expected size to be '%v' but was '%v'", expected, actual)
 	}
 
-	tos, _ := s.PopBytes()
+	tos, _ := s.Pop()
 
 	expected = 2
 	actual = ByteArrayToInt(tos)
@@ -107,7 +107,7 @@ func TestStack_PushAndPopElement(t *testing.T) {
 		t.Errorf("Expected val of element to be '%v', but was '%v'", expected, actual)
 	}
 
-	s.PushBytes([]byte{0x05})
+	s.Push([]byte{0x05})
 
 	expected = 1
 	actual = s.GetLength()
@@ -128,7 +128,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be 0 before pushing anything but was %v", s.memoryUsage)
 	}
 
-	s.PushBytes(byteArray1)
+	s.Push(byteArray1)
 
 	expected := uint32(4)
 	actual := s.memoryUsage
@@ -136,7 +136,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PushBytes(byteArray2)
+	s.Push(byteArray2)
 
 	expected = uint32(10)
 	actual = s.memoryUsage
@@ -144,7 +144,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PushBytes(byteArray3)
+	s.Push(byteArray3)
 
 	expected = uint32(12)
 	actual = s.memoryUsage
@@ -152,7 +152,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PushBytes(byteArray4)
+	s.Push(byteArray4)
 
 	expected = uint32(28)
 	actual = s.memoryUsage
@@ -160,7 +160,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PopBytes()
+	s.Pop()
 
 	expected = uint32(12)
 	actual = s.memoryUsage
@@ -168,7 +168,7 @@ func TestStack_MemoryUsage(t *testing.T) {
 		t.Errorf("Expected memory usage to be '%v' but was '%v'", expected, actual)
 	}
 
-	s.PopBytes()
+	s.Pop()
 
 	expected = uint32(10)
 	actual = s.memoryUsage

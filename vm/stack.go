@@ -23,7 +23,7 @@ func (s Stack) GetLength() int {
 	return len(s.Stack)
 }
 
-func (s *Stack) PushBytes(element []byte) error {
+func (s *Stack) Push(element []byte) error {
 	if (*s).hasEnoughMemory(len(element)) {
 		s.memoryUsage += uint32(len(element))
 		s.Stack = append(s.Stack, element)
@@ -44,7 +44,7 @@ func (s *Stack) PopIndexAt(index int) ([]byte, error) {
 	}
 }
 
-func (s *Stack) PopBytes() (element []byte, err error) {
+func (s *Stack) Pop() (element []byte, err error) {
 	if (*s).GetLength() > 0 {
 		element = (*s).Stack[s.GetLength()-1]
 		s.memoryUsage -= uint32(len(element))
