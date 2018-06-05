@@ -45,3 +45,26 @@ func BigIntToString(element big.Int) string {
 	ba := element.Bytes()
 	return string(ba[:])
 }
+
+func BoolToByteArray(value bool) []byte{
+	var result byte
+	if value {
+		result = 1
+	}
+	return []byte{result}
+}
+
+func ByteArrayToBool(ba []byte) bool {
+	return ba[0] == 1
+}
+
+func ConvertToBigInt(ba []byte, err error) (big.Int, error) {
+	result := big.Int{}
+	result.SetBytes(ba)
+	return result, err
+}
+
+func ConvertToByteArray(bi big.Int, err error) ([]byte, error) {
+	result := bi.Bytes()
+	return result, err
+}

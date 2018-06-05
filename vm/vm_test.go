@@ -274,14 +274,13 @@ func TestVM_Exec_Eq(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
-
+	tos, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after comparing 4 with 4", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after comparing 6 with 6", tos[0])
 	}
 }
 
@@ -298,14 +297,13 @@ func TestVM_Exec_Neq(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
-
+	tos, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after comparing 6 with 5 to not be equal", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after comparing 6 with 5 to not be equal", tos[0])
 	}
 }
 
@@ -322,14 +320,14 @@ func TestVM_Exec_Lt(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
+	tos, err := vm.evaluationStack.PopBytes()
 
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 4 < 6", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 4 < 6", tos[0])
 	}
 }
 
@@ -346,18 +344,17 @@ func TestVM_Exec_Gt(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
-
+	tos, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 6 > 4", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 6 > 4", tos[0])
 	}
 }
 
-func TestVM_Exec_Lte(t *testing.T) {
+func TestVM_Exec_Lte_islower(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 4,
 		PUSH, 0, 6,
@@ -370,34 +367,42 @@ func TestVM_Exec_Lte(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
-
+	tos, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 4 <= 6", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 4 <= 6", tos[0])
 	}
 
-	code1 := []byte{
+
+}
+
+func TestVM_Exec_Lte_isequals(t *testing.T) {
+	code := []byte{
 		PUSH, 0, 6,
 		PUSH, 0, 6,
 		LTE,
 		HALT,
 	}
 
-	vm1 := NewTestVM([]byte{})
-	mc1 := NewMockContext(code1)
-	vm1.context = mc1
-	vm1.Exec(false)
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 6 <= 6", tos)
+	tos, err := vm.evaluationStack.PopBytes()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 6 <= 6", tos[0])
 	}
 }
 
-func TestVM_Exec_Gte(t *testing.T) {
+func TestVM_Exec_Gte_isGreater(t *testing.T) {
 	code := []byte{
 		PUSH, 0, 6,
 		PUSH, 0, 4,
@@ -410,30 +415,36 @@ func TestVM_Exec_Gte(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 
-	tos, err := vm.evaluationStack.Peek()
-
+	tos, err := vm.evaluationStack.PopBytes()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 4", tos)
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 4", tos[0])
 	}
+}
 
-	code1 := []byte{
+func TestVM_Exec_Gte_isEqual(t *testing.T) {
+	code := []byte{
 		PUSH, 0, 6,
 		PUSH, 0, 6,
 		GTE,
 		HALT,
 	}
 
-	vm1 := NewTestVM([]byte{})
-	mc1 := NewMockContext(code1)
-	vm1.context = mc1
-	vm1.Exec(false)
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
 
-	if tos.Int64() != 1 {
-		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 6", tos)
+	tos, err := vm.evaluationStack.PopBytes()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	if !ByteArrayToBool(tos) {
+		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 6", tos[0])
 	}
 }
 

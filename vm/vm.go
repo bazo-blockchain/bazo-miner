@@ -317,18 +317,14 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push(tos)
 
 		case EQ:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
+			left, lerr := ConvertToBigInt(vm.evaluationStack.PopBytes())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 0))
 
 		case NEQ:
 			right, rerr := vm.evaluationStack.Pop()
@@ -338,11 +334,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if left.Cmp(&right) != 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) != 0))
 
 		case LT:
 			right, rerr := vm.evaluationStack.Pop()
@@ -352,11 +344,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if left.Cmp(&right) == -1 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == -1))
 
 		case GT:
 			right, rerr := vm.evaluationStack.Pop()
@@ -366,11 +354,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if left.Cmp(&right) == 1 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 1))
 
 		case LTE:
 			right, rerr := vm.evaluationStack.Pop()
@@ -380,11 +364,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if left.Cmp(&right) == -1 || left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == -1 || left.Cmp(&right) == 0))
 
 		case GTE:
 			right, rerr := vm.evaluationStack.Pop()
@@ -394,11 +374,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if left.Cmp(&right) == 1 || left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			vm.evaluationStack.PushBytes(BoolToByteArray(left.Cmp(&right) == 1 || left.Cmp(&right) == 0))
 
 		case SHIFTL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
