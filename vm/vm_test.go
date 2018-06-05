@@ -187,10 +187,9 @@ func TestVM_Exec_Modulo(t *testing.T) {
 	}
 }
 
-/* TODO
 func TestVM_Exec_Negate(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 5,
+		PUSH, 1, 0, 5,
 		NEG,
 		HALT,
 	}
@@ -202,13 +201,13 @@ func TestVM_Exec_Negate(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := -5
-	actual := ByteArrayToInt(tos)
+	expected := big.NewInt(-5)
+	actual, _ := SignedBigIntConversion(tos, nil)
 
-	if expected != actual {
+	if !(expected.Cmp(&actual) == 0) {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
-} */
+}
 
 func TestVM_Exec_Division(t *testing.T) {
 	code := []byte{

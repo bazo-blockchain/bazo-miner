@@ -69,11 +69,12 @@ func SignedBigIntConversion(ba []byte, err error) (big.Int, error) {
 			return big.Int{}, errors.New("Invalid signing bit")
 		}
 
+		result.SetBytes(ba[1:])
+
 		if ba[0] == 0x01 {
 			result.Neg(&result)
 		}
 
-		result.SetBytes(ba[1:])
 		return result, err
 	}
 }
