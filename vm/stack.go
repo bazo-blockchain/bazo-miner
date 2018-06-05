@@ -40,14 +40,14 @@ func (s *Stack) PushBytes(element []byte) error {
 	return s.Push(bigInt)
 }
 
-func (s *Stack) PopIndexAt(index int) (element big.Int, err error) {
+func (s *Stack) PopIndexAt(index int) ([]byte, error) {
 	if (*s).GetLength() >= index {
-		element = (*s).Stack[index]
+		element := (*s).Stack[index]
 		s.memoryUsage -= getElementMemoryUsage(element.BitLen())
 		s.Stack = append((*s).Stack[:index], (*s).Stack[index+1:]...)
-		return element, nil
+		return element.Bytes(), nil
 	} else {
-		return *new(big.Int).SetInt64(0), errors.New("index out of bounds")
+		return []byte{0}, errors.New("index out of bounds")
 	}
 }
 
