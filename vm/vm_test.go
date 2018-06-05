@@ -665,7 +665,7 @@ func TestVM_Exec_TosSize(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	expected := 4
+	expected := 3
 	actual := ByteArrayToInt(tos)
 
 	if expected != actual {
@@ -706,7 +706,7 @@ func TestVM_Exec_Sload(t *testing.T) {
 	expected := []byte{0}
 	actual, _ := vm.evaluationStack.PopBytes()
 
-	if bytes.Equal(expected, actual) {
+	if !bytes.Equal(expected, actual) {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
 
@@ -1596,7 +1596,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.PopBytes()
 
-	expected := "arrappend: not a valid array"
+	expected := "arrappend: invalid data type supplied"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1615,7 +1615,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.PopBytes()
 
-	expected := "arrappend: not a valid array"
+	expected := "arrappend: invalid data type supplied"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)

@@ -95,7 +95,7 @@ func (vm *VM) trace() {
 		fmt.Printf("%04d: %-6s %v ", addr, opCode.Name, args)
 
 		for _, e := range stack.Stack {
-			fmt.Printf("[%# x]", e.Bytes())
+			fmt.Printf("[%# x]", e)
 			fmt.Printf(" ")
 		}
 
@@ -198,7 +198,7 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 
-				err = vm.evaluationStack.PushBytes(ConvertToByteArray(newTos))
+				err = vm.evaluationStack.PushBytes(newTos)
 
 				if err != nil {
 					vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
@@ -524,14 +524,15 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.pc = callstackTos.returnAddress
 
 		case SIZE:
-			right, err := ConvertToBigInt(vm.evaluationStack.PopBytes())
-
-			if !vm.checkErrors(opCode.Name, err) {
+			element, err := vm.evaluationStack.PopBytes()
+			if err != nil {
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.PushBytes(ConvertToByteArray(*big.NewInt(int64(getElementMemoryUsage(right.BitLen())))))
+			size := UInt64ToByteArray(uint64(len(element)))
 
+			err = vm.evaluationStack.PushBytes(size)
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -540,7 +541,6 @@ func (vm *VM) Exec(trace bool) bool {
 		case SSTORE:
 			index, errArgs := vm.fetch(opCode.Name)
 			value, errStack := vm.evaluationStack.PopBytes()
-
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
