@@ -4,23 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"log"
-	"math/big"
 )
 
 type Map []byte
 
 func NewMap() Map {
 	return []byte{0x01, 0x00, 0x00}
-}
-
-func (m *Map) MapContainsKey() bool {
-	return false
-}
-
-func (m *Map) ToBigInt() big.Int {
-	mp := big.Int{}
-	mp.SetBytes(*m)
-	return mp
 }
 
 func MapFromByteArray(m []byte) (Map, error) {
@@ -67,6 +56,10 @@ func (m *Map) DecrementSize() error {
 	s--
 	m.setSize(UInt16ToByteArray(s))
 	return nil
+}
+
+func (m *Map) MapContainsKey() bool {
+	return false
 }
 
 func (m *Map) Append(key []byte, value []byte) error {
