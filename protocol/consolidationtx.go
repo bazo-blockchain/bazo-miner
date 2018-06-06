@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/binary"
 	"fmt"
 )
 
@@ -9,23 +8,41 @@ const (
 	CONSOLIDATIONTX_SIZE = 213
 )
 
-//when we broadcast transactions we need a way to distinguish with a type
-
-type ConsolidationTx struct {
-	Header    byte
-	Account   [32]byte
+type ConsolidatedAccount struct {
+	account [32]byte
+	balance uint64
+	staking bool
 }
 
-func ConstrConsolidationTx(header byte) (tx *ConsolidationTx, err error) {
+//when we broadcast transactions we need a way to distinguish with a type
+type ConsolidationTx struct {
+	// Header
+	Header    byte
+	NumAccounts int
+	TotalBalance uint64
+
+	// Body
+	Accounts [128]ConsolidatedAccount
+
+}
+
+func ConstrConsolidationTx(header byte, state map[[32]byte]uint64) (tx *ConsolidationTx, err error) {
 	tx = new(ConsolidationTx)
 	tx.Header = header
-
+	tx.NumAccounts = len(state)
+	totalBalance := uint64(0)
+	for hash, balance := range state {
+		consAccount := new(ConsolidatedAccount)
+		consAccount.account = hash
+		consAccount.balance = balance
+		totalBalance += balance
+	}
+	tx.TotalBalance = totalBalance
 	return tx, nil
 }
 
 func (tx *ConsolidationTx) Hash() (hash [32]byte) {
 	if tx == nil {
-		//is returning nil better?
 		return [32]byte{}
 	}
 
@@ -46,35 +63,16 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		return nil
 	}
 
-	var amount, fee [8]byte
-	var txCnt [4]byte
-
-
 	encodedTx = make([]byte, CONSOLIDATIONTX_SIZE)
-
 	encodedTx[0] = tx.Header
-	copy(encodedTx[1:9], amount[:])
-	copy(encodedTx[9:17], fee[:])
-	copy(encodedTx[17:21], txCnt[:])
 
 	return encodedTx
 }
 
-func (*ConsolidationTx) Decode(encodedTx []byte) (tx *FundsTx) {
-	tx = new(FundsTx)
-
-	if len(encodedTx) != CONFIGTX_SIZE {
-		return nil
-	}
+func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
+	tx = new(ConsolidationTx)
 
 	tx.Header = encodedTx[0]
-	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
-	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
-	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])
-	copy(tx.From[:], encodedTx[21:53])
-	copy(tx.To[:], encodedTx[53:85])
-	copy(tx.Sig1[:], encodedTx[85:149])
-	copy(tx.Sig2[:], encodedTx[149:213])
 
 	return tx
 }
@@ -83,7 +81,11 @@ func (tx *ConsolidationTx) Size() uint64  { return CONSOLIDATIONTX_SIZE }
 
 func (tx ConsolidationTx) String() string {
 	return fmt.Sprintf(
-		"\nHeader: %v\n",
+		"\nHeader: %v\n" +
+		"numAccounts: %v\n" +
+		"balance: %v\n",
 		tx.Header,
+		tx.NumAccounts,
+		tx.TotalBalance,
 	)
 }

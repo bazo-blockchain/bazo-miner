@@ -14,8 +14,12 @@ import (
  TODO: strategy to decide where and when to start the consolidation
  TODO: strategy to decide how many blocks should be included
  TODO: who does the consolidation?
- */
+     Anybody should be able to create a consolidationTx
 
+ Enforce rule that a consolidationtx:
+   - check if there are some tx that have been left out, if yes then reject the block.
+ */
+var InitialBalance uint64 = 100000
 /**
  * Steps for basic test
  *
@@ -43,13 +47,15 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, txErr := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		accA.Balance = InitialBalance
+		accB.Balance= InitialBalance
+		tx, txErr := protocol.ConstrFundsTx(0x01, 50, 1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
 		if txErr != nil {
 			t.Error(txErr)
 
 		}
 		if err := addTx(b, tx); err == nil {
-			//Might  be that we generated a block that was already generated before
+			//Might be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 				continue
 			}
@@ -68,7 +74,7 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 
 func createBasicChain(t *testing.T)([]*protocol.Block) {
 	var blockList []*protocol.Block
-	var numberOfTestBlocks = 10
+	var numberOfTestBlocks = 2
 	prevHash := [32]byte{}
 
 	// Create blocks filled with random transactions, finalize (PoW etc.) and validate (state change)
@@ -151,18 +157,21 @@ func TestBasicConsolidationTx(t *testing.T) {
 			dest := fundsTx.To
 			// Add accounts in the map if they don't exist
 			if _, exists := state[source]; !exists {
-				state[source] = 0
+				state[source] = InitialBalance
 			}
 			if _, exists := state[dest]; !exists {
-				state[dest] = 0
+				state[dest] = InitialBalance
 			}
-
 			state[source] = state[source] - fundsTx.Fee - fundsTx.Amount
 			state[dest] += fundsTx.Amount
 			state[block.Beneficiary] += fundsTx.Fee
-
 		}
 	}
+	fmt.Printf("state: \n")
+	for acc, balance := range state {
+		fmt.Printf("%v--->%v\n", balance, acc)
+	}
+	protocol.ConstrConsolidationTx(0, state)
 
 
 }
