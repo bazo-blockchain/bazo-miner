@@ -120,8 +120,6 @@ func (vm *VM) Exec(trace bool) bool {
 		return false
 	}
 
-	fee := vm.context.GetFee()
-
 	// Infinite Loop until return called
 	for {
 		if trace {
@@ -143,11 +141,11 @@ func (vm *VM) Exec(trace bool) bool {
 
 		opCode := OpCodes[byteCode]
 		// Subtract gas used for operation
-		if fee < opCode.gasPrice {
+		if vm.fee < opCode.gasPrice {
 			vm.evaluationStack.Push([]byte("vm.exec(): out of gas"))
 			return false
 		} else {
-			fee -= opCode.gasPrice
+			vm.fee -= opCode.gasPrice
 		}
 
 		// Decode
@@ -218,8 +216,11 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ADD:
-			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
-			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			// right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			// left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+
+			right, rerr := vm.PopSignedBigInt(PUSH)
+			left, lerr := vm.PopSignedBigInt(PUSH)
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
@@ -1077,12 +1078,12 @@ func (vm *VM) PopBytes(index int) (elements []byte, err error) {
 	elementSize := len(bytes)
 	opCode := OpCodes[index]
 
-	gasCost := opCode.gasPrice + opCode.gasFactor*uint64(elementSize)
-	vm.fee -= gasCost
-
-	if vm.fee <= 0 {
-		return nil, errors.New("not enough gas available")
+	gasCost := opCode.gasFactor * uint64(elementSize)
+	if int64(vm.fee-gasCost) < 0 {
+		return nil, errors.New("Out of gas")
 	}
+
+	vm.fee -= gasCost
 
 	return bytes, nil
 }
