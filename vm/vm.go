@@ -152,7 +152,7 @@ func (vm *VM) Exec(trace bool) bool {
 			arg, errArg1 := vm.fetch(opCode.Name)
 			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
 			bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
-			
+
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
@@ -444,7 +444,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALL:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
-			argsToLoad, errArg2 := vm.fetch(opCode.Name)              // Shows how many elements have to be popped from evaluationStack
+			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
@@ -473,7 +473,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALLIF:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
-			argsToLoad, errArg2 := vm.fetch(opCode.Name)              // Shows how many elements have to be popped from evaluationStack
+			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 			right, errStack := ConvertToBigInt(vm.evaluationStack.PopBytes())
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
@@ -505,7 +505,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case CALLEXT:
 			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 32) // Addresses are 32 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(opCode.Name, 4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
-			argsToLoad, errArg3 := vm.fetch(opCode.Name)               // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
+			argsToLoad, errArg3 := vm.fetch(opCode.Name)                 // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3) {
 				return false
@@ -644,7 +644,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALLVAL:
 			value := make([]byte, 8)
-			binary.LittleEndian.PutUint64(value , vm.context.GetAmount())
+			binary.LittleEndian.PutUint64(value, vm.context.GetAmount())
 
 			err := vm.evaluationStack.PushBytes(value[:])
 
@@ -677,6 +677,16 @@ func (vm *VM) Exec(trace bool) bool {
 			m := NewMap()
 
 			err = vm.evaluationStack.PushBytes(m)
+			if err != nil {
+				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+		case MAPHASKEY:
+			// TODO: implementation maphaskey
+			// Placeholder that doesn't do anything
+			_, err := vm.fetch(opCode.Name)
+
 			if err != nil {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -731,7 +741,6 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.evaluationStack.PushBytes([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
-
 
 			m, err := MapFromByteArray(mapAsByteArray)
 			if err != nil {

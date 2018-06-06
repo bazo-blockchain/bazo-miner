@@ -376,7 +376,6 @@ func TestVM_Exec_Lte_islower(t *testing.T) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 4 <= 6", tos[0])
 	}
 
-
 }
 
 func TestVM_Exec_Lte_isequals(t *testing.T) {
@@ -1062,7 +1061,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x55, 0x55,  //Value to be reset by MAPSETVAL
+		PUSH, 0x01, 0x55, 0x55, //Value to be reset by MAPSETVAL
 		PUSH, 0x00, 0x03,
 
 		PUSH, 0x01, 0x48, 0x69,
@@ -1664,7 +1663,7 @@ func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
 }
 
 func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
-	if modulus.CmpAbs(big.NewInt(int64(1))) == 0 {
+	if modulus.Cmp(big.NewInt(int64(1))) == 0 {
 		return big.NewInt(0)
 	}
 	start := big.NewInt(1)
@@ -1678,7 +1677,7 @@ func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
-		0, 0, 13, 1, 0, 0, 0, 2, 0, 0, 1, 2, 0, 1, 0, 0, 1, 4, 12, 20, 0, 7, 49,
+		0, 0, 13, 1, 0, 0, 0, 2, 0, 0, 1, 2, 0, 1, 0, 0, 1, 4, 12, 20, 0, 7, 50,
 	}
 
 	vm := NewTestVM([]byte{})

@@ -20,7 +20,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 		35,      // CALLDATA
 		0, 0, 5, // PUSH 5
 		4,  // ADD
-		49, // HALT
+		50, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
@@ -50,7 +50,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		29, 0, // SLOAD
 		4,     // ADD
 		27, 0, // SSTORE
-		49, // HALT
+		50, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
 	finalizeBlock(b)
@@ -85,7 +85,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		29, 0, // SLOAD
 		4,     // ADD
 		27, 0, // SSTORE
-		49, // HALT
+		50, // HALT
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
 	finalizeBlock(b)
@@ -124,7 +124,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		35, 0, 0, 1, 10, 22, 0, 10, 1, 49, 28, 0, 31, 33, 10, 22, 0, 21, 2, 24, 28, 0, 29, 0, 0, 4, 27, 0, 0, 24,
+		35, 0, 0, 1, 10, 22, 0, 10, 1, 50, 28, 0, 31, 33, 10, 22, 0, 21, 2, 24, 28, 0, 29, 0, 0, 4, 27, 0, 0, 24,
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
@@ -150,8 +150,8 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		//35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 0, 0, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 0, 2, 38, 28, 1, 4, 39, 27, 0, 2, 24,
-		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 1, 29, 2, 38, 28, 0, 4, 28, 1, 29, 2, 39, 27, 2, 24,
+		// 35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 0, 0, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 0, 2, 38, 28, 1, 4, 39, 27, 0, 2, 24,
+		35, 1, 0, 0, 1, 10, 22, 0, 11, 2, 50, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 2, 39, 28, 1, 4, 29, 2, 40, 27, 2, 24,
 	}
 
 	contractVariables := make([]protocol.ByteArray, 3)
