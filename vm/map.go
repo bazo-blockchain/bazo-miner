@@ -13,6 +13,14 @@ func NewMap() Map {
 	return []byte{0x01, 0x00, 0x00}
 }
 
+func (m *Map) MapContainsKey() big.Int {
+
+	result := big.Int{}
+	result.SetUint64(0)
+
+	return result
+}
+
 func (m *Map) ToBigInt() big.Int {
 	mp := big.Int{}
 	mp.SetBytes(*m)
@@ -28,6 +36,16 @@ func MapFromBigInt(m big.Int) (Map, error) {
 		return Map{}, errors.New("invalid datatype supplied")
 	}
 	return Map(ba), nil
+}
+
+func MapFromByteArray(m []byte) (Map, error) {
+	if len(m) <= 0 {
+		return Map{}, errors.New("empty map")
+	}
+	if m[0] != 0x01 {
+		return Map{}, errors.New("invalid datatype supplied")
+	}
+	return Map(m), nil
 }
 
 func (m *Map) getSize() (uint16, error) {

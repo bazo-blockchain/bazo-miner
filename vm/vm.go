@@ -14,8 +14,8 @@ import (
 
 type Context interface {
 	GetContract() []byte
-	GetContractVariable(index int) (big.Int, error)
-	SetContractVariable(index int, value big.Int) error
+	GetContractVariable(index int) ([]byte, error)
+	SetContractVariable(index int, value []byte) error
 	GetAddress() [64]byte
 	GetIssuer() [32]byte
 	GetBalance() uint64
@@ -61,7 +61,7 @@ func (vm *VM) trace() {
 
 	byteCode := int(vm.code[vm.pc])
 	if len(OpCodes) <= byteCode {
-		stack.Push(StrToBigInt("Trace: invalid opcode "))
+		stack.Push([]byte("Trace: invalid opcode "))
 		return
 	}
 	opCode := OpCodes[byteCode]
@@ -86,7 +86,6 @@ func (vm *VM) trace() {
 	fmt.Printf("%04d: %-6s %x %x %v %v\n", addr, opCode.Name, address, functionHash, nargs, stack)
 	*/
 
-	case "mappush":
 	case "newarr":
 	case "arrappend":
 	case "arrinsert":
@@ -96,7 +95,7 @@ func (vm *VM) trace() {
 		fmt.Printf("%04d: %-6s %v ", addr, opCode.Name, args)
 
 		for _, e := range stack.Stack {
-			fmt.Printf("[%# x]", e.Bytes())
+			fmt.Printf("[%# x]", e)
 			fmt.Printf(" ")
 		}
 
@@ -113,7 +112,7 @@ func (vm *VM) Exec(trace bool) bool {
 	vm.code = vm.context.GetContract()
 
 	if len(vm.code) > 100000 {
-		vm.evaluationStack.Push(StrToBigInt("vm.exec(): Instruction set to big"))
+		vm.evaluationStack.Push([]byte("vm.exec(): Instruction set to big"))
 		return false
 	}
 
@@ -128,19 +127,19 @@ func (vm *VM) Exec(trace bool) bool {
 		// Fetch
 		byteCode, err := vm.fetch("vm.exec()")
 		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt("vm.exec(): " + err.Error()))
+			vm.evaluationStack.Push([]byte("vm.exec(): " + err.Error()))
 			return false
 		}
 		// Return false if instruction is not an opCode
 		if len(OpCodes) <= int(byteCode) {
-			vm.evaluationStack.Push(StrToBigInt("vm.exec(): Not a valid opCode"))
+			vm.evaluationStack.Push([]byte("vm.exec(): Not a valid opCode"))
 			return false
 		}
 
 		opCode := OpCodes[byteCode]
 		// Subtract gas used for operation
 		if fee < opCode.gasPrice {
-			vm.evaluationStack.Push(StrToBigInt("vm.exec(): out of gas"))
+			vm.evaluationStack.Push([]byte("vm.exec(): out of gas"))
 			return false
 		} else {
 			fee -= opCode.gasPrice
@@ -153,32 +152,28 @@ func (vm *VM) Exec(trace bool) bool {
 			arg, errArg1 := vm.fetch(opCode.Name)
 			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
 			bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
-			
+
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
-			var bigInt big.Int
-			bigInt.SetBytes(bytes)
-
-			err = vm.evaluationStack.Push(bigInt)
+			err = vm.evaluationStack.Push(bytes)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case DUP:
-			val, err := vm.evaluationStack.Peek()
-
-			if !vm.checkErrors(opCode.Name, err) {
+			tos, err := vm.evaluationStack.PeekBytes()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(val)
-
+			err = vm.evaluationStack.Push(tos)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -192,247 +187,222 @@ func (vm *VM) Exec(trace bool) bool {
 
 			if index != -1 {
 				if int(arg) >= vm.evaluationStack.GetLength() {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": index out of bounds"))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": index out of bounds"))
 					return false
 				}
 
 				newTos, err := vm.evaluationStack.PopIndexAt(index)
 
 				if err != nil {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 
 				err = vm.evaluationStack.Push(newTos)
 
 				if err != nil {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}
 
 		case POP:
 			_, rerr := vm.evaluationStack.Pop()
-
 			if !vm.checkErrors(opCode.Name, rerr) {
 				return false
 			}
 
 		case ADD:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
 			left.Add(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case SUB:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
 			left.Sub(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MULT:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
 			left.Mul(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case DIV:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
 			if right.Cmp(big.NewInt(0)) == 0 {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Division by Zero"))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Division by Zero"))
 				return false
 			}
 
 			left.Div(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MOD:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
 			if right.Cmp(big.NewInt(0)) == 0 {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Division by Zero"))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Division by Zero"))
 				return false
 			}
 
 			left.Mod(&left, &right)
-			err := vm.evaluationStack.Push(left)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case NEG:
-			tos, err := vm.evaluationStack.Pop()
+			tos, err := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			tos.Neg(&tos)
 
-			vm.evaluationStack.Push(tos)
+			vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 		case EQ:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) == 0
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case NEQ:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := UnsignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) != 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) != 0
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case LT:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == -1 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) == -1
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case GT:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == 1 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) == 1
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case LTE:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == -1 || left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) == -1 || left.Cmp(&right) == 0
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case GTE:
-			right, rerr := vm.evaluationStack.Pop()
-			left, lerr := vm.evaluationStack.Pop()
-
+			right, rerr := SignedBigIntConversion(vm.evaluationStack.Pop())
+			left, lerr := SignedBigIntConversion(vm.evaluationStack.Pop())
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			if left.Cmp(&right) == 1 || left.Cmp(&right) == 0 {
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := left.Cmp(&right) == 1 || left.Cmp(&right) == 0
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case SHIFTL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
-			tos, errStack := vm.evaluationStack.Pop()
+			tos, errStack := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
 			tos.Lsh(&tos, uint(nrOfShifts))
-			err = vm.evaluationStack.Push(tos)
+			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case SHIFTR:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
-			tos, errStack := vm.evaluationStack.Pop()
+			tos, errStack := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
 			tos.Rsh(&tos, uint(nrOfShifts))
-			err = vm.evaluationStack.Push(tos)
+			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -440,7 +410,7 @@ func (vm *VM) Exec(trace bool) bool {
 			_, err := vm.fetch(opCode.Name)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -459,21 +429,17 @@ func (vm *VM) Exec(trace bool) bool {
 		case JMPIF:
 			nextInstruction, errArg := vm.fetchMany(opCode.Name, 2)
 			right, errStack := vm.evaluationStack.Pop()
-
 			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
 
-			var jumpTo big.Int
-			jumpTo.SetBytes(nextInstruction)
-
-			if right.Int64() == 1 {
-				vm.pc = int(jumpTo.Int64())
+			if ByteArrayToBool(right) {
+				vm.pc = ByteArrayToInt(nextInstruction)
 			}
 
 		case CALL:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
-			argsToLoad, errArg2 := vm.fetch(opCode.Name)              // Shows how many elements have to be popped from evaluationStack
+			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
@@ -483,16 +449,16 @@ func (vm *VM) Exec(trace bool) bool {
 			returnAddress.SetBytes(returnAddressBytes)
 
 			if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": ReturnAddress out of bounds"))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 				return false
 			}
 
 			frame := &Frame{returnAddress: vm.pc, variables: make(map[int]big.Int)}
 
 			for i := int(argsToLoad) - 1; i >= 0; i-- {
-				frame.variables[i], err = vm.evaluationStack.Pop()
+				frame.variables[i], err = UnsignedBigIntConversion(vm.evaluationStack.Pop())
 				if err != nil {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}
@@ -502,28 +468,28 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case CALLIF:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
-			argsToLoad, errArg2 := vm.fetch(opCode.Name)              // Shows how many elements have to be popped from evaluationStack
+			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 			right, errStack := vm.evaluationStack.Pop()
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
 				return false
 			}
 
-			if right.Int64() == 1 {
+			if ByteArrayToBool(right) {
 				var returnAddress big.Int
 				returnAddress.SetBytes(returnAddressBytes)
 
 				if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": ReturnAddress out of bounds"))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 					return false
 				}
 
 				frame := &Frame{returnAddress: vm.pc, variables: make(map[int]big.Int)}
 
 				for i := int(argsToLoad) - 1; i >= 0; i-- {
-					frame.variables[i], err = vm.evaluationStack.Pop()
+					frame.variables[i], err = UnsignedBigIntConversion(vm.evaluationStack.Pop())
 					if err != nil {
-						vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+						vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 						return false
 					}
 				}
@@ -534,7 +500,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case CALLEXT:
 			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 32) // Addresses are 32 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(opCode.Name, 4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
-			argsToLoad, errArg3 := vm.fetch(opCode.Name)               // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
+			argsToLoad, errArg3 := vm.fetch(opCode.Name)                 // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3) {
 				return false
@@ -554,37 +520,36 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.pc = callstackTos.returnAddress
 
 		case SIZE:
-			right, err := vm.evaluationStack.Pop()
-
-			if !vm.checkErrors(opCode.Name, err) {
+			element, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(*big.NewInt(int64(getElementMemoryUsage(right.BitLen()))))
+			size := UInt64ToByteArray(uint64(len(element)))
 
+			err = vm.evaluationStack.Push(size)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case SSTORE:
 			index, errArgs := vm.fetch(opCode.Name)
 			value, errStack := vm.evaluationStack.Pop()
-
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
 
 			err = vm.context.SetContractVariable(int(index), value)
-
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case STORE:
 			address, errArgs := vm.fetch(opCode.Name)
-			right, errStack := vm.evaluationStack.Pop()
+			right, errStack := SignedBigIntConversion(vm.evaluationStack.Pop())
 
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
@@ -593,7 +558,7 @@ func (vm *VM) Exec(trace bool) bool {
 			callstackTos, err := vm.callStack.Peek()
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -601,22 +566,19 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case SLOAD:
 			index, err := vm.fetch(opCode.Name)
-
 			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
 			value, err := vm.context.GetContractVariable(int(index))
-
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = vm.evaluationStack.Push(value)
-
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -630,70 +592,59 @@ func (vm *VM) Exec(trace bool) bool {
 
 			val := callstackTos.variables[int(address)]
 
-			err := vm.evaluationStack.Push(val)
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(val))
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ADDRESS:
-			address := new(big.Int)
-			a := vm.context.GetAddress()
-			address.SetBytes(a[:])
-			err := vm.evaluationStack.Push(*address)
+			address := vm.context.GetAddress()
+			err := vm.evaluationStack.Push(address[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ISSUER:
-			issuer := new(big.Int)
-			i := vm.context.GetIssuer()
-			issuer.SetBytes(i[:])
-			err := vm.evaluationStack.Push(*issuer)
+			issuer := vm.context.GetIssuer()
+			err := vm.evaluationStack.Push(issuer[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case BALANCE:
-			balance := new(big.Int)
-			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context.GetBalance())
-			balance.SetBytes(ba)
+			balance := make([]byte, 8)
+			binary.LittleEndian.PutUint64(balance, vm.context.GetBalance())
 
-			err := vm.evaluationStack.Push(*balance)
+			err := vm.evaluationStack.Push(balance)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case CALLER:
-			caller := new(big.Int)
-			c := vm.context.GetSender()
-			caller.SetBytes(c[:])
-			err := vm.evaluationStack.Push(*caller)
+			caller := vm.context.GetSender()
+			err := vm.evaluationStack.Push(caller[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case CALLVAL:
-			value := new(big.Int)
+			value := make([]byte, 8)
+			binary.LittleEndian.PutUint64(value, vm.context.GetAmount())
 
-			ba := make([]byte, 8)
-			binary.LittleEndian.PutUint64(ba, vm.context.GetAmount())
-			value.SetBytes(ba)
-
-			err := vm.evaluationStack.Push(*value)
+			err := vm.evaluationStack.Push(value[:])
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -703,14 +654,14 @@ func (vm *VM) Exec(trace bool) bool {
 				length := int(td[i]) // Length of parameters
 
 				if len(td)-i-1 <= length {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Index out of bounds"))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": Index out of bounds"))
 					return false
 				}
 
-				err := vm.evaluationStack.Push(*big.NewInt(0).SetBytes(td[i+1 : i+length+2]))
+				err := vm.evaluationStack.Push(td[i+1 : i+length+2])
 
 				if err != nil {
-					vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 
@@ -719,180 +670,244 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case NEWMAP:
 			m := NewMap()
-			err = vm.evaluationStack.Push(m.ToBigInt())
+
+			err = vm.evaluationStack.Push(m)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+		case MAPHASKEY:
+			// TODO: implementation maphaskey
+			// Placeholder that doesn't do anything
+			_, err := vm.fetch(opCode.Name)
 
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPPUSH:
-			k, kerr := vm.evaluationStack.Pop()
-			v, verr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
+			mba, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			m.Append(k.Bytes(), v.Bytes())
-			err := vm.evaluationStack.Push(m.ToBigInt())
-
+			k, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			v, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			m, err := MapFromByteArray(mba)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.Append(k, v)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPGETVAL:
-			kbi, kerr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			k := kbi.Bytes()
-			m, merr := MapFromBigInt(mbi)
-			v, err := m.GetVal(k)
-
-			if !vm.checkErrors(opCode.Name, kerr, mbierr, merr, err) {
+			mapAsByteArray, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			result := big.Int{}
-			result.SetBytes(v)
-			err = vm.evaluationStack.Push(result)
-
+			k, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			m, err := MapFromByteArray(mapAsByteArray)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			v, err := m.GetVal(k)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(v)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPSETVAL:
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			k, kerr := vm.evaluationStack.Pop()
-			v, verr := vm.evaluationStack.Pop()
-
-			if !vm.checkErrors(opCode.Name, kerr, verr, mbierr, merr) {
+			mapAsByteArray, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err := m.SetVal(k.Bytes(), v.Bytes())
+			m, err := MapFromByteArray(mapAsByteArray)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(m.ToBigInt())
-
+			k, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			v, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.SetVal(k, v)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case MAPREMOVE:
-			kbi, kbierr := vm.evaluationStack.Pop()
-			mbi, mbierr := vm.evaluationStack.Pop()
-			m, merr := MapFromBigInt(mbi)
-
-			if !vm.checkErrors(opCode.Name, kbierr, mbierr, merr) {
+			mapAsByteArray, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			m.Remove(kbi.Bytes())
-			err = vm.evaluationStack.Push(m.ToBigInt())
-
+			k, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			m, err := MapFromByteArray(mapAsByteArray)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = m.Remove(k)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			err = vm.evaluationStack.Push(m)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case NEWARR:
 			a := NewArray()
-			vm.evaluationStack.Push(a.ToBigInt())
+			vm.evaluationStack.Push(a)
 
 		case ARRAPPEND:
 			v, verr := vm.evaluationStack.Pop()
 			a, aerr := vm.evaluationStack.Pop()
-
 			if !vm.checkErrors(opCode.Name, verr, aerr) {
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = arr.Append(v)
-
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Invalid argument size of ARRAPPEND"))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Invalid argument size of ARRAPPEND"))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
-
+			err = vm.evaluationStack.Push(arr)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ARRINSERT:
 			i, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			if len(i.Bytes()) > 2 {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Wrong index size"))
+			if len(i) > 2 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Wrong index size"))
 				return false
 			}
 
-			e, err := vm.evaluationStack.Pop()
+			element, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			a, err := vm.evaluationStack.Pop()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			index, err := ByteArrayToUI16(i.Bytes())
+			index, err := ByteArrayToUI16(i)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			size, err := arr.getSize()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			if index >= size {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Index out of bounds"))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Index out of bounds"))
 				return false
 			}
 
-			err = arr.Insert(index, e)
+			err = arr.Insert(index, element)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
+			err = vm.evaluationStack.Push(arr)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -900,95 +915,79 @@ func (vm *VM) Exec(trace bool) bool {
 			a, aerr := vm.evaluationStack.Pop()
 			ba, errArgs := vm.fetchMany(opCode.Name, 2)
 			index, err := ByteArrayToUI16(ba)
-
 			if !vm.checkErrors(opCode.Name, aerr, errArgs, err) {
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = arr.Remove(index)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			err = vm.evaluationStack.Push(arr.ToBigInt())
-
+			err = vm.evaluationStack.Push(arr)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case ARRAT:
-			a, err := vm.evaluationStack.Peek()
+			a, err := vm.evaluationStack.PeekBytes()
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			ba, err := vm.fetchMany(opCode.Name, 2)
-			index, conversionErr := ByteArrayToUI16(ba)
-
-			if conversionErr != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
+			index, err := ByteArrayToUI16(ba)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
+			arr, err := ArrayFromByteArray(a)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			arr, err := ArrayFromBigInt(a)
+			element, err := arr.At(index)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			e, err := arr.At(index)
+			err = vm.evaluationStack.Push(element)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
-				return false
-			}
-			result := big.Int{}
-			result.SetBytes(e)
-
-			err = vm.evaluationStack.Push(result)
-
-			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 		case SHA3:
 			right, err := vm.evaluationStack.Pop()
-
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			hasher := sha3.New256()
-			hasher.Write(right.Bytes())
+			hasher.Write(right)
 			hash := hasher.Sum(nil)
 
-			var bigInt big.Int
-			bigInt.SetBytes(hash)
-
-			err = vm.evaluationStack.Push(bigInt)
-
+			err = vm.evaluationStack.Push(hash)
 			if err != nil {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": " + err.Error()))
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -1000,21 +999,21 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if len(publicKeySig.Bytes()) != 64 {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Not a valid address"))
+			if len(publicKeySig) != 64 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Not a valid address"))
 				return false
 			}
 
-			if len(hash.Bytes()) != 32 {
-				vm.evaluationStack.Push(StrToBigInt(opCode.Name + ": Not a valid hash"))
+			if len(hash) != 32 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Not a valid hash"))
 				return false
 			}
 
 			pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 			r, s := new(big.Int), new(big.Int)
 
-			pubKey1Sig1.SetBytes(publicKeySig.Bytes()[:32])
-			pubKey2Sig1.SetBytes(publicKeySig.Bytes()[32:])
+			pubKey1Sig1.SetBytes(publicKeySig[:32])
+			pubKey2Sig1.SetBytes(publicKeySig[32:])
 
 			sig1 := vm.context.GetSig1()
 			r.SetBytes(sig1[:32])
@@ -1022,12 +1021,8 @@ func (vm *VM) Exec(trace bool) bool {
 
 			pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
 
-			if ecdsa.Verify(&pubKey, hash.Bytes(), r, s) {
-				fmt.Println("Valid Sig", pubKey, hash.Bytes())
-				vm.evaluationStack.Push(*big.NewInt(1))
-			} else {
-				vm.evaluationStack.Push(*big.NewInt(0))
-			}
+			result := ecdsa.Verify(&pubKey, hash, r, s)
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case ERRHALT:
 			return false
@@ -1061,7 +1056,7 @@ func (vm *VM) fetchMany(errorLocation string, argument int) (elements []byte, er
 func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 	for i, err := range errors {
 		if err != nil {
-			vm.evaluationStack.Push(StrToBigInt(errorLocation + ": " + errors[i].Error()))
+			vm.evaluationStack.Push([]byte(errorLocation + ": " + errors[i].Error()))
 			return false
 		}
 	}
@@ -1069,9 +1064,9 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 }
 
 func (vm *VM) GetErrorMsg() string {
-	tos, err := vm.evaluationStack.Peek()
+	tos, err := vm.evaluationStack.PeekBytes()
 	if err != nil {
 		return "Peek on empty Stack"
 	}
-	return BigIntToString(tos)
+	return string(tos)
 }

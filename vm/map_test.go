@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"testing"
+	"math/big"
 )
 
 func Test_NewMap(t *testing.T) {
@@ -10,6 +11,16 @@ func Test_NewMap(t *testing.T) {
 
 	if len(m) != 3 {
 		t.Errorf("Expected a Byte Array with size 3 but got %v", len(m))
+	}
+}
+
+func TestMap_ContainsKey(t *testing.T){
+	m := NewMap()
+	expected := big.NewInt(0)
+	actual := m.MapContainsKey()
+
+	if actual.Cmp(expected) != 0 {
+		t.Errorf("Expected ")
 	}
 }
 

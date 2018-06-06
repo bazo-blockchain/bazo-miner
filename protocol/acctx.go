@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"fmt"
-	"math/big"
 )
 
 const (
@@ -21,10 +20,10 @@ type AccTx struct {
 	PubKey            [64]byte
 	Sig               [64]byte
 	Contract          []byte
-	ContractVariables []big.Int
+	ContractVariables []ByteArray
 }
 
-func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables []big.Int) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
+func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables []ByteArray) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
 	tx = new(AccTx)
 	tx.Header = header
 	tx.Fee = fee
@@ -80,7 +79,7 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 		Fee               uint64
 		PubKey            [64]byte
 		Contract          []byte
-		ContractVariables []big.Int
+		ContractVariables []ByteArray
 	}{
 		tx.Header,
 		tx.Issuer,

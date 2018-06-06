@@ -91,8 +91,8 @@ func TestArray_Insert(t *testing.T) {
 		0x02, 0x00, 0x65, 0x00,
 	})
 
-	v := big.NewInt(1)
-	a.Insert(0, *v)
+	v := []byte{0x01}
+	a.Insert(0, v)
 
 	expected0 := []byte{0x01}
 	actual0, err0 := a.At(0)
@@ -121,13 +121,13 @@ func TestArray_Insert(t *testing.T) {
 func TestArray_Append(t *testing.T) {
 	a := NewArray()
 	el := big.NewInt(12345678910111213)
-	err := a.Append(*el)
+	err := a.Append((*el).Bytes())
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
 	el = big.NewInt(12345678)
-	err = a.Append(*el)
+	err = a.Append((*el).Bytes())
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -142,12 +142,12 @@ func TestArray_Remove(t *testing.T) {
 	a := NewArray()
 	el := big.NewInt(12345678910111213)
 
-	err := a.Append(*el)
+	err := a.Append((*el).Bytes())
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	err = a.Append(*el)
+	err = a.Append((*el).Bytes())
 	if err != nil {
 		t.Errorf("%v", err)
 	}

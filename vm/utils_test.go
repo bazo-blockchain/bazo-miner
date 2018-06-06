@@ -77,3 +77,13 @@ func TestUtils_StrToByteArrayAndBack(t *testing.T) {
 		t.Errorf("Converstion from str to byteArray and back failed, start and end should be equal, are start: %s, end: %s", startStr, endStr)
 	}
 }
+
+func TestUtils_ByteArrayToInt(t *testing.T) {
+	ba := []byte{0xA8, 0x93}
+
+	expected := 43155
+	actual := ByteArrayToInt(ba)
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
