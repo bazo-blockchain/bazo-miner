@@ -13,12 +13,8 @@ func NewMap() Map {
 	return []byte{0x01, 0x00, 0x00}
 }
 
-func (m *Map) MapContainsKey() big.Int {
-
-	result := big.Int{}
-	result.SetUint64(0)
-
-	return result
+func (m *Map) MapContainsKey() bool {
+	return false
 }
 
 func (m *Map) ToBigInt() big.Int {
@@ -113,41 +109,65 @@ func (m *Map) GetVal(key []byte) ([]byte, error) {
 	offset := 3
 	l := len(*m)
 
-	//bai stands for byteArrayIndex and is the index on the
-	//byte array which the map is built upon
-	for bai := offset; bai < l; {
+	for index := offset; index < l; {
 		if l == 3 {
 			return []byte{}, errors.New("no elements in map")
 		}
 
-		sizeOfKey, err := ByteArrayToUI16((*m)[bai : bai+2])
-
+		k, valueStartsAt, err := getElement(m, index)
 		if err != nil {
 			return []byte{}, err
 		}
 
-		valueSizeStartIndex := bai + 2 + int(sizeOfKey)
-
-		k := (*m)[bai+2 : valueSizeStartIndex]
-
-		sizeOfValue, err := ByteArrayToUI16((*m)[valueSizeStartIndex : valueSizeStartIndex+2])
+		v, nextElementStartsAt, err := getElement(m, valueStartsAt)
 		if err != nil {
 			return []byte{}, err
 		}
 
-		valueEndIndex := valueSizeStartIndex + 2 + int(sizeOfValue)
-		v := (*m)[valueSizeStartIndex+2 : valueEndIndex]
 		if bytes.Equal(key, k) {
 			return v, nil
 		}
 
-		if bai == valueEndIndex {
+		if index == nextElementStartsAt {
 			return []byte{}, errors.New("element sizes are 0")
 		}
-		bai = valueEndIndex
+		index = nextElementStartsAt
 	}
 
 	return []byte{}, errors.New("key not found")
+}
+
+func getElement(m *Map, startsAt int) (element []byte, endsBefore int, err error) {
+	size, err := getElementSize(m, startsAt)
+	if err != nil {
+		return []byte{}, 0, err
+	}
+	endsBefore = nextElementStartsAt(startsAt, size)
+	element = getBytesOfElement(m, startsAt, endsBefore)
+	return element, endsBefore, err
+}
+
+func getBytesOfElement(m *Map, startsAt int, endsBefore int) []byte {
+	return (*m)[startsAt+2 : endsBefore]
+}
+func nextElementStartsAt(index int, elementSize uint16) int {
+	return index + 2 + int(elementSize)
+}
+
+func (m *Map) GetIndexOfKeySizeStart(key []byte) (bool, int) {
+	offset := 3
+
+	for index := offset; index < len(*m); {
+
+	}
+
+	return false, 0
+
+}
+
+func getElementSize(m *Map, index int) (uint16, error) {
+	elementSize, err := ByteArrayToUI16((*m)[index : index+2])
+	return elementSize, err
 }
 
 func (m *Map) Remove(key []byte) error {
