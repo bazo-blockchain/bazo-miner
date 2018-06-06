@@ -176,17 +176,6 @@ func nextElementStartsAt(index int, elementSize uint16) int {
 	return index + 2 + int(elementSize)
 }
 
-func (m *Map) GetIndexOfKeySizeStart(key []byte) (bool, int) {
-	offset := 3
-
-	for index := offset; index < len(*m); {
-
-	}
-
-	return false, 0
-
-}
-
 func getElementSize(m *Map, index int) (uint16, error) {
 	elementSize, err := ByteArrayToUI16((*m)[index : index+2])
 	return elementSize, err
