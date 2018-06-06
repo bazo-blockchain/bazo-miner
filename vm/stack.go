@@ -59,16 +59,6 @@ func (s *Stack) Pop() (element []byte, err error) {
 	}
 }
 
-func (s *Stack) PopBytes() (element []byte, err error) {
-	if (*s).GetLength() > 0 {
-		element = (*s).Stack[s.GetLength()-1]
-		s.Stack = s.Stack[:s.GetLength()-1]
-		return element, nil
-	} else {
-		return []byte{}, errors.New("pop() on empty stack")
-	}
-}
-
 func (s *Stack) PeekBytes() (element []byte, err error) {
 	if (*s).GetLength() > 0 {
 		element = (*s).Stack[s.GetLength()-1]

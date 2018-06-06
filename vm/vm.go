@@ -1067,7 +1067,7 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 }
 
 func (vm *VM) PopBytes(index int) (elements []byte, err error) {
-	bytes, err := vm.evaluationStack.PopBytes()
+	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
 		return nil, err
 	}
@@ -1086,7 +1086,7 @@ func (vm *VM) PopBytes(index int) (elements []byte, err error) {
 }
 
 func (vm *VM) PopSignedBigInt(index int) (bigInt big.Int, err error) {
-	bytes, err := vm.evaluationStack.PopBytes()
+	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
 		return *big.NewInt(0), err
 	}
@@ -1106,7 +1106,7 @@ func (vm *VM) PopSignedBigInt(index int) (bigInt big.Int, err error) {
 }
 
 func (vm *VM) PopUnsignedBigInt(index int) (bigInt big.Int, err error) {
-	bytes, err := vm.evaluationStack.PopBytes()
+	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
 		return *big.NewInt(0), err
 	}
