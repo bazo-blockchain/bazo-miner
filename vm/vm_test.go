@@ -569,7 +569,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	expected = 0
 	actual = vm.callStack.GetLength()
 	if expected != actual {
-		t.Errorf("After calling and returning, callStack lenght should be %v, but was %v",expected, actual)
+		t.Errorf("After calling and returning, callStack lenght should be %v, but was %v", expected, actual)
 	}
 }
 
@@ -607,7 +607,7 @@ func TestVM_Exec_Callif_true(t *testing.T) {
 	expected = 0
 	actual = vm.callStack.GetLength()
 	if expected != actual {
-		t.Errorf("After calling and returning, callStack lenght should be %v, but was %v",expected, actual)
+		t.Errorf("After calling and returning, callStack lenght should be %v, but was %v", expected, actual)
 	}
 }
 
@@ -645,7 +645,7 @@ func TestVM_Exec_Callif_false(t *testing.T) {
 	expected = 0
 	actual = vm.callStack.GetLength()
 	if expected != actual {
-		t.Errorf("After skipping callif, callStack lenght should be '%v', but was '%v'",expected, actual)
+		t.Errorf("After skipping callif, callStack lenght should be '%v', but was '%v'", expected, actual)
 	}
 }
 
@@ -1514,7 +1514,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	}
 
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
 
 	tos, _ := vm.evaluationStack.Pop()
 

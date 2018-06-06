@@ -153,7 +153,8 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
 		// 35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 49, 28, 0, 28, 1, 29, 0, 0, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 0, 2, 38, 28, 1, 4, 39, 27, 0, 2, 24,
-		35, 1, 0, 0, 1, 10, 22, 0, 11, 2, 50, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 25, 2, 24, 28, 0, 29, 2, 39, 28, 1, 4, 29, 2, 40, 27, 2, 24,
+		// 35, 1, 0, 0, 1, 10, 22, 0, 11, 2, 50, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 0, 29, 2, 39, 4, 28, 1, 29, 2, 40, 27, 2, 24,
+		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 50, 28, 0, 28, 1, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 1, 29, 2, 39, 28, 0, 4, 28, 1, 29, 2, 40, 27, 2, 24,
 	}
 
 	contractVariables := make([]protocol.ByteArray, 3)
@@ -191,7 +192,6 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	}
 
 	tmp, err := m.GetVal(receiver)
-	fmt.Println(m)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
