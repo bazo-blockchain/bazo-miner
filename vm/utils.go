@@ -5,13 +5,14 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"math/big"
+	"errors"
 )
 
 const UINT16_MAX uint16 = 65535
 
 func UInt64ToByteArray(element uint64) []byte {
 	ba := make([]byte, 8)
-	binary.LittleEndian.PutUint64(ba, uint64(element))
+	binary.BigEndian.PutUint64(ba, uint64(element))
 	return ba
 }
 
@@ -36,9 +37,9 @@ func StrToBigInt(element string) big.Int {
 }
 
 func ByteArrayToInt(element []byte) int {
-	ba := make([]byte, 64-len(element))
-	ba = append(element, ba...)
-	return int(binary.LittleEndian.Uint64(ba))
+	ba := make([]byte, 8-len(element))
+	ba = append(ba, element...)
+	return int(binary.BigEndian.Uint64(ba))
 }
 
 func BigIntToString(element big.Int) string {
@@ -58,13 +59,44 @@ func ByteArrayToBool(ba []byte) bool {
 	return ba[0] == 1
 }
 
-func ConvertToBigInt(ba []byte, err error) (big.Int, error) {
-	result := big.Int{}
-	result.SetBytes(ba)
-	return result, err
+func SignedBigIntConversion(ba []byte, err error) (big.Int, error) {
+	if err != nil {
+		return big.Int{}, err
+	} else {
+		result := big.Int{}
+
+		if ba[0] != 0x01 && ba[0] != 0x00 {
+			return big.Int{}, errors.New("Invalid signing bit")
+		}
+
+		result.SetBytes(ba[1:])
+
+		if ba[0] == 0x01 {
+			result.Neg(&result)
+		}
+
+		return result, err
+	}
 }
 
-func ConvertToByteArray(bi big.Int, err error) ([]byte, error) {
-	result := bi.Bytes()
-	return result, err
+func UnsignedBigIntConversion(ba []byte, err error) (big.Int, error) {
+	if err != nil {
+		return big.Int{}, err
+	} else {
+		result := big.Int{}
+		result.SetBytes(ba)
+		return result, err
+	}
+}
+
+func SignedByteArrayConversion(bi big.Int) ([]byte) {
+	var result []byte
+	if bi.Sign() == 0 || bi.Sign() == 1 {
+		result = []byte{0x00}
+	} else {
+		result = []byte{0x01}
+	}
+	result = append(result, bi.Bytes()...)
+
+	return result
 }

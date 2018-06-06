@@ -52,7 +52,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		50, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
+	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
 	if err := validateBlock(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -60,7 +60,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
-		0, 15,
+		1, 0, 15,
 	}
 	hash := createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
@@ -69,8 +69,9 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	}
 
 	contractVariables := storage.GetAccount(hash).ContractVariables
-	if !reflect.DeepEqual(contractVariables, []protocol.ByteArray{[]byte{17}}) {
-		t.Errorf("State change not persisted, expected: [[17]], is %v.", contractVariables)
+	expected := []protocol.ByteArray{[]byte{0, 17}}
+	if !reflect.DeepEqual(contractVariables, expected) {
+		t.Errorf("State change not persisted, expected: '%v', is '%v'.", expected, contractVariables)
 	}
 }
 
@@ -87,7 +88,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		50, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{2}})
+	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
 	if err := validateBlock(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -95,7 +96,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
-		0, 15,
+		1, 0, 15,
 	}
 	createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
@@ -105,7 +106,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
 	transactionData = []byte{
-		0, 15,
+		1, 0, 15,
 	}
 	hash := createBlockWithSingleContractCallTx(b3, transactionData)
 	finalizeBlock(b3)
@@ -114,8 +115,9 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	}
 
 	contractVariables := storage.GetAccount(hash).ContractVariables
-	if !reflect.DeepEqual(contractVariables, []protocol.ByteArray{[]byte{32}}) {
-		t.Errorf("State change not persisted, expected: [[32]], is %v.", contractVariables)
+	expected := []protocol.ByteArray{[]byte{0, 32}}
+	if !reflect.DeepEqual(contractVariables, expected) {
+		t.Errorf("State change not persisted, expected: '%v', is %v.", expected, contractVariables)
 	}
 }
 
@@ -155,14 +157,14 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	}
 
 	contractVariables := make([]protocol.ByteArray, 3)
-	receiver := []byte{0x2a}
+	receiver := []byte{0x00, 0x2b}
 	contractVariables[0] = receiver
 
 	minter := []byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2}
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
-	m.Append(receiver, []byte{0x01})
+	m.Append(receiver, []byte{0x00, 0x01})
 	contractVariables[2] = []byte(m)
 
 	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
@@ -173,9 +175,9 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 
 	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
-		0, 100, // Amount
-		0, receiver[0], // receiver address
-		0, 1, // function Hash
+		1, 0, 100, // Amount
+		1, receiver[0], receiver[1], // receiver address
+		1, 0, 1, // function Hash
 	}
 	hash := createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
@@ -189,11 +191,12 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	}
 
 	tmp, err := m.GetVal(receiver)
+	fmt.Println(m)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	actual := uint64(tmp[0])
+	actual := uint64(tmp[1])
 	expected := uint64(101)
 	if expected != actual {
 		t.Errorf("State change not persisted, expected: '%v', but is: '%v'", expected, actual)
