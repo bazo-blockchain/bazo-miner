@@ -1395,6 +1395,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
+	mc.Fee = 100
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
