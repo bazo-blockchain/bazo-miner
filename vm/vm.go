@@ -431,7 +431,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case JMPIF:
 			nextInstruction, errArg := vm.fetchMany(opCode.Name, 2)
-			right, errStack := vm.evaluationStack.Pop()
+			right, errStack := vm.PopBytes(JMPIF)
 			if !vm.checkErrors(opCode.Name, errArg, errStack) {
 				return false
 			}
@@ -472,7 +472,7 @@ func (vm *VM) Exec(trace bool) bool {
 		case CALLIF:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
-			right, errStack := vm.evaluationStack.Pop()
+			right, errStack := vm.PopBytes(CALLIF)
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
 				return false
@@ -523,7 +523,7 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.pc = callstackTos.returnAddress
 
 		case SIZE:
-			element, err := vm.evaluationStack.Pop()
+			element, err := vm.PopBytes(SIZE)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -539,7 +539,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case SSTORE:
 			index, errArgs := vm.fetch(opCode.Name)
-			value, errStack := vm.evaluationStack.Pop()
+			value, errStack := vm.PopBytes(SSTORE)
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
 			}
@@ -691,19 +691,19 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPPUSH:
-			mba, err := vm.evaluationStack.Pop()
+			mba, err := vm.PopBytes(MAPPUSH)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.PopBytes(MAPPUSH)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			v, err := vm.evaluationStack.Pop()
+			v, err := vm.PopBytes(MAPPUSH)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -728,13 +728,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPGETVAL:
-			mapAsByteArray, err := vm.evaluationStack.Pop()
+			mapAsByteArray, err := vm.PopBytes(MAPGETVAL)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.PopBytes(MAPGETVAL)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -759,7 +759,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPSETVAL:
-			mapAsByteArray, err := vm.evaluationStack.Pop()
+			mapAsByteArray, err := vm.PopBytes(MAPSETVAL)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -771,13 +771,13 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.PopBytes(MAPSETVAL)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			v, err := vm.evaluationStack.Pop()
+			v, err := vm.PopBytes(MAPSETVAL)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -796,13 +796,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPREMOVE:
-			mapAsByteArray, err := vm.evaluationStack.Pop()
+			mapAsByteArray, err := vm.PopBytes(MAPREMOVE)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.PopBytes(MAPREMOVE)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -831,8 +831,8 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push(a)
 
 		case ARRAPPEND:
-			v, verr := vm.evaluationStack.Pop()
-			a, aerr := vm.evaluationStack.Pop()
+			v, verr := vm.PopBytes(ARRAPPEND)
+			a, aerr := vm.PopBytes(ARRAPPEND)
 			if !vm.checkErrors(opCode.Name, verr, aerr) {
 				return false
 			}
@@ -856,7 +856,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ARRINSERT:
-			i, err := vm.evaluationStack.Pop()
+			i, err := vm.PopBytes(ARRINSERT)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -867,13 +867,13 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			element, err := vm.evaluationStack.Pop()
+			element, err := vm.PopBytes(ARRINSERT)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			a, err := vm.evaluationStack.Pop()
+			a, err := vm.PopBytes(ARRINSERT)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -915,7 +915,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ARRREMOVE:
-			a, aerr := vm.evaluationStack.Pop()
+			a, aerr := vm.PopBytes(ARRREMOVE)
 			ba, errArgs := vm.fetchMany(opCode.Name, 2)
 			index, err := ByteArrayToUI16(ba)
 			if !vm.checkErrors(opCode.Name, aerr, errArgs, err) {
@@ -978,7 +978,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case SHA3:
-			right, err := vm.evaluationStack.Pop()
+			right, err := vm.PopBytes(SHA3)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -995,8 +995,8 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CHECKSIG:
-			publicKeySig, errArg1 := vm.evaluationStack.Pop() // PubKeySig
-			hash, errArg2 := vm.evaluationStack.Pop()         // Hash
+			publicKeySig, errArg1 := vm.PopBytes(CHECKSIG) // PubKeySig
+			hash, errArg2 := vm.PopBytes(CHECKSIG)         // Hash
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false

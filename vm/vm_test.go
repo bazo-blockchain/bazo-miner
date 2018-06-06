@@ -1036,6 +1036,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 
 	exec := vm.Exec(false)
@@ -1078,6 +1079,7 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1133,6 +1135,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 
 	exec := vm.Exec(false)
@@ -1235,6 +1238,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
@@ -1273,6 +1277,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1326,6 +1331,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1596,6 +1602,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	vm.Exec(false)
 
@@ -1615,6 +1622,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	vm.Exec(false)
 
