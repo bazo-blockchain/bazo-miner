@@ -130,6 +130,7 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push([]byte("vm.exec(): " + err.Error()))
 			return false
 		}
+
 		// Return false if instruction is not an opCode
 		if len(OpCodes) <= int(byteCode) {
 			vm.evaluationStack.Push([]byte("vm.exec(): Not a valid opCode"))
@@ -1061,6 +1062,23 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 		}
 	}
 	return true
+}
+
+func (vm *VM) PushBytes(opCode OpCode, bytes []byte, fee *uint64) error {
+	maxMemory := vm.evaluationStack.memoryMax
+	memoryUsage := vm.evaluationStack.memoryUsage
+	elementSize := len(bytes)
+	gasPrice := opCode.gasPrice * uint64(elementSize)
+
+	*fee -= gasPrice
+
+	if maxMemory >= uint32(elementSize)+memoryUsage && *fee > 0 {
+		vm.evaluationStack.PushBytes(bytes)
+	} else {
+		return errors.New("Push asdf")
+	}
+
+	return nil
 }
 
 func (vm *VM) GetErrorMsg() string {

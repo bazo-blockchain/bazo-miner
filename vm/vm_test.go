@@ -1682,3 +1682,17 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	vm.context = mc
 	vm.Exec(false)
 }
+
+func TestVM_PushBytes(t *testing.T) {
+	opcode := OpCodes[PUSH]
+	bytes := []byte{0, 23, 123, 4}
+	var actualFee uint64 = 4
+
+	vm := NewTestVM([]byte{})
+	vm.PushBytes(opcode, bytes, &actualFee)
+
+	var expectedFee uint64 = 0
+	if expectedFee != actualFee {
+		t.Errorf("Expected stack size to be '%v' but was '%v'", expectedFee, actualFee)
+	}
+}
