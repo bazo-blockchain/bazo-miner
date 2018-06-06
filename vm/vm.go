@@ -29,6 +29,7 @@ type Context interface {
 type VM struct {
 	code            []byte
 	pc              int // Program counter
+	fee             uint64
 	evaluationStack *Stack
 	callStack       *CallStack
 	context         Context
@@ -38,6 +39,7 @@ func NewVM(context Context) VM {
 	return VM{
 		code:            []byte{},
 		pc:              0,
+		fee:             0,
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
 		context:         context,
@@ -48,6 +50,7 @@ func NewTestVM(byteCode []byte) VM {
 	return VM{
 		code:            []byte{},
 		pc:              0,
+		fee:             0,
 		evaluationStack: NewStack(),
 		callStack:       NewCallStack(),
 		context:         NewMockContext(byteCode),
@@ -110,6 +113,7 @@ func (vm *VM) trace() {
 func (vm *VM) Exec(trace bool) bool {
 
 	vm.code = vm.context.GetContract()
+	vm.fee = vm.context.GetFee()
 
 	if len(vm.code) > 100000 {
 		vm.evaluationStack.Push([]byte("vm.exec(): Instruction set to big"))
@@ -1064,21 +1068,23 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 	return true
 }
 
-func (vm *VM) PushBytes(opCode OpCode, bytes []byte, fee *uint64) error {
-	maxMemory := vm.evaluationStack.memoryMax
-	memoryUsage := vm.evaluationStack.memoryUsage
-	elementSize := len(bytes)
-	gasPrice := opCode.gasPrice * uint64(elementSize)
-
-	*fee -= gasPrice
-
-	if maxMemory >= uint32(elementSize)+memoryUsage && *fee > 0 {
-		vm.evaluationStack.PushBytes(bytes)
-	} else {
-		return errors.New("Push asdf")
+func (vm *VM) PopBytes(index int) (elements []byte, err error) {
+	bytes, err := vm.evaluationStack.PopBytes()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	elementSize := len(bytes)
+	opCode := OpCodes[index]
+
+	gasCost := opCode.gasPrice + opCode.gasFactor*uint64(elementSize)
+	vm.fee -= gasCost
+
+	if vm.fee <= 0 {
+		return nil, errors.New("not enough gas available")
+	}
+
+	return bytes, nil
 }
 
 func (vm *VM) GetErrorMsg() string {
