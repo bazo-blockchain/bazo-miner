@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -1770,11 +1771,35 @@ func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
-		0, 0, 13, 1, 0, 0, 0, 2, 0, 0, 1, 2, 0, 1, 0, 0, 1, 4, 12, 20, 0, 7, 50,
+		PUSH, 1, 0, 4, // Base
+		PUSH, 2, 0, 11, 75, // Modulus
+		DUP,
+		PUSH, 1, 0, 0,
+		EQ,
+		JMPIF, 0, 42, // Adjust address
+		// LOOP
+		PUSH, 1, 0, 13, // Exp
+		PUSH, 1, 0, 0,
+		ROLL, 0,
+		DUP,
+		ROLL, 1,
+		PUSH, 1, 0, 1,
+		ADD,
+		DUP,
+		ROLL, 1,
+		LT,
+		JMPIF, 0, 26, // Adjust address
+		// LOOP END
+		HALT,
 	}
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	fmt.Println(string(tos))
 }
