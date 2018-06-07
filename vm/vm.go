@@ -679,14 +679,31 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPHASKEY:
-			// TODO: implementation maphaskey
-			// Placeholder that doesn't do anything
-			_, err := vm.fetch(opCode.Name)
-
+			mba, err := vm.evaluationStack.Pop()
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
+
+			m, err := MapFromByteArray(mba)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			k, err := vm.evaluationStack.Pop()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			result, err := m.MapContainsKey(k)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case MAPPUSH:
 			mba, err := vm.evaluationStack.Pop()

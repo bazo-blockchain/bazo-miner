@@ -963,6 +963,98 @@ func TestVM_Exec_NewMap(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_MapHasKey_true(t *testing.T) {
+	code := []byte{
+		PUSH, 0x00, 0x01, //The key for MAPGETVAL
+
+		PUSH, 0x01, 0x48, 0x48,
+		PUSH, 0x00, 0x01,
+
+		PUSH, 0x01, 0x69, 0x69,
+		PUSH, 0x00, 0x02,
+
+		PUSH, 0x01, 0x48, 0x69,
+		PUSH, 0x00, 0x03,
+
+		NEWMAP,
+
+		MAPPUSH,
+		MAPPUSH,
+		MAPPUSH,
+
+		MAPHASKEY,
+
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+
+	exec := vm.Exec(false)
+	if !exec {
+		errorMessage, _ := vm.evaluationStack.Pop()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
+	}
+
+	tos, err := vm.evaluationStack.Pop()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	expected := true //Just for readability
+	actual := ByteArrayToBool(tos)
+	if expected != actual {
+		t.Errorf("invalid value, Expected '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_Exec_MapHasKey_false(t *testing.T) {
+	code := []byte{
+		PUSH, 0x00, 0x06, //The key for MAPGETVAL
+
+		PUSH, 0x01, 0x48, 0x48,
+		PUSH, 0x00, 0x01,
+
+		PUSH, 0x01, 0x69, 0x69,
+		PUSH, 0x00, 0x02,
+
+		PUSH, 0x01, 0x48, 0x69,
+		PUSH, 0x00, 0x03,
+
+		NEWMAP,
+
+		MAPPUSH,
+		MAPPUSH,
+		MAPPUSH,
+
+		MAPHASKEY,
+
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+
+	exec := vm.Exec(false)
+	if !exec {
+		errorMessage, _ := vm.evaluationStack.Pop()
+		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
+	}
+
+	tos, err := vm.evaluationStack.Pop()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	expected := false //Just for readability
+	actual := ByteArrayToBool(tos)
+	if expected != actual {
+		t.Errorf("invalid value, Expected '%v' but was '%v'", expected, actual)
+	}
+}
+
 func TestVM_Exec_MapPush(t *testing.T) {
 	code := []byte{
 		PUSH, 1, 72, 105,
@@ -1514,7 +1606,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	}
 
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
 
