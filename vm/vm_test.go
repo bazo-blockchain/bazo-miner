@@ -1677,7 +1677,7 @@ func TestVM_PopBytes(t *testing.T) {
 		t.Errorf("Expected ToS to be '%v' but was '%v'", expected, actual)
 	}
 
-	expectedFee := 0
+	expectedFee := 4
 	actualFee := vm.fee
 
 	if int(actualFee) != expectedFee {

@@ -168,13 +168,21 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case DUP:
-			tos, err := vm.evaluationStack.PeekBytes()
+			tos, err := vm.PopBytes(opCode)
+
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			err = vm.evaluationStack.Push(tos)
+
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			err = vm.evaluationStack.Push(tos)
+
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
