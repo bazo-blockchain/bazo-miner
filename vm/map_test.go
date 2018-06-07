@@ -3,7 +3,6 @@ package vm
 import (
 	"bytes"
 	"testing"
-	"math/big"
 )
 
 func Test_NewMap(t *testing.T) {
@@ -11,16 +10,6 @@ func Test_NewMap(t *testing.T) {
 
 	if len(m) != 3 {
 		t.Errorf("Expected a Byte Array with size 3 but got %v", len(m))
-	}
-}
-
-func TestMap_ContainsKey(t *testing.T){
-	m := NewMap()
-	expected := big.NewInt(0)
-	actual := m.MapContainsKey()
-
-	if actual.Cmp(expected) != 0 {
-		t.Errorf("Expected ")
 	}
 }
 
@@ -75,6 +64,38 @@ func TestMap_Append(t *testing.T) {
 
 	if ba[8] != 0x64 {
 		t.Errorf("Unexpected key or unexpected internal data structure")
+	}
+}
+
+func TestMap_ContainsKey_EmptyMap(t *testing.T) {
+	m := NewMap()
+	actual, _ := m.MapContainsKey([]byte{0x00})
+	if actual {
+		t.Errorf("Didn't expect map to contain key")
+	}
+}
+
+func TestMap_ContainsKey_false(t *testing.T) {
+	m := NewMap()
+	m.Append([]byte{0x02}, []byte{0x01, 0x02})
+	m.Append([]byte{0x05}, []byte{0x01, 0x02})
+	m.Append([]byte{0x03}, []byte{0x01, 0x02})
+
+	actual, _ := m.MapContainsKey([]byte{0x00})
+	if actual {
+		t.Errorf("Didn't expect map to contain key")
+	}
+}
+
+func TestMap_ContainsKey_true(t *testing.T) {
+	m := NewMap()
+	m.Append([]byte{0x02}, []byte{0x01, 0x02})
+	m.Append([]byte{0x05}, []byte{0x01, 0x02})
+	m.Append([]byte{0x00}, []byte{0x01, 0x02})
+	m.Append([]byte{0x03}, []byte{0x01, 0x02})
+	actual, _ := m.MapContainsKey([]byte{0x00})
+	if !actual {
+		t.Errorf("Expected map to contain key")
 	}
 }
 

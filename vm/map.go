@@ -58,8 +58,34 @@ func (m *Map) DecrementSize() error {
 	return nil
 }
 
-func (m *Map) MapContainsKey() bool {
-	return false
+func (m *Map) MapContainsKey(key []byte) (bool, error) {
+	offset := 3
+	l := len(*m)
+
+	for index := offset; index < l; {
+		if l == 3 {
+			return false, nil
+		}
+
+		k, keyEndsBefore, err := getElement(m, index)
+
+		sizeOfValue, err := getElementSize(m, keyEndsBefore)
+		if err != nil {
+			return false, err
+		}
+
+		valueStartsAt := keyEndsBefore //Just for better readability
+		if bytes.Equal(key, k) {
+			return true, err
+		}
+		valueEndsBefore := nextElementStartsAt(valueStartsAt, sizeOfValue)
+
+		if index == valueEndsBefore {
+			return false, errors.New("element sizes are 0")
+		}
+		index = valueEndsBefore
+	}
+	return false, nil
 }
 
 func (m *Map) Append(key []byte, value []byte) error {
