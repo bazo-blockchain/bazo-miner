@@ -17,8 +17,8 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	contract := []byte{
-		35,      // CALLDATA
-		0, 0, 5, // PUSH 5
+		35,         // CALLDATA
+		0, 1, 0, 5, // PUSH 5
 		4,  // ADD
 		50, // HALT
 	}
@@ -30,7 +30,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	transactionData := []byte{
-		0, 15,
+		1, 0, 15,
 	}
 	createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
@@ -274,7 +274,7 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 			accAHash := protocol.SerializeHashContent(accA.Address)
 			accBHash := storage.GetAccount(hash).Hash()
 
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 500, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {

@@ -31,10 +31,11 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.Fee = 3
+	mc.Fee = 30
 	vm.context = mc
 
 	vm.Exec(false)
+
 	ba, _ := vm.evaluationStack.Pop()
 	expected := 16
 	actual := ByteArrayToInt(ba)
@@ -1127,6 +1128,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 
 	exec := vm.Exec(false)
@@ -1169,6 +1171,7 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1224,6 +1227,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 
 	exec := vm.Exec(false)
@@ -1326,6 +1330,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 	if !exec {
@@ -1364,6 +1369,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 300
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1417,6 +1423,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	exec := vm.Exec(false)
 
@@ -1486,6 +1493,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
+	mc.Fee = 100
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1679,13 +1687,14 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 	}
 }
 
-func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
+func TestVM_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 	code := []byte{
 		CALLER, CALLER, ARRAPPEND,
 	}
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	vm.Exec(false)
 
@@ -1698,13 +1707,14 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 	}
 }
 
-func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
+func TestVM_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	code := []byte{
 		ADDRESS, CALLER, ARRAPPEND,
 	}
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 200
 	vm.context = mc
 	vm.Exec(false)
 
@@ -1717,7 +1727,7 @@ func TestVm_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	}
 }
 
-func TestVm_Exec_FuzzReproduction_EdgecaseLastOpcodePlusOne(t *testing.T) {
+func TestVM_Exec_FuzzReproduction_EdgecaseLastOpcodePlusOne(t *testing.T) {
 	code := []byte{
 		HALT + 1,
 	}
@@ -1734,6 +1744,92 @@ func TestVm_Exec_FuzzReproduction_EdgecaseLastOpcodePlusOne(t *testing.T) {
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
 	}
+}
+
+func TestVM_PopBytes(t *testing.T) {
+	code := []byte{
+		PUSH, 1, 0, 8,
+		PUSH, 1, 0, 8,
+		ADD,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 11
+	vm.context = mc
+
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 16
+	actual := ByteArrayToInt(tos)
+	if actual != expected {
+		t.Errorf("Expected ToS to be '%v' but was '%v'", expected, actual)
+	}
+
+	expectedFee := 4
+	actualFee := vm.fee
+
+	if int(actualFee) != expectedFee {
+		t.Errorf("Expected actual fee to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_GasCalculation(t *testing.T) {
+	code := []byte{
+		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95, 106, 14, 143, 25, 99, 79, 76, 222, 197, 5, 218, 90, 216, 47, 218, 74, 53, 139, 62, 28, 104, 180, 139, 65, 103, 193, 244, 169, 85, 39, 160, 218, 158, 207, 118, 37, 78, 42, 186, 64, 4, 70, 70, 190, 177,
+		PUSH, 1, 0, 8,
+		ADD,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 11
+	vm.context = mc
+
+	vm.Exec(false)
+
+	expectedFee := 2
+	actualFee := vm.fee
+
+	if int(actualFee) != expectedFee {
+		t.Errorf("Expected actual fee to be '%v' but was '%v'", expectedFee, actualFee)
+	}
+}
+
+func TestVM_PopBytesOutOfGas(t *testing.T) {
+	code := []byte{
+		PUSH, 1, 0, 8,
+		PUSH, 1, 0, 8,
+		ADD,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 3
+	vm.context = mc
+
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := "add: Out of gas"
+	actual := string(tos)
+	if actual != expected {
+		t.Errorf("Expected ToS to be '%v' but was '%v'", expected, actual)
+	}
+
+	expectedFee := 0
+	actualFee := vm.fee
+
+	if int(actualFee) != expectedFee {
+		t.Errorf("Expected actual fee to be '%v' but was '%v'", expected, actual)
+	}
+
 }
 
 func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
@@ -1773,18 +1869,4 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	mc := NewMockContext(code)
 	vm.context = mc
 	vm.Exec(false)
-}
-
-func TestVM_PushBytes(t *testing.T) {
-	opcode := OpCodes[PUSH]
-	bytes := []byte{0, 23, 123, 4}
-	var actualFee uint64 = 4
-
-	vm := NewTestVM([]byte{})
-	vm.PushBytes(opcode, bytes, &actualFee)
-
-	var expectedFee uint64 = 0
-	if expectedFee != actualFee {
-		t.Errorf("Expected stack size to be '%v' but was '%v'", expectedFee, actualFee)
-	}
 }
