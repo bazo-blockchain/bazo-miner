@@ -69,45 +69,10 @@ func (vm *VM) trace() {
 	}
 	opCode := OpCodes[byteCode]
 
-	var args []byte
-
-	switch opCode.Name {
-	case "push":
-		nargs := int(vm.code[vm.pc+1])
-
-		if vm.pc+nargs < (len(vm.code) - vm.pc) {
-			args = vm.code[vm.pc+2 : vm.pc+nargs+3]
-			fmt.Printf("%04d: %-6s %-10v %v\n", addr, opCode.Name, ByteArrayToInt(args), stack)
-		}
-
-		//TODO - Fix CALLEXT case, leads to index out of bounds exception
-	/*case "callext":
-	address := vm.code[vm.pc+1 : vm.pc+33]
-	functionHash := vm.code[vm.pc+33 : vm.pc+37]
-	nargs := int(vm.code[vm.pc+37])
-
-	fmt.Printf("%04d: %-6s %x %x %v %v\n", addr, opCode.Name, address, functionHash, nargs, stack)
-	*/
-
-	case "newarr":
-	case "arrappend":
-	case "arrinsert":
-	case "arrremove":
-	case "arrat":
-		args = vm.code[vm.pc+1 : vm.pc+opCode.Nargs+1]
-		fmt.Printf("%04d: %-6s %v ", addr, opCode.Name, args)
-
-		for _, e := range stack.Stack {
-			fmt.Printf("[%# x]", e)
-			fmt.Printf(" ")
-		}
-
-		fmt.Printf("\n")
-
-	default:
-		args = vm.code[vm.pc+1 : vm.pc+opCode.Nargs+1]
-		fmt.Printf("%04d: %-6s %v %v\n", addr, opCode.Name, args, stack)
-	}
+	// fmt.Printf("%04d: %-6s Stack (%v/%v Bytes used): %v, \n", addr, opCode.Name, stack.memoryUsage, stack.memoryMax, stack.Stack)
+	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, opCode.Nargs)
+	fmt.Printf("\t  Stack: %v \n", stack.Stack)
+	fmt.Printf("⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅\n")
 }
 
 func (vm *VM) Exec(trace bool) bool {
