@@ -1685,6 +1685,29 @@ func TestVM_PopBytes(t *testing.T) {
 	}
 }
 
+func TestVM_GasCalculation(t *testing.T) {
+	code := []byte{
+		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95, 106, 14, 143, 25, 99, 79, 76, 222, 197, 5, 218, 90, 216, 47, 218, 74, 53, 139, 62, 28, 104, 180, 139, 65, 103, 193, 244, 169, 85, 39, 160, 218, 158, 207, 118, 37, 78, 42, 186, 64, 4, 70, 70, 190, 177,
+		PUSH, 1, 0, 8,
+		ADD,
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 11
+	vm.context = mc
+
+	vm.Exec(false)
+
+	expectedFee := 2
+	actualFee := vm.fee
+
+	if int(actualFee) != expectedFee {
+		t.Errorf("Expected actual fee to be '%v' but was '%v'", expectedFee, actualFee)
+	}
+}
+
 func TestVM_PopBytesOutOfGas(t *testing.T) {
 	code := []byte{
 		PUSH, 1, 0, 8,
@@ -1695,7 +1718,7 @@ func TestVM_PopBytesOutOfGas(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.Fee = 9
+	mc.Fee = 3
 	vm.context = mc
 
 	vm.Exec(false)
@@ -1708,7 +1731,7 @@ func TestVM_PopBytesOutOfGas(t *testing.T) {
 		t.Errorf("Expected ToS to be '%v' but was '%v'", expected, actual)
 	}
 
-	expectedFee := 2
+	expectedFee := 0
 	actualFee := vm.fee
 
 	if int(actualFee) != expectedFee {

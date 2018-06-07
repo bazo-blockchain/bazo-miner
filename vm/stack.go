@@ -33,10 +33,6 @@ func (s *Stack) Push(element []byte) error {
 	}
 }
 
-func (s *Stack) PushBytes(element []byte) {
-	s.Stack = append(s.Stack, element)
-}
-
 func (s *Stack) PopIndexAt(index int) ([]byte, error) {
 	if (*s).GetLength() >= index {
 		element := (*s).Stack[index]
