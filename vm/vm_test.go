@@ -1772,24 +1772,46 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
 		PUSH, 1, 0, 4, // Base
 		PUSH, 2, 0, 11, 75, // Modulus
+		// IF
 		DUP,
 		PUSH, 1, 0, 0,
 		EQ,
-		JMPIF, 0, 42, // Adjust address
+		JMPIF, 0, 46, // Adjust address
+		// IF END
+		PUSH, 1, 0, 1, // Counter (c)
+		ROLL, 1,
+		DUP,
+		ROLL, 2,
+		DUP,
+		ROLL, 2,
+		ROLL, 1,
+		ROLL, 3,
 		// LOOP
-		PUSH, 1, 0, 13, // Exp
-		PUSH, 1, 0, 0,
-		ROLL, 0,
-		DUP,
-		ROLL, 1,
-		PUSH, 1, 0, 1,
-		ADD,
-		DUP,
-		ROLL, 1,
-		LT,
-		JMPIF, 0, 26, // Adjust address
-		// LOOP END
+		CALL, 0, 39, 3,
 		HALT,
+		/*
+			PUSH, 1, 0, 13, // Exp
+			PUSH, 1, 0, 0,
+			ROLL, 0,
+			DUP,
+			ROLL, 1,
+			PUSH, 1, 0, 1,
+			ADD,
+			DUP,
+			ROLL, 1,
+			LT,
+			JMPIF, 0, 30, // Adjust address
+			// LOOP END
+			HALT,*/
+
+		// FUNCTION Order: c, modulus, base,
+
+		LOAD, 0,
+		LOAD, 2,
+		MULT,
+		LOAD, 1,
+		MOD,
+		RET,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1798,7 +1820,12 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	vm.context = mc
 	vm.Exec(true)
 
-	tos, _ := vm.evaluationStack.Pop()
+	expected := 445
+	actual, _ := vm.evaluationStack.Pop()
 
-	fmt.Println(string(tos))
+	fmt.Println(actual[:])
+
+	if ByteArrayToInt(actual[1:]) != expected {
+		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
 }
