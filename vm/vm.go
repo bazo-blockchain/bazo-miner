@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
 
 	"golang.org/x/crypto/sha3"
@@ -108,12 +109,13 @@ func (vm *VM) trace() {
 		}
 	}
 
-	for i := len(stack.Stack)/2 - 1; i >= 0; i-- {
-		opp := len(stack.Stack) - 1 - i
-		stack.Stack[i], stack.Stack[opp] = stack.Stack[opp], stack.Stack[i]
+	reversedStack := make([]protocol.ByteArray, stack.GetLength())
+	maxIndex := len(stack.Stack) - 1
+	for i := maxIndex; i >= 0; i-- {
+		reversedStack[maxIndex-i] = stack.Stack[i]
 	}
 
-	fmt.Printf("\t  Stack: %v \n", stack.Stack)
+	fmt.Printf("\t  Stack: %v \n", reversedStack)
 	fmt.Printf("\t  %v of max. %v Bytes in use \n", stack.memoryUsage, stack.memoryMax)
 	fmt.Printf("⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅\n")
 	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, formattedArgs)
