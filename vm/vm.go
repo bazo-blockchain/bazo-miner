@@ -3,11 +3,10 @@ package vm
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
-
-	"encoding/binary"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -107,6 +106,11 @@ func (vm *VM) trace() {
 				formattedArgs += fmt.Sprintf("%v (address) ", ByteArrayToInt(args[:]))
 			}
 		}
+	}
+
+	for i := len(stack.Stack)/2 - 1; i >= 0; i-- {
+		opp := len(stack.Stack) - 1 - i
+		stack.Stack[i], stack.Stack[opp] = stack.Stack[opp], stack.Stack[i]
 	}
 
 	fmt.Printf("\t  Stack: %v \n", stack.Stack)

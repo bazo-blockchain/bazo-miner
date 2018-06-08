@@ -688,7 +688,6 @@ func TestVM_Exec_CallExt(t *testing.T) {
 	mc := NewMockContext(code)
 	vm.context = mc
 	vm.Exec(false)
-
 }
 
 func TestVM_Exec_Sload(t *testing.T) {
