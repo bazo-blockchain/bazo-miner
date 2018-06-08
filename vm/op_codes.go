@@ -56,10 +56,10 @@ const (
 )
 
 const (
-	INT = iota + 1
+	BYTES = iota + 1
 	BYTE
-	BYTES
 	LABEL
+	ADDR
 )
 
 type OpCode struct {
@@ -72,7 +72,7 @@ type OpCode struct {
 }
 
 var OpCodes = []OpCode{
-	{PUSH, "push", 1, []int{INT}, 1, 2},
+	{PUSH, "push", 1, []int{BYTES}, 1, 2},
 	{DUP, "dup", 0, nil, 1, 2},
 	{ROLL, "roll", 1, []int{BYTE}, 1, 2},
 	{POP, "pop", 0, nil, 1, 2},
@@ -93,9 +93,9 @@ var OpCodes = []OpCode{
 	{NOP, "nop", 0, nil, 1, 1},
 	{JMP, "jmp", 1, []int{LABEL}, 1, 2},
 	{JMPIF, "jmpif", 1, []int{LABEL}, 1, 2},
-	{CALL, "call", 2, []int{LABEL, BYTES}, 1, 2},
-	{CALLIF, "callif", 2, []int{LABEL, BYTES}, 1, 2},
-	{CALLEXT, "callext", 3, []int{BYTES, BYTES, BYTE}, 1, 2},
+	{CALL, "call", 2, []int{LABEL, BYTE}, 1, 2},
+	{CALLIF, "callif", 2, []int{LABEL, BYTE}, 1, 2},
+	{CALLEXT, "callext", 3, []int{ADDR, BYTE, BYTE, BYTE, BYTE, BYTE}, 1, 2},
 	{RET, "ret", 0, nil, 1, 2},
 	{SIZE, "size", 0, nil, 1, 2},
 	{STORE, "store", 0, nil, 1, 2},

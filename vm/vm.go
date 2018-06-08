@@ -69,10 +69,50 @@ func (vm *VM) trace() {
 	}
 	opCode := OpCodes[byteCode]
 
-	// fmt.Printf("%04d: %-6s Stack (%v/%v Bytes used): %v, \n", addr, opCode.Name, stack.memoryUsage, stack.memoryMax, stack.Stack)
-	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, opCode.Nargs)
+	var args []byte
+	var formattedArgs string
+	var counter int
+
+	for _, argType := range opCode.ArgTypes {
+		switch argType {
+		case BYTES:
+			if len(vm.code)-vm.pc > 0 {
+				nargs := int(vm.code[vm.pc+1])
+
+				if nargs < (len(vm.code)-vm.pc)-1 {
+					args = vm.code[vm.pc+2+counter : vm.pc+nargs+3+counter]
+					counter += nargs
+					formattedArgs = formattedArgs + fmt.Sprintf("%v (bytes) ", args[:])
+				}
+			}
+
+		case BYTE:
+			if len(vm.code)-vm.pc > 0 {
+				args = []byte{vm.code[vm.pc+1+counter]}
+				counter += 1
+				formattedArgs += fmt.Sprintf("%v (byte) ", args[:])
+			}
+
+		case ADDR:
+			if len(vm.code)-vm.pc > 31 {
+				args = vm.code[vm.pc+1+counter : vm.pc+33+counter]
+				counter += 32
+				formattedArgs += fmt.Sprintf("%v (bazo address) ", args[:])
+			}
+
+		case LABEL:
+			if len(vm.code)-vm.pc > 1 {
+				args = vm.code[vm.pc+1+counter : vm.pc+3+counter]
+				counter += 2
+				formattedArgs += fmt.Sprintf("%v (address) ", ByteArrayToInt(args[:]))
+			}
+		}
+	}
+
 	fmt.Printf("\t  Stack: %v \n", stack.Stack)
+	fmt.Printf("\t  %v of max. %v Bytes in use \n", stack.memoryUsage, stack.memoryMax)
 	fmt.Printf("⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅\n")
+	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, formattedArgs)
 }
 
 func (vm *VM) Exec(trace bool) bool {
