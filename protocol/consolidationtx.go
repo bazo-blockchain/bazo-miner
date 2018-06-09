@@ -23,7 +23,7 @@ type ConsolidationTx struct {
 	LastBlock [32]byte
 
 	// Body
-	Accounts [128]ConsolidatedAccount
+	Accounts []ConsolidatedAccount
 
 }
 
@@ -39,6 +39,7 @@ func ConstrConsolidationTx(header byte, state map[[32]byte]uint64, lastBlockHash
 		consAccount.account = hash
 		consAccount.balance = balance
 		totalBalance += balance
+		tx.Accounts = append(tx.Accounts, *consAccount)
 	}
 	tx.TotalBalance = totalBalance
 	return tx, nil
@@ -88,7 +89,7 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 func (tx *ConsolidationTx) Size() uint64  { return CONSOLIDATIONTX_SIZE }
 
 func (tx ConsolidationTx) String() string {
-	return fmt.Sprintf(
+	status := fmt.Sprintf(
 		"\nHeader: %v\n" +
 		"lastBlockHash: %v\n" +
 		"numAccounts: %v\n" +
@@ -98,4 +99,10 @@ func (tx ConsolidationTx) String() string {
 		tx.NumAccounts,
 		tx.TotalBalance,
 	)
+	mapping := ""
+	for _, cons := range tx.Accounts {
+		mapping += fmt.Sprintf("ConsolidatedAccount: %v\n", cons)
+	}
+
+	return fmt.Sprintf("%v\n%v", status, mapping)
 }

@@ -72,7 +72,7 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 	return hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice
 }
 
-func createBasicChain(t *testing.T)([]*protocol.Block) {
+func createTestChain(t *testing.T)([]*protocol.Block) {
 	var blockList []*protocol.Block
 	var numberOfTestBlocks = 2
 	prevHash := [32]byte{}
@@ -131,47 +131,48 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	return tx
 }
 
+func processFundsTx(state map[[32]byte]uint64, block *protocol.Block) {
+	// Account collecting the Fees
+	if _, exists := state[block.Beneficiary]; !exists {
+		state[block.Beneficiary] = 0
+	}
+	for _, txHash := range block.FundsTxData {
+		tx := reqTx(p2p.FUNDSTX_REQ, txHash)
+		fundsTx := tx.(*protocol.FundsTx)
+		source := fundsTx.From
+		dest := fundsTx.To
+		// Add accounts in the map if they don't exist
+		if _, exists := state[source]; !exists {
+			state[source] = InitialBalance
+		}
+		if _, exists := state[dest]; !exists {
+			state[dest] = InitialBalance
+		}
+		state[source] = state[source] - fundsTx.Fee - fundsTx.Amount
+		state[dest] += fundsTx.Amount
+		state[block.Beneficiary] += fundsTx.Fee
+	}
+}
+
 func TestBasicConsolidationTx(t *testing.T) {
 	cleanAndPrepare()
+	chain := createTestChain(t)
 
-	// Address Balance
+	// Create a snapshot of the current state
 	state := make(map[[32]byte]uint64)
 
-	chain := createBasicChain(t)
-	fmt.Printf("First block: %v\n", chain[0].Hash)
-	fmt.Printf("Last block: %v\n", chain[len(chain)-1].Hash)
+	// Process all the blocks in the chain
 	for _, block := range chain {
 		// Skip empty blocks
 		if block == nil {
 			continue
 		}
-
-		// Account collecting the Fees
-		if _, exists := state[block.Beneficiary]; !exists {
-			state[block.Beneficiary] = 0
-		}
-
-		for _, txHash := range block.FundsTxData {
-			tx := reqTx(p2p.FUNDSTX_REQ, txHash)
-			fundsTx := tx.(*protocol.FundsTx)
-			source := fundsTx.From
-			dest := fundsTx.To
-			// Add accounts in the map if they don't exist
-			if _, exists := state[source]; !exists {
-				state[source] = InitialBalance
-			}
-			if _, exists := state[dest]; !exists {
-				state[dest] = InitialBalance
-			}
-			state[source] = state[source] - fundsTx.Fee - fundsTx.Amount
-			state[dest] += fundsTx.Amount
-			state[block.Beneficiary] += fundsTx.Fee
-		}
+		processFundsTx(state, block)
+		// process other TX
 	}
-	fmt.Printf("state: \n")
-	for acc, balance := range state {
-		fmt.Printf("%v--->%v\n", balance, acc)
-	}
+
+	// The consolidation tx creates a snapshot of the system till a certain
+	// block of which we have to keep track of
 	lastBlockHash := chain[len(chain)-1].Hash
 	consTx, err := protocol.ConstrConsolidationTx(0, state, lastBlockHash)
 	if err != nil {
