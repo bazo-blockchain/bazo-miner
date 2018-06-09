@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -688,7 +689,6 @@ func TestVM_Exec_CallExt(t *testing.T) {
 	mc := NewMockContext(code)
 	vm.context = mc
 	vm.Exec(false)
-
 }
 
 func TestVM_Exec_Sload(t *testing.T) {
@@ -1863,11 +1863,62 @@ func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
-		0, 0, 13, 1, 0, 0, 0, 2, 0, 0, 1, 2, 0, 1, 0, 0, 1, 4, 12, 20, 0, 7, 50,
+		PUSH, 1, 0, 4, // Base
+		PUSH, 2, 0, 11, 75, // Modulus
+		// IF
+		DUP,
+		PUSH, 1, 0, 0,
+		EQ,
+		JMPIF, 0, 46, // Adjust address
+		// IF END
+		PUSH, 1, 0, 1, // Counter (c)
+		ROLL, 1,
+		DUP,
+		ROLL, 2,
+		DUP,
+		ROLL, 2,
+		ROLL, 1,
+		ROLL, 3,
+		// LOOP
+		CALL, 0, 39, 3,
+		HALT,
+		/*
+			PUSH, 1, 0, 13, // Exp
+			PUSH, 1, 0, 0,
+			ROLL, 0,
+			DUP,
+			ROLL, 1,
+			PUSH, 1, 0, 1,
+			ADD,
+			DUP,
+			ROLL, 1,
+			LT,
+			JMPIF, 0, 30, // Adjust address
+			// LOOP END
+			HALT,*/
+
+		// FUNCTION Order: c, modulus, base,
+
+		LOAD, 0,
+		LOAD, 2,
+		MULT,
+		LOAD, 1,
+		MOD,
+		RET,
 	}
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
+	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
+
+	expected := 445
+	actual, _ := vm.evaluationStack.Pop()
+
+	fmt.Println(actual[:])
+
+	if ByteArrayToInt(actual[1:]) != expected {
+		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
 }

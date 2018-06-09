@@ -3,11 +3,11 @@ package vm
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
-
-	"encoding/binary"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -70,44 +70,55 @@ func (vm *VM) trace() {
 	opCode := OpCodes[byteCode]
 
 	var args []byte
+	var formattedArgs string
+	var counter int
 
-	switch opCode.Name {
-	case "push":
-		nargs := int(vm.code[vm.pc+1])
+	for _, argType := range opCode.ArgTypes {
+		switch argType {
+		case BYTES:
+			if len(vm.code)-vm.pc > 0 {
+				nargs := int(vm.code[vm.pc+1])
 
-		if vm.pc+nargs < (len(vm.code) - vm.pc) {
-			args = vm.code[vm.pc+2 : vm.pc+nargs+3]
-			fmt.Printf("%04d: %-6s %-10v %v\n", addr, opCode.Name, ByteArrayToInt(args), stack)
+				if nargs < (len(vm.code)-vm.pc)-1 {
+					args = vm.code[vm.pc+2+counter : vm.pc+nargs+3+counter]
+					counter += nargs
+					formattedArgs = formattedArgs + fmt.Sprintf("%v (bytes) ", args[:])
+				}
+			}
+
+		case BYTE:
+			if len(vm.code)-vm.pc > 0 {
+				args = []byte{vm.code[vm.pc+1+counter]}
+				counter += 1
+				formattedArgs += fmt.Sprintf("%v (byte) ", args[:])
+			}
+
+		case ADDR:
+			if len(vm.code)-vm.pc > 31 {
+				args = vm.code[vm.pc+1+counter : vm.pc+33+counter]
+				counter += 32
+				formattedArgs += fmt.Sprintf("%v (bazo address) ", args[:])
+			}
+
+		case LABEL:
+			if len(vm.code)-vm.pc > 1 {
+				args = vm.code[vm.pc+1+counter : vm.pc+3+counter]
+				counter += 2
+				formattedArgs += fmt.Sprintf("%v (address) ", ByteArrayToInt(args[:]))
+			}
 		}
-
-		//TODO - Fix CALLEXT case, leads to index out of bounds exception
-	/*case "callext":
-	address := vm.code[vm.pc+1 : vm.pc+33]
-	functionHash := vm.code[vm.pc+33 : vm.pc+37]
-	nargs := int(vm.code[vm.pc+37])
-
-	fmt.Printf("%04d: %-6s %x %x %v %v\n", addr, opCode.Name, address, functionHash, nargs, stack)
-	*/
-
-	case "newarr":
-	case "arrappend":
-	case "arrinsert":
-	case "arrremove":
-	case "arrat":
-		args = vm.code[vm.pc+1 : vm.pc+opCode.Nargs+1]
-		fmt.Printf("%04d: %-6s %v ", addr, opCode.Name, args)
-
-		for _, e := range stack.Stack {
-			fmt.Printf("[%# x]", e)
-			fmt.Printf(" ")
-		}
-
-		fmt.Printf("\n")
-
-	default:
-		args = vm.code[vm.pc+1 : vm.pc+opCode.Nargs+1]
-		fmt.Printf("%04d: %-6s %v %v\n", addr, opCode.Name, args, stack)
 	}
+
+	reversedStack := make([]protocol.ByteArray, stack.GetLength())
+	maxIndex := len(stack.Stack) - 1
+	for i := maxIndex; i >= 0; i-- {
+		reversedStack[maxIndex-i] = stack.Stack[i]
+	}
+
+	fmt.Printf("\t  Stack: %v \n", reversedStack)
+	fmt.Printf("\t  %v of max. %v Bytes in use \n", stack.memoryUsage, stack.memoryMax)
+	fmt.Printf("⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅\n")
+	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, formattedArgs)
 }
 
 func (vm *VM) Exec(trace bool) bool {
