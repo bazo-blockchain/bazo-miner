@@ -16,7 +16,8 @@ import (
  TODO: who does the consolidation?
      Anybody should be able to create a consolidationTx
 
- Enforce rule that a consolidationtx:
+ TODO: block or simple transaction?
+ Enforce rule that a consolidationTx:
    - check if there are some tx that have been left out, if yes then reject the block.
  */
 var InitialBalance uint64 = 100000
@@ -52,7 +53,6 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 		tx, txErr := protocol.ConstrFundsTx(0x01, 50, 1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
 		if txErr != nil {
 			t.Error(txErr)
-
 		}
 		if err := addTx(b, tx); err == nil {
 			//Might be that we generated a block that was already generated before
@@ -136,9 +136,10 @@ func TestBasicConsolidationTx(t *testing.T) {
 
 	// Address Balance
 	state := make(map[[32]byte]uint64)
-	fmt.Println(state)
 
 	chain := createBasicChain(t)
+	fmt.Printf("First block: %v\n", chain[0].Hash)
+	fmt.Printf("Last block: %v\n", chain[len(chain)-1].Hash)
 	for _, block := range chain {
 		// Skip empty blocks
 		if block == nil {
@@ -171,7 +172,10 @@ func TestBasicConsolidationTx(t *testing.T) {
 	for acc, balance := range state {
 		fmt.Printf("%v--->%v\n", balance, acc)
 	}
-	protocol.ConstrConsolidationTx(0, state)
-
-
+	lastBlockHash := chain[len(chain)-1].Hash
+	consTx, err := protocol.ConstrConsolidationTx(0, state, lastBlockHash)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(consTx)
 }

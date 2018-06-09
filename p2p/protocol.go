@@ -33,6 +33,7 @@ const (
 	ACC_RES                = 26
 	ROOTACC_RES            = 27
 	INTERMEDIATE_NODES_RES = 28
+	CONSOLIDATIONTX_RES = 29
 
 	NEIGHBOR_REQ = 30
 

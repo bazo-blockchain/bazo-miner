@@ -20,15 +20,18 @@ type ConsolidationTx struct {
 	Header    byte
 	NumAccounts int
 	TotalBalance uint64
+	LastBlock [32]byte
 
 	// Body
 	Accounts [128]ConsolidatedAccount
 
 }
 
-func ConstrConsolidationTx(header byte, state map[[32]byte]uint64) (tx *ConsolidationTx, err error) {
+func ConstrConsolidationTx(header byte, state map[[32]byte]uint64, lastBlockHash [32]byte) (tx *ConsolidationTx, err error) {
 	tx = new(ConsolidationTx)
 	tx.Header = header
+	tx.LastBlock = lastBlockHash
+
 	tx.NumAccounts = len(state)
 	totalBalance := uint64(0)
 	for hash, balance := range state {
@@ -41,6 +44,7 @@ func ConstrConsolidationTx(header byte, state map[[32]byte]uint64) (tx *Consolid
 	return tx, nil
 }
 
+// TODO: calculate proper hash
 func (tx *ConsolidationTx) Hash() (hash [32]byte) {
 	if tx == nil {
 		return [32]byte{}
@@ -48,9 +52,13 @@ func (tx *ConsolidationTx) Hash() (hash [32]byte) {
 
 	txHash := struct {
 		Header byte
+		NumAccounts int
+		TotalBalance uint64
 
 	}{
 		tx.Header,
+		tx.NumAccounts,
+		tx.TotalBalance,
 	}
 
 	return SerializeHashContent(txHash)
@@ -82,9 +90,11 @@ func (tx *ConsolidationTx) Size() uint64  { return CONSOLIDATIONTX_SIZE }
 func (tx ConsolidationTx) String() string {
 	return fmt.Sprintf(
 		"\nHeader: %v\n" +
+		"lastBlockHash: %v\n" +
 		"numAccounts: %v\n" +
 		"balance: %v\n",
 		tx.Header,
+		tx.LastBlock,
 		tx.NumAccounts,
 		tx.TotalBalance,
 	)
