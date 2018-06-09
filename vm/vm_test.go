@@ -63,7 +63,8 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 	}
 
 	actual := string(tos)
-	expected := "push: instructionSet out of bounds"
+	expected := "push: Instruction set out of bounds"
+
 	if actual != expected {
 		t.Errorf("Expected '%v' to be returned but got '%v'", expected, actual)
 	}
@@ -1476,7 +1477,7 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "push: instructionSet out of bounds"
+	expected := "push: Instruction set out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1518,7 +1519,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "vm.exec(): instructionSet out of bounds"
+	expected := "vm.exec(): Instruction set out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1537,7 +1538,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "callext: instructionSet out of bounds"
+	expected := "callext: Instruction set out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1680,7 +1681,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "arrat: instructionSet out of bounds"
+	expected := "arrat: Instruction set out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)

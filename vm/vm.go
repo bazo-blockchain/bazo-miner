@@ -689,7 +689,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case MAPHASKEY:
-			mba, err := vm.evaluationStack.Pop()
+			mba, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -701,7 +701,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			k, err := vm.evaluationStack.Pop()
+			k, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1067,7 +1067,7 @@ func (vm *VM) fetch(errorLocation string) (element byte, err error) {
 		vm.pc++
 		return vm.code[tempPc], nil
 	} else {
-		return 0, errors.New("instructionSet out of bounds")
+		return 0, errors.New("Instruction set out of bounds")
 	}
 }
 
@@ -1077,7 +1077,7 @@ func (vm *VM) fetchMany(errorLocation string, argument int) (elements []byte, er
 		vm.pc += argument
 		return vm.code[tempPc : tempPc+argument], nil
 	} else {
-		return []byte{}, errors.New("instructionSet out of bounds")
+		return []byte{}, errors.New("Instruction set out of bounds")
 	}
 }
 
