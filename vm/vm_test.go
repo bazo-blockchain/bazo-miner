@@ -1861,6 +1861,42 @@ func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 	return start
 }
 
+func TestVm_Exec_Loop(t *testing.T) {
+	code := []byte{
+		PUSH, 1, 0, 0, //i
+		PUSH, 1, 0, 13, // Exp
+
+		// Order: i, exp
+		DUP,
+		ROLL, 1,
+		PUSH, 1, 0, 1,
+		ADD,
+		DUP,
+		ROLL, 1,
+		ROLL, 1,
+		ROLL, 2,
+		LT,
+		JMPIF, 0, 8, // Adjust address
+		// LOOP END
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(true)
+
+	expected := 13
+	actual, _ := vm.evaluationStack.Pop()
+
+	fmt.Println(actual[:])
+
+	if ByteArrayToInt(actual[1:]) != expected {
+		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
 		PUSH, 1, 0, 4, // Base
@@ -1881,24 +1917,11 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 		ROLL, 3,
 		// LOOP
 		CALL, 0, 39, 3,
-		HALT,
-		/*
-			PUSH, 1, 0, 13, // Exp
-			PUSH, 1, 0, 0,
-			ROLL, 0,
-			DUP,
-			ROLL, 1,
-			PUSH, 1, 0, 1,
-			ADD,
-			DUP,
-			ROLL, 1,
-			LT,
-			JMPIF, 0, 30, // Adjust address
-			// LOOP END
-			HALT,*/
+		HALT, /*
 
+
+		 */
 		// FUNCTION Order: c, modulus, base,
-
 		LOAD, 0,
 		LOAD, 2,
 		MULT,
@@ -1914,6 +1937,53 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	vm.Exec(true)
 
 	expected := 445
+	actual, _ := vm.evaluationStack.Pop()
+
+	fmt.Println(actual[:])
+
+	if ByteArrayToInt(actual[1:]) != expected {
+		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVm_Exec_ModularExponentiation_ContractImplementation2(t *testing.T) {
+	code := []byte{
+		PUSH, 1, 0, 4, // Base
+		PUSH, 2, 0, 11, 75, // Modulus
+		// IF modulus equals 0
+		DUP,
+		PUSH, 1, 0, 0,
+		EQ,
+		JMPIF, 0, 46, // Adjust address
+
+		PUSH, 1, 0, 1, // Counter (c)
+		PUSH, 1, 0, 0, //i
+		PUSH, 1, 0, 13, // Exp
+
+		// Order: i, exp, counter, modulus, base,
+		DUP,
+		ROLL, 1,
+		PUSH, 1, 0, 1,
+		ADD,
+		DUP,
+		ROLL, 1,
+		ROLL, 1,
+		ROLL, 2,
+		LT,
+		JMPIF, 0, 26, // Adjust address
+		// LOOP END
+		HALT,
+
+		HALT,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(true)
+
+	expected := 13
 	actual, _ := vm.evaluationStack.Pop()
 
 	fmt.Println(actual[:])
