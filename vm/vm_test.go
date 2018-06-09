@@ -1866,7 +1866,7 @@ func TestVm_Exec_Loop(t *testing.T) {
 		PUSH, 1, 0, 0, //i
 		PUSH, 1, 0, 13, // Exp
 
-		// Order: i, exp
+		// Order: exp, i
 		DUP,
 		ROLL, 1,
 		PUSH, 1, 0, 1,
@@ -1900,30 +1900,53 @@ func TestVm_Exec_Loop(t *testing.T) {
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
 		PUSH, 1, 0, 4, // Base
-		PUSH, 2, 0, 11, 75, // Modulus
-		// IF
+		PUSH, 2, 0, 1, 241, // Modulus
+		// IF modulus equals 0
 		DUP,
 		PUSH, 1, 0, 0,
 		EQ,
 		JMPIF, 0, 46, // Adjust address
-		// IF END
+
 		PUSH, 1, 0, 1, // Counter (c)
-		ROLL, 1,
-		DUP,
-		ROLL, 2,
-		DUP,
-		ROLL, 2,
-		ROLL, 1,
-		ROLL, 3,
-		// LOOP
-		CALL, 0, 39, 3,
-		HALT, /*
+		PUSH, 1, 0, 0, //i
+		PUSH, 1, 0, 13, // Exp
 
+		//LOOP start
+		//Duplicate arguments
+		ROLL, 2,
+		DUP, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
+		ROLL, 4,
+		DUP, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
+		// PUT in order
+		ROLL, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
+		ROLL, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
+		ROLL, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
+		ROLL, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
+		ROLL, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
+		ROLL, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+		// Order: counter, modulus, base, exp, i, modulus, base
+		CALL, 0, 76, 3,
+		// PUT in order
+		ROLL, 1,
+		ROLL, 1,
 
-		 */
+		// Order: exp, i - counter, modulus, base,
+		DUP,
+		ROLL, 1,
+		PUSH, 1, 0, 1,
+		ADD,
+		DUP,
+		ROLL, 1,
+		ROLL, 1,
+		ROLL, 2,
+		LT,
+		JMPIF, 0, 30, // Adjust address
+		// LOOP END
+		HALT,
+
 		// FUNCTION Order: c, modulus, base,
-		LOAD, 0,
 		LOAD, 2,
+		LOAD, 0,
 		MULT,
 		LOAD, 1,
 		MOD,
@@ -1937,56 +1960,11 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	vm.Exec(true)
 
 	expected := 445
+	vm.evaluationStack.Pop()
+	vm.evaluationStack.Pop()
 	actual, _ := vm.evaluationStack.Pop()
 
-	fmt.Println(actual[:])
-
-	if ByteArrayToInt(actual[1:]) != expected {
-		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
-	}
-}
-
-func TestVm_Exec_ModularExponentiation_ContractImplementation2(t *testing.T) {
-	code := []byte{
-		PUSH, 1, 0, 4, // Base
-		PUSH, 2, 0, 11, 75, // Modulus
-		// IF modulus equals 0
-		DUP,
-		PUSH, 1, 0, 0,
-		EQ,
-		JMPIF, 0, 46, // Adjust address
-
-		PUSH, 1, 0, 1, // Counter (c)
-		PUSH, 1, 0, 0, //i
-		PUSH, 1, 0, 13, // Exp
-
-		// Order: i, exp, counter, modulus, base,
-		DUP,
-		ROLL, 1,
-		PUSH, 1, 0, 1,
-		ADD,
-		DUP,
-		ROLL, 1,
-		ROLL, 1,
-		ROLL, 2,
-		LT,
-		JMPIF, 0, 26, // Adjust address
-		// LOOP END
-		HALT,
-
-		HALT,
-	}
-
-	vm := NewTestVM([]byte{})
-	mc := NewMockContext(code)
-	mc.Fee = 1000
-	vm.context = mc
-	vm.Exec(true)
-
-	expected := 13
-	actual, _ := vm.evaluationStack.Pop()
-
-	fmt.Println(actual[:])
+	fmt.Println("Result: ", ByteArrayToInt(actual[1:]))
 
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
