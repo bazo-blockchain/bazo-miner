@@ -30,6 +30,12 @@ var InitialBalance uint64 = 100000
  * - create a new consolidation block where balance of B is the sum
  */
 
+
+func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, account [32]byte) {
+	state[account] = &protocol.ConsolidatedAccount{account, InitialBalance, false, }
+}
+
+
 func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, [][32]byte) {
 
 	var testSize uint32
@@ -96,7 +102,6 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 
 func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	if conn := p2p.Connect(storage.BOOTSTRAP_SERVER); conn != nil {
-
 		packet := p2p.BuildPacket(txType, txHash[:])
 		conn.Write(packet)
 
@@ -131,11 +136,7 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	return tx
 }
 
-func processFundsTx(state map[[32]byte]uint64, block *protocol.Block) {
-	// Account collecting the Fees
-	if _, exists := state[block.Beneficiary]; !exists {
-		state[block.Beneficiary] = 0
-	}
+func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.FundsTxData {
 		tx := reqTx(p2p.FUNDSTX_REQ, txHash)
 		fundsTx := tx.(*protocol.FundsTx)
@@ -143,14 +144,23 @@ func processFundsTx(state map[[32]byte]uint64, block *protocol.Block) {
 		dest := fundsTx.To
 		// Add accounts in the map if they don't exist
 		if _, exists := state[source]; !exists {
-			state[source] = InitialBalance
+			initialiseConsAccount(state, source)
 		}
 		if _, exists := state[dest]; !exists {
-			state[dest] = InitialBalance
+			initialiseConsAccount(state, dest)
 		}
-		state[source] = state[source] - fundsTx.Fee - fundsTx.Amount
-		state[dest] += fundsTx.Amount
-		state[block.Beneficiary] += fundsTx.Fee
+		state[source].Balance = state[source].Balance - fundsTx.Fee - fundsTx.Amount
+		state[dest].Balance += fundsTx.Amount
+		state[block.Beneficiary].Balance += fundsTx.Fee
+	}
+}
+
+func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
+	for _, txHash := range block.StakeTxData {
+		tx := reqTx(p2p.CONFIGTX_REQ, txHash)
+		stakeTx := tx.(*protocol.StakeTx)
+		state[stakeTx.Account].Staking = stakeTx.IsStaking
+		state[block.Beneficiary].Balance += stakeTx.Fee
 	}
 }
 
@@ -159,7 +169,7 @@ func TestBasicConsolidationTx(t *testing.T) {
 	chain := createTestChain(t)
 
 	// Create a snapshot of the current state
-	state := make(map[[32]byte]uint64)
+	state := make(protocol.StateAccounts)
 
 	// Process all the blocks in the chain
 	for _, block := range chain {
@@ -167,7 +177,12 @@ func TestBasicConsolidationTx(t *testing.T) {
 		if block == nil {
 			continue
 		}
+		if _, exists := state[block.Beneficiary]; !exists {
+			initialiseConsAccount(state, block.Beneficiary)
+		}
+
 		processFundsTx(state, block)
+		processStakeTx(state, block)
 		// process other TX
 	}
 

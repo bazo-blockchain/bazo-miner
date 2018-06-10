@@ -9,10 +9,11 @@ const (
 )
 
 type ConsolidatedAccount struct {
-	account [32]byte
-	balance uint64
-	staking bool
+	Account [32]byte
+	Balance uint64
+	Staking bool
 }
+type StateAccounts map[[32]byte]*ConsolidatedAccount
 
 //when we broadcast transactions we need a way to distinguish with a type
 type ConsolidationTx struct {
@@ -24,21 +25,21 @@ type ConsolidationTx struct {
 
 	// Body
 	Accounts []ConsolidatedAccount
-
 }
 
-func ConstrConsolidationTx(header byte, state map[[32]byte]uint64, lastBlockHash [32]byte) (tx *ConsolidationTx, err error) {
+func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]byte) (tx *ConsolidationTx, err error) {
 	tx = new(ConsolidationTx)
 	tx.Header = header
 	tx.LastBlock = lastBlockHash
 
 	tx.NumAccounts = len(state)
 	totalBalance := uint64(0)
-	for hash, balance := range state {
+	for hash, cons := range state {
 		consAccount := new(ConsolidatedAccount)
-		consAccount.account = hash
-		consAccount.balance = balance
-		totalBalance += balance
+		consAccount.Account = hash
+		consAccount.Balance = cons.Balance
+		consAccount.Staking = cons.Staking
+		totalBalance += cons.Balance
 		tx.Accounts = append(tx.Accounts, *consAccount)
 	}
 	tx.TotalBalance = totalBalance
