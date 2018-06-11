@@ -1,12 +1,10 @@
 package vm
 
 import (
-	"bytes"
 	"errors"
-	"log"
 )
 
-type action func(array *Array, k uint16, s uint16) ([]byte, error)
+type action func(array *Array, index uint16, elementSize uint16) ([]byte, error)
 type Array []byte
 
 func NewArray() Array {
@@ -21,12 +19,15 @@ func ArrayFromByteArray(arr []byte) (Array, error) {
 	}
 
 	if arr[0] != 0x02 {
-		return Array{}, errors.New("invalid data type supplied")
+		return Array{}, errors.New("not a valid array")
 	}
 	return Array(arr), nil
 }
 
 func (a *Array) getSize() (uint16, error) {
+	if len(*a) < 3 {
+		return 0, errors.New("not a valid array")
+	}
 	value, err := ByteArrayToUI16((*a)[1:3])
 	if err != nil {
 		return 0, errors.New("cannot get size of array")
@@ -35,27 +36,30 @@ func (a *Array) getSize() (uint16, error) {
 }
 
 func (a *Array) setSize(ba []byte) {
+	//No checks because it is always used with getSize,
+	//If the array is incorrect, getSize() should already have noticed
 	(*a)[1] = ba[0]
 	(*a)[2] = ba[1]
 }
 
-func (a *Array) IncrementSize() {
+func (a *Array) IncrementSize() error {
 	s, err := a.getSize()
 	if err != nil {
-		log.Fatal("could not increase size")
+		return errors.New("could not increase size")
 	}
 	s++
 	a.setSize(UInt16ToByteArray(s))
+	return nil
 }
 
 func (a *Array) DecrementSize() error {
 	s, err := a.getSize()
 	if err != nil {
-		log.Fatal("could not decrement size")
+		return err
 	}
 
 	if s <= 0 {
-		return errors.New("Array size already 0")
+		return errors.New("Array size is already 0")
 	}
 	s--
 	a.setSize(UInt16ToByteArray(s))
@@ -63,40 +67,41 @@ func (a *Array) DecrementSize() error {
 }
 
 func (a *Array) At(index uint16) ([]byte, error) {
-	var f action = func(array *Array, k uint16, s uint16) ([]byte, error) {
-		return (*array)[k+2 : k+2+s], nil
+	var f action = func(array *Array, i uint16, s uint16) ([]byte, error) {
+		return (*array)[i+2 : i+2+s], nil
 	}
 	result, err := a.goToIndex(index, f)
 	return result, err
 }
 
 func (a *Array) Insert(index uint16, element []byte) error {
-	a.Remove(index)
-	var f action = func(array *Array, k uint16, s uint16) ([]byte, error) {
+	err := a.Remove(index)
+	if err != nil {
+		return err
+	}
+
+	var f action = func(array *Array, i uint16, s uint16) ([]byte, error) {
 		tmp := Array{}
-		tmp = append(tmp, (*a)[:k]...)
+		tmp = append(tmp, (*a)[:i]...)
 		tmp.Append(element)
-		*a = append(tmp, (*a)[k:]...)
+		*a = append(tmp, (*a)[i:]...)
 		return []byte{}, nil
 	}
-	_, err := a.goToIndex(index, f)
+	_, err = a.goToIndex(index, f)
 	return err
 }
 
 func (a *Array) Append(ba []byte) error {
-	if bytes.Equal(ba, []byte{}) {
-		ba = []byte{0x00, 0x00}
-	}
-	s := len(ba)
+	length := len(ba)
 
-	if s > int(UINT16_MAX) {
+	if length > int(UINT16_MAX) {
 		return errors.New("Element Size overflow")
 	}
 
 	sb := UInt16ToByteArray(uint16(len(ba)))
 	*a = append(*a, append(sb, ba...)...)
-	a.IncrementSize()
-	return nil
+	err := a.IncrementSize()
+	return err
 }
 
 func (a *Array) Remove(index uint16) error {
@@ -107,7 +112,11 @@ func (a *Array) Remove(index uint16) error {
 		return []byte{}, nil
 	}
 	_, err := a.goToIndex(index, f)
-	a.DecrementSize()
+	if err != nil {
+		return err
+	}
+
+	err = a.DecrementSize()
 	return err
 }
 
@@ -130,7 +139,6 @@ func (a *Array) goToIndex(index uint16, f action) ([]byte, error) {
 	var indexOnByteArray = offset
 	for ; indexOnByteArray < uint16(len(*a)) && currentElement <= index; currentElement++ {
 		elementSize, err := ByteArrayToUI16((*a)[indexOnByteArray : indexOnByteArray+2])
-
 		if err != nil {
 			return []byte{}, err
 		}
