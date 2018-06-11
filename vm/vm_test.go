@@ -1840,38 +1840,84 @@ func TestVM_PopBytesOutOfGas(t *testing.T) {
 	if int(actualFee) != expectedFee {
 		t.Errorf("Expected actual fee to be '%v' but was '%v'", expected, actual)
 	}
-
 }
 
 func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
+	benchmarks := []struct {
+		name string
+		bLen int
+	}{
+		{"bIs32B", 32},
+		{"bIs128B", 128},
+		{"bIs255B", 255},
+	}
+
 	var base big.Int
 	var exponent big.Int
 	var modulus big.Int
 
-	base.SetInt64(4)
-	exponent.SetInt64(13)
-	modulus.SetInt64(497)
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
 
-	for n := 0; n < b.N; n++ {
-		modularExpGo(base, exponent, modulus)
+				base.SetBytes(protocol.RandomBytesWithLength(bm.bLen))
+				exponent.SetBytes(protocol.RandomBytesWithLength(1))
+				modulus.SetBytes(protocol.RandomBytesWithLength(2))
+
+				modularExpGo(base, exponent, modulus)
+			}
+
+			b.ReportAllocs()
+			fmt.Println(b.Name())
+		})
 	}
 }
 
 func BenchmarkVM_Exec_ModularExponentiation_ContractImplementation(b *testing.B) {
-	contract := modularExpContract(*big.NewInt(4), *big.NewInt(13), *big.NewInt(497))
+	benchmarks := []struct {
+		name string
+		bLen int
+	}{
+		{"bIs32B", 32},
+		{"bIs128B", 128},
+		{"bIs255B", 255},
+	}
 
-	vm := NewTestVM([]byte{})
-	mc := NewMockContext(contract)
-	mc.Fee = 1000
-	vm.context = mc
+	var base big.Int
+	var exponent big.Int
+	var modulus big.Int
 
-	for n := 0; n < b.N; n++ {
-		vm.Exec(false)
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				base.SetBytes(protocol.RandomBytesWithLength(bm.bLen))
+				exponent.SetBytes(protocol.RandomBytesWithLength(1))
+				modulus.SetBytes(protocol.RandomBytesWithLength(2))
+
+				contract := modularExpContract(base, exponent, modulus)
+
+				vm := NewTestVM([]byte{})
+				mc := NewMockContext(contract)
+				mc.Fee = 1000000000000
+				vm.context = mc
+
+				if vm.Exec(false) != true {
+					tos, err := vm.evaluationStack.Pop()
+					fmt.Println(string(tos), err)
+					b.Fail()
+				}
+				vm.pc = 0
+				mc.Fee = 10000000000000
+			}
+
+			b.ReportAllocs()
+			fmt.Println(b.Name())
+		})
 	}
 }
 
 func modularExpGo(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
-	if modulus.Cmp(big.NewInt(int64(1))) == 0 {
+	if modulus.Cmp(big.NewInt(0)) == 0 {
 		return big.NewInt(0)
 	}
 	start := big.NewInt(1)
@@ -1880,7 +1926,7 @@ func modularExpGo(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 		c = c.Mul(c, &base)
 		c = c.Mod(c, &modulus)
 	}
-	return start
+	return c
 }
 
 func modularExpContract(base big.Int, exponent big.Int, modulus big.Int) []byte {
