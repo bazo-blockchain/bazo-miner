@@ -3,7 +3,6 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -1289,8 +1288,8 @@ func TestVM_Exec_NewArr(t *testing.T) {
 
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
-		NEWARR,
 		PUSH, 0x01, 0xFF, 0x00,
+		NEWARR,
 		ARRAPPEND,
 		HALT,
 	}
@@ -1318,13 +1317,15 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 
 func TestVM_Exec_ArrInsert(t *testing.T) {
 	code := []byte{
+		PUSH, 0x01, 0x00, 0x00,
+		PUSH, 0x01, 0x00, 0x00,
+
+		PUSH, 0x01, 0xFF, 0x00,
+
+		PUSH, 0x01, 0xFF, 0x00,
 		NEWARR,
-		PUSH, 0x01, 0xFF, 0x00,
 		ARRAPPEND,
-		PUSH, 0x01, 0xFF, 0x00,
 		ARRAPPEND,
-		PUSH, 0x01, 0x00, 0x00,
-		PUSH, 0x01, 0x00, 0x00,
 		ARRINSERT,
 		HALT,
 	}
@@ -1357,14 +1358,17 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 func TestVM_Exec_ArrRemove(t *testing.T) {
 	code := []byte{
-		NEWARR,
-		PUSH, 0x01, 0xFF, 0x00,
-		ARRAPPEND,
-		PUSH, 0x01, 0xAA, 0x00,
-		ARRAPPEND,
+		PUSH, 0x01, 0x01, 0x00, //Index of element to remove
 		PUSH, 0x01, 0xBB, 0x00,
+		PUSH, 0x01, 0xAA, 0x00,
+		PUSH, 0x01, 0xFF, 0x00,
+
+		NEWARR,
+
 		ARRAPPEND,
-		ARRREMOVE, 0x01, 0x00,
+		ARRAPPEND,
+		ARRAPPEND,
+		ARRREMOVE,
 		HALT,
 	}
 
@@ -1411,14 +1415,18 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 func TestVM_Exec_ArrAt(t *testing.T) {
 	code := []byte{
-		NEWARR,
-		PUSH, 0x01, 0xFF, 0x00,
-		ARRAPPEND,
-		PUSH, 0x01, 0xAA, 0x00,
-		ARRAPPEND,
+		PUSH, 0x01, 0x02, 0x00, // index for ARRAT
 		PUSH, 0x01, 0xBB, 0x00,
+		PUSH, 0x01, 0xAA, 0x00,
+		PUSH, 0x01, 0xFF, 0x00,
+
+		NEWARR,
+
 		ARRAPPEND,
-		ARRAT, 0x02, 0x00,
+		ARRAPPEND,
+		ARRAPPEND,
+
+		ARRAT,
 		HALT,
 	}
 
@@ -1681,7 +1689,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "arrat: Instruction set out of bounds"
+	expected := "arrat: pop() on empty stack"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1885,12 +1893,10 @@ func TestVm_Exec_Loop(t *testing.T) {
 	mc := NewMockContext(code)
 	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	expected := 13
 	actual, _ := vm.evaluationStack.Pop()
-
-	fmt.Println(actual[:])
 
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
@@ -1957,14 +1963,12 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	mc := NewMockContext(code)
 	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	expected := 445
 	vm.evaluationStack.Pop()
 	vm.evaluationStack.Pop()
 	actual, _ := vm.evaluationStack.Pop()
-
-	fmt.Println("Result: ", ByteArrayToInt(actual[1:]))
 
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
