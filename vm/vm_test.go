@@ -876,7 +876,7 @@ func TestVM_Exec_Calldata(t *testing.T) {
 		0, 0x05,
 		3, 0x10, 0x12, 0x4, 0x12, // Function hash
 	}
-	mc.transactionData = td
+	mc.Data = td
 
 	vm.context = mc
 	vm.Exec(false)
@@ -1608,7 +1608,7 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 
-	mc.transactionData = []byte{
+	mc.Data = []byte{
 		1, 0, 5,
 		1, 0, 2,
 		1, 0, 1, // Function hash
@@ -1651,7 +1651,7 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 
-	mc.transactionData = []byte{
+	mc.Data = []byte{
 		1, 0, 2,
 		1, 0, 5,
 		1, 0, 2, // Function hash
@@ -1701,7 +1701,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "arrappend: invalid data type supplied"
+	expected := "arrappend: not a valid array"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1721,7 +1721,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "arrappend: invalid data type supplied"
+	expected := "arrappend: not a valid array"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
