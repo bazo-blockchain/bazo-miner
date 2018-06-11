@@ -1850,12 +1850,22 @@ func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
 }
 
 func BenchmarkVM_Exec_ModularExponentiation_ContractImplementation(b *testing.B) {
-	contract := modularExpContract(*big.NewInt(4), *big.NewInt(13), *big.NewInt(497))
+	var base big.Int
+	var exponent big.Int
+	var modulus big.Int
+
+	base.SetBytes(protocol.RandomBytesWithLength(100))
+	exponent.SetBytes(protocol.RandomBytesWithLength(2))
+	modulus.SetBytes(protocol.RandomBytesWithLength(2))
+
+	contract := modularExpContract(*big.NewInt(9223372036854775807), *big.NewInt(13), *big.NewInt(497))
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(contract)
-	mc.Fee = 1000
+	mc.Fee = 10000000000
 	vm.context = mc
+
+	b.N = 1
 
 	for n := 0; n < b.N; n++ {
 		vm.Exec(false)
