@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"math/big"
 	"errors"
+	"math/big"
 )
 
 const UINT16_MAX uint16 = 65535
@@ -47,7 +47,7 @@ func BigIntToString(element big.Int) string {
 	return string(ba[:])
 }
 
-func BoolToByteArray(value bool) []byte{
+func BoolToByteArray(value bool) []byte {
 	var result byte
 	if value {
 		result = 1
@@ -89,7 +89,7 @@ func UnsignedBigIntConversion(ba []byte, err error) (big.Int, error) {
 	}
 }
 
-func SignedByteArrayConversion(bi big.Int) ([]byte) {
+func SignedByteArrayConversion(bi big.Int) []byte {
 	var result []byte
 	if bi.Sign() == 0 || bi.Sign() == 1 {
 		result = []byte{0x00}
@@ -99,4 +99,20 @@ func SignedByteArrayConversion(bi big.Int) ([]byte) {
 	result = append(result, bi.Bytes()...)
 
 	return result
+}
+
+func BigIntToPushableBytes(element big.Int) []byte {
+	baseLength := byte(len(element.Bytes()))
+
+	var baseVal []byte
+	baseVal = append(baseVal, baseLength)
+
+	if element.IsUint64() == true {
+		baseVal = append(baseVal, 0) // signing byte
+	} else {
+		baseVal = append(baseVal, 1) // signing byte
+	}
+
+	baseVal = append(baseVal, element.Bytes()...) // value
+	return baseVal
 }
