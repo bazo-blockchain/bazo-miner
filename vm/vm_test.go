@@ -1780,7 +1780,9 @@ func TestVM_PopBytes(t *testing.T) {
 
 func TestVM_GasCalculation(t *testing.T) {
 	code := []byte{
-		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95, 106, 14, 143, 25, 99, 79, 76, 222, 197, 5, 218, 90, 216, 47, 218, 74, 53, 139, 62, 28, 104, 180, 139, 65, 103, 193, 244, 169, 85, 39, 160, 218, 158, 207, 118, 37, 78, 42, 186, 64, 4, 70, 70, 190, 177,
+		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95,
+		106, 14, 143, 25, 99, 79, 76, 222, 197, 5, 218, 90, 216, 47, 218, 74, 53, 139, 62, 28, 104,
+		180, 139, 65, 103, 193, 244, 169, 85, 39, 160, 218, 158, 207, 118, 37, 78, 42, 186, 64, 4, 70, 70, 190, 177,
 		PUSH, 1, 0, 8,
 		ADD,
 		HALT,
@@ -1838,17 +1840,29 @@ func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
 	var exponent big.Int
 	var modulus big.Int
 
-	//base.SetInt64(4)
-	for n := 0; n < b.N; n++ {
-		base.SetBytes(protocol.RandomBytesWithLength(10000))
-		exponent.SetBytes(protocol.RandomBytesWithLength(1))
-		modulus.SetBytes(protocol.RandomBytesWithLength(2))
+	base.SetInt64(4)
+	exponent.SetInt64(13)
+	modulus.SetInt64(497)
 
-		modularExp(base, exponent, modulus)
+	for n := 0; n < b.N; n++ {
+		modularExpGo(base, exponent, modulus)
 	}
 }
 
-func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
+func BenchmarkVM_Exec_ModularExponentiation_ContractImplementation(b *testing.B) {
+	contract := modularExpContract(*big.NewInt(4), *big.NewInt(13), *big.NewInt(497))
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(contract)
+	mc.Fee = 1000
+	vm.context = mc
+
+	for n := 0; n < b.N; n++ {
+		vm.Exec(false)
+	}
+}
+
+func modularExpGo(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 	if modulus.Cmp(big.NewInt(int64(1))) == 0 {
 		return big.NewInt(0)
 	}
@@ -1859,6 +1873,90 @@ func modularExp(base big.Int, exponent big.Int, modulus big.Int) *big.Int {
 		c = c.Mod(c, &modulus)
 	}
 	return start
+}
+
+func modularExpContract(base big.Int, exponent big.Int, modulus big.Int) []byte {
+	baseVal := BigIntToPushableBytes(base)
+	exponentVal := BigIntToPushableBytes(exponent)
+	modulusVal := BigIntToPushableBytes(modulus)
+
+	addressBeforeExp := UInt16ToByteArray(uint16(39) + uint16(len(baseVal)) + uint16(len(modulusVal)))
+	addressAfterExp := UInt16ToByteArray(uint16(66) + uint16(len(baseVal)) + uint16(len(modulusVal)) + uint16(len(exponentVal)))
+	addressForLoop := UInt16ToByteArray(uint16(20) + uint16(len(baseVal)) + uint16(len(modulusVal)) + uint16(len(exponentVal)))
+
+	contract := []byte{
+		PUSH,
+	}
+	contract = append(contract, baseVal...)
+	contract = append(contract, PUSH)
+	contract = append(contract, modulusVal...)
+	contract = append(contract, []byte{
+		DUP,
+		PUSH, 1, 0, 0,
+		EQ,
+		JMPIF,
+	}...)
+	contract = append(contract, addressBeforeExp[1])
+	contract = append(contract, addressBeforeExp[0])
+	contract = append(contract, []byte{
+		PUSH, 1, 0, 1, // Counter (c)
+		PUSH, 1, 0, 0, //i
+		PUSH,
+	}...)
+	contract = append(contract, exponentVal...)
+	contract = append(contract, []byte{
+		//LOOP start
+		//Duplicate arguments
+		ROLL, 2,
+		DUP, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
+		ROLL, 4,
+		DUP, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
+		// PUT in order
+		ROLL, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
+		ROLL, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
+		ROLL, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
+		ROLL, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
+		ROLL, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
+		ROLL, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+		// Order: counter, modulus, base, exp, i, modulus, base
+		CALL,
+	}...)
+	contract = append(contract, byte(addressAfterExp[1]))
+	contract = append(contract, byte(addressAfterExp[0]))
+	contract = append(contract, []byte{
+		3,
+		// PUT in order
+		ROLL, 1,
+		ROLL, 1,
+
+		// Order: exp, i - counter, modulus, base,
+		DUP,
+		ROLL, 1,
+		PUSH, 1, 0, 1,
+		ADD,
+		DUP,
+		ROLL, 1,
+		ROLL, 1,
+		ROLL, 2,
+		LT,
+		JMPIF,
+	}...)
+	contract = append(contract, addressForLoop[1])
+	contract = append(contract, addressForLoop[0])
+	contract = append(contract, []byte{
+		// LOOP END
+		HALT,
+
+		// FUNCTION Order: c, modulus, base,
+		LOAD, 2,
+		LOAD, 0,
+		MULT,
+		LOAD, 1,
+		MOD,
+		RET,
+	}...)
+
+	return contract
 }
 
 func TestVm_Exec_Loop(t *testing.T) {
