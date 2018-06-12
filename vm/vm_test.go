@@ -1787,6 +1787,22 @@ func TestVM_PopBytes(t *testing.T) {
 	}
 }
 
+// TODO, fix error in function getBytesOfElement, add guards
+/*
+func TestVM_FuzzTest_Reproduction(t *testing.T) {
+	code := []byte{
+		42, 0, 11, 1, 155, 6, 4, 13, 80, 89, 144, 14, 178, 188, 176, 41, 215, 171, 74, 28, 97, 232, 200, 151, 211, 147, 185, 143, 13, 220, 87, 77, 33, 223, 218, 249, 39, 126, 162, 59, 136, 178, 192, 120, 189, 37, 32, 37, 99, 130, 12, 145, 66, 131, 252, 30, 213, 1, 193, 101, 2, 15, 216, 19, 252, 78, 121, 20, 24, 216,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 11
+	vm.context = mc
+
+	vm.Exec(false)
+}
+*/
+
 func TestVM_GasCalculation(t *testing.T) {
 	code := []byte{
 		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95,
