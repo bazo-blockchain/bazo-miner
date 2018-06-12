@@ -1108,7 +1108,7 @@ func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {
 		return nil, err
 	}
 
-	elementSize := len(bytes)/64 + 1
+	elementSize := (len(bytes) + 64 - 1) / 64
 
 	gasCost := opCode.gasFactor * uint64(elementSize)
 	if int64(vm.fee-gasCost) < 0 {
@@ -1126,7 +1126,7 @@ func (vm *VM) PopSignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 		return *big.NewInt(0), err
 	}
 
-	elementSize := len(bytes)/64 + 1
+	elementSize := (len(bytes) + 64 - 1) / 64
 
 	gasCost := opCode.gasFactor * uint64(elementSize)
 	if int64(vm.fee-gasCost) < 0 {
@@ -1145,7 +1145,7 @@ func (vm *VM) PopUnsignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 		return *big.NewInt(0), err
 	}
 
-	elementSize := len(bytes)/64 + 1
+	elementSize := (len(bytes) + 64 - 1) / 64
 
 	gasCost := opCode.gasFactor * uint64(elementSize)
 	if int64(vm.fee-gasCost) < 0 {
