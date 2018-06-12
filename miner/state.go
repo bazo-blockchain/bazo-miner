@@ -218,7 +218,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 
 		//Check minimum amount
 		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-			logger.Print("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
+			logger.Printf("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
 			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
 		}
 
