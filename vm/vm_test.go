@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
@@ -1868,7 +1869,6 @@ func BenchmarkVM_Exec_ModularExponentiation_GoImplementation(b *testing.B) {
 			}
 
 			b.ReportAllocs()
-			fmt.Println(b.Name())
 		})
 	}
 }
