@@ -6,8 +6,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -867,8 +868,8 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.evaluationStack.Push(a)
 
 		case ARRAPPEND:
-			v, verr := vm.PopBytes(opCode)
 			a, aerr := vm.PopBytes(opCode)
+			v, verr := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, verr, aerr) {
 				return false
 			}
@@ -892,6 +893,12 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ARRINSERT:
+			a, err := vm.PopBytes(opCode)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
 			i, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -904,12 +911,6 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			element, err := vm.PopBytes(opCode)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			a, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -951,10 +952,26 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ARRREMOVE:
-			a, aerr := vm.PopBytes(opCode)
-			ba, errArgs := vm.fetchMany(opCode.Name, 2)
-			index, err := ByteArrayToUI16(ba)
-			if !vm.checkErrors(opCode.Name, aerr, errArgs, err) {
+			a, err := vm.PopBytes(opCode)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			i, err := vm.PopBytes(opCode)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			if len(i) > 2 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Wrong index size"))
+				return false
+			}
+
+			index, err := ByteArrayToUI16(i)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -977,19 +994,19 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ARRAT:
-			a, err := vm.evaluationStack.PeekBytes()
+			a, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			ba, err := vm.fetchMany(opCode.Name, 2)
+			i, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			index, err := ByteArrayToUI16(ba)
+			index, err := ByteArrayToUI16(i)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
