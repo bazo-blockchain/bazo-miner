@@ -256,7 +256,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
-	tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, [64]byte{}, &RootPrivKey, contract, contractVariables)
+	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, &RootPrivKey, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return tx.Issuer
@@ -272,7 +272,7 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 			accAHash := protocol.SerializeHashContent(accA.Address)
 			accBHash := storage.GetAccount(hash).Hash()
 
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 500, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {

@@ -743,6 +743,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 	mc := NewMockContext(code)
 	mc.ContractVariables = []protocol.ByteArray{[]byte("Something")}
 	vm.context = mc
+	mc.Fee = 100000
 	vm.Exec(false)
 	mc.PersistChanges()
 
@@ -1543,6 +1544,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
+	mc.Fee = 100000
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
@@ -1581,6 +1583,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
+	mc.Fee = 100000
 	vm.Exec(false)
 
 	tos, _ := vm.evaluationStack.Pop()
