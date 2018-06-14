@@ -34,7 +34,12 @@ func Init(ipport string) {
 	//Initialize peer map
 	peers.peerConns = make(map[*peer]bool)
 
-	go PeerService()
+	//Start all services that are running concurrently
+	go broadcastService()
+	go checkHealthService()
+	go timeService()
+	go receiveBlockFromMiner()
+	go peerService()
 
 	//Set localPort global, this will be the listening port for incoming connection
 	if Ipport != storage.BOOTSTRAP_SERVER_PORT {

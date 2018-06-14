@@ -20,7 +20,7 @@ var (
 )
 
 //This is for blocks and txs that the miner successfully validated
-func ReceiveBlockFromMiner() {
+func receiveBlockFromMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)

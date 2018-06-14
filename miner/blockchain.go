@@ -8,7 +8,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"sync"
-	"github.com/bazo-blockchain/bazo-miner/p2p"
 )
 
 var (
@@ -55,12 +54,6 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 	}
 
 	logger.Printf("Active config params:%v", activeParameters)
-
-	//Start all services that are running concurrently
-	go p2p.BroadcastService()
-	go p2p.CheckHealthService()
-	go p2p.TimeService()
-	go p2p.ReceiveBlockFromMiner()
 
 	//Start to listen to network inputs (txs and blocks)
 	go incomingData()
