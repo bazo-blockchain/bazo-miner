@@ -7,6 +7,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 //This file responds to incoming requests from miners in a synchronous fashion
@@ -70,6 +71,7 @@ func blockRes(p *peer, payload []byte) {
 	}
 
 	sendData(p, packet)
+	fmt.Printf("Sending block(hash): %x\n", block.Hash)
 }
 
 //Response the requested block SPV header

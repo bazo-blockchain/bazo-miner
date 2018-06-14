@@ -319,6 +319,7 @@ func validateBlock(b *protocol.Block) error {
 	//No rollback needed, just a new block to validate
 	if len(blocksToRollback) == 0 {
 		for _, block := range blocksToValidate {
+			fmt.Printf("Validating block(hash): %x\n", block.Hash)
 			//Fetching payload data from the txs (if necessary, ask other miners)
 			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
 
