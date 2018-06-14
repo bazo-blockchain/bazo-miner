@@ -24,7 +24,7 @@ var (
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, initialBlock *protocol.Block) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
 	var err error
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
@@ -48,24 +48,11 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, initi
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	//if !isBootstrap {
-	//	p2p.LastBlockReq()
-	//	var latestBlock *protocol.Block
-	//	//Blocking wait
-	//	select {
-	//	case encodedBlock := <-p2p.BlockReqChan:
-	//		fmt.Println("bar")
-	//		latestBlock = latestBlock.Decode(encodedBlock)
-	//		//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-	//	case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-	//		fmt.Println("timeout")
-	//	}
-	//
-	//	err1 := validateBlock(latestBlock)
-	//	if err1 != nil {
-	//		logger.Printf("Received block (%x) could not be validated: %v\n", latestBlock.Hash[0:8], err)
-	//	}
-	//}
+	initialBlock, err := InitState(isBootstrap)
+	if err != nil {
+		logger.Printf("Could not set up initial state: %v.\n", err)
+		return
+	}
 
 	logger.Printf("Active config params:%v", activeParameters)
 
