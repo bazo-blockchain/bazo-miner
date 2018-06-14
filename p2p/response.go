@@ -58,6 +58,7 @@ func blockRes(p *peer, payload []byte) {
 		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
+			fmt.Printf("No closed block. Search open block(hash): %x\n", blockHash)
 			block = storage.ReadOpenBlock(blockHash)
 		}
 	} else {
