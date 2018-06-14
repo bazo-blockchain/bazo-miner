@@ -133,6 +133,8 @@ func listener(ipport string) {
 }
 
 func handleNewConn(p *peer) {
+
+	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
 	header, payload, err := rcvData(p)
 
 	if err != nil {
@@ -141,10 +143,6 @@ func handleNewConn(p *peer) {
 	}
 
 	processIncomingMsg(p, header, payload)
-
-	if header.TypeID != MINER_PING {
-		p.conn.Close()
-	}
 }
 
 func minerConn(p *peer) {
