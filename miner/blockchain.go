@@ -57,8 +57,24 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 		return
 	}
 
-
-	}
+	//if !isBootstrap {
+	//	p2p.LastBlockReq()
+	//	var latestBlock *protocol.Block
+	//	//Blocking wait
+	//	select {
+	//	case encodedBlock := <-p2p.BlockReqChan:
+	//		fmt.Println("bar")
+	//		latestBlock = latestBlock.Decode(encodedBlock)
+	//		//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
+	//	case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+	//		fmt.Println("timeout")
+	//	}
+	//
+	//	err1 := validateBlock(latestBlock)
+	//	if err1 != nil {
+	//		logger.Printf("Received block (%x) could not be validated: %v\n", latestBlock.Hash[0:8], err)
+	//	}
+	//}
 
 	logger.Printf("Active config params:%v", activeParameters)
 
