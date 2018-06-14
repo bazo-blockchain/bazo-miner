@@ -34,6 +34,8 @@ func Init(ipport string) {
 	//Initialize peer map
 	peers.peerConns = make(map[*peer]bool)
 
+	go PeerService()
+
 	//Set localPort global, this will be the listening port for incoming connection
 	if Ipport != storage.BOOTSTRAP_SERVER_PORT {
 		bootstrap()

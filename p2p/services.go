@@ -6,6 +6,18 @@ import (
 
 //This is not accessed concurrently, one single goroutine. However, the "peers" are accessed concurrently, therefore the
 //thread-safe implementation
+func PeerService() {
+	for {
+		select {
+		case p := <-register:
+			peers.add(p)
+		case p := <-disconnect:
+			peers.delete(p)
+			close(p.ch)
+		}
+	}
+}
+
 func BroadcastService() {
 	for {
 		select {
@@ -15,11 +27,7 @@ func BroadcastService() {
 				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away
 				p.ch <- msg
 			}
-		case p := <-register:
-			peers.add(p)
-		case p := <-disconnect:
-			peers.delete(p)
-			close(p.ch)
+
 		}
 	}
 }
