@@ -8,6 +8,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"sync"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 )
 
 var (
@@ -23,9 +24,8 @@ var (
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, initialBlock *protocol.Block) {
 	var err error
-	var hashedSeed [32]byte
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
@@ -37,7 +37,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 
 	//Initialize root key
 	//the hashedSeed is necessary since it must be included in the initial block
-	hashedSeed, err = initRootKey()
+	initRootKey()
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
 	}
@@ -47,13 +47,6 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
-
-	// Get the last closed block from DB or create genesis
-	initialBlock, err := SetUpInitialState(hashedSeed)
-	if err != nil {
-		logger.Printf("Could not set up initial state: %v.\n", err)
-		return
-	}
 
 	//if !isBootstrap {
 	//	p2p.LastBlockReq()
@@ -75,6 +68,12 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 	//}
 
 	logger.Printf("Active config params:%v", activeParameters)
+
+	//Start all services that are running concurrently
+	go p2p.BroadcastService()
+	go p2p.CheckHealthService()
+	go p2p.TimeService()
+	go p2p.ReceiveBlockFromMiner()
 
 	//Start to listen to network inputs (txs and blocks)
 	go incomingData()

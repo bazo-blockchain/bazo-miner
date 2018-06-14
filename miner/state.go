@@ -3,9 +3,11 @@ package miner
 import (
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
+	"time"
 )
 
 func accStateChange(txSlice []*protocol.AccTx) error {
@@ -364,13 +366,36 @@ func getState() (state string) {
 	return state
 }
 
-func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
+func InitState(isBootstrap bool) (block *protocol.Block, err error) {
 	var seed [32]byte
 	copy(seed[:], storage.GENESIS_SEED)
 
-	initialBlock := newBlock([32]byte{}, seed, hashedSeed, 0)
+	initialBlock := newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
 
-	allClosedBlocks := storage.ReadAllClosedBlocks()
+	var allClosedBlocks []*protocol.Block
+	if isBootstrap {
+		allClosedBlocks = storage.ReadAllClosedBlocks()
+	} else {
+		p2p.LastBlockReq()
+		var latestBlock *protocol.Block
+
+		select {
+		case encodedBlock := <-p2p.BlockReqChan:
+			fmt.Println("bar")
+			latestBlock = latestBlock.Decode(encodedBlock)
+			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
+		case <-time.After(5 * time.Second):
+			fmt.Println("timeout")
+		}
+
+		ancestor, newChain := getNewChain(latestBlock)
+		fmt.Printf("Ancestor block(hash): %x\n", ancestor.Hash)
+		fmt.Printf("\nLoaded blocks:\n")
+		for _, block := range newChain {
+			fmt.Printf("PrevHash: %x\n", block.PrevHash)
+			fmt.Printf("Hash: %x\n", block.Hash)
+		}
+	}
 
 	//Switch order in array to validate genesis block first
 	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
@@ -457,7 +482,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 
 func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
 	acc := storage.GetAccount(beneficiary)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	acc.StakingBlockHeight = height

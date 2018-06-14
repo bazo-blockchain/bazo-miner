@@ -6,7 +6,7 @@ import (
 
 //This is not accessed concurrently, one single goroutine. However, the "peers" are accessed concurrently, therefore the
 //thread-safe implementation
-func broadcastService() {
+func BroadcastService() {
 	for {
 		select {
 		//Broadcasting all messages
@@ -32,7 +32,7 @@ func peerBroadcast(p *peer) {
 }
 
 //Single goroutine that makes sure the system is well connected
-func checkHealthService() {
+func CheckHealthService() {
 
 	for {
 		//Periodically check if we are well-connected
@@ -67,7 +67,7 @@ func checkHealthService() {
 }
 
 //Calculates periodically system time from available sources and broadcasts the time to all connected peers
-func timeService() {
+func TimeService() {
 	//Initialize system time
 	systemTime = time.Now().Unix()
 	go func() {

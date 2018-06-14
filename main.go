@@ -29,6 +29,12 @@ func main() {
 	storage.Init(dbname, ipport)
 	p2p.Init(ipport)
 
+	initialBlock, err := miner.InitState(isBootstrap)
+	if err != nil {
+		logger.Printf("Could not set up initial state: %v.\n", err)
+		return
+	}
+
 	validatorPubKey, _, err := storage.ExtractKeyFromFile(validator)
 	if err != nil {
 		logger.Printf("%v\n", err)
@@ -41,5 +47,5 @@ func main() {
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName, isBootstrap)
+	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName, initialBlock)
 }

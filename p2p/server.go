@@ -34,12 +34,6 @@ func Init(ipport string) {
 	//Initialize peer map
 	peers.peerConns = make(map[*peer]bool)
 
-	//Start all services that are running concurrently
-	go broadcastService()
-	go checkHealthService()
-	go timeService()
-	go receiveBlockFromMiner()
-
 	//Set localPort global, this will be the listening port for incoming connection
 	if Ipport != storage.BOOTSTRAP_SERVER_PORT {
 		bootstrap()
@@ -135,14 +129,19 @@ func listener(ipport string) {
 func handleNewConn(p *peer) {
 
 	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
-	header, payload, err := rcvData(p)
 
-	if err != nil {
-		logger.Printf("Failed to handle incoming connection: %v\n", err)
-		return
+	//Give the peer a channel
+	p.ch = make(chan []byte)
+
+	for {
+		header, payload, err := rcvData(p)
+		if err != nil {
+			logger.Printf("Failed to handle incoming connection: %v\n", err)
+			return
+		}
+
+		processIncomingMsg(p, header, payload)
 	}
-
-	processIncomingMsg(p, header, payload)
 }
 
 func minerConn(p *peer) {
