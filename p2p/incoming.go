@@ -49,6 +49,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
+		fmt.Printf("Receiving BLOCK_RES\n")
 		forwardBlockReqToMiner(p, payload)
 	case FUNDSTX_RES:
 		forwardTxReqToMiner(p, payload, FUNDSTX_RES)

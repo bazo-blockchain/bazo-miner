@@ -66,12 +66,13 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
+		fmt.Printf("Sending block(hash): %x\n", block.Hash)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
+		fmt.Printf("Block(hash) not found: %x\n", block.Hash)
 	}
 
 	sendData(p, packet)
-	fmt.Printf("Sending block(hash): %x\n", block.Hash)
 }
 
 //Response the requested block SPV header
