@@ -129,19 +129,14 @@ func listener(ipport string) {
 func handleNewConn(p *peer) {
 
 	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
+	header, payload, err := rcvData(p)
 
-	//Give the peer a channel
-	p.ch = make(chan []byte)
-
-	for {
-		header, payload, err := rcvData(p)
-		if err != nil {
-			logger.Printf("Failed to handle incoming connection: %v\n", err)
-			return
-		}
-
-		processIncomingMsg(p, header, payload)
+	if err != nil {
+		logger.Printf("Failed to handle incoming connection: %v\n", err)
+		return
 	}
+
+	processIncomingMsg(p, header, payload)
 }
 
 func minerConn(p *peer) {
