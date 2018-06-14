@@ -4,11 +4,12 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"sync"
+	"time"
 )
 
 var (
@@ -20,11 +21,11 @@ var (
 	slashingDict        map[[32]byte]SlashingProof
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
-	seedFile		 	string
+	seedFile            string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool,) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
 	var err error
 	var hashedSeed [32]byte
 
@@ -56,22 +57,10 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 		return
 	}
 
-	logger.Printf("Active config params:%v", activeParameters)
 
-	//We must first update the state before we can start mining. In order to make PoS we must know our balance in the state
-	if !isBootstrap{
-		payload := <-p2p.BlockIn
-		processBlock(payload)
-
-		logger.Println("############################start mining############################")
-
-		go incomingData()
-		mining(lastBlock)
-	}else{
-		go incomingData()
-		mining(initialBlock)
 	}
 
+	logger.Printf("Active config params:%v", activeParameters)
 
 	//Start to listen to network inputs (txs and blocks)
 	go incomingData()
@@ -120,7 +109,6 @@ func initRootKey() ([32]byte, error) {
 
 	//Create the hash of the seed which will be included in the transaction
 	hashedSeed := protocol.SerializeHashContent(seed)
-
 
 	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 	if err != nil {
