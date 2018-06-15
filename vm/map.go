@@ -155,6 +155,9 @@ func (m *Map) Remove(key []byte) error {
 		}
 
 		k, keyEndsBefore, err := getElement(m, index)
+		if err != nil {
+			return err
+		}
 
 		sizeOfValue, err := getElementSize(m, keyEndsBefore)
 		if err != nil {
@@ -184,12 +187,24 @@ func getElement(m *Map, startsAt int) (element []byte, endsBefore int, err error
 		return []byte{}, 0, err
 	}
 	endsBefore = nextElementStartsAt(startsAt, size)
-	element = getBytesOfElement(m, startsAt, endsBefore)
+	element, err = getBytesOfElement(m, startsAt, endsBefore)
+	if err != nil {
+		return []byte{}, 0, err
+	}
 	return element, endsBefore, err
 }
 
-func getBytesOfElement(m *Map, startsAt int, endsBefore int) []byte {
-	return (*m)[startsAt+2 : endsBefore]
+func getBytesOfElement(m *Map, startsAt int, endsBefore int) ([]byte, error) {
+	if startsAt >= endsBefore {
+		return []byte{}, errors.New("can't retrieve element")
+	}
+	length := len(*m)
+
+	if length < startsAt+2 || length < endsBefore {
+		return []byte{}, errors.New("map internals error")
+	}
+
+	return (*m)[startsAt+2 : endsBefore], nil
 }
 func nextElementStartsAt(index int, elementSize uint16) int {
 	return index + 2 + int(elementSize)

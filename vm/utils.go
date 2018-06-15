@@ -26,6 +26,10 @@ func ByteArrayToUI16(element []byte) (uint16, error) {
 	if bytes.Equal([]byte{}, element) {
 		return 0, nil
 	}
+	if len(element) != 2 {
+		return 0, errors.New("byte array to uint16 invalid parameters provided")
+	}
+
 	return binary.LittleEndian.Uint16(element), nil
 }
 
