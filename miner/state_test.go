@@ -1,12 +1,13 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Testing state change, rollback and fee collection
@@ -35,7 +36,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(rand.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -44,7 +45,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyB, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyB, nil, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -82,7 +83,7 @@ func TestAccountOverflow(t *testing.T) {
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -110,7 +111,7 @@ func TestAccTxStateChange(t *testing.T) {
 	nullAddress := [64]byte{}
 	loopMax := int(rand.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, nullAddress, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, nullAddress, &RootPrivKey, nil, nil)
 		accs = append(accs, tx)
 	}
 
@@ -127,7 +128,7 @@ func TestAccTxStateChange(t *testing.T) {
 
 	//Create a new root account, set the header to 0x01
 	var singleSlice []*protocol.AccTx
-	tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%1000, nullAddress, &RootPrivKey)
+	tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%1000, nullAddress, &RootPrivKey, nil, nil)
 	singleSlice = append(singleSlice, tx)
 	var pubKeyTmp [64]byte
 	copy(pubKeyTmp[:], tx.PubKey[:])

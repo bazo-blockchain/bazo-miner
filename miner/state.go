@@ -3,15 +3,16 @@ package miner
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"strconv"
 )
 
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, tx.Contract, tx.ContractVariables)
 			newAccHash := newAcc.Hash()
 			if acc := storage.GetAccount(newAccHash); acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
@@ -217,7 +218,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 
 		//Check minimum amount
 		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-			logger.Print("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
+			logger.Printf("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
 			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
 		}
 
@@ -457,7 +458,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 
 func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
 	acc := storage.GetAccount(beneficiary)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	acc.StakingBlockHeight = height

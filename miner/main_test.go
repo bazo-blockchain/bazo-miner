@@ -5,21 +5,22 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/p2p"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 const (
-	TestDBFileName		= "test.db"
-	TestIpPort     		= "127.0.0.1:8000"
-	TestSeedFileName 	= "test_seed.json"
-	TestKeyFileName 	= "test_root"
+	TestDBFileName   = "test.db"
+	TestIpPort       = "127.0.0.1:8000"
+	TestSeedFileName = "test_seed.json"
+	TestKeyFileName  = "test_root"
 )
 
 //Some user accounts for testing
@@ -49,13 +50,13 @@ var (
 //Globally accessible values for all other tests, (root)account-related
 var (
 	accA, accB, minerAcc,
-	validatorAcc                     *protocol.Account
+	validatorAcc *protocol.Account
 	PrivKeyA, PrivKeyB, MinerPrivKey ecdsa.PrivateKey
 
-	PubKeyA, PubKeyB, multiSignTest  ecdsa.PublicKey
-	RootPrivKey, multiSignPrivKeyA   ecdsa.PrivateKey
-	GenesisBlock                     *protocol.Block
-	rootHash                         [32]byte
+	PubKeyA, PubKeyB, multiSignTest ecdsa.PublicKey
+	RootPrivKey, multiSignPrivKeyA  ecdsa.PrivateKey
+	GenesisBlock                    *protocol.Block
+	rootHash                        [32]byte
 )
 
 //Create some accounts that are used by the tests
@@ -168,7 +169,6 @@ func addRootAccounts() {
 	_, _ = file.WriteString(RootPriv + "\n")
 
 	var hashedSeed [32]byte
-
 
 	//create and store an initial seed for the root account
 	seed := protocol.CreateRandomSeed()

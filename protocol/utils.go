@@ -2,19 +2,23 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/binary"
-	"golang.org/x/crypto/sha3"
+	"encoding/gob"
 	"math"
 	"math/rand"
 	"time"
+
+	rand1 "crypto/rand"
+	rand2 "math/rand"
+
+	"golang.org/x/crypto/sha3"
 )
 
-//Serializes the input in big endian and returns the sha3 hash function applied on ths input
+//Serializes the input and returns the sha3 hash function applied on ths input
 func SerializeHashContent(data interface{}) (hash [32]byte) {
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, data)
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(data)
 
-	return sha3.Sum256(buf.Bytes())
+	return sha3.Sum256(buffer.Bytes())
 }
 
 func Encode(data [][]byte, sliceSize int) []byte {
@@ -61,4 +65,21 @@ func CreateRandomSeed() [32]byte {
 		seed[i] = chars[r.Intn(len(chars))]
 	}
 	return seed
+}
+
+func RandomBytes() []byte {
+	byteArray := make([]byte, randomInt())
+	rand1.Read(byteArray)
+	return byteArray
+}
+
+func RandomBytesWithLength(length int) []byte {
+	byteArray := make([]byte, length)
+	rand1.Read(byteArray)
+	return byteArray
+}
+
+func randomInt() int {
+	rand2.Seed(time.Now().Unix())
+	return rand2.Intn(1000)
 }

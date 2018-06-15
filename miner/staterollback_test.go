@@ -1,12 +1,13 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Rollback tests for all tx types
@@ -37,7 +38,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	loopMax := int(rand.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -48,7 +49,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 			t.Errorf("Block rejected a valid transaction: %v\n", ftx)
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -95,7 +96,7 @@ func TestAccStateChangeRollback(t *testing.T) {
 	nullAddress := [64]byte{}
 	loopMax := int(rand.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, nullAddress, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, nullAddress, &RootPrivKey, nil, nil)
 		accs = append(accs, tx)
 	}
 
@@ -164,7 +165,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	var fee uint64
 	loopMax := int(rand.Uint64() % 1000)
 	for i := 0; i < loopMax+1; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
 
 		funds = append(funds, tx)
 		fee += tx.Fee
@@ -184,7 +185,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal = minerAcc.Balance
 	//Miner gets fees, the miner account balance will overflow at some point
 	for i := 2; i < 100; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
 		funds2 = append(funds2, tx)
 		fee2 += tx.Fee
 	}

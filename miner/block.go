@@ -4,12 +4,14 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/vm"
 	"golang.org/x/crypto/sha3"
-	"strconv"
-	"time"
 )
 
 //Datastructure to fetch the payload of all transactions, needed for state validation
@@ -102,6 +104,7 @@ func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
 	}
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions)
+	//fmt.Println(tx.Hash())
 	b.AccTxData = append(b.AccTxData, tx.Hash())
 	logger.Printf("Added tx to the AccTxData slice: %v", *tx)
 	return nil
@@ -133,7 +136,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 				b.StateCopy[tx.To] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Receiver account not present in the state: %x\n", tx.From))
+			return errors.New(fmt.Sprintf("Receiver account not present in the state: %x\n", tx.To))
 		}
 	}
 
@@ -155,6 +158,20 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	if b.StateCopy[tx.To].Balance+tx.Amount > MAX_MONEY {
 		err := fmt.Sprintf("Transaction amount (%v) leads to overflow at receiver account balance (%v).\n", tx.Amount, b.StateCopy[tx.To].Balance)
 		return errors.New(err)
+	}
+
+	//Check if transaction has data and the receiver account has a smart contract
+	if tx.Data != nil && b.StateCopy[tx.To].Contract != nil {
+		context := protocol.NewContext(*b.StateCopy[tx.To], *tx)
+		virtualMachine := vm.NewVM(context)
+
+		// Check if vm execution run without error
+		if !virtualMachine.Exec(false) {
+			return errors.New(virtualMachine.GetErrorMsg())
+		}
+
+		//Update changes vm has made to the contract variables
+		context.PersistChanges()
 	}
 
 	//Update state copy
@@ -203,7 +220,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	}
 
 	//Account has bool already set to the desired value
-	if b.StateCopy[tx.Account].IsStaking == tx.IsStaking{
+	if b.StateCopy[tx.Account].IsStaking == tx.IsStaking {
 		return errors.New("Account has bool already set to the desired value.")
 	}
 
@@ -465,7 +482,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 
 	//invalid if pos is too far in the future
 	now := time.Now()
-	if block.Timestamp > now.Unix() + int64(activeParameters.Accepted_time_diff) {
+	if block.Timestamp > now.Unix()+int64(activeParameters.Accepted_time_diff) {
 		return nil, nil, nil, nil, errors.New("The timestamp is too far in the future. " + string(block.Timestamp) + " vs " + string(now.Unix()))
 	}
 
@@ -774,7 +791,7 @@ func stateValidation(data blockData) error {
 		return err
 	}
 
-	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil{
+	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil {
 		return err
 	}
 

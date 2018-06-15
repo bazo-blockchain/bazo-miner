@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"time"
+
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"golang.org/x/crypto/sha3"
-	"time"
 )
 
 //Tests whether the first diff bits are zero
@@ -90,7 +91,7 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 	copy(hashArgs[index:index+32], localSeed[:])    //32 bytes
 	copy(hashArgs[index+32:index+36], heightBuf[:]) //4 bytes
 
-	for _ = range time.Tick(time.Second) {
+	for range time.Tick(time.Second) {
 		//lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		//block has been validated
 		if prevHash != lastBlock.Hash {
