@@ -16,7 +16,7 @@ var (
 	parameterSlice      []Parameters
 	activeParameters    *Parameters
 	uptodate            bool
-	slashingDict        map[[32]byte]SlashingProof
+	slashingDict        = make(map[[32]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
 	seedFile            string
