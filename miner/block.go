@@ -290,8 +290,8 @@ func finalizeBlock(block *protocol.Block) error {
 //This function is split into block syntax/PoW check and actual state change
 //because there is the case that we might need to go fetch several blocks
 // and have to check the blocks first before changing the state in the correct order
-	//TODO Do code optimization
 func validate(b *protocol.Block, initialSetup bool) error {
+	//TODO Optimize code
 
 	//This mutex is necessary that own-mined blocks and received blocks from the network are not
 	//validated concurrently
@@ -387,6 +387,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 		}
 	}
 
+	//Check block size
 	if block.GetSize() > activeParameters.Block_size {
 		return nil, nil, nil, nil, errors.New("Block size too large.")
 	}
@@ -440,42 +441,42 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 		}
 	}
 
-	//Does the beneficiary exist in the state
+	//Check state contains beneficiary
 	acc := storage.GetAccount(block.Beneficiary)
 	if acc == nil {
 		return nil, nil, nil, nil, errors.New("Beneficiary not in the State.")
 	}
 
-	//PoS validation
-	//check if node is part of the validator set
+	//Check if node is part of the validator set
 	if !acc.IsStaking {
 		return nil, nil, nil, nil, errors.New("Validator is not part of the validator set.")
 	}
 
-	//invalid if hashedSeed of the previous block is not the same as the hash of the seed of the current block
+	//Invalid if hashedSeed of the previous block is not the same as the hash of the seed of the current block
 	if acc.HashedSeed != protocol.SerializeHashContent(block.Seed) {
 		return nil, nil, nil, nil, errors.New("The submitted seed does not match the previously submitted seed.")
 	}
 
-	//invalid if pos calculation is not correct
+	//Invalid if PoS calculation is not correct
 	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
 
+	//PoS validation
 	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
 	}
 
-	//invalid if pos is too far in the future
+	//Invalid if PoS is too far in the future
 	now := time.Now()
 	if block.Timestamp > now.Unix()+int64(activeParameters.Accepted_time_diff) {
 		return nil, nil, nil, nil, errors.New("The timestamp is too far in the future. " + string(block.Timestamp) + " vs " + string(now.Unix()))
 	}
 
-	//check for minimum waiting time
+	//Check for minimum waiting time
 	if block.Height-acc.StakingBlockHeight < uint32(activeParameters.Waiting_minimum) {
 		return nil, nil, nil, nil, errors.New("The miner must wait a minimum amount of blocks before start validating. Block Height:" + string(block.Height) + " - Height when started validating " + string(acc.StakingBlockHeight) + " MinWaitingTime: " + string(activeParameters.Waiting_minimum))
 	}
 
-	//check if block contains a proof for two conflicting block hashes else no proof provided
+	//Check if block contains a proof for two conflicting block hashes, else no proof provided
 	if block.SlashedAddress != [32]byte{} {
 		if _, err = slashingCheck(block.SlashedAddress, block.ConflictingBlockHash1, block.ConflictingBlockHash2); err != nil {
 			return nil, nil, nil, nil, err
@@ -507,6 +508,8 @@ func timestampCheck(timestamp int64) error {
 }
 
 func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
+	//TODO Optimize code
+
 	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {
 		return false, errors.New("Invalid proof for slashing. Invalid conflicting block hashes provided.")
 	}
@@ -523,7 +526,7 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are on the same chain.")
 	}
 
-	//if this block is unknown we need to check if its in the openblock storage or we must request it
+	//If this block is unknown we need to check if its in the openblock storage or we must request it
 	if conflictingBlock1 == nil {
 		conflictingBlock1 = storage.ReadOpenBlock(conflictingBlockHash1)
 		if conflictingBlock1 == nil {
@@ -546,7 +549,7 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		}
 	}
 
-	//if this block is unknown we need to check if its in the openblock storage or we must request it.
+	//If this block is unknown we need to check if its in the openblock storage or we must request it.
 	if conflictingBlock2 == nil {
 		conflictingBlock2 = storage.ReadOpenBlock(conflictingBlockHash2)
 		if conflictingBlock2 == nil {
@@ -569,13 +572,13 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		}
 	}
 
-	// Now we have found the height of the blocks and the height of the blocks can be checked.
-	// Ff the height is not within the active slashing window size, we must throw an error. If not the proof is valid.
+	// We found the height of the blocks and the height of the blocks can be checked
+	// If the height is not within the active slashing window size, we must throw an error. If not, the proof is valid
 	if !(conflictingBlock1.Height < uint32(activeParameters.Slashing_window_size)+conflictingBlock2.Height) {
 		return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
 	}
 
-	//delete the proof from local slashing dictionary. if proof has not existed yet, nothing will be deleted.
+	//Delete the proof from local slashing dictionary. If proof has not existed yet, nothing will be deleted
 	delete(slashingDict, slashedAddress)
 
 	return true, nil
@@ -595,7 +598,7 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 				break
 			} else {
 				//Reject blocks that have txs which have already been validated
-				errChan <- errors.New("Block validation had accTx that was already in a previous block")
+				errChan <- errors.New("Block validation had accTx that was already in a previous block.")
 				return
 			}
 		}
@@ -621,7 +624,7 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 			//This check is important. A malicious miner might have sent us a tx whose hash is a different one
 			//from what we requested
 			if accTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request")
+				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
 		}
 
@@ -642,7 +645,7 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 				fundsTxSlice[cnt] = fundsTx
 				break
 			} else {
-				errChan <- errors.New("Block validation had fundsTx that was already in a previous block")
+				errChan <- errors.New("Block validation had fundsTx that was already in a previous block.")
 				return
 			}
 		}
@@ -664,7 +667,7 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 				return
 			}
 			if fundsTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request")
+				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
 		}
 
@@ -685,7 +688,7 @@ func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx
 				configTxSlice[cnt] = configTx
 				break
 			} else {
-				errChan <- errors.New("Block validation had configTx that was already in a previous block")
+				errChan <- errors.New("Block validation had configTx that was already in a previous block.")
 				return
 			}
 		}
@@ -707,7 +710,7 @@ func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx
 				return
 			}
 			if configTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request")
+				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
 		}
 
@@ -728,7 +731,7 @@ func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, i
 				stakeTxSlice[cnt] = stakeTx
 				break
 			} else {
-				errChan <- errors.New("Block validation had stakeTx that was already in a previous block")
+				errChan <- errors.New("Block validation had stakeTx that was already in a previous block.")
 				return
 			}
 		}
@@ -750,7 +753,7 @@ func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, i
 				return
 			}
 			if stakeTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request")
+				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
 		}
 

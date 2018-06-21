@@ -7,7 +7,7 @@ import (
 )
 
 //Already validated block but not part of the current longest chain
-//No need for an additional state mutex, because this function is called while the validateBlock mutex is actively held
+//No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held
 func validateBlockRollback(b *protocol.Block) error {
 	accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidationRollback(b)
 	if err != nil {
