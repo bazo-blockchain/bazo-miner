@@ -70,7 +70,6 @@ func sendData(p *peer, payload []byte) {
 	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[payload[4]], len(payload)-HEADER_LEN)
 	p.l.Lock()
 	p.conn.Write(payload)
-	logger.Printf("Wrote to peer: %v\n", p.getIPPort())
 	p.l.Unlock()
 }
 
