@@ -237,6 +237,10 @@ func finalizeBlock(block *protocol.Block) error {
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
 	validatorAcc := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	if validatorAcc == nil {
+		return errors.New("ValidatorAcc not in the State.")
+	}
+
 	validatorAccHash := validatorAcc.Hash()
 
 	copy(block.Beneficiary[:], validatorAccHash[:])
