@@ -30,6 +30,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case STAKETX_REQ:
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
+		//TODO Remove
 		fmt.Printf("Receiving request block(hash): %x\n", payload)
 		blockRes(p, payload)
 	case ACC_REQ:
@@ -49,6 +50,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
+		//TODO Remove
 		fmt.Printf("Receiving BLOCK_RES\n")
 		forwardBlockReqToMiner(p, payload)
 	case FUNDSTX_RES:
