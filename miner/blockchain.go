@@ -47,7 +47,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	initialBlock, err := InitState()
+	initialBlock, err := initState()
 	if err != nil {
 		logger.Printf("Could not set up initial state: %v.\n", err)
 		return

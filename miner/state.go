@@ -364,7 +364,7 @@ func getState() (state string) {
 	return state
 }
 
-func InitState() (block *protocol.Block, err error) {
+func initState() (block *protocol.Block, err error) {
 	var seed [32]byte
 	copy(seed[:], storage.GENESIS_SEED)
 
@@ -391,11 +391,21 @@ func InitState() (block *protocol.Block, err error) {
 	for _, blockToValidate := range storage.AllClosedBlocksAsc {
 		//Do not validate the genesis block, since a lot of properties are set to nil
 		if blockToValidate.Hash != [32]byte{} {
-			err := validateBlock(blockToValidate, true)
+			//Fetching payload data from the txs (if necessary, ask other miners)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(blockToValidate, true)
+
+			//Prepare datastructure to fill tx payloads
+			blockDataMap := make(map[[32]byte]blockData)
+			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
+
+			err = stateValidation(blockDataMap[blockToValidate.Hash])
+
+			postValidation(blockDataMap[blockToValidate.Hash], true)
+
 			if err == nil {
 				logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
 			} else {
-				logger.Printf("Block (%x) could not be validated: %v\n", blockToValidate.Hash[0:8], err)
+				return nil, errors.New(fmt.Sprintf("Block (%x) could not be validated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 		}
 
