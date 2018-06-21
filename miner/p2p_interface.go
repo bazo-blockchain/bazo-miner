@@ -28,10 +28,11 @@ func processBlock(payload []byte) {
 
 	//Start validation process
 	err := validateBlock(block, false)
-	if err != nil {
-		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-	} else {
+	if err == nil {
+		logger.Printf("Validated block: %vState:\n%v", block, getState())
 		broadcastBlock(block)
+	} else {
+		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 	}
 }
 
