@@ -19,8 +19,6 @@ func seekSlashingProof(block *protocol.Block) error {
 		return errors.New("Latest block not found.")
 	}
 
-	//fmt.Println(lastClosedBlock, block)
-
 	//when the block is added ontop of your chain then there is no slashing needed
 	if lastClosedBlock.Hash == block.PrevHash {
 		return nil
