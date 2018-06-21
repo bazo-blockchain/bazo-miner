@@ -20,7 +20,7 @@ func seekSlashingProof(block *protocol.Block) error {
 	}
 
 	//when the block is added ontop of your chain then there is no slashing needed
-	if lastClosedBlock.Hash == block.PrevHash {
+	if lastClosedBlock.Hash == block.Hash || lastClosedBlock.Hash == block.PrevHash {
 		return nil
 	} else {
 		//get the latest blocks and check if there is proof for multivoting within the slashing window
