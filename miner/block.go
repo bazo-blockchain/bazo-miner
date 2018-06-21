@@ -237,6 +237,7 @@ func finalizeBlock(block *protocol.Block) error {
 
 	validatorAcc := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
 	validatorAccHash := validatorAcc.Hash()
+
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
 	partialHash := block.HashBlock()
@@ -295,6 +296,9 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 
 	//Get the right branch, and a list of blocks to rollback (if necessary)
 	blocksToRollback, blocksToValidate, err := getBlockSequences(b)
+	if err != nil {
+		return err
+	}
 
 	//Verify block time is dynamic and corresponds to system time at the time of retrieval.
 	//If we're syncing or far behind, we cannot do this dynamic check
@@ -304,10 +308,6 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 		uptodate = false
 	} else {
 		uptodate = true
-	}
-
-	if err != nil {
-		return err
 	}
 
 	//If not the whole chain of blocks is valid, we don't do state changes on any of them before

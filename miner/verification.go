@@ -40,7 +40,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 
 	//fundsTx only makes sense if amount > 0
 	if tx.Amount == 0 || tx.Amount > MAX_MONEY {
-		logger.Printf("Invalid transaction amount %v\n", tx.Amount)
+		logger.Printf("Invalid transaction amount: %v\n", tx.Amount)
 		return false
 	}
 
