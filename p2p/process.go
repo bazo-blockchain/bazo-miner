@@ -45,9 +45,11 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 		tx = sTx
 	}
 
-	//Response tx acknowledgment
-	packet := BuildPacket(TX_BRDCST_ACK, nil)
-	sendData(p, packet)
+	//Response tx acknowledgment if the peer is a client
+	if !peers.peerConns[p] {
+		packet := BuildPacket(TX_BRDCST_ACK, nil)
+		sendData(p, packet)
+	}
 
 	if storage.ReadOpenTx(tx.Hash()) != nil {
 		logger.Printf("Received transaction (%x) already in the mempool.\n", tx.Hash())
