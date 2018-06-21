@@ -40,6 +40,7 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 }
 
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
+	//TODO Revise error handling
 	for index, tx := range txSlice {
 		//Check if we have to issue new coins (in case a root account signed the tx)
 		if rootAcc := storage.RootKeys[tx.From]; rootAcc != nil {
@@ -122,6 +123,7 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 }
 
 func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
+	//TODO Revise error handling
 	for index, tx := range txSlice {
 		var err error
 
