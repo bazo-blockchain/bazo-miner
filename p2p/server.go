@@ -16,7 +16,7 @@ var (
 	//List of ip addresses. A connection to a subset of the list will be established as soon as the network health
 	//monitor triggers.
 	Ipport string
-	peers     peersStruct
+	peers  peersStruct
 
 	logger *log.Logger
 

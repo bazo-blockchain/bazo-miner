@@ -27,7 +27,6 @@ func broadcastService() {
 				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away
 				p.ch <- msg
 			}
-
 		}
 	}
 }
