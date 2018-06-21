@@ -296,8 +296,6 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 	//Get the right branch, and a list of blocks to rollback (if necessary)
 	blocksToRollback, blocksToValidate, err := getBlockSequences(b)
 
-	//logger.Println(blocksToValidate)
-
 	//Verify block time is dynamic and corresponds to system time at the time of retrieval.
 	//If we're syncing or far behind, we cannot do this dynamic check
 	//We therefore include a boolean uptodate. If it's true we consider ourselves uptodate and
@@ -457,8 +455,6 @@ func preValidation(block *protocol.Block, initialSetup bool) (accTxSlice []*prot
 
 	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
-	} else {
-		logger.Printf("PoS validation successful\n")
 	}
 
 	//invalid if pos is too far in the future
