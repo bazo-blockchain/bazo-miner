@@ -9,9 +9,10 @@ func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
 			accHash := protocol.SerializeHashContent(tx.PubKey)
-			acc := storage.State[accHash]
-			if acc == nil {
-				logger.Fatal("CRITICAL: An account that should have been saved does not exist!")
+
+			acc, err := storage.GetAccount(accHash)
+			if err != nil {
+				logger.Fatal("CRITICAL: An account that should have been saved does not exist.")
 			}
 
 			delete(storage.State, accHash)
@@ -26,33 +27,24 @@ func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	}
 }
 
-func fundsStateChangeRollback(txSlice []*protocol.FundsTx) error {
+func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {
 	//Rollback in reverse order than original state change
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
 
-		accSender, err := storage.GetAccount(tx.From)
-		if err != nil {
-			return err
-		}
-
-		accReceiver, err := storage.GetAccount(tx.To)
-		if err != nil {
-			return err
-		}
+		accSender, _ := storage.GetAccount(tx.From)
+		accReceiver, _ := storage.GetAccount(tx.To)
 
 		accSender.TxCnt -= 1
 		accSender.Balance += tx.Amount
 		accReceiver.Balance -= tx.Amount
 
 		//If new coins were issued, revert
-		if rootAcc := storage.RootKeys[tx.From]; rootAcc != nil {
+		if rootAcc := storage.GetRootAccount(tx.From); rootAcc != nil {
 			rootAcc.Balance -= tx.Amount
 			rootAcc.Balance -= tx.Fee
 		}
 	}
-
-	return nil
 }
 
 func configStateChangeRollback(txSlice []*protocol.ConfigTx, blockHash [32]byte) {
@@ -82,6 +74,7 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) error {
 			return err
 		}
 
+		//Rolling back hashedSeed & stakingBlockHeight not needed
 		accSender.IsStaking = !accSender.IsStaking
 	}
 

@@ -167,11 +167,12 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 	return nil
 }
 
-func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
-	//TODO Revise error handling
-	for index, tx := range txSlice {
+func fundsStateChange(txSlice []*protocol.FundsTx) error {
+	var err error
+
+	for _, tx := range txSlice {
 		//Check if we have to issue new coins (in case a root account signed the tx)
-		if rootAcc := storage.RootKeys[tx.From]; rootAcc != nil {
+		if rootAcc := storage.GetRootAccount(tx.From); rootAcc != nil {
 			if rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
 				err = errors.New("Root account has max amount of coins reached.")
 			}
@@ -179,17 +180,9 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			rootAcc.Balance += tx.Fee
 		}
 
-		accSender, err := storage.GetAccount(tx.From)
-		//TODO
-		//if err != nil {
-		//	return err
-		//}
-
-		accReceiver, err := storage.GetAccount(tx.To)
-		//TODO
-		//if err != nil {
-		//	return err
-		//}
+		var accSender, accReceiver *protocol.Account
+		accSender, err = storage.GetAccount(tx.From)
+		accReceiver, err = storage.GetAccount(tx.To)
 
 		//Check transaction counter
 		if tx.TxCnt != accSender.TxCnt {
@@ -211,23 +204,13 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
 		}
 
-		if err != nil {
-			//If it was the first tx in the block, no rollback needed
-			if index == 0 {
-				return err
-			}
-			fundsStateChangeRollback(txSlice[0: index-1])
-			storage.DeleteOpenTx(tx)
-			return err
-		}
-
 		//We're manipulating pointer, no need to write back
 		accSender.TxCnt += 1
 		accSender.Balance -= tx.Amount
 		accReceiver.Balance += tx.Amount
 	}
 
-	return nil
+	return err
 }
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
@@ -251,55 +234,25 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 }
 
 func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
-	//TODO Revise error handling
-	for index, tx := range txSlice {
-		var err error
+	var err error
 
-		//Check if we have to issue new coins (in case a root account signed the tx)
-		for hash, rootAcc := range storage.RootKeys {
-			if hash == tx.Account {
-				if rootAcc.Balance+tx.Fee > MAX_MONEY {
-					err = errors.New("Account balance is too high.")
-				}
-
-				if rootAcc.Balance < activeParameters.Staking_minimum+tx.Fee {
-					rootAcc.Balance = activeParameters.Staking_minimum + tx.Fee
-					fmt.Println("Root balance increased to:", rootAcc.Balance)
-				}
-			}
-		}
-
-		accSender, err := storage.GetAccount(tx.Account)
-		//TODO
-		//if err != nil {
-		//	return err
-		//}
+	for _, tx := range txSlice {
+		var accSender *protocol.Account
+		accSender, err = storage.GetAccount(tx.Account)
 
 		//Check staking state
 		if tx.IsStaking == accSender.IsStaking {
-			logger.Printf("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
 			err = errors.New("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
 		}
 
 		//Check minimum amount
 		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-			logger.Print("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
-			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
+			err = errors.New(fmt.Sprintf("Sender wants to stake but does not have enough funds (%v) in order to fulfill the required staking minimum (%v).", accSender.Balance, STAKING_MINIMUM))
 		}
 
 		//Check sender balance
 		if tx.Fee > accSender.Balance {
-			logger.Printf("Sender does not have enough balance: %x\n", accSender.Balance)
-			err = errors.New("Sender does not have enough funds for the transaction.")
-		}
-
-		if err != nil {
-			//If it was the first tx in the block, no rollback needed
-			if index == 0 {
-				return err
-			}
-			stakeStateChangeRollback(txSlice[0: index-1])
-			return err
+			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, 0, tx.Fee))
 		}
 
 		//We're manipulating pointer, no need to write back
@@ -308,7 +261,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 		accSender.StakingBlockHeight = height
 	}
 
-	return nil
+	return err
 }
 
 func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) error {
@@ -326,7 +279,6 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
 			return errors.New("Miner balance overflows with transaction fee.\n")
 		}
 

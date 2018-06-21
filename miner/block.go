@@ -674,17 +674,20 @@ func validateState(data blockData) error {
 	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
 	//even though the accounts did not exist before the block validation
 	if err := accStateChange(data.accTxSlice); err != nil {
-		return err
-	}
-
-	if err := fundsStateChange(data.fundsTxSlice); err != nil {
 		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
-	//TODO accStateChangeRollback and fundsStateChangeRollback needed?
+	if err := fundsStateChange(data.fundsTxSlice); err != nil {
+		fundsStateChangeRollback(data.fundsTxSlice)
+		accStateChangeRollback(data.accTxSlice)
+		return err
+	}
+
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
 		stakeStateChangeRollback(data.stakeTxSlice)
+		fundsStateChangeRollback(data.fundsTxSlice)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
