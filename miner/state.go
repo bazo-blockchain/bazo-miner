@@ -13,10 +13,12 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
 			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
 			newAccHash := newAcc.Hash()
+
 			if acc := storage.GetAccount(newAccHash); acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
-				errors.New("Address already exists in the state.")
+				return errors.New("Address already exists in the state.")
 			}
+
 			//If acc does not exist, write to state
 			storage.State[newAccHash] = &newAcc
 
@@ -417,11 +419,11 @@ func initState() (block *protocol.Block, err error) {
 }
 
 func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
-	acc := storage.GetAccount(beneficiary)
-	if err != nil {
-		return err
+	var acc *protocol.Account
+	if acc = storage.GetAccount(beneficiary); acc == nil {
+		return errors.New("Beneficiary not in the State.")
 	}
-	acc.StakingBlockHeight = height
 
-	return err
+	acc.StakingBlockHeight = height
+	return nil
 }
