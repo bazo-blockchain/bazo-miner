@@ -236,9 +236,9 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
-	if validatorAcc == nil {
-		return errors.New("ValidatorAcc not in the State.")
+	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	if err != nil {
+		return err
 	}
 
 	validatorAccHash := validatorAcc.Hash()
@@ -442,9 +442,9 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check state contains beneficiary
-	acc := storage.GetAccount(block.Beneficiary)
-	if acc == nil {
-		return nil, nil, nil, nil, errors.New("Beneficiary not in the State.")
+	acc, err := storage.GetAccount(block.Beneficiary)
+	if err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	//Check if node is part of the validator set

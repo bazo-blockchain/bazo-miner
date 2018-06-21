@@ -26,12 +26,21 @@ func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	}
 }
 
-func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {
+func fundsStateChangeRollback(txSlice []*protocol.FundsTx) error {
 	//Rollback in reverse order than original state change
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
 
-		accSender, accReceiver := storage.GetAccount(tx.From), storage.GetAccount(tx.To)
+		accSender, err := storage.GetAccount(tx.From)
+		if err != nil {
+			return err
+		}
+
+		accReceiver, err := storage.GetAccount(tx.To)
+		if err != nil {
+			return err
+		}
+
 		accSender.TxCnt -= 1
 		accSender.Balance += tx.Amount
 		accReceiver.Balance -= tx.Amount
@@ -42,6 +51,8 @@ func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {
 			rootAcc.Balance -= tx.Fee
 		}
 	}
+
+	return nil
 }
 
 func configStateChangeRollback(txSlice []*protocol.ConfigTx, blockHash [32]byte) {
@@ -62,17 +73,27 @@ func configStateChangeRollback(txSlice []*protocol.ConfigTx, blockHash [32]byte)
 	logger.Printf("Config parameters rolled back. New configuration: %v", *activeParameters)
 }
 
-func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
+func stakeStateChangeRollback(txSlice []*protocol.StakeTx) error {
 	//Rollback in reverse order than original state change
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
-		accSender := storage.GetAccount(tx.Account)
+		accSender, err := storage.GetAccount(tx.Account)
+		if err != nil {
+			return err
+		}
+
 		accSender.IsStaking = !accSender.IsStaking
 	}
+
+	return nil
 }
 
-func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) {
-	minerAcc := storage.GetAccount(minerHash)
+func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) error {
+	minerAcc, err := storage.GetAccount(minerHash)
+	if err != nil {
+		return err
+	}
+
 	//subtract fees from sender (check if that is allowed has already been done in the block validation)
 	for _, tx := range accTx {
 		//Money was created out of thin air, no need to write back
@@ -81,7 +102,11 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range fundsTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc := storage.GetAccount(tx.From)
+		senderAcc, err := storage.GetAccount(tx.From)
+		if err != nil {
+			return err
+		}
+
 		senderAcc.Balance += tx.Fee
 	}
 
@@ -92,12 +117,24 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range stakeTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc := storage.GetAccount(tx.Account)
+		senderAcc, err := storage.GetAccount(tx.Account)
+		if err != nil {
+			return err
+		}
+
 		senderAcc.Balance += tx.Fee
 	}
+
+	return nil
 }
 
-func collectBlockRewardRollback(reward uint64, minerHash [32]byte) {
-	minerAcc := storage.GetAccount(minerHash)
+func collectBlockRewardRollback(reward uint64, minerHash [32]byte) error {
+	minerAcc, err := storage.GetAccount(minerHash)
+	if err != nil {
+		return err
+	}
+
 	minerAcc.Balance -= reward
+
+	return nil
 }

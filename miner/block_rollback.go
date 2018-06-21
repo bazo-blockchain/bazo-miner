@@ -78,10 +78,17 @@ func preValidationRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fun
 }
 
 func stateValidationRollback(data blockData) error {
-
 	//The rollback sequence is important and has to be exactly the reverse as with state change in state.go
-	collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
-	collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+	err := collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
+	if err != nil {
+		return err
+	}
+
+	err = collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+	if err != nil {
+		return err
+	}
+
 	fundsStateChangeRollback(data.fundsTxSlice)
 	accStateChangeRollback(data.accTxSlice)
 	stakeStateChangeRollback(data.stakeTxSlice)

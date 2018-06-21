@@ -113,7 +113,7 @@ func accRes(p *peer, payload []byte) {
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
 
-	if acc := storage.GetAccount(hash); acc != nil {
+	if acc, _ := storage.GetAccount(hash); acc != nil {
 		packet = BuildPacket(ACC_RES, acc.Encode())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)

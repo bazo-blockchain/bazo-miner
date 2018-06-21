@@ -14,7 +14,8 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
 			newAccHash := newAcc.Hash()
 
-			if acc := storage.GetAccount(newAccHash); acc != nil {
+			_, err := storage.GetAccount(newAccHash)
+			if err != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
 				return errors.New("Address already exists in the state.")
 			}
@@ -49,14 +50,17 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			rootAcc.Balance += tx.Fee
 		}
 
-		accSender, accReceiver := storage.GetAccount(tx.From), storage.GetAccount(tx.To)
-		if accSender == nil {
-			err = errors.New("Sender does not exist in the State.")
-		}
+		accSender, err := storage.GetAccount(tx.From)
+		//TODO
+		//if err != nil {
+		//	return err
+		//}
 
-		if accReceiver == nil {
-			err = errors.New("Receiver does not exist in the State.")
-		}
+		accReceiver, err := storage.GetAccount(tx.To)
+		//TODO
+		//if err != nil {
+		//	return err
+		//}
 
 		//Check transaction counter
 		if tx.TxCnt != accSender.TxCnt {
@@ -135,11 +139,11 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 			}
 		}
 
-		accSender := storage.GetAccount(tx.Account)
-		if accSender == nil {
-			logger.Printf("CRITICAL: Sender does not exist in the State: %x\n", tx.Account[0:8])
-			err = errors.New("Sender does not exist in the State.")
-		}
+		accSender, err := storage.GetAccount(tx.Account)
+		//TODO
+		//if err != nil {
+		//	return err
+		//}
 
 		//Check staking state
 		if tx.IsStaking == accSender.IsStaking {
@@ -249,7 +253,10 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	var tmpConfigTx []*protocol.ConfigTx
 	var tmpStakeTx []*protocol.StakeTx
 
-	minerAcc := storage.GetAccount(minerHash)
+	minerAcc, err := storage.GetAccount(minerHash)
+	if err != nil {
+		return err
+	}
 
 	for _, tx := range accTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
@@ -274,7 +281,11 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 		}
 		minerAcc.Balance += tx.Fee
 
-		senderAcc := storage.GetAccount(tx.From)
+		senderAcc, err := storage.GetAccount(tx.From)
+		if err != nil {
+			return err
+		}
+
 		senderAcc.Balance -= tx.Fee
 
 		tmpFundsTx = append(tmpFundsTx, tx)
@@ -301,7 +312,11 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 			return errors.New("Miner balance overflows with transaction fee.\n")
 		}
 
-		senderAcc := storage.GetAccount(tx.Account)
+		senderAcc, err := storage.GetAccount(tx.Account)
+		if err != nil {
+			return err
+		}
+
 		senderAcc.Balance -= tx.Fee
 
 		minerAcc.Balance += tx.Fee
@@ -312,10 +327,9 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 }
 
 func collectBlockReward(reward uint64, minerHash [32]byte) error {
-	miner := storage.GetAccount(minerHash)
-
-	if miner == nil {
-		return errors.New("Miner doesn't exist in the state!")
+	miner, err := storage.GetAccount(minerHash)
+	if err != nil {
+		return err
 	}
 
 	if miner.Balance+reward > MAX_MONEY {
@@ -327,9 +341,9 @@ func collectBlockReward(reward uint64, minerHash [32]byte) error {
 }
 
 func collectSlashReward(reward uint64, block *protocol.Block) error {
-	miner := storage.GetAccount(block.Beneficiary)
-	if miner == nil {
-		return errors.New("Miner doesn't exist in the state!")
+	miner, err := storage.GetAccount(block.Beneficiary)
+	if err != nil {
+		return err
 	}
 
 	if miner.Balance+reward > MAX_MONEY {
@@ -343,7 +357,11 @@ func collectSlashReward(reward uint64, block *protocol.Block) error {
 		//validator is rewarded with slashing reward for providing a valid slashing proof
 		miner.Balance += reward
 
-		slashedAccount := storage.GetAccount(block.SlashedAddress)
+		slashedAccount, err := storage.GetAccount(block.SlashedAddress)
+		if err != nil {
+			return err
+		}
+
 		//slashed account looses the minimum staking amount
 		slashedAccount.Balance -= activeParameters.Staking_minimum
 		//slashed account is being removed from the validator set
@@ -416,9 +434,9 @@ func initState() (block *protocol.Block, err error) {
 }
 
 func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
-	var acc *protocol.Account
-	if acc = storage.GetAccount(beneficiary); acc == nil {
-		return errors.New("Beneficiary not in the State.")
+	acc, err := storage.GetAccount(beneficiary)
+	if err != nil {
+		return err
 	}
 
 	acc.StakingBlockHeight = height
