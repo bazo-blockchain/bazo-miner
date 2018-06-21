@@ -291,6 +291,8 @@ func finalizeBlock(block *protocol.Block) error {
 //because there is the case that we might need to go fetch several blocks
 // and have to check the blocks first before changing the state in the correct order
 func validateBlock(b *protocol.Block, initialSetup bool) error {
+	//TODO Do code optimization
+
 	//This mutex is necessary that own-mined blocks and received blocks from the network are not
 	//validated concurrently
 	blockValidation.Lock()

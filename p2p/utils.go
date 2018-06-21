@@ -43,7 +43,7 @@ func rcvData(p *peer) (header *Header, payload []byte, err error) {
 			return nil, nil, errors.New(fmt.Sprintf("Connection to %v aborted: %v", p.getIPPort(), err))
 		}
 	}
-	//TODO Remove
+
 	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[header.TypeID], len(payload))
 
 	return header, payload, nil
@@ -70,8 +70,8 @@ func RcvData(c net.Conn) (header *Header, payload []byte, err error) {
 }
 
 func sendData(p *peer, payload []byte) {
-	//TODO Remove
 	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[payload[4]], len(payload)-HEADER_LEN)
+
 	p.l.Lock()
 	p.conn.Write(payload)
 	p.l.Unlock()

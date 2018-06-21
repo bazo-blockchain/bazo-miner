@@ -68,9 +68,6 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, tx.Amount, tx.Fee))
 		}
 
-		//TODO Please check & verify if statement:
-		//if accSender.IsStaking && !((tx.Fee + protocol.MIN_STAKING_MINIMUM) > accSender.Balance) to
-		//if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM) > accSender.Balance)
 		//After Tx fees, account must still have more than the minimum staking amount
 		if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
 			err = errors.New("Sender is staking and does not have enough funds in order to fulfill the required staking minimum.")
