@@ -64,13 +64,13 @@ func TestGetLatestSeeds(t *testing.T) {
 		t.Error("Error finalizing b1", err)
 	}
 	seeds = Prepend(seeds, b1.Seed)
-	validateBlock(b1)
+	validate(b1)
 
 	b2 := newBlock(b1.Hash, [32]byte{}, [32]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
-	validateBlock(b2)
+	validate(b2)
 	seeds = Prepend(seeds, b2.Seed)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)

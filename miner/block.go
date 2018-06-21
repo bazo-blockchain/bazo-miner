@@ -290,8 +290,8 @@ func finalizeBlock(block *protocol.Block) error {
 //This function is split into block syntax/PoW check and actual state change
 //because there is the case that we might need to go fetch several blocks
 // and have to check the blocks first before changing the state in the correct order
-func validateBlock(b *protocol.Block, initialSetup bool) error {
 	//TODO Do code optimization
+func validate(b *protocol.Block, initialSetup bool) error {
 
 	//This mutex is necessary that own-mined blocks and received blocks from the network are not
 	//validated concurrently
@@ -325,7 +325,7 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 	if len(blocksToRollback) == 0 {
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block, initialSetup)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
 
 			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
 			//the proof will be stored in the global slashing dictionary
@@ -338,11 +338,11 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 			}
 
 			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
+			if err := validateState(blockDataMap[block.Hash]); err != nil {
 				return err
 			}
 
-			postValidation(blockDataMap[block.Hash], initialSetup)
+			postValidate(blockDataMap[block.Hash], initialSetup)
 		}
 	} else {
 		for _, block := range blocksToRollback {
@@ -353,7 +353,7 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 		}
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block, initialSetup)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
 
 			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
 			//the proof will be stored in the global slashing dictionary
@@ -366,11 +366,11 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 			}
 
 			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
+			if err := validateState(blockDataMap[block.Hash]); err != nil {
 				return err
 			}
 
-			postValidation(blockDataMap[block.Hash], initialSetup)
+			postValidate(blockDataMap[block.Hash], initialSetup)
 		}
 	}
 
@@ -378,7 +378,7 @@ func validateBlock(b *protocol.Block, initialSetup bool) error {
 }
 
 //Doesn't involve any state changes
-func preValidation(block *protocol.Block, initialSetup bool) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
+func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
 	//This dynamic check is only done if we're up-to-date with syncing. Otherwise, timestamp is not checked
 	//Other miners (which are up-to-date) made sure that this is correct
 	if !initialSetup && uptodate {
@@ -760,8 +760,8 @@ func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, i
 }
 
 //Dynamic state check
-func stateValidation(data blockData) error {
-	//The sequence of validation matters. If we start with accs, then fund transfers can be done in the same block
+func validateState(data blockData) error {
+	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
 	//even though the accounts did not exist before the block validation
 	if err := accStateChange(data.accTxSlice); err != nil {
 		return err
@@ -810,7 +810,7 @@ func stateValidation(data blockData) error {
 	return nil
 }
 
-func postValidation(data blockData, initialSetup bool) {
+func postValidate(data blockData, initialSetup bool) {
 	//The new system parameters get active if the block was successfully validated
 	//This is done after state validation (in contrast to accTx/fundsTx).
 	//Conversely, if blocks are rolled back, the system parameters are changed first

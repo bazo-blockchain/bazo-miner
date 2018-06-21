@@ -27,7 +27,7 @@ func processBlock(payload []byte) {
 	}
 
 	//Start validation process
-	err := validateBlock(block, false)
+	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
 		broadcastBlock(block)

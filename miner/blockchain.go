@@ -75,7 +75,7 @@ func mining(initialBlock *protocol.Block) {
 		//wait for lock here only
 		if err == nil {
 			broadcastBlock(currentBlock)
-			err := validateBlock(currentBlock, false)
+			err := validate(currentBlock, false)
 			if err == nil {
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 			} else {

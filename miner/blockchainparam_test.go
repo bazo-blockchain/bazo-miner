@@ -21,7 +21,7 @@ func TestTargetHistory(t *testing.T) {
 	for cnt := 0; cnt < 10; cnt++ {
 		tmpBlock = newBlock(tmpBlock.Hash, [32]byte{}, [32]byte{}, tmpBlock.Height+1)
 		finalizeBlock(tmpBlock)
-		validateBlock(tmpBlock)
+		validate(tmpBlock)
 		blocks = append(blocks, tmpBlock)
 	}
 
@@ -55,7 +55,7 @@ func TestTargetHistory(t *testing.T) {
 
 	tmpBlock = newBlock(blocks[len(blocks)-1].Hash, [32]byte{}, [32]byte{}, blocks[len(blocks)-1].Height+1)
 	finalizeBlock(tmpBlock)
-	validateBlock(tmpBlock)
+	validate(tmpBlock)
 
 	if targetSize == len(target) || targetTimesSize == len(targetTimes) {
 		t.Error("Arrays for target change have not been updated.\n")
@@ -88,7 +88,7 @@ func TestTimestamps(t *testing.T) {
 			}
 		}
 		finalizeBlock(b)
-		validateBlock(b)
+		validate(b)
 		prevHash = b.Hash
 
 		//block is validated, check if configtx are now in the system

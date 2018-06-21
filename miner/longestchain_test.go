@@ -14,12 +14,12 @@ func TestGetBlockSequences(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validateBlock(b)
+	validate(b)
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	validateBlock(b2)
+	validate(b2)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 	createBlockWithTxs(b3)
@@ -79,17 +79,17 @@ func TestGetBlockSequences(t *testing.T) {
 	b = newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validateBlock(b)
+	validate(b)
 
 	b2 = newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	validateBlock(b2)
+	validate(b2)
 
 	b3 = newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	validateBlock(b3)
+	validate(b3)
 
 	//Blockchain now: genesis <- b <- b2 <- b3
 	//Competing chain: genesis <- c <- c2 <- c3
@@ -126,7 +126,7 @@ func TestGetNewChain(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validateBlock(b)
+	validate(b)
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)

@@ -17,7 +17,7 @@ func TestSlashingCondition(t *testing.T) {
 	if err := finalizeBlock(forkBlock); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", forkBlock, err)
 	}
-	if err := validateBlock(forkBlock); err != nil {
+	if err := validate(forkBlock); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", forkBlock, err)
 	}
 
@@ -26,7 +26,7 @@ func TestSlashingCondition(t *testing.T) {
 	if err := finalizeBlock(b); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", b, err)
 	}
-	if err := validateBlock(b); err != nil {
+	if err := validate(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -40,7 +40,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	//t.Logf("\ninit block:%v\nb1:%v\nb2:%v\n", forkBlock.Hash, b.Hash, b2.Hash)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2); err != nil {
 		t.Errorf("Block validation for b2 (%v) failed: %v\n", b2, err)
 	}
 
@@ -65,7 +65,7 @@ func TestSlashingCondition(t *testing.T) {
 		t.Error("Slashing proof was not correctly included in b3.", slashingDict, slashingDict3)
 	}
 
-	if err := validateBlock(b3); err != nil {
+	if err := validate(b3); err != nil {
 		t.Errorf("Block validation for b3 (%v) failed: %v\n", b3, err)
 	}
 

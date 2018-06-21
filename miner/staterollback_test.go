@@ -194,7 +194,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	tmpBlock := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	tmpBlock.Beneficiary = minerHash
 	data := blockData{nil, funds2, nil, nil, tmpBlock}
-	if err := stateValidation(data); err == nil ||
+	if err := validateState(data); err == nil ||
 		minerBal != minerAcc.Balance ||
 		accA.Balance != accABal ||
 		accB.Balance != accBBal {

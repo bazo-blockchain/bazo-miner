@@ -28,7 +28,7 @@ func TestBlock(t *testing.T) {
 
 	decodedBlock = decodedBlock.Decode(encodedBlock)
 
-	err = validateBlock(decodedBlock)
+	err = validate(decodedBlock)
 
 	b.StateCopy = nil
 	decodedBlock.StateCopy = nil
@@ -65,7 +65,7 @@ func TestBlockTxDuplicates(t *testing.T) {
 	}
 
 	//This is a normal block validation, should pass
-	if err := validateBlock(b); err != nil {
+	if err := validate(b); err != nil {
 		t.Errorf("Block validation failed. (%v)\n", err)
 	}
 	t.Log(lastBlock)
@@ -85,7 +85,7 @@ func TestBlockTxDuplicates(t *testing.T) {
 		t.Errorf("Block finalization failed. (%v)\n", err)
 	}
 
-	if err := validateBlock(b); err == nil {
+	if err := validate(b); err == nil {
 		t.Errorf("Duplicate Tx not detected.\n")
 	}
 	t.Log(lastBlock)
@@ -99,28 +99,28 @@ func TestMultipleBlocks(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	if err := validateBlock(b3); err != nil {
+	if err := validate(b3); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
 	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
-	if err := validateBlock(b4); err != nil {
+	if err := validate(b4); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 }
