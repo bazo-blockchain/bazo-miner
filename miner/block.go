@@ -284,7 +284,7 @@ func finalizeBlock(block *protocol.Block) error {
 //This function is split into block syntax/PoW check and actual state change
 //because there is the case that we might need to go fetch several blocks
 // and have to check the blocks first before changing the state in the correct order
-func validateBlock(b *protocol.Block) error {
+func validateBlock(b *protocol.Block, initialSetup bool) error {
 	//This mutex is necessary that own-mined blocks and received blocks from the network are not
 	//validated concurrently
 	blockValidation.Lock()
@@ -319,9 +319,8 @@ func validateBlock(b *protocol.Block) error {
 	//No rollback needed, just a new block to validate
 	if len(blocksToRollback) == 0 {
 		for _, block := range blocksToValidate {
-			fmt.Printf("Validating block(hash): %x\n", block.Hash)
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block, initialSetup)
 
 			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
 			//the proof will be stored in the global slashing dictionary
@@ -334,12 +333,11 @@ func validateBlock(b *protocol.Block) error {
 			}
 
 			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-
 			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
 				return err
 			}
 
-			postValidation(blockDataMap[block.Hash])
+			postValidation(blockDataMap[block.Hash], initialSetup)
 		}
 	} else {
 		for _, block := range blocksToRollback {
@@ -350,7 +348,7 @@ func validateBlock(b *protocol.Block) error {
 		}
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidation(block, initialSetup)
 
 			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
 			//the proof will be stored in the global slashing dictionary
@@ -367,8 +365,7 @@ func validateBlock(b *protocol.Block) error {
 				return err
 			}
 
-			logger.Printf("Validating block: %vState:\n%v", block, getState())
-			postValidation(blockDataMap[block.Hash])
+			postValidation(blockDataMap[block.Hash], initialSetup)
 		}
 	}
 
@@ -376,10 +373,10 @@ func validateBlock(b *protocol.Block) error {
 }
 
 //Doesn't involve any state changes
-func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
+func preValidation(block *protocol.Block, initialSetup bool) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
 	//This dynamic check is only done if we're up-to-date with syncing. Otherwise, timestamp is not checked
 	//Other miners (which are up-to-date) made sure that this is correct
-	if uptodate {
+	if !initialSetup && uptodate {
 		if err := timestampCheck(block.Timestamp); err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -425,10 +422,10 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 	configTxSlice = make([]*protocol.ConfigTx, block.NrConfigTx)
 	stakeTxSlice = make([]*protocol.StakeTx, block.NrStakeTx)
 
-	go fetchAccTxData(block, accTxSlice, errChan)
-	go fetchFundsTxData(block, fundsTxSlice, errChan)
-	go fetchConfigTxData(block, configTxSlice, errChan)
-	go fetchStakeTxData(block, stakeTxSlice, errChan)
+	go fetchAccTxData(block, accTxSlice, initialSetup, errChan)
+	go fetchFundsTxData(block, fundsTxSlice, initialSetup, errChan)
+	go fetchConfigTxData(block, configTxSlice, initialSetup, errChan)
+	go fetchStakeTxData(block, stakeTxSlice, initialSetup, errChan)
 
 	//Wait for all goroutines to finish
 	for cnt := 0; cnt < 4; cnt++ {
@@ -466,7 +463,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 
 	//invalid if pos is too far in the future
 	now := time.Now()
-	if block.Timestamp > now.Unix() + int64(activeParameters.Accepted_time_diff) {
+	if block.Timestamp > now.Unix()+int64(activeParameters.Accepted_time_diff) {
 		return nil, nil, nil, nil, errors.New("The timestamp is too far in the future. " + string(block.Timestamp) + " vs " + string(now.Unix()))
 	}
 
@@ -582,17 +579,24 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 }
 
 //We use slices (not maps) because order is now important
-func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, errChan chan error) {
+func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.AccTxData {
-		//Reject blocks that have txs which have already been validated
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			errChan <- errors.New("Block validation had accTx that was already in a previous block")
-			return
-		}
-
 		var tx protocol.Transaction
 		var accTx *protocol.AccTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				accTx = closedTx.(*protocol.AccTx)
+				accTxSlice[cnt] = accTx
+				break
+			} else {
+				//Reject blocks that have txs which have already been validated
+				errChan <- errors.New("Block validation had accTx that was already in a previous block")
+				return
+			}
+		}
+
 		//Tx is either in open storage or needs to be fetched from the network
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
@@ -623,16 +627,23 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, errChan
 	errChan <- nil
 }
 
-func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, errChan chan error) {
+func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.FundsTxData {
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			errChan <- errors.New("Block validation had fundsTx that was already in a previous block")
-			return
-		}
-
 		var tx protocol.Transaction
 		var fundsTx *protocol.FundsTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				fundsTx = closedTx.(*protocol.FundsTx)
+				fundsTxSlice[cnt] = fundsTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had fundsTx that was already in a previous block")
+				return
+			}
+		}
+
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
@@ -659,16 +670,23 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, e
 	errChan <- nil
 }
 
-func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx, errChan chan error) {
+func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.ConfigTxData {
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			errChan <- errors.New("Block validation had configTx that was already in a previous block")
-			return
-		}
-
 		var tx protocol.Transaction
 		var configTx *protocol.ConfigTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				configTx = closedTx.(*protocol.ConfigTx)
+				configTxSlice[cnt] = configTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had configTx that was already in a previous block")
+				return
+			}
+		}
+
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
 			configTx = tx.(*protocol.ConfigTx)
@@ -695,16 +713,23 @@ func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx
 	errChan <- nil
 }
 
-func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, errChan chan error) {
+func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.StakeTxData {
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			errChan <- errors.New("Block validation had stakeTx that was already in a previous block")
-			return
-		}
-
 		var tx protocol.Transaction
 		var stakeTx *protocol.StakeTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				stakeTx = closedTx.(*protocol.StakeTx)
+				stakeTxSlice[cnt] = stakeTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had stakeTx that was already in a previous block")
+				return
+			}
+		}
+
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
 			stakeTx = tx.(*protocol.StakeTx)
@@ -775,39 +800,14 @@ func stateValidation(data blockData) error {
 		return err
 	}
 
-	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil{
+	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func postValidation(data blockData) {
-	//Write all open transactions to closed/validated storage
-	for _, tx := range data.accTxSlice {
-		storage.WriteClosedTx(tx)
-		storage.DeleteOpenTx(tx)
-	}
-
-	for _, tx := range data.fundsTxSlice {
-		storage.WriteClosedTx(tx)
-		storage.DeleteOpenTx(tx)
-	}
-
-	for _, tx := range data.configTxSlice {
-		storage.WriteClosedTx(tx)
-		storage.DeleteOpenTx(tx)
-	}
-
-	for _, tx := range data.stakeTxSlice {
-		storage.WriteClosedTx(tx)
-		storage.DeleteOpenTx(tx)
-	}
-
-	if len(data.fundsTxSlice) > 0 {
-		p2p.SendVerifiedTxs(data.fundsTxSlice)
-	}
-
+func postValidation(data blockData, initialSetup bool) {
 	//The new system parameters get active if the block was successfully validated
 	//This is done after state validation (in contrast to accTx/fundsTx).
 	//Conversely, if blocks are rolled back, the system parameters are changed first
@@ -815,16 +815,39 @@ func postValidation(data blockData) {
 	//Collects meta information about the block (and handled difficulty adaption)
 	collectStatistics(data.block)
 
-	// Write last block to db and delete last block's ancestor
-	storage.WriteLastClosedBlock(data.block)
-	storage.DeleteLastClosedBlock(data.block.PrevHash)
+	if !initialSetup {
+		//Write all open transactions to closed/validated storage
+		for _, tx := range data.accTxSlice {
+			storage.WriteClosedTx(tx)
+			storage.DeleteOpenTx(tx)
+		}
 
-	//It might be that block is not in the openblock storage, but this doesn't matter
-	storage.DeleteOpenBlock(data.block.Hash)
+		for _, tx := range data.fundsTxSlice {
+			storage.WriteClosedTx(tx)
+			storage.DeleteOpenTx(tx)
+		}
 
-	if err := storage.WriteClosedBlock(data.block); err == nil {
-		logger.Printf("Closed block %x saved in DB\n", data.block.Hash[0:8])
-		logger.Print(data.block)
-		logger.Printf("\n%s", storage.GetState())
+		for _, tx := range data.configTxSlice {
+			storage.WriteClosedTx(tx)
+			storage.DeleteOpenTx(tx)
+		}
+
+		for _, tx := range data.stakeTxSlice {
+			storage.WriteClosedTx(tx)
+			storage.DeleteOpenTx(tx)
+		}
+
+		if len(data.fundsTxSlice) > 0 {
+			p2p.SendVerifiedTxs(data.fundsTxSlice)
+		}
+
+		//TODO Seal writing/deleting closedblocks and lastclosedblocks
+		// Write last block to db and delete last block's ancestor
+		storage.WriteLastClosedBlock(data.block)
+		storage.DeleteLastClosedBlock(data.block.PrevHash)
+
+		//It might be that block is not in the openblock storage, but this doesn't matter
+		storage.DeleteOpenBlock(data.block.Hash)
+		storage.WriteClosedBlock(data.block)
 	}
 }

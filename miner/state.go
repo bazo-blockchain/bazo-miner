@@ -369,125 +369,41 @@ func InitState() (block *protocol.Block, err error) {
 	copy(seed[:], storage.GENESIS_SEED)
 
 	initialBlock := newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
+	//Set the initial block as the last block. Global variable lastBlock used in validation
+	lastBlock = initialBlock
 
 	var allClosedBlocks []*protocol.Block
-	//if isBootstrap {
 	allClosedBlocks = storage.ReadAllClosedBlocks()
-	//} else {
-	//	var latestBlock *protocol.Block
-	//
-	//	p2p.LastBlockReq()
-	//	select {
-	//	case encodedBlock := <-p2p.BlockReqChan:
-	//		latestBlock = latestBlock.Decode(encodedBlock)
-	//		//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-	//	case <-time.After(5 * time.Second):
-	//		fmt.Println("timeout")
-	//	}
-	//
-	//	allClosedBlocks = append(allClosedBlocks, latestBlock)
-	//
-	//	for latestBlock.Hash != [32]byte{} {
-	//	RETRY:
-	//		p2p.BlockReq(latestBlock.PrevHash)
-	//		select {
-	//		case encodedBlock := <-p2p.BlockReqChan:
-	//			latestBlock = latestBlock.Decode(encodedBlock)
-	//			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-	//		case <-time.After(5 * time.Second):
-	//			fmt.Println("timeout")
-	//			goto RETRY
-	//		}
-	//
-	//		allClosedBlocks = append(allClosedBlocks, latestBlock)
-	//	}
-	//
-	//	fmt.Printf("\nLoaded blocks:\n")
-	//	for _, block := range allClosedBlocks {
-	//		fmt.Printf("PrevHash: %x\n", block.PrevHash)
-	//		fmt.Printf("Hash: %x\n", block.Hash)
-	//	}
-	//}
 
-	//Switch order in array to validate genesis block first
+	//Switch array order to validate genesis block first
 	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
 
-	//Set the last closed block as the initial block
 	if len(storage.AllClosedBlocksAsc) > 0 {
+		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
-	}
-
-	collectStatistics(initialBlock)
-
-	if initialBlock.Hash == [32]byte{} {
+	} else {
+		//Append genesis block to the map and save in storage
+		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
 		storage.WriteClosedBlock(initialBlock)
 	}
 
-	blockDataMap := make(map[[32]byte]blockData)
-
 	//Validate all closed blocks and update state
 	for _, blockToValidate := range storage.AllClosedBlocksAsc {
-		//Do not validate the genesis block
+		//Do not validate the genesis block, since a lot of properties are set to nil
 		if blockToValidate.Hash != [32]byte{} {
-			accTxs := make([]*protocol.AccTx, blockToValidate.NrAccTx)
-			fundsTxs := make([]*protocol.FundsTx, blockToValidate.NrFundsTx)
-			configTxs := make([]*protocol.ConfigTx, blockToValidate.NrConfigTx)
-			stakeTxs := make([]*protocol.StakeTx, blockToValidate.NrStakeTx)
-
-			for cnt, txHash := range blockToValidate.AccTxData {
-				var tx protocol.Transaction
-				var accTx *protocol.AccTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					accTx = tx.(*protocol.AccTx)
-				}
-
-				accTxs[cnt] = accTx
+			err := validateBlock(blockToValidate, true)
+			if err == nil {
+				logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
+			} else {
+				logger.Printf("Block (%x) could not be validated: %v\n", blockToValidate.Hash[0:8], err)
 			}
-
-			for cnt, txHash := range blockToValidate.FundsTxData {
-				var tx protocol.Transaction
-				var fundsTx *protocol.FundsTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					fundsTx = tx.(*protocol.FundsTx)
-				}
-
-				fundsTxs[cnt] = fundsTx
-			}
-
-			for cnt, txHash := range blockToValidate.ConfigTxData {
-				var tx protocol.Transaction
-				var configTx *protocol.ConfigTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					configTx = tx.(*protocol.ConfigTx)
-				}
-
-				configTxs[cnt] = configTx
-			}
-
-			for cnt, txHash := range blockToValidate.StakeTxData {
-				var tx protocol.Transaction
-				var stakeTx *protocol.StakeTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					stakeTx = tx.(*protocol.StakeTx)
-				}
-
-				stakeTxs[cnt] = stakeTx
-			}
-
-			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
-			if err := stateValidation(blockDataMap[blockToValidate.Hash]); err != nil {
-				return nil, errors.New(fmt.Sprintf("Received block (%x) could not be validated: %v", blockToValidate.Hash[0:8], err))
-			}
-
-			configStateChange(blockDataMap[blockToValidate.Hash].configTxSlice, blockDataMap[blockToValidate.Hash].block.Hash)
 		}
+
+		//Set the last validated block as the lastBlock
+		lastBlock = blockToValidate
 	}
 
-	logger.Printf("%v blocks up to this date are validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
+	logger.Printf("%v blocks up to this date are validated. Chain good to go.", len(storage.AllClosedBlocksAsc)-1)
 
 	return initialBlock, nil
 }
