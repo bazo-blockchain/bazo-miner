@@ -33,6 +33,75 @@ func newBlock(prevHash [32]byte, seed [32]byte, hashedSeed [32]byte, height uint
 	return block
 }
 
+//This function prepares the block to broadcast into the network. No new txs are added at this point.
+func finalizeBlock(block *protocol.Block) error {
+	//check if we have a slashing proof that we can add to the block
+	//the slashingDict is updated when a new block is received and when a slashing proof is provided
+	if len(slashingDict) != 0 {
+		//get the first slashing proof
+		for hash, slashingProof := range slashingDict {
+			block.SlashedAddress = hash
+			block.ConflictingBlockHash1 = slashingProof.ConflictingBlockHash1
+			block.ConflictingBlockHash2 = slashingProof.ConflictingBlockHash2
+			//TODO @simibac Why do you break?
+			break
+		}
+	}
+
+	//Merkle tree includes the hashes of all txs
+	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
+
+	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	if err != nil {
+		return err
+	}
+
+	validatorAccHash := validatorAcc.Hash()
+
+	copy(block.Beneficiary[:], validatorAccHash[:])
+
+	partialHash := block.HashBlock()
+
+	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+
+	//get the current hash of the seed that is stored in my account
+	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
+	if err != nil {
+		return err
+	}
+
+	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, validatorAcc.Balance, localSeed)
+	if err != nil {
+		return err
+	}
+
+	var nonceBuf [8]byte
+	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
+	block.Nonce = nonceBuf
+	block.Timestamp = nonce
+
+	//Put pieces together to get the final hash
+	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
+
+	//This doesn't need to be hashed, because we already have the merkle tree taking care of consistency
+	block.NrAccTx = uint16(len(block.AccTxData))
+	block.NrFundsTx = uint16(len(block.FundsTxData))
+	block.NrConfigTx = uint8(len(block.ConfigTxData))
+	block.NrStakeTx = uint16(len(block.StakeTxData))
+	copy(block.Seed[0:32], localSeed[:])
+
+	//create a new seed, store it locally and add to the block
+	newSeed := protocol.CreateRandomSeed()
+
+	//create the hash of the seed
+	newHashedSeed := protocol.SerializeHashContent(newSeed)
+
+	storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
+	copy(block.HashedSeed[0:32], newHashedSeed[:])
+
+	return nil
+}
+
 //Transaction validation operates on a copy of a tiny subset of the state (all accounts involved in transactions).
 //We do not operate global state because the work might get interrupted by receiving a block that needs validation
 //which is done on the global state
@@ -218,73 +287,182 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	return nil
 }
 
-//This function prepares the block to broadcast into the network. No new txs are added at this point.
-func finalizeBlock(block *protocol.Block) error {
-	//check if we have a slashing proof that we can add to the block
-	//the slashingDict is updated when a new block is received and when a slashing proof is provided
-	if len(slashingDict) != 0 {
-		//get the first slashing proof
-		for hash, slashingProof := range slashingDict {
-			block.SlashedAddress = hash
-			block.ConflictingBlockHash1 = slashingProof.ConflictingBlockHash1
-			block.ConflictingBlockHash2 = slashingProof.ConflictingBlockHash2
-			//TODO @simibac Why do you break?
-			break
+//We use slices (not maps) because order is now important
+func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initialSetup bool, errChan chan error) {
+	for cnt, txHash := range block.AccTxData {
+		var tx protocol.Transaction
+		var accTx *protocol.AccTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				accTx = closedTx.(*protocol.AccTx)
+				accTxSlice[cnt] = accTx
+				break
+			} else {
+				//Reject blocks that have txs which have already been validated
+				errChan <- errors.New("Block validation had accTx that was already in a previous block.")
+				return
+			}
 		}
+
+		//Tx is either in open storage or needs to be fetched from the network
+		tx = storage.ReadOpenTx(txHash)
+		if tx != nil {
+			accTx = tx.(*protocol.AccTx)
+		} else {
+			err := p2p.TxReq(txHash, p2p.ACCTX_REQ)
+			if err != nil {
+				errChan <- errors.New(fmt.Sprintf("AccTx could not be read: %v", err))
+				return
+			}
+
+			//Blocking Wait
+			select {
+			case accTx = <-p2p.AccTxChan:
+				//Limit the waiting time for TXFETCH_TIMEOUT seconds
+			case <-time.After(TXFETCH_TIMEOUT * time.Second):
+				errChan <- errors.New("AccTx fetch timed out.")
+			}
+			//This check is important. A malicious miner might have sent us a tx whose hash is a different one
+			//from what we requested
+			if accTx.Hash() != txHash {
+				errChan <- errors.New("Received txHash did not correspond to our request.")
+			}
+		}
+
+		accTxSlice[cnt] = accTx
 	}
+	errChan <- nil
+}
 
-	//Merkle tree includes the hashes of all txs
-	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
+func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, initialSetup bool, errChan chan error) {
+	for cnt, txHash := range block.FundsTxData {
+		var tx protocol.Transaction
+		var fundsTx *protocol.FundsTx
 
-	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
-	if err != nil {
-		return err
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				fundsTx = closedTx.(*protocol.FundsTx)
+				fundsTxSlice[cnt] = fundsTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had fundsTx that was already in a previous block.")
+				return
+			}
+		}
+
+		tx = storage.ReadOpenTx(txHash)
+		if tx != nil {
+			fundsTx = tx.(*protocol.FundsTx)
+		} else {
+			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
+			if err != nil {
+				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
+				return
+			}
+
+			select {
+			case fundsTx = <-p2p.FundsTxChan:
+			case <-time.After(TXFETCH_TIMEOUT * time.Second):
+				errChan <- errors.New("FundsTx fetch timed out.")
+				return
+			}
+			if fundsTx.Hash() != txHash {
+				errChan <- errors.New("Received txHash did not correspond to our request.")
+			}
+		}
+
+		fundsTxSlice[cnt] = fundsTx
 	}
+	errChan <- nil
+}
 
-	validatorAccHash := validatorAcc.Hash()
+func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx, initialSetup bool, errChan chan error) {
+	for cnt, txHash := range block.ConfigTxData {
+		var tx protocol.Transaction
+		var configTx *protocol.ConfigTx
 
-	copy(block.Beneficiary[:], validatorAccHash[:])
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				configTx = closedTx.(*protocol.ConfigTx)
+				configTxSlice[cnt] = configTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had configTx that was already in a previous block.")
+				return
+			}
+		}
 
-	partialHash := block.HashBlock()
+		tx = storage.ReadOpenTx(txHash)
+		if tx != nil {
+			configTx = tx.(*protocol.ConfigTx)
+		} else {
+			err := p2p.TxReq(txHash, p2p.CONFIGTX_REQ)
+			if err != nil {
+				errChan <- errors.New(fmt.Sprintf("ConfigTx could not be read: %v", err))
+				return
+			}
 
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+			select {
+			case configTx = <-p2p.ConfigTxChan:
+			case <-time.After(TXFETCH_TIMEOUT * time.Second):
+				errChan <- errors.New("ConfigTx fetch timed out.")
+				return
+			}
+			if configTx.Hash() != txHash {
+				errChan <- errors.New("Received txHash did not correspond to our request.")
+			}
+		}
 
-	//get the current hash of the seed that is stored in my account
-	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
-	if err != nil {
-		return err
+		configTxSlice[cnt] = configTx
 	}
+	errChan <- nil
+}
 
-	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, validatorAcc.Balance, localSeed)
-	if err != nil {
-		return err
+func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, initialSetup bool, errChan chan error) {
+	for cnt, txHash := range block.StakeTxData {
+		var tx protocol.Transaction
+		var stakeTx *protocol.StakeTx
+
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx != nil {
+			if initialSetup {
+				stakeTx = closedTx.(*protocol.StakeTx)
+				stakeTxSlice[cnt] = stakeTx
+				break
+			} else {
+				errChan <- errors.New("Block validation had stakeTx that was already in a previous block.")
+				return
+			}
+		}
+
+		tx = storage.ReadOpenTx(txHash)
+		if tx != nil {
+			stakeTx = tx.(*protocol.StakeTx)
+		} else {
+			err := p2p.TxReq(txHash, p2p.STAKETX_REQ)
+			if err != nil {
+				errChan <- errors.New(fmt.Sprintf("StakeTx could not be read: %v", err))
+				return
+			}
+
+			select {
+			case stakeTx = <-p2p.StakeTxChan:
+			case <-time.After(TXFETCH_TIMEOUT * time.Second):
+				errChan <- errors.New("StakeTx fetch timed out.")
+				return
+			}
+			if stakeTx.Hash() != txHash {
+				errChan <- errors.New("Received txHash did not correspond to our request.")
+			}
+		}
+
+		stakeTxSlice[cnt] = stakeTx
 	}
-
-	var nonceBuf [8]byte
-	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
-	block.Nonce = nonceBuf
-	block.Timestamp = nonce
-
-	//Put pieces together to get the final hash
-	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
-
-	//This doesn't need to be hashed, because we already have the merkle tree taking care of consistency
-	block.NrAccTx = uint16(len(block.AccTxData))
-	block.NrFundsTx = uint16(len(block.FundsTxData))
-	block.NrConfigTx = uint8(len(block.ConfigTxData))
-	block.NrStakeTx = uint16(len(block.StakeTxData))
-	copy(block.Seed[0:32], localSeed[:])
-
-	//create a new seed, store it locally and add to the block
-	newSeed := protocol.CreateRandomSeed()
-
-	//create the hash of the seed
-	newHashedSeed := protocol.SerializeHashContent(newSeed)
-
-	storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
-	copy(block.HashedSeed[0:32], newHashedSeed[:])
-
-	return nil
+	errChan <- nil
 }
 
 //This function is split into block syntax/PoW check and actual state change
@@ -491,277 +669,6 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	return accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
 }
 
-//Only blocks with timestamp not diverging from system time (past or future) more than one hour are accepted
-func timestampCheck(timestamp int64) error {
-	systemTime := p2p.ReadSystemTime()
-	if timestamp > systemTime {
-		if timestamp-systemTime > int64(time.Hour.Seconds()) {
-			return errors.New("Timestamp was too far in the future.System time: " + strconv.FormatInt(systemTime, 10) + " vs. timestamp " + strconv.FormatInt(timestamp, 10) + "\n")
-		}
-	} else {
-		if systemTime-timestamp > int64(time.Hour.Seconds()) {
-			return errors.New("Timestamp was too far in the past. System time: " + strconv.FormatInt(systemTime, 10) + " vs. timestamp " + strconv.FormatInt(timestamp, 10) + "\n")
-		}
-	}
-
-	return nil
-}
-
-func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
-	//TODO Optimize code
-
-	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {
-		return false, errors.New("Invalid proof for slashing. Invalid conflicting block hashes provided.")
-	}
-
-	if conflictingBlockHash1 == conflictingBlockHash2 {
-		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are the same.")
-	}
-
-	//Fetch the blocks for the provided block hashes
-	conflictingBlock1 := storage.ReadClosedBlock(conflictingBlockHash1)
-	conflictingBlock2 := storage.ReadClosedBlock(conflictingBlockHash2)
-
-	if IsInSameChain(conflictingBlock1, conflictingBlock2) {
-		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are on the same chain.")
-	}
-
-	//If this block is unknown we need to check if its in the openblock storage or we must request it
-	if conflictingBlock1 == nil {
-		conflictingBlock1 = storage.ReadOpenBlock(conflictingBlockHash1)
-		if conflictingBlock1 == nil {
-			//Fetch the block we apparently missed from the network
-			p2p.BlockReq(conflictingBlockHash1)
-
-			//Blocking wait
-			select {
-			case encodedBlock := <-p2p.BlockReqChan:
-				conflictingBlock1 = conflictingBlock1.Decode(encodedBlock)
-				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-				return false, errors.New("Invalid proof for slashing. Could not find a block with the provided conflicting hash (1).")
-			}
-		}
-
-		ancestor, _ := getNewChain(conflictingBlock1)
-		if ancestor == nil {
-			return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (1).")
-		}
-	}
-
-	//If this block is unknown we need to check if its in the openblock storage or we must request it.
-	if conflictingBlock2 == nil {
-		conflictingBlock2 = storage.ReadOpenBlock(conflictingBlockHash2)
-		if conflictingBlock2 == nil {
-			//Fetch the block we apparently missed from the network
-			p2p.BlockReq(conflictingBlockHash2)
-
-			//Blocking wait
-			select {
-			case encodedBlock := <-p2p.BlockReqChan:
-				conflictingBlock2 = conflictingBlock2.Decode(encodedBlock)
-				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-				return false, errors.New("Invalid proof for slashing. Could not find a block with the provided conflicting hash (2).")
-			}
-		}
-
-		ancestor, _ := getNewChain(conflictingBlock2)
-		if ancestor == nil {
-			return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
-		}
-	}
-
-	// We found the height of the blocks and the height of the blocks can be checked
-	// If the height is not within the active slashing window size, we must throw an error. If not, the proof is valid
-	if !(conflictingBlock1.Height < uint32(activeParameters.Slashing_window_size)+conflictingBlock2.Height) {
-		return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
-	}
-
-	//Delete the proof from local slashing dictionary. If proof has not existed yet, nothing will be deleted
-	delete(slashingDict, slashedAddress)
-
-	return true, nil
-}
-
-//We use slices (not maps) because order is now important
-func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initialSetup bool, errChan chan error) {
-	for cnt, txHash := range block.AccTxData {
-		var tx protocol.Transaction
-		var accTx *protocol.AccTx
-
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			if initialSetup {
-				accTx = closedTx.(*protocol.AccTx)
-				accTxSlice[cnt] = accTx
-				break
-			} else {
-				//Reject blocks that have txs which have already been validated
-				errChan <- errors.New("Block validation had accTx that was already in a previous block.")
-				return
-			}
-		}
-
-		//Tx is either in open storage or needs to be fetched from the network
-		tx = storage.ReadOpenTx(txHash)
-		if tx != nil {
-			accTx = tx.(*protocol.AccTx)
-		} else {
-			err := p2p.TxReq(txHash, p2p.ACCTX_REQ)
-			if err != nil {
-				errChan <- errors.New(fmt.Sprintf("AccTx could not be read: %v", err))
-				return
-			}
-
-			//Blocking Wait
-			select {
-			case accTx = <-p2p.AccTxChan:
-				//Limit the waiting time for TXFETCH_TIMEOUT seconds
-			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("AccTx fetch timed out.")
-			}
-			//This check is important. A malicious miner might have sent us a tx whose hash is a different one
-			//from what we requested
-			if accTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request.")
-			}
-		}
-
-		accTxSlice[cnt] = accTx
-	}
-	errChan <- nil
-}
-
-func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, initialSetup bool, errChan chan error) {
-	for cnt, txHash := range block.FundsTxData {
-		var tx protocol.Transaction
-		var fundsTx *protocol.FundsTx
-
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			if initialSetup {
-				fundsTx = closedTx.(*protocol.FundsTx)
-				fundsTxSlice[cnt] = fundsTx
-				break
-			} else {
-				errChan <- errors.New("Block validation had fundsTx that was already in a previous block.")
-				return
-			}
-		}
-
-		tx = storage.ReadOpenTx(txHash)
-		if tx != nil {
-			fundsTx = tx.(*protocol.FundsTx)
-		} else {
-			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
-			if err != nil {
-				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
-				return
-			}
-
-			select {
-			case fundsTx = <-p2p.FundsTxChan:
-			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("FundsTx fetch timed out.")
-				return
-			}
-			if fundsTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request.")
-			}
-		}
-
-		fundsTxSlice[cnt] = fundsTx
-	}
-	errChan <- nil
-}
-
-func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx, initialSetup bool, errChan chan error) {
-	for cnt, txHash := range block.ConfigTxData {
-		var tx protocol.Transaction
-		var configTx *protocol.ConfigTx
-
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			if initialSetup {
-				configTx = closedTx.(*protocol.ConfigTx)
-				configTxSlice[cnt] = configTx
-				break
-			} else {
-				errChan <- errors.New("Block validation had configTx that was already in a previous block.")
-				return
-			}
-		}
-
-		tx = storage.ReadOpenTx(txHash)
-		if tx != nil {
-			configTx = tx.(*protocol.ConfigTx)
-		} else {
-			err := p2p.TxReq(txHash, p2p.CONFIGTX_REQ)
-			if err != nil {
-				errChan <- errors.New(fmt.Sprintf("ConfigTx could not be read: %v", err))
-				return
-			}
-
-			select {
-			case configTx = <-p2p.ConfigTxChan:
-			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("ConfigTx fetch timed out.")
-				return
-			}
-			if configTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request.")
-			}
-		}
-
-		configTxSlice[cnt] = configTx
-	}
-	errChan <- nil
-}
-
-func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, initialSetup bool, errChan chan error) {
-	for cnt, txHash := range block.StakeTxData {
-		var tx protocol.Transaction
-		var stakeTx *protocol.StakeTx
-
-		closedTx := storage.ReadClosedTx(txHash)
-		if closedTx != nil {
-			if initialSetup {
-				stakeTx = closedTx.(*protocol.StakeTx)
-				stakeTxSlice[cnt] = stakeTx
-				break
-			} else {
-				errChan <- errors.New("Block validation had stakeTx that was already in a previous block.")
-				return
-			}
-		}
-
-		tx = storage.ReadOpenTx(txHash)
-		if tx != nil {
-			stakeTx = tx.(*protocol.StakeTx)
-		} else {
-			err := p2p.TxReq(txHash, p2p.STAKETX_REQ)
-			if err != nil {
-				errChan <- errors.New(fmt.Sprintf("StakeTx could not be read: %v", err))
-				return
-			}
-
-			select {
-			case stakeTx = <-p2p.StakeTxChan:
-			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("StakeTx fetch timed out.")
-				return
-			}
-			if stakeTx.Hash() != txHash {
-				errChan <- errors.New("Received txHash did not correspond to our request.")
-			}
-		}
-
-		stakeTxSlice[cnt] = stakeTx
-	}
-	errChan <- nil
-}
-
 //Dynamic state check
 func validateState(data blockData) error {
 	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
@@ -856,4 +763,97 @@ func postValidate(data blockData, initialSetup bool) {
 		storage.DeleteOpenBlock(data.block.Hash)
 		storage.WriteClosedBlock(data.block)
 	}
+}
+
+//Only blocks with timestamp not diverging from system time (past or future) more than one hour are accepted
+func timestampCheck(timestamp int64) error {
+	systemTime := p2p.ReadSystemTime()
+	if timestamp > systemTime {
+		if timestamp-systemTime > int64(time.Hour.Seconds()) {
+			return errors.New("Timestamp was too far in the future.System time: " + strconv.FormatInt(systemTime, 10) + " vs. timestamp " + strconv.FormatInt(timestamp, 10) + "\n")
+		}
+	} else {
+		if systemTime-timestamp > int64(time.Hour.Seconds()) {
+			return errors.New("Timestamp was too far in the past. System time: " + strconv.FormatInt(systemTime, 10) + " vs. timestamp " + strconv.FormatInt(timestamp, 10) + "\n")
+		}
+	}
+
+	return nil
+}
+
+func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
+	//TODO Optimize code
+
+	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {
+		return false, errors.New("Invalid proof for slashing. Invalid conflicting block hashes provided.")
+	}
+
+	if conflictingBlockHash1 == conflictingBlockHash2 {
+		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are the same.")
+	}
+
+	//Fetch the blocks for the provided block hashes
+	conflictingBlock1 := storage.ReadClosedBlock(conflictingBlockHash1)
+	conflictingBlock2 := storage.ReadClosedBlock(conflictingBlockHash2)
+
+	if IsInSameChain(conflictingBlock1, conflictingBlock2) {
+		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are on the same chain.")
+	}
+
+	//If this block is unknown we need to check if its in the openblock storage or we must request it
+	if conflictingBlock1 == nil {
+		conflictingBlock1 = storage.ReadOpenBlock(conflictingBlockHash1)
+		if conflictingBlock1 == nil {
+			//Fetch the block we apparently missed from the network
+			p2p.BlockReq(conflictingBlockHash1)
+
+			//Blocking wait
+			select {
+			case encodedBlock := <-p2p.BlockReqChan:
+				conflictingBlock1 = conflictingBlock1.Decode(encodedBlock)
+				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
+			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+				return false, errors.New("Invalid proof for slashing. Could not find a block with the provided conflicting hash (1).")
+			}
+		}
+
+		ancestor, _ := getNewChain(conflictingBlock1)
+		if ancestor == nil {
+			return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (1).")
+		}
+	}
+
+	//If this block is unknown we need to check if its in the openblock storage or we must request it.
+	if conflictingBlock2 == nil {
+		conflictingBlock2 = storage.ReadOpenBlock(conflictingBlockHash2)
+		if conflictingBlock2 == nil {
+			//Fetch the block we apparently missed from the network
+			p2p.BlockReq(conflictingBlockHash2)
+
+			//Blocking wait
+			select {
+			case encodedBlock := <-p2p.BlockReqChan:
+				conflictingBlock2 = conflictingBlock2.Decode(encodedBlock)
+				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
+			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+				return false, errors.New("Invalid proof for slashing. Could not find a block with the provided conflicting hash (2).")
+			}
+		}
+
+		ancestor, _ := getNewChain(conflictingBlock2)
+		if ancestor == nil {
+			return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
+		}
+	}
+
+	// We found the height of the blocks and the height of the blocks can be checked
+	// If the height is not within the active slashing window size, we must throw an error. If not, the proof is valid
+	if !(conflictingBlock1.Height < uint32(activeParameters.Slashing_window_size)+conflictingBlock2.Height) {
+		return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
+	}
+
+	//Delete the proof from local slashing dictionary. If proof has not existed yet, nothing will be deleted
+	delete(slashingDict, slashedAddress)
+
+	return true, nil
 }

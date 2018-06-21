@@ -138,3 +138,7 @@ func collectBlockRewardRollback(reward uint64, minerHash [32]byte) error {
 
 	return nil
 }
+
+func collectSlashRewardRollback() {
+
+}
