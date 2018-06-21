@@ -118,6 +118,66 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 	}
 }
 
+func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
+	for index, tx := range txSlice {
+		var err error
+
+		//Check if we have to issue new coins (in case a root account signed the tx)
+		for hash, rootAcc := range storage.RootKeys {
+			if hash == tx.Account {
+				if rootAcc.Balance+tx.Fee > MAX_MONEY {
+					err = errors.New("Account balance is too high.")
+				}
+
+				if rootAcc.Balance < activeParameters.Staking_minimum+tx.Fee {
+					rootAcc.Balance = activeParameters.Staking_minimum + tx.Fee
+					fmt.Println("Root balance increased to:", rootAcc.Balance)
+				}
+			}
+		}
+
+		accSender := storage.GetAccount(tx.Account)
+		if accSender == nil {
+			logger.Printf("CRITICAL: Sender does not exist in the State: %x\n", tx.Account[0:8])
+			err = errors.New("Sender does not exist in the State.")
+		}
+
+		//Check staking state
+		if tx.IsStaking == accSender.IsStaking {
+			logger.Printf("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
+			err = errors.New("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
+		}
+
+		//Check minimum amount
+		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
+			logger.Print("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
+			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
+		}
+
+		//Check sender balance
+		if tx.Fee > accSender.Balance {
+			logger.Printf("Sender does not have enough balance: %x\n", accSender.Balance)
+			err = errors.New("Sender does not have enough funds for the transaction.")
+		}
+
+		if err != nil {
+			//If it was the first tx in the block, no rollback needed
+			if index == 0 {
+				return err
+			}
+			stakeStateChangeRollback(txSlice[0: index-1])
+			return err
+		}
+
+		//We're manipulating pointer, no need to write back
+		accSender.IsStaking = tx.IsStaking
+		accSender.HashedSeed = tx.HashedSeed
+		accSender.StakingBlockHeight = height
+	}
+
+	return nil
+}
+
 //Separate function to reuse mechanism in client implementation
 func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol.ConfigTx) (change bool) {
 	for _, tx := range *configTxSlice {
@@ -182,68 +242,6 @@ func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol
 	}
 
 	return change
-}
-
-func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
-	for index, tx := range txSlice {
-		var err error
-
-		//Check if we have to issue new coins (in case a root account signed the tx)
-		for hash, rootAcc := range storage.RootKeys {
-			if hash == tx.Account {
-				if rootAcc.Balance+tx.Fee > MAX_MONEY {
-					err = errors.New("Account balance is too high.")
-				}
-				//fmt.Println("Account Balance:", rootAcc.Balance, "TxFee:", tx.Fee, "minStake:", activeParameters.Staking_minimum)
-
-				if rootAcc.Balance < activeParameters.Staking_minimum+tx.Fee {
-					rootAcc.Balance = activeParameters.Staking_minimum + tx.Fee
-					fmt.Println("Root balance increased to:", rootAcc.Balance)
-				}
-			}
-		}
-
-		accSender := storage.GetAccount(tx.Account)
-		if accSender == nil {
-			logger.Printf("CRITICAL: Sender does not exist in the State: %x\n", tx.Account[0:8])
-			err = errors.New("Sender does not exist in the State.")
-		}
-
-		//Check staking state
-		if tx.IsStaking == accSender.IsStaking {
-			logger.Printf("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
-			err = errors.New("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
-		}
-
-		//Check minimum amount
-		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-			logger.Print("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
-			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
-		}
-
-		//Check sender balance
-		if tx.Fee > accSender.Balance {
-			logger.Printf("Sender does not have enough balance: %x\n", accSender.Balance)
-			err = errors.New("Sender does not have enough funds for the transaction.")
-		}
-
-		if err != nil {
-			//If it was the first tx in the block, no rollback needed
-			if index == 0 {
-				return err
-			}
-			stakeStateChangeRollback(txSlice[0: index-1])
-			return err
-		}
-
-		//We're manipulating pointer, no need to write back
-
-		accSender.IsStaking = tx.IsStaking
-		accSender.HashedSeed = tx.HashedSeed
-		accSender.StakingBlockHeight = height
-	}
-
-	return nil
 }
 
 func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) error {
