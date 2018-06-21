@@ -228,6 +228,7 @@ func finalizeBlock(block *protocol.Block) error {
 			block.SlashedAddress = hash
 			block.ConflictingBlockHash1 = slashingProof.ConflictingBlockHash1
 			block.ConflictingBlockHash2 = slashingProof.ConflictingBlockHash2
+			//TODO @simibac Why do you break?
 			break
 		}
 	}
