@@ -45,7 +45,6 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 //Returns the ancestor from which the split occurs (if a split occurred, if not it's just our last block) and a list
 //of blocks that belong to a new chain
 func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain []*protocol.Block) {
-
 	for {
 		newChain = append(newChain, newBlock)
 
@@ -81,5 +80,6 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 			return nil, nil
 		}
 	}
+
 	return nil, nil
 }

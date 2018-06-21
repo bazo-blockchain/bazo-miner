@@ -14,6 +14,7 @@ func Connect(connectionString string) *net.TCPConn {
 	logger = storage.InitLogger()
 	tcpAddr, err := net.ResolveTCPAddr("tcp", connectionString)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+
 	if err != nil {
 		logger.Printf("Connection to %v failed.\n", connectionString)
 		return nil
@@ -28,6 +29,7 @@ func Connect(connectionString string) *net.TCPConn {
 func rcvData(p *peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = ReadHeader(reader)
+
 	if err != nil {
 		p.conn.Close()
 		return nil, nil, errors.New(fmt.Sprintf("Connection to %v aborted: %v", p.getIPPort(), err))
@@ -43,6 +45,7 @@ func rcvData(p *peer) (header *Header, payload []byte, err error) {
 	}
 	//TODO Remove
 	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[header.TypeID], len(payload))
+
 	return header, payload, nil
 }
 
