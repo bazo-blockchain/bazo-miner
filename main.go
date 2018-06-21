@@ -20,11 +20,6 @@ func main() {
 	validator := os.Args[3]
 	seedFileName := os.Args[4]
 	multisig := os.Args[5]
-	isBootstrap := false
-
-	if os.Args[2] == ":8000"{
-		isBootstrap = true
-	}
 
 	storage.Init(dbname, ipport)
 	p2p.Init(ipport)
@@ -41,5 +36,5 @@ func main() {
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName, isBootstrap)
+	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName)
 }

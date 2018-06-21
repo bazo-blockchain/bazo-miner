@@ -364,7 +364,7 @@ func getState() (state string) {
 	return state
 }
 
-func InitState(isBootstrap bool) (block *protocol.Block, err error) {
+func InitState() (block *protocol.Block, err error) {
 	var seed [32]byte
 	copy(seed[:], storage.GENESIS_SEED)
 

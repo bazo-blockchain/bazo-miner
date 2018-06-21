@@ -23,7 +23,7 @@ var (
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 	var err error
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
@@ -47,7 +47,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBoo
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	initialBlock, err := InitState(isBootstrap)
+	initialBlock, err := InitState()
 	if err != nil {
 		logger.Printf("Could not set up initial state: %v.\n", err)
 		return
