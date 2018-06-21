@@ -1,12 +1,12 @@
 package miner
 
 import (
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"time"
-	"errors"
-	"fmt"
 )
 
 //Function to give a list of blocks to rollback (in the right order) and a list of blocks to validate.

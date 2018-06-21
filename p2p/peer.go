@@ -25,10 +25,10 @@ type peersStruct struct {
 }
 
 func (p *peer) getIPPort() string {
-
 	ip := strings.Split(p.conn.RemoteAddr().String(), ":")
 	//Cut off original port
 	port := p.listenerPort
+
 	return ip[0] + ":" + port
 }
 
@@ -52,6 +52,7 @@ func (peers peersStruct) len() int {
 func (peers peersStruct) getRandomPeer() (p *peer) {
 	//Acquire list before locking, otherwise deadlock
 	peerList := peers.getAllPeers()
+
 	if len(peerList) == 0 {
 		return nil
 	} else {

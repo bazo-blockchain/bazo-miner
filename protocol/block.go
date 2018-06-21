@@ -271,13 +271,13 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		encodedBFSize := len(encodedBF)
 
 		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedBlock[index: index+encodedBFSize])
+		b.BloomFilter.GobDecode(encodedBlock[index : index+encodedBFSize])
 		index += encodedBFSize
 	}
 
 	copy(b.Seed[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
-	b.Height = binary.BigEndian.Uint32(encodedBlock[index: index+4])
+	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+4])
 	index += 4
 	copy(b.HashedSeed[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
@@ -343,7 +343,7 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 		encodedBFSize := len(encodedBF)
 
 		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedHeader[index: index+encodedBFSize])
+		b.BloomFilter.GobDecode(encodedHeader[index : index+encodedBFSize])
 		index += encodedBFSize
 	}
 

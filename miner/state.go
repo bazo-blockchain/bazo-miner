@@ -88,7 +88,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			if index == 0 {
 				return err
 			}
-			fundsStateChangeRollback(txSlice[0: index-1])
+			fundsStateChangeRollback(txSlice[0 : index-1])
 			storage.DeleteOpenTx(tx)
 			return err
 		}
@@ -170,7 +170,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 			if index == 0 {
 				return err
 			}
-			stakeStateChangeRollback(txSlice[0: index-1])
+			stakeStateChangeRollback(txSlice[0 : index-1])
 			return err
 		}
 

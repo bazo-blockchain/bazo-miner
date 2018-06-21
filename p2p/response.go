@@ -3,11 +3,11 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 //This file responds to incoming requests from miners in a synchronous fashion
