@@ -33,6 +33,18 @@ func DeleteLastClosedBlock(hash [32]byte) {
 	})
 }
 
+func DeleteAllLastClosedBlock() {
+
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("lastclosedblock"))
+		b.ForEach(func(k, v []byte) error {
+			b.Delete(k)
+			return nil
+		})
+		return nil
+	})
+}
+
 func DeleteOpenTx(transaction protocol.Transaction) {
 
 	delete(txMemPool, transaction.Hash())

@@ -761,8 +761,8 @@ func postValidate(data blockData, initialSetup bool) {
 
 		//TODO Seal writing/deleting closedblocks and lastclosedblocks
 		// Write last block to db and delete last block's ancestor
+		storage.DeleteAllLastClosedBlock()
 		storage.WriteLastClosedBlock(data.block)
-		storage.DeleteLastClosedBlock(data.block.PrevHash)
 
 		//It might be that block is not in the openblock storage, but this doesn't matter
 		storage.DeleteOpenBlock(data.block.Hash)
