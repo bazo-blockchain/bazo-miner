@@ -89,10 +89,9 @@ func collectStatistics(b *protocol.Block) {
 }
 
 func collectStatisticsRollback(b *protocol.Block) {
-
 	globalBlockCount--
 
-	//never rollback the genesis blocks
+	//Never rollback the genesis blocks
 	if localBlockCount == 0 && globalBlockCount != 0 {
 		localBlockCount = int64(activeParameters.Diff_interval) - 1
 		//Target rollback

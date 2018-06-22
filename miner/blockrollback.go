@@ -8,8 +8,8 @@ import (
 
 //Already validated block but not part of the current longest chain
 //No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held
-func validateBlockRollback(b *protocol.Block) error {
-	accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidationRollback(b)
+func rollback(b *protocol.Block) error {
+	accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidateRollback(b)
 	if err != nil {
 		return err
 	}
@@ -18,17 +18,17 @@ func validateBlockRollback(b *protocol.Block) error {
 
 	//Going back to pre-block system parameters before the state is rolled back
 	configStateChangeRollback(data.configTxSlice, b.Hash)
-	if err := stateValidationRollback(data); err != nil {
-		return err
-	}
 
-	postValidationRollback(data)
+	//TODO Does not throw error but crashes
+	validateStateRollback(data)
+
+	postValidateRollback(data)
+
 	return nil
 }
 
-func preValidationRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
-
-	//fetch all transactions from closed storage
+func preValidateRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
+	//Fetch all transactions from closed storage
 	for _, hash := range b.AccTxData {
 		var accTx *protocol.AccTx
 		tx := storage.ReadClosedTx(hash)
@@ -77,85 +77,23 @@ func preValidationRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fun
 	return accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, nil
 }
 
-func stateValidationRollback(data blockData) error {
-	//TODO Revert validateState
-	//func validateState(data blockData) error {
-	//	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
-	//	//even though the accounts did not exist before the block validation
-	//	if err := accStateChange(data.accTxSlice); err != nil {
-	//	return err
-	//}
-	//
-	//	if err := fundsStateChange(data.fundsTxSlice); err != nil {
-	//	accStateChangeRollback(data.accTxSlice)
-	//	return err
-	//}
-	//
-	//	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
-	//	stakeStateChangeRollback(data.stakeTxSlice)
-	//	return err
-	//}
-	//
-	//	if err := collectTxFees(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
-	//	fundsStateChangeRollback(data.fundsTxSlice)
-	//	accStateChangeRollback(data.accTxSlice)
-	//	stakeStateChangeRollback(data.stakeTxSlice)
-	//	return err
-	//}
-	//
-	//	if err := collectBlockReward(activeParameters.Block_reward, data.block.Beneficiary); err != nil {
-	//	collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
-	//	fundsStateChangeRollback(data.fundsTxSlice)
-	//	accStateChangeRollback(data.accTxSlice)
-	//	stakeStateChangeRollback(data.stakeTxSlice)
-	//	return err
-	//}
-	//
-	//	if err := collectSlashReward(activeParameters.Slash_reward, data.block); err != nil {
-	//	collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
-	//	fundsStateChangeRollback(data.fundsTxSlice)
-	//	accStateChangeRollback(data.accTxSlice)
-	//	stakeStateChangeRollback(data.stakeTxSlice)
-	//	return err
-	//}
-	//
-	//	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil {
-	//	return err
-	//}
-	//
-	//	return nil
-	//}
-
-
-
-
-	//The rollback sequence is important and has to be exactly the reverse as with state change in state.go
-	err := collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
-	if err != nil {
-		return err
-	}
-
-	err = collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
-	if err != nil {
-		return err
-	}
-
+func validateStateRollback(data blockData) {
+	collectSlashRewardRollback(activeParameters.Slash_reward, data.block)
+	collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
+	collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+	stakeStateChangeRollback(data.stakeTxSlice)
 	fundsStateChangeRollback(data.fundsTxSlice)
 	accStateChangeRollback(data.accTxSlice)
-	stakeStateChangeRollback(data.stakeTxSlice)
-
-	return nil
 }
 
-func postValidationRollback(data blockData) {
-
+func postValidateRollback(data blockData) {
 	//Put all validated txs into invalidated state
-	for _, tx := range data.fundsTxSlice {
+	for _, tx := range data.accTxSlice {
 		storage.WriteOpenTx(tx)
 		storage.DeleteClosedTx(tx)
 	}
 
-	for _, tx := range data.accTxSlice {
+	for _, tx := range data.fundsTxSlice {
 		storage.WriteOpenTx(tx)
 		storage.DeleteClosedTx(tx)
 	}

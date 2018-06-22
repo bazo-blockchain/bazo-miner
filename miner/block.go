@@ -524,7 +524,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		}
 	} else {
 		for _, block := range blocksToRollback {
-			if err := validateBlockRollback(block); err != nil {
+			if err := rollback(block); err != nil {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
