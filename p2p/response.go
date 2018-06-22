@@ -127,7 +127,7 @@ func rootAccRes(p *peer, payload []byte) {
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
 
-	if acc := storage.GetRootAccount(hash); acc != nil {
+	if acc, _ := storage.GetRootAccount(hash); acc != nil {
 		packet = BuildPacket(ROOTACC_RES, acc.Encode())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)

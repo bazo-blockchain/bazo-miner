@@ -40,7 +40,7 @@ func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {
 		accReceiver.Balance -= tx.Amount
 
 		//If new coins were issued, revert
-		if rootAcc := storage.GetRootAccount(tx.From); rootAcc != nil {
+		if rootAcc, _ := storage.GetRootAccount(tx.From); rootAcc != nil {
 			rootAcc.Balance -= tx.Amount
 			rootAcc.Balance -= tx.Fee
 		}

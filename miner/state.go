@@ -142,8 +142,8 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
 			newAccHash := newAcc.Hash()
 
-			_, err := storage.GetAccount(newAccHash)
-			if err != nil {
+			acc, _ := storage.GetAccount(newAccHash)
+			if acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
 				return errors.New("Address already exists in the state.")
 			}
