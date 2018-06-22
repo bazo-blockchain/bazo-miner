@@ -37,13 +37,13 @@ func GetAccount(hash [32]byte) (acc *protocol.Account, err error) {
 	}
 }
 
-func GetRootAccount(hash [32]byte) (acc *protocol.Account) {
+func GetRootAccount(hash [32]byte) (acc *protocol.Account, err error) {
 	if IsRootKey(hash) {
-		acc, _ = GetAccount(hash)
-		return acc
+		acc, err = GetAccount(hash)
+		return acc, err
 	}
 
-	return nil
+	return nil, err
 }
 
 func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {

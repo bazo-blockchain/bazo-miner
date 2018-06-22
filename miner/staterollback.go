@@ -76,13 +76,10 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 	}
 }
 
-func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) error {
-	minerAcc, err := storage.GetAccount(minerHash)
-	if err != nil {
-		return err
-	}
+func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) {
+	minerAcc, _ := storage.GetAccount(minerHash)
 
-	//subtract fees from sender (check if that is allowed has already been done in the block validation)
+	//Subtract fees from sender (check if that is allowed has already been done in the block validation)
 	for _, tx := range accTx {
 		//Money was created out of thin air, no need to write back
 		minerAcc.Balance -= tx.Fee
@@ -90,11 +87,8 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range fundsTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc, err := storage.GetAccount(tx.From)
-		if err != nil {
-			return err
-		}
 
+		senderAcc, _ := storage.GetAccount(tx.From)
 		senderAcc.Balance += tx.Fee
 	}
 
@@ -105,28 +99,24 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range stakeTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc, err := storage.GetAccount(tx.Account)
-		if err != nil {
-			return err
-		}
 
+		senderAcc, _ := storage.GetAccount(tx.Account)
 		senderAcc.Balance += tx.Fee
 	}
-
-	return nil
 }
 
-func collectBlockRewardRollback(reward uint64, minerHash [32]byte) error {
-	minerAcc, err := storage.GetAccount(minerHash)
-	if err != nil {
-		return err
-	}
-
+func collectBlockRewardRollback(reward uint64, minerHash [32]byte) {
+	minerAcc, _ := storage.GetAccount(minerHash)
 	minerAcc.Balance -= reward
-
-	return nil
 }
 
-func collectSlashRewardRollback() {
+func collectSlashRewardRollback(reward uint64, block *protocol.Block) {
+	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+		minerAcc, _ := storage.GetAccount(block.Beneficiary)
+		slashedAcc, _ := storage.GetAccount(block.SlashedAddress)
 
+		minerAcc.Balance -= reward
+		slashedAcc.Balance += activeParameters.Staking_minimum
+		slashedAcc.IsStaking = true
+	}
 }

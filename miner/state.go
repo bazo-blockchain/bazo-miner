@@ -167,18 +167,21 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 	return nil
 }
 
-func fundsStateChange(txSlice []*protocol.FundsTx) error {
-	var err error
-
+func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 	for _, tx := range txSlice {
+		var rootAcc *protocol.Account
 		//Check if we have to issue new coins (in case a root account signed the tx)
-		if rootAcc := storage.GetRootAccount(tx.From); rootAcc != nil {
-			if rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
-				err = errors.New("Root account has max amount of coins reached.")
-			}
-			rootAcc.Balance += tx.Amount
-			rootAcc.Balance += tx.Fee
+		if rootAcc, err = storage.GetRootAccount(tx.From); err != nil {
+			return err
 		}
+
+		if rootAcc != nil && rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
+			return errors.New("Transaction amount would lead to balance overflow at the receiver (root) account.")
+		}
+
+		//Will not be reached if errors occured
+		rootAcc.Balance += tx.Amount
+		rootAcc.Balance += tx.Fee
 
 		var accSender, accReceiver *protocol.Account
 		accSender, err = storage.GetAccount(tx.From)
@@ -204,13 +207,23 @@ func fundsStateChange(txSlice []*protocol.FundsTx) error {
 			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
 		}
 
+		if err != nil {
+			if rootAcc != nil {
+				//Rollback root's credits if error occurs
+				rootAcc.Balance -= tx.Amount
+				rootAcc.Balance -= tx.Fee
+			}
+
+			return err
+		}
+
 		//We're manipulating pointer, no need to write back
 		accSender.TxCnt += 1
 		accSender.Balance -= tx.Amount
 		accReceiver.Balance += tx.Amount
 	}
 
-	return err
+	return nil
 }
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
@@ -233,9 +246,7 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 	}
 }
 
-func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
-	var err error
-
+func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 	for _, tx := range txSlice {
 		var accSender *protocol.Account
 		accSender, err = storage.GetAccount(tx.Account)
@@ -255,13 +266,17 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, 0, tx.Fee))
 		}
 
+		if err != nil {
+			return err
+		}
+
 		//We're manipulating pointer, no need to write back
 		accSender.IsStaking = tx.IsStaking
 		accSender.HashedSeed = tx.HashedSeed
 		accSender.StakingBlockHeight = height
 	}
 
-	return err
+	return nil
 }
 
 func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) (err error) {
@@ -350,57 +365,57 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	return nil
 }
 
-func collectBlockReward(reward uint64, minerHash [32]byte) error {
-	miner, err := storage.GetAccount(minerHash)
+func collectBlockReward(reward uint64, minerHash [32]byte) (err error) {
+	var miner *protocol.Account
+	miner, err = storage.GetAccount(minerHash)
+
+	if miner.Balance+reward > MAX_MONEY {
+		err = errors.New("Block reward would lead to balance overflow at the miner account.")
+	}
+
 	if err != nil {
 		return err
 	}
 
-	if miner.Balance+reward > MAX_MONEY {
-		logger.Printf("Miner balance (%v) overflows with block reward (%v).\n", miner.Balance, reward)
-		return errors.New("Miner balance overflows with transaction fee.\n")
-	}
 	miner.Balance += reward
+
 	return nil
 }
 
-func collectSlashReward(reward uint64, block *protocol.Block) error {
-	miner, err := storage.GetAccount(block.Beneficiary)
-	if err != nil {
-		return err
-	}
-
-	if miner.Balance+reward > MAX_MONEY {
-		logger.Printf("Miner balance (%v) overflows with block reward (%v).\n", miner.Balance, reward)
-		return errors.New("Miner balance overflows with transaction fee.\n")
-	}
-
-	//check if proof is provided. if proof was incorrect, the prevalidation step would already have failed.
+func collectSlashReward(reward uint64, block *protocol.Block) (err error) {
+	//Check if proof is provided. If proof was incorrect, prevalidation would already have failed.
 	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+		var minerAcc, slashedAcc *protocol.Account
+		minerAcc, err = storage.GetAccount(block.Beneficiary)
+		slashedAcc, err = storage.GetAccount(block.SlashedAddress)
 
-		//validator is rewarded with slashing reward for providing a valid slashing proof
-		miner.Balance += reward
+		if minerAcc.Balance+reward > MAX_MONEY {
+			err = errors.New("Slash reward would lead to balance overflow at the miner account.")
+		}
 
-		slashedAccount, err := storage.GetAccount(block.SlashedAddress)
 		if err != nil {
 			return err
 		}
 
-		//slashed account looses the minimum staking amount
-		slashedAccount.Balance -= activeParameters.Staking_minimum
-		//slashed account is being removed from the validator set
-		slashedAccount.IsStaking = false
+		//Validator is rewarded with slashing reward for providing a valid slashing proof
+		minerAcc.Balance += reward
+		//Slashed account looses the minimum staking amount
+		slashedAcc.Balance -= activeParameters.Staking_minimum
+		//Slashed account is being removed from the validator set
+		slashedAcc.IsStaking = false
 	}
 
 	return nil
 }
 
-func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
-	acc, err := storage.GetAccount(beneficiary)
+//No rollback method exists
+func updateStakingHeight(block *protocol.Block) error {
+	acc, err := storage.GetAccount(block.Beneficiary)
 	if err != nil {
 		return err
 	}
 
-	acc.StakingBlockHeight = height
+	acc.StakingBlockHeight = block.Height
+
 	return nil
 }

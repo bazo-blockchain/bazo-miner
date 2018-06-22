@@ -674,49 +674,51 @@ func validateState(data blockData) error {
 	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
 	//even though the accounts did not exist before the block validation
 	if err := accStateChange(data.accTxSlice); err != nil {
-		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
 	if err := fundsStateChange(data.fundsTxSlice); err != nil {
-		fundsStateChangeRollback(data.fundsTxSlice)
 		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
-		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
 		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
 	if err := collectTxFees(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
+		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
 		accStateChangeRollback(data.accTxSlice)
-		stakeStateChangeRollback(data.stakeTxSlice)
 		return err
 	}
 
-	//TODO stakeStateChangeRollback needed?
 	if err := collectBlockReward(activeParameters.Block_reward, data.block.Beneficiary); err != nil {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
 		accStateChangeRollback(data.accTxSlice)
-		stakeStateChangeRollback(data.stakeTxSlice)
 		return err
 	}
 
-	//TODO stakeStateChangeRollback needed?
 	if err := collectSlashReward(activeParameters.Slash_reward, data.block); err != nil {
+		collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
 		accStateChangeRollback(data.accTxSlice)
-		stakeStateChangeRollback(data.stakeTxSlice)
 		return err
 	}
 
-	if err := updateStakingHeight(data.block.Beneficiary, data.block.Height); err != nil {
+	if err := updateStakingHeight(data.block); err != nil {
+		collectSlashRewardRollback(activeParameters.Slash_reward, data.block)
+		collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
+		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		stakeStateChangeRollback(data.stakeTxSlice)
+		fundsStateChangeRollback(data.fundsTxSlice)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
