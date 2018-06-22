@@ -264,7 +264,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 	return err
 }
 
-func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) error {
+func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) (err error) {
 	var tmpAccTx []*protocol.AccTx
 	var tmpFundsTx []*protocol.FundsTx
 	var tmpConfigTx []*protocol.ConfigTx
@@ -275,11 +275,17 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 		return err
 	}
 
+	var senderAcc *protocol.Account
+
 	for _, tx := range accTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			return err
 		}
 
 		//Money gets created from thin air, no need to subtract money from root key
@@ -291,28 +297,31 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	for _, tx := range fundsTxSlice {
 		//Prevent protocol account from overflowing
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		senderAcc, err = storage.GetAccount(tx.From)
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			return errors.New("Miner balance overflows with transaction fee.\n")
-		}
-		minerAcc.Balance += tx.Fee
-
-		senderAcc, err := storage.GetAccount(tx.From)
-		if err != nil {
 			return err
 		}
 
+		minerAcc.Balance += tx.Fee
 		senderAcc.Balance -= tx.Fee
-
 		tmpFundsTx = append(tmpFundsTx, tx)
 	}
 
 	for _, tx := range configTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			return err
 		}
 
 		//No need to subtract money because signed by root account
@@ -322,19 +331,18 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 	for _, tx := range stakeTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
-			//Rollback of all previously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
 		}
 
-		senderAcc, err := storage.GetAccount(tx.Account)
+		senderAcc, err = storage.GetAccount(tx.Account)
+
 		if err != nil {
+			//Rollback of all perviously transferred transaction fees to the protocol's account
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
 			return err
 		}
 
 		senderAcc.Balance -= tx.Fee
-
 		minerAcc.Balance += tx.Fee
 		tmpStakeTx = append(tmpStakeTx, tx)
 	}

@@ -65,20 +65,15 @@ func configStateChangeRollback(txSlice []*protocol.ConfigTx, blockHash [32]byte)
 	logger.Printf("Config parameters rolled back. New configuration: %v", *activeParameters)
 }
 
-func stakeStateChangeRollback(txSlice []*protocol.StakeTx) error {
+func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 	//Rollback in reverse order than original state change
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
-		accSender, err := storage.GetAccount(tx.Account)
-		if err != nil {
-			return err
-		}
 
+		accSender, _ := storage.GetAccount(tx.Account)
 		//Rolling back hashedSeed & stakingBlockHeight not needed
 		accSender.IsStaking = !accSender.IsStaking
 	}
-
-	return nil
 }
 
 func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) error {
