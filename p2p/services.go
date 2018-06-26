@@ -42,13 +42,11 @@ func peerBroadcast(p *peer) {
 func checkHealthService() {
 
 	for {
+		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
+
 		//Periodically check if we are well-connected
 		if len(peers.peerConns) >= MIN_MINERS {
-			time.Sleep(2 * HEALTH_CHECK_INTERVAL * time.Minute)
 			continue
-		} else {
-			//This delay is needed to prevent sending neighbor requests like a maniac
-			time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 		}
 
 		//The only goto in the code (I promise), but best solution here IMHO
