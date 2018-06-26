@@ -7,7 +7,7 @@ import (
 )
 
 //Already validated block but not part of the current longest chain.
-//No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held
+//No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held.
 func rollback(b *protocol.Block) error {
 	accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidateRollback(b)
 	if err != nil {
@@ -16,7 +16,7 @@ func rollback(b *protocol.Block) error {
 
 	data := blockData{accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, b}
 
-	//Going back to pre-block system parameters before the state is rolled back
+	//Going back to pre-block system parameters before the state is rolled back.
 	configStateChangeRollback(data.configTxSlice, b.Hash)
 
 	//TODO Does not throw error but crashes
@@ -28,12 +28,12 @@ func rollback(b *protocol.Block) error {
 }
 
 func preValidateRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
-	//Fetch all transactions from closed storage
+	//Fetch all transactions from closed storage.
 	for _, hash := range b.AccTxData {
 		var accTx *protocol.AccTx
 		tx := storage.ReadClosedTx(hash)
 		if tx == nil {
-			//This should never happen, because all validated transactions are in closed storage
+			//This should never happen, because all validated transactions are in closed storage.
 			return nil, nil, nil, nil, errors.New("CRITICAL: Validated accTx was not in the confirmed tx storage")
 		} else {
 			accTx = tx.(*protocol.AccTx)
@@ -87,7 +87,7 @@ func validateStateRollback(data blockData) {
 }
 
 func postValidateRollback(data blockData) {
-	//Put all validated txs into invalidated state
+	//Put all validated txs into invalidated state.
 	for _, tx := range data.accTxSlice {
 		storage.WriteOpenTx(tx)
 		storage.DeleteClosedTx(tx)
@@ -111,10 +111,10 @@ func postValidateRollback(data blockData) {
 	collectStatisticsRollback(data.block)
 
 	//For transactions we switch from closed to open. However, we do not write back blocks
-	//to open storage, because in case of rollback the chain they belonged to is likely to starve
+	//to open storage, because in case of rollback the chain they belonged to is likely to starve.
 	storage.DeleteClosedBlock(data.block.Hash)
 
-	//Save the previous block as the last closed block
+	//Save the previous block as the last closed block.
 	storage.DeleteAllLastClosedBlock()
 	storage.WriteLastClosedBlock(storage.ReadClosedBlock(data.block.PrevHash))
 }
