@@ -180,8 +180,10 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		}
 
 		//Will not be reached if errors occured
-		rootAcc.Balance += tx.Amount
-		rootAcc.Balance += tx.Fee
+		if rootAcc != nil {
+			rootAcc.Balance += tx.Amount
+			rootAcc.Balance += tx.Fee
+		}
 
 		var accSender, accReceiver *protocol.Account
 		accSender, err = storage.GetAccount(tx.From)
