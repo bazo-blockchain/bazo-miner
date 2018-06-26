@@ -13,9 +13,9 @@ const (
 	//Interval to check system health in seconds
 	HEALTH_CHECK_INTERVAL = 30
 	//Broadcast local time to the network in seconds
-	TIME_BRDCST_INTERVAL = 20
+	TIME_BRDCST_INTERVAL = 60
 	//Calculate system time every UPDATE_SYS_TIME seconds
-	UPDATE_SYS_TIME = 60
+	UPDATE_SYS_TIME = 90
 
 	//Protocol constants
 	IPV4ADDR_SIZE = 4
