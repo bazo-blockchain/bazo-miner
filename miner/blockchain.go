@@ -36,13 +36,12 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 	//Initialize root key
 	//the hashedSeed is necessary since it must be included in the initial block
+	parameterSlice = append(parameterSlice, NewDefaultParameters())
+	activeParameters = &parameterSlice[0]
 	initRootKey()
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
 	}
-
-	parameterSlice = append(parameterSlice, NewDefaultParameters())
-	activeParameters = &parameterSlice[0]
 
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
@@ -110,8 +109,8 @@ func initRootKey() ([32]byte, error) {
 		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
 	}
 
-	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(address, INITIALINITROOTBALANCE, true, hashedSeed)
+	//Balance must be greater than the staking minimum.
+	rootAcc := protocol.NewAccount(address, activeParameters.Staking_minimum+1, true, hashedSeed)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 
