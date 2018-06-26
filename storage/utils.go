@@ -92,17 +92,6 @@ func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	return fundsTxPubKeys
 }
 
-func GetAllAccounts() map[[32]byte]*protocol.Account {
-	return State
-}
-
-func GetState() (state string) {
-	for _, acc := range State {
-		state += fmt.Sprintf("Is root: %v, %v\n", IsRootKey(acc.Hash()), acc)
-	}
-	return state
-}
-
 func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
 	filehandle, err := os.Open(filename)
 	if err != nil {
