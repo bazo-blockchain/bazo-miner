@@ -6,7 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
-//Already validated block but not part of the current longest chain
+//Already validated block but not part of the current longest chain.
 //No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held
 func rollback(b *protocol.Block) error {
 	accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidateRollback(b)

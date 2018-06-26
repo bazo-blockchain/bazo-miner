@@ -10,7 +10,7 @@ var (
 	//Block from the miner, to the network
 	BlockOut chan []byte = make(chan []byte)
 
-	//Data requested by miner, to allow parallelism, we have a chan for every tx type
+	//Data requested by miner, to allow parallelism, we have a chan for every tx type.
 	FundsTxChan  = make(chan *protocol.FundsTx)
 	AccTxChan    = make(chan *protocol.AccTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
@@ -19,7 +19,7 @@ var (
 	BlockReqChan = make(chan []byte)
 )
 
-//This is for blocks and txs that the miner successfully validated
+//This is for blocks and txs that the miner successfully validated.
 func receiveBlockFromMiner() {
 	for {
 		block := <-BlockOut
@@ -32,7 +32,7 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
-//These are transactions the miner specifically requested
+//These are transactions the miner specifically requested.
 func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 	if payload == nil {
 		return

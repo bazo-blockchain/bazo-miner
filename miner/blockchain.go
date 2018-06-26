@@ -31,13 +31,14 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 	seedFile = seedFileName
 
-	//Set up logger
+	//Set up logger.
 	logger = storage.InitLogger()
 
-	//Initialize root key
-	//the hashedSeed is necessary since it must be included in the initial block
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
+
+	//Initialize root key.
+	//The hashedSeed is necessary since it must be included in the initial block.
 	initRootKey()
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
@@ -54,12 +55,12 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 	logger.Printf("Active config params:%v", activeParameters)
 
-	//Start to listen to network inputs (txs and blocks)
+	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
 	mining(initialBlock)
 }
 
-//Mining is a constant process, trying to come up with a successful PoW
+//Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
 	currentBlock := newBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
 
@@ -70,8 +71,7 @@ func mining(initialBlock *protocol.Block) {
 		} else {
 			logger.Println("Block mined")
 		}
-		//else a block was received meanwhile that was added to the chain, all the effort was in vain :(
-		//wait for lock here only
+
 		if err == nil {
 			broadcastBlock(currentBlock)
 			err := validate(currentBlock, false)
@@ -85,7 +85,7 @@ func mining(initialBlock *protocol.Block) {
 		//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 		//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
-		//when we finish the block
+		//when we finish the block.
 		blockValidation.Lock()
 		nextBlock := newBlock(lastBlock.Hash, [32]byte{}, [32]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
@@ -94,14 +94,14 @@ func mining(initialBlock *protocol.Block) {
 	}
 }
 
-//At least one root key needs to be set which is allowed to create new accounts
+//At least one root key needs to be set which is allowed to create new accounts.
 func initRootKey() ([32]byte, error) {
 	address, addressHash := storage.GetInitRootPubKey()
 
 	var seed [32]byte
 	copy(seed[:], storage.INIT_ROOT_SEED[:])
 
-	//Create the hash of the seed which will be included in the transaction
+	//Create the hash of the seed which will be included in the transaction.
 	hashedSeed := protocol.SerializeHashContent(seed)
 
 	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})

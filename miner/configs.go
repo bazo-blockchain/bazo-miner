@@ -19,6 +19,7 @@ const (
 	BLOCKHASH_SIZE       = 32      //Byte
 	FEE_MINIMUM          = 1       //Coins
 	BLOCK_SIZE           = 5000000 //Byte
+	//TODO @simibac How can I assure that only every min. a block will be mined?
 	DIFF_INTERVAL        = 2016
 	BLOCK_INTERVAL       = 60  //Sec
 	BLOCK_REWARD         = 0   //Coins
