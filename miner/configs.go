@@ -20,7 +20,7 @@ const (
 	DIFF_INTERVAL        = 2016    //Blocks
 	BLOCK_INTERVAL       = 60      //Sec
 	BLOCK_REWARD         = 0       //Coins
-	STAKING_MINIMUM      = 5       //Coins
+	STAKING_MINIMUM      = 1000    //Coins
 	WAITING_MINIMUM      = 0       //Blocks
 	ACCEPTED_TIME_DIFF   = 60      //Sec
 	SLASHING_WINDOW_SIZE = 100     //Blocks
