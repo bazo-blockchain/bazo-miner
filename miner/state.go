@@ -111,20 +111,21 @@ func initState() (block *protocol.Block, err error) {
 		if blockToValidate.Hash != [32]byte{} {
 			//Fetching payload data from the txs (if necessary, ask other miners)
 			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
-
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
+			}
 			//Prepare datastructure to fill tx payloads
 			blockDataMap := make(map[[32]byte]blockData)
 			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
 
 			err = validateState(blockDataMap[blockToValidate.Hash])
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Block (%x) could not be statevalidated: %v\n", blockToValidate.Hash[0:8], err))
+			}
 
 			postValidate(blockDataMap[blockToValidate.Hash], true)
 
-			if err == nil {
-				logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
-			} else {
-				return nil, errors.New(fmt.Sprintf("Block (%x) could not be validated: %v\n", blockToValidate.Hash[0:8], err))
-			}
+			logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
 		}
 
 		//Set the last validated block as the lastBlock
