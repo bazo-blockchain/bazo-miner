@@ -52,10 +52,10 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 func blockRes(p *peer, payload []byte) {
 	var packet []byte
 	var block *protocol.Block
+	var blockHash [32]byte
 
 	//If no specific block is requested, send latest
 	if len(payload) > 0 {
-		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
 			//TODO Remove
@@ -69,11 +69,11 @@ func blockRes(p *peer, payload []byte) {
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
 		//TODO Remove
-		fmt.Printf("Sending block(hash): %x\n", block.Hash)
+		fmt.Printf("Sending block(hash): %x\n", blockHash)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 		//TODO Remove
-		fmt.Printf("Block(hash) not found: %x\n", block.Hash)
+		fmt.Printf("Block(hash) not found: %x\n", blockHash)
 	}
 
 	sendData(p, packet)
