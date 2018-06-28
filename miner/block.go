@@ -295,7 +295,7 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 			if initialSetup {
 				accTx = closedTx.(*protocol.AccTx)
 				accTxSlice[cnt] = accTx
-				break
+				continue
 			} else {
 				//Reject blocks that have txs which have already been validated.
 				errChan <- errors.New("Block validation had accTx that was already in a previous block.")
@@ -345,7 +345,7 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 			if initialSetup {
 				fundsTx = closedTx.(*protocol.FundsTx)
 				fundsTxSlice[cnt] = fundsTx
-				break
+				continue
 			} else {
 				errChan <- errors.New("Block validation had fundsTx that was already in a previous block.")
 				return
@@ -390,7 +390,7 @@ func fetchConfigTxData(block *protocol.Block, configTxSlice []*protocol.ConfigTx
 			if initialSetup {
 				configTx = closedTx.(*protocol.ConfigTx)
 				configTxSlice[cnt] = configTx
-				break
+				continue
 			} else {
 				errChan <- errors.New("Block validation had configTx that was already in a previous block.")
 				return
@@ -435,7 +435,7 @@ func fetchStakeTxData(block *protocol.Block, stakeTxSlice []*protocol.StakeTx, i
 			if initialSetup {
 				stakeTx = closedTx.(*protocol.StakeTx)
 				stakeTxSlice[cnt] = stakeTx
-				break
+				continue
 			} else {
 				errChan <- errors.New("Block validation had stakeTx that was already in a previous block.")
 				return
