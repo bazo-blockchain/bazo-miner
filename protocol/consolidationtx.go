@@ -19,9 +19,9 @@ type StateAccounts map[[32]byte]*ConsolidatedAccount
 type ConsolidationTx struct {
 	// Header
 	Header    byte
-	NumAccounts int
-	TotalBalance uint64
 	LastBlock [32]byte
+	NumAccounts int // not needed
+	// TODO: length of the body should be included somewhere because I need to know how much body i need to read
 
 	// Body
 	Accounts []ConsolidatedAccount
@@ -42,7 +42,6 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 		totalBalance += cons.Balance
 		tx.Accounts = append(tx.Accounts, *consAccount)
 	}
-	tx.TotalBalance = totalBalance
 	return tx, nil
 }
 
@@ -55,12 +54,10 @@ func (tx *ConsolidationTx) Hash() (hash [32]byte) {
 	txHash := struct {
 		Header byte
 		NumAccounts int
-		TotalBalance uint64
 
 	}{
 		tx.Header,
 		tx.NumAccounts,
-		tx.TotalBalance,
 	}
 
 	return SerializeHashContent(txHash)
@@ -93,12 +90,10 @@ func (tx ConsolidationTx) String() string {
 	status := fmt.Sprintf(
 		"\nHeader: %v\n" +
 		"lastBlockHash: %v\n" +
-		"numAccounts: %v\n" +
-		"balance: %v\n",
+		"numAccounts: %v\n",
 		tx.Header,
 		tx.LastBlock,
 		tx.NumAccounts,
-		tx.TotalBalance,
 	)
 	mapping := ""
 	for _, cons := range tx.Accounts {

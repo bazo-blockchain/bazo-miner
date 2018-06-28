@@ -12,11 +12,15 @@ import (
 
 /**
  TODO: strategy to decide where and when to start the consolidation
- TODO: strategy to decide how many blocks should be included
+ TODO: strategy to decide how many blocks should be included (ignore latest X blocks)
+Should X be part of the configuration?
+
  TODO: who does the consolidation?
      Anybody should be able to create a consolidationTx
 
- TODO: block or simple transaction?
+
+TODO: Check whether the miner consolidated it correctly so we cannot prune it directly
+TODO: Consolidation between genesis/previous consolidation and latest X blocks
  Enforce rule that a consolidationTx:
    - check if there are some tx that have been left out, if yes then reject the block.
  */

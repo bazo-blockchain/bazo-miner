@@ -28,6 +28,9 @@ const (
 	SLASHING_WINDOW_SIZE = 100 //blocks
 	SLASH_REWARD         = 2   //coins
 	NUM_INCL_PREV_SEEDS  = 5   //number of previous seeds included in the PoS condition
+
+	// Consolidation params
+	CONSOLIDATION_HEIGHT = 10  // After how many blocks a consolidation tx should be created
 )
 
 var (
