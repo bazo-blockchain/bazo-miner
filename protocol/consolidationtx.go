@@ -18,8 +18,9 @@ type StateAccounts map[[32]byte]*ConsolidatedAccount
 //when we broadcast transactions we need a way to distinguish with a type
 type ConsolidationTx struct {
 	// Header
-	Header    byte
-	LastBlock [32]byte
+	Header     byte
+	Fee        uint64
+	LastBlock  [32]byte
 	NumAccounts int // not needed
 	// TODO: length of the body should be included somewhere because I need to know how much body i need to read
 
@@ -84,6 +85,7 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 	return tx
 }
 
+func (tx *ConsolidationTx) TxFee() uint64 { return tx.Fee }
 func (tx *ConsolidationTx) Size() uint64  { return CONSOLIDATIONTX_SIZE }
 
 func (tx ConsolidationTx) String() string {

@@ -32,6 +32,7 @@ type Block struct {
 	NrAccTx               uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
+	NrConsolidationTx     uint16
 	SlashedAddress        [32]byte
 	Seed                  [32]byte
 	Height                uint32
@@ -44,6 +45,7 @@ type Block struct {
 	FundsTxData  [][32]byte
 	ConfigTxData [][32]byte
 	StakeTxData  [][32]byte
+	ConsolidationTxData  [][32]byte
 }
 
 //Just Hash() conflicts with struct field

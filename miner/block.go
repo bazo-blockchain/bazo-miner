@@ -84,6 +84,12 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 			logger.Printf("Adding stateTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			return err
 		}
+	case *protocol.ConsolidationTx:
+		err := addConsolidationTx(b, tx.(*protocol.ConsolidationTx))
+		if err != nil {
+			logger.Printf("Adding ConsolidationTx tx failed (%v): %v\n", err, tx.(*protocol.ConsolidationTx))
+			return err
+		}
 	default:
 		return errors.New("Transaction type not recognized.")
 	}
@@ -218,6 +224,15 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	return nil
 }
 
+
+
+func addConsolidationTx(b *protocol.Block, tx *protocol.ConsolidationTx) error {
+	//No further checks needed, static checks were already done with verify()
+	b.ConsolidationTxData = append(b.ConsolidationTxData, tx.Hash())
+	logger.Printf("Added tx to the ConsolidationTxData slice: %v", *tx)
+	return nil
+}
+
 //This function prepares the block to broadcast into the network. No new txs are added at this point.
 func finalizeBlock(block *protocol.Block) error {
 	//check if we have a slashing proof that we can add to the block
@@ -267,6 +282,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
+	block.NrConsolidationTx = uint16(len(block.ConsolidationTxData))
 	copy(block.Seed[0:32], localSeed[:])
 
 	//create a new seed, store it locally and add to the block
