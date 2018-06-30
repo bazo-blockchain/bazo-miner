@@ -137,7 +137,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 		lastBlock = blockToValidate
 	}
 
-	logger.Printf("%v block(s) up to this date are validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
+	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
 
 	return initialBlock, nil
 }
