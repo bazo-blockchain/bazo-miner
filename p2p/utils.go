@@ -26,7 +26,7 @@ func Connect(connectionString string) *net.TCPConn {
 	return conn
 }
 
-func rcvData(p *peer) (header *Header, payload []byte, err error) {
+func rcvData(p *Peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = ReadHeader(reader)
 
@@ -69,7 +69,7 @@ func RcvData(c net.Conn) (header *Header, payload []byte, err error) {
 	return header, payload, nil
 }
 
-func sendData(p *peer, payload []byte) {
+func sendData(p *Peer, payload []byte) {
 	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[payload[4]], len(payload)-HEADER_LEN)
 
 	p.l.Lock()

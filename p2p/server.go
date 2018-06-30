@@ -22,8 +22,8 @@ var (
 
 	iplistChan = make(chan string, MIN_MINERS)
 	brdcstMsg  = make(chan []byte)
-	register   = make(chan *peer)
-	disconnect = make(chan *peer)
+	register   = make(chan *Peer)
+	disconnect = make(chan *Peer)
 )
 
 //Entry point for p2p package
@@ -32,7 +32,7 @@ func Init(ipport string) {
 	initLogger()
 
 	//Initialize peer map
-	peers.peerConns = make(map[*peer]bool)
+	peers.peerConns = make(map[*Peer]bool)
 
 	//Start all services that are running concurrently
 	go broadcastService()
@@ -61,7 +61,7 @@ func bootstrap() {
 	go minerConn(p)
 }
 
-func initiateNewMinerConnection(dial string) (*peer, error) {
+func initiateNewMinerConnection(dial string) (*Peer, error) {
 	var conn net.Conn
 
 	//Check if we already established a dial with that ip or if the ip belongs to us
@@ -76,7 +76,7 @@ func initiateNewMinerConnection(dial string) (*peer, error) {
 	//Open up a tcp dial and instantiate a peer struct, wait for adding it to the peerStruct before we finalize
 	//the handshake
 	conn, err := net.Dial("tcp", dial)
-	p := &peer{conn, nil, sync.Mutex{}, strings.Split(dial, ":")[1], 0}
+	p := &Peer{conn, nil, sync.Mutex{}, strings.Split(dial, ":")[1], 0}
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +128,12 @@ func listener(ipport string) {
 			logger.Printf("%v\n", err)
 			continue
 		}
-		p := &peer{conn, nil, sync.Mutex{}, "", 0}
+		p := &Peer{conn, nil, sync.Mutex{}, "", 0}
 		go handleNewConn(p)
 	}
 }
 
-func handleNewConn(p *peer) {
+func handleNewConn(p *Peer) {
 
 	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
 	header, payload, err := rcvData(p)
@@ -146,7 +146,7 @@ func handleNewConn(p *peer) {
 	processIncomingMsg(p, header, payload)
 }
 
-func minerConn(p *peer) {
+func minerConn(p *Peer) {
 	logger.Printf("Adding a new miner: %v\n", p.getIPPort())
 
 	//Give the peer a channel
