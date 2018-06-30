@@ -760,15 +760,14 @@ func postValidate(data blockData, initialSetup bool) {
 			p2p.SendVerifiedTxs(data.fundsTxSlice)
 		}
 
-		//TODO Seal writing/deleting closedblocks and lastclosedblocks
-		// Write last block to db and delete last block's ancestor.
-		storage.DeleteAllLastClosedBlock()
-		storage.WriteLastClosedBlock(data.block)
-
 		//It might be that block is not in the openblock storage, but this doesn't matter.
 		storage.DeleteOpenBlock(data.block.Hash)
 		storage.WriteClosedBlock(data.block)
 	}
+
+	// Write last block to db and delete last block's ancestor.
+	storage.DeleteAllLastClosedBlock()
+	storage.WriteLastClosedBlock(data.block)
 }
 
 //Only blocks with timestamp not diverging from system time (past or future) more than one hour are accepted.
