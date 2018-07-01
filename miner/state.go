@@ -396,6 +396,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 			fundsTxs := make([]*protocol.FundsTx, blockToValidate.NrFundsTx)
 			configTxs := make([]*protocol.ConfigTx, blockToValidate.NrConfigTx)
 			stakeTxs := make([]*protocol.StakeTx, blockToValidate.NrStakeTx)
+			// TODO:  consolidationTx??
 
 			for cnt, txHash := range blockToValidate.AccTxData {
 				var tx protocol.Transaction

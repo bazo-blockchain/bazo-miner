@@ -104,6 +104,37 @@ func mining(initialBlock *protocol.Block) {
 		//when we finish the block
 		blockValidation.Lock()
 		nextBlock := newBlock(lastBlock.Hash, [32]byte{}, [32]byte{}, lastBlock.Height+1)
+		// Add ConsolidationTx if necessary
+        if (lastBlock.Height +1) % 10 == 0 {
+			fmt.Println("Adding consolidationtx")
+			// Create a snapshot of the current state
+			state := make(protocol.StateAccounts)
+			fmt.Printf("%v\n", state)
+			var blockList []*protocol.Block
+			// Go back X blocks
+			prevHash := lastBlock.Hash
+			for prevHash != [32]byte{} {
+				prevBlock := storage.ReadClosedBlock(prevHash)
+				if prevBlock != nil {
+					blockList = append(blockList, prevBlock)
+					prevHash = prevBlock.PrevHash
+					continue
+				}
+
+				//Fetch the block we apparently missed from the network
+				err := p2p.BlockReq(prevHash)
+				if err != nil {
+					fmt.Println(err)
+				}
+				prevBlock = storage.ReadOpenBlock(prevHash)
+				blockList = append(blockList, prevBlock)
+				prevHash = prevBlock.PrevHash
+			}
+			fmt.Printf("len chain %d", len(blockList))
+
+			//Add state to consolidation tx
+
+		}
 		currentBlock = nextBlock
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
