@@ -97,6 +97,7 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	if err != nil {
 		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
 	}
+	defer filehandle.Close()
 
 	reader := bufio.NewReader(filehandle)
 
@@ -128,6 +129,27 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	}
 
 	return pubKey, privKey, nil
+}
+
+func ReadFile(filename string) (lines []string) {
+	file, err := os.Open("/path/to/file.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	cnt := 0
+	for scanner.Scan() {
+		lines[cnt] = scanner.Text()
+		cnt++
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return lines
 }
 
 func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
