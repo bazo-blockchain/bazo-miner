@@ -139,10 +139,9 @@ func ReadFile(filename string) (lines []string) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	cnt := 0
+
 	for scanner.Scan() {
-		lines[cnt] = scanner.Text()
-		cnt++
+		lines = append(lines, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
