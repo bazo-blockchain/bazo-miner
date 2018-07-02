@@ -25,6 +25,8 @@ func verify(tx protocol.Transaction) bool {
 		verified = verifyConfigTx(tx.(*protocol.ConfigTx))
 	case *protocol.StakeTx:
 		verified = verifyStakeTx(tx.(*protocol.StakeTx))
+	case *protocol.ConsolidationTx:
+		verified = verifyConsolidationTx(tx.(*protocol.ConsolidationTx))
 	}
 
 	return verified
@@ -183,6 +185,21 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	return false
 }
+
+
+func verifyConsolidationTx(tx *protocol.ConsolidationTx) bool {
+	if tx == nil {
+		logger.Println("Transactions does not exist.")
+		return false
+	}
+
+	return true
+}
+
+
+
+
+
 
 //Returns true if id is in the list of possible ids and rational value for payload parameter.
 //Some values just don't make any sense and have to be restricted accordingly

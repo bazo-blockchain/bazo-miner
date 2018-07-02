@@ -98,6 +98,7 @@ func (b *Block) GetSize() uint64 {
 			int(b.NrFundsTx)*HASH_LEN +
 			int(b.NrConfigTx)*HASH_LEN +
 			int(b.NrStakeTx)*HASH_LEN
+	//TODO(fontana): +ConsolidationTx?
 
 	if b.BloomFilter != nil {
 		encodedBF, _ := b.BloomFilter.GobEncode()
@@ -151,6 +152,7 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[150:152], nrStakeTx[:])
 	copy(encodedBlock[152:184], b.SlashedAddress[:])
 	copy(encodedBlock[184:186], nrElementsBF[:])
+	//TODO(fontana): ConsolidationTx?
 
 	index := 186
 
@@ -258,6 +260,7 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
 	copy(b.SlashedAddress[:], encodedBlock[152:184])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[184:186])
+	//TODO(fontana): ConsolidationTx?
 
 	index := 186
 
@@ -365,6 +368,7 @@ func (b Block) String() string {
 		"Amount of accTx: %v\n"+
 		"Amount of configTx: %v\n"+
 		"Amount of stakeTx: %v\n"+
+		"Amount of ConsolidationTx: %v\n"+
 		"Seed: %x\n"+
 		"Height: %d\n"+
 		"Hashed Seed: %x\n"+
@@ -381,6 +385,7 @@ func (b Block) String() string {
 		b.NrAccTx,
 		b.NrConfigTx,
 		b.NrStakeTx,
+		b.NrConsolidationTx,
 		b.Seed[0:8],
 		b.Height,
 		b.HashedSeed[0:8],
