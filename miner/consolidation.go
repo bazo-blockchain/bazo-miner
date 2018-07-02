@@ -71,19 +71,56 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 
 func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.StakeTxData {
-		tx := reqTx(p2p.CONFIGTX_REQ, txHash)
+		tx := reqTx(p2p.STAKETX_REQ, txHash)
+		fmt.Println(tx)
 		stakeTx := tx.(*protocol.StakeTx)
+		if _, exists := state[stakeTx.Account]; !exists {
+			initialiseConsAccount(state, stakeTx.Account)
+		}
 		state[stakeTx.Account].Staking = stakeTx.IsStaking
 		state[block.Beneficiary].Balance += stakeTx.Fee
 	}
 }
 
+func GetConsolidationTx(lastHash [32]byte) (tx *protocol.ConsolidationTx, err error) {
+	blockList := GetFullChainFromBlock(lastHash)
+	return GetConsolidationTxFromChain(blockList)
+}
+
+
+func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
+	fmt.Println("Adding consolidationtx")
+	// Create a snapshot of the current state
+	var blockList []*protocol.Block
+	// Go back X blocks
+	prevHash := lastHash
+	for prevHash != [32]byte{} {
+		prevBlock := storage.ReadClosedBlock(prevHash)
+		if prevBlock != nil {
+			blockList = append(blockList, prevBlock)
+			prevHash = prevBlock.PrevHash
+			continue
+		}
+
+		//Fetch the block we apparently missed from the network
+		err := p2p.BlockReq(prevHash)
+		if err != nil {
+			fmt.Println(err)
+		}
+		prevBlock = storage.ReadOpenBlock(prevHash)
+		blockList = append(blockList, prevBlock)
+		prevHash = prevBlock.PrevHash
+	}
+	fmt.Printf("len chain %d", len(blockList))
+	return blockList
+}
 func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.ConsolidationTx, err error) {
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
 
 	// Process all the blocks in the chain
-	for _, block := range chain {
+	for i := len(chain) - 1; i >= 0; i-- {
+		block := chain[i]
 		// Skip empty blocks
 		if block == nil {
 			continue

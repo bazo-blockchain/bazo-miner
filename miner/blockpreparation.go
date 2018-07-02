@@ -4,6 +4,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"sort"
+	"fmt"
 )
 
 //The code here is needed if a new block is being built. All open (not yet validated) transactions are first fetched
@@ -34,6 +35,20 @@ func prepareBlock(block *protocol.Block) {
 			storage.DeleteOpenTx(tx)
 		}
 	}
+
+	// Add ConsolidationTx if necessary
+	if (lastBlock.Height +1) % 10 == 0 {
+		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
+
+		fmt.Println(consolidationTx)
+		err = addTx(block, consolidationTx)
+		if err != nil {
+			fmt.Println("Error while adding consolidation tx")
+		}
+		//Add state to consolidation tx
+
+	}
+
 }
 
 //Implement the sort interface

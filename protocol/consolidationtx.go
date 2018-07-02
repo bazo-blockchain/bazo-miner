@@ -32,7 +32,7 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 	tx = new(ConsolidationTx)
 	tx.Header = header
 	tx.LastBlock = lastBlockHash
-
+	tx.Fee = 1
 	tx.NumAccounts = len(state)
 	totalBalance := uint64(0)
 	for hash, cons := range state {
