@@ -132,7 +132,7 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 }
 
 func ReadFile(filename string) (lines []string) {
-	file, err := os.Open("/path/to/file.txt")
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
