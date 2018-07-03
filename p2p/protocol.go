@@ -42,6 +42,8 @@ const (
 
 	MINER_PING = 100
 	MINER_PONG = 101
+	CLIENT_PING = 102
+	CLIENT_PONG = 103
 
 	//Used to signal error
 	NOT_FOUND = 110

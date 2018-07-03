@@ -2,13 +2,15 @@ package p2p
 
 import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"log"
 )
 
 var (
 	logMapping map[uint8]string
+	logger *log.Logger
 )
 
-func initLogger() {
+func InitLogging() {
 	logger = storage.InitLogger()
 
 	//Instead of logging just the integer, we log the corresponding semantic meaning, makes scrolling through
@@ -50,6 +52,8 @@ func initLogger() {
 
 	logMapping[100] = "MINER_PING"
 	logMapping[101] = "MINER_PONG"
+	logMapping[102] = "CLIENT_PING"
+	logMapping[103] = "CLIENT_PONG"
 
 	logMapping[110] = "NOT_FOUND"
 }

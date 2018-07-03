@@ -12,7 +12,7 @@ var (
 //Corresponds largely to server.go -> Init(...)
 func TestMain(m *testing.M) {
 
-	initLogger()
+	initLogging()
 
 	//Used for some tests, the bootstarp server is listening at 8000 at the same time
 	localConn = "127.0.0.1:9000"
@@ -22,7 +22,6 @@ func TestMain(m *testing.M) {
 
 	//channels for specific miner requests
 
-	peers.peerConns = make(map[*Peer]bool)
 	brdcstMsg = make(chan []byte)
 	register = make(chan *Peer)
 	disconnect = make(chan *Peer)

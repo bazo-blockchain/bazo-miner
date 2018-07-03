@@ -20,7 +20,7 @@ func getTime() []byte {
 }
 
 func writeSystemTime() {
-	peerTimes := peers.getPeerTimes()
+	peerTimes := peers.getMinerTimes()
 
 	//Add our own time as well
 	peerTimes = append(peerTimes, time.Now().Unix())

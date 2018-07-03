@@ -23,7 +23,7 @@ func broadcastService() {
 		select {
 		//Broadcasting all messages
 		case msg := <-brdcstMsg:
-			for p := range peers.peerConns {
+			for p := range peers.minerConns {
 				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away
 				p.ch <- msg
 			}
@@ -45,7 +45,7 @@ func checkHealthService() {
 		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 
 		//Periodically check if we are well-connected
-		if len(peers.peerConns) >= MIN_MINERS {
+		if len(peers.minerConns) >= MIN_MINERS {
 			continue
 		}
 
@@ -61,7 +61,7 @@ func checkHealthService() {
 			if p == nil || err != nil {
 				goto RETRY
 			}
-			go minerConn(p)
+			go peerConn(p)
 			break
 		default:
 			//In case we don't have any ip addresses in the channel left, make a request to the network

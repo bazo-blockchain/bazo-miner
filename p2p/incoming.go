@@ -40,7 +40,9 @@ func processIncomingMsg(p *Peer, header *Header, payload []byte) {
 	case BLOCK_HEADER_REQ:
 		blockHeaderRes(p, payload)
 	case MINER_PING:
-		pongRes(p, payload)
+		pongRes(p, payload, MINER_PING)
+	case CLIENT_PING:
+		pongRes(p, payload, CLIENT_PING)
 	case NEIGHBOR_REQ:
 		neighborRes(p)
 	case INTERMEDIATE_NODES_REQ:

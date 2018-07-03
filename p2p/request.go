@@ -5,7 +5,7 @@ package p2p
 //this involves inter-communication between the two packages
 func neighborReq() {
 
-	p := peers.getRandomPeer()
+	p := peers.getRandomPeer(PEERTYPE_MINER)
 	if p == nil {
 		logger.Print("Could not fetch a random peer.\n")
 		return

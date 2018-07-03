@@ -136,10 +136,9 @@ func rootAccRes(p *Peer, payload []byte) {
 	sendData(p, packet)
 }
 
-//Completes the handshake with another miner
-func pongRes(p *Peer, payload []byte) {
-
-	//Payload consists of a 2 bytes array (port number [big endian encoded])
+//Completes the handshake with another miner.
+func pongRes(p *Peer, payload []byte, peerType uint) {
+	//Payload consists of a 2 bytes array (port number [big endian encoded]).
 	port := _pongRes(payload)
 
 	if port != "" {
@@ -150,17 +149,26 @@ func pongRes(p *Peer, payload []byte) {
 	}
 
 	//Restrict amount of connected miners
-	if peers.len() >= MAX_MINERS {
+	if peers.len(PEERTYPE_MINER) >= MAX_MINERS {
 		return
 	}
 
-	go minerConn(p)
 	//Complete handshake
-	packet := BuildPacket(MINER_PONG, nil)
+	var packet []byte
+	if peerType == MINER_PING {
+		p.peerType = PEERTYPE_MINER
+		packet = BuildPacket(MINER_PONG, nil)
+	} else if peerType == CLIENT_PING{
+		p.peerType = PEERTYPE_CLIENT
+		packet = BuildPacket(CLIENT_PONG, nil)
+	}
+
+	go peerConn(p)
+
 	sendData(p, packet)
 }
 
-//Decouple the function for testing
+//Decouple the function for testing.
 func _pongRes(payload []byte) string {
 	if len(payload) == PORT_SIZE {
 		return strconv.Itoa(int(binary.BigEndian.Uint16(payload[0:PORT_SIZE])))
@@ -175,7 +183,7 @@ func neighborRes(p *Peer) {
 	//1) nr of ipv4 addresses, 2) nr of ipv6 addresses, followed by list of both
 	var packet []byte
 	var ipportList []string
-	peerList := peers.getAllPeers()
+	peerList := peers.getAllPeers(PEERTYPE_MINER)
 
 	for _, p := range peerList {
 		ipportList = append(ipportList, p.getIPPort())

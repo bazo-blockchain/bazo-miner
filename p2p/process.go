@@ -46,7 +46,7 @@ func processTxBrdcst(p *Peer, payload []byte, brdcstType uint8) {
 	}
 
 	//Response tx acknowledgment if the peer is a client
-	if !peers.peerConns[p] {
+	if !peers.minerConns[p] {
 		packet := BuildPacket(TX_BRDCST_ACK, nil)
 		sendData(p, packet)
 	}
