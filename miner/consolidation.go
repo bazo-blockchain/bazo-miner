@@ -82,6 +82,16 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 	}
 }
 
+func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
+	for _, txHash := range block.ConsolidationTxData {
+		fmt.Printf("reqeuestingg %v\n", txHash)
+		tx := reqTx(p2p.CONSOLIDATIONTX_RES, txHash)
+		fmt.Println(tx)
+		consolidationTx := tx.(*protocol.ConsolidationTx)
+		fmt.Println("CCCCCCC:\n %v\n:", consolidationTx)
+	}
+}
+
 func GetConsolidationTx(lastHash [32]byte) (tx *protocol.ConsolidationTx, err error) {
 	blockList := GetFullChainFromBlock(lastHash)
 	return GetConsolidationTxFromChain(blockList)
@@ -131,6 +141,7 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 
 		processFundsTx(state, block)
 		processStakeTx(state, block)
+		processConsolidationTx(state, block)
 		// process other TX types
 	}
 

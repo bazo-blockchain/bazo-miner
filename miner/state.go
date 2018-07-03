@@ -396,7 +396,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 			fundsTxs := make([]*protocol.FundsTx, blockToValidate.NrFundsTx)
 			configTxs := make([]*protocol.ConfigTx, blockToValidate.NrConfigTx)
 			stakeTxs := make([]*protocol.StakeTx, blockToValidate.NrStakeTx)
-			// TODO:  consolidationTx??
+			consolidationTxs := make([]*protocol.ConsolidationTx, blockToValidate.NrConsolidationTx)
 
 			for cnt, txHash := range blockToValidate.AccTxData {
 				var tx protocol.Transaction
@@ -442,7 +442,18 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 				stakeTxs[cnt] = stakeTx
 			}
 
-			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
+			for cnt, txHash := range blockToValidate.ConsolidationTxData {
+				var tx protocol.Transaction
+				var consolidationTx *protocol.ConsolidationTx
+				tx = storage.ReadClosedTx(txHash)
+				if tx != nil {
+					consolidationTx = tx.(*protocol.ConsolidationTx)
+				}
+
+				consolidationTxs[cnt] = consolidationTx
+			}
+
+			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs,consolidationTxs, blockToValidate}
 			if err := stateValidation(blockDataMap[blockToValidate.Hash]); err != nil {
 				return nil, errors.New(fmt.Sprintf("Received block (%x) could not be validated: %v", blockToValidate.Hash[0:8], err))
 			}

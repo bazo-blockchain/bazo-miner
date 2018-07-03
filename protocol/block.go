@@ -126,13 +126,14 @@ func (b *Block) Encode() (encodedBlock []byte) {
 
 	//Making byte array of all non-byte data
 	var timeStamp [8]byte
-	var nrFundsTx, nrAccTx, nrStakeTx, nrElementsBF [2]byte
+	var nrFundsTx, nrAccTx, nrStakeTx, nrConsolidationTx, nrElementsBF [2]byte
 	var height [4]byte
 
 	binary.BigEndian.PutUint64(timeStamp[:], uint64(b.Timestamp))
 	binary.BigEndian.PutUint16(nrFundsTx[:], b.NrFundsTx)
 	binary.BigEndian.PutUint16(nrAccTx[:], b.NrAccTx)
 	binary.BigEndian.PutUint16(nrStakeTx[:], b.NrStakeTx)
+	binary.BigEndian.PutUint16(nrConsolidationTx[:], b.NrConsolidationTx)
 	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
 	binary.BigEndian.PutUint32(height[:], b.Height)
 

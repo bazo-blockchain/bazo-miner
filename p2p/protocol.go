@@ -13,6 +13,7 @@ const (
 	VERIFIEDTX_BRDCST = 5
 	BLOCK_BRDCST      = 6
 	TX_BRDCST_ACK     = 7
+	CONSOLIDATIONTX_BRDCST    = 8
 
 	FUNDSTX_REQ            = 10
 	ACCTX_REQ              = 11
@@ -23,6 +24,7 @@ const (
 	ACC_REQ                = 16
 	ROOTACC_REQ            = 17
 	INTERMEDIATE_NODES_REQ = 18
+	CONSOLIDATIONTX_REQ    = 19
 
 	FUNDSTX_RES            = 20
 	ACCTX_RES              = 21

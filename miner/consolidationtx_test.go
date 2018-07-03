@@ -2,11 +2,14 @@ package miner
 
 import (
 	"testing"
-	"math/rand"
+	rand "math/rand"
+	crand "crypto/rand"
 	"time"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 )
 
 /**
@@ -35,7 +38,27 @@ var InitialBalance uint64 = 100000
 
 
 
+func getNewAddr() (hash [32]byte){
+	newKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
+	newAccPub1, newAccPub2 := newKey.PublicKey.X.Bytes(), newKey.PublicKey.Y.Bytes()
+	var pubKey [64]byte
+	copy(pubKey[0:32], newAccPub1)
+	copy(pubKey[32:64], newAccPub2)
+	address := storage.GetAddressFromPubKey(&newKey.PublicKey)
+	return storage.SerializeHashContent(address)
+}
 
+func getTestState() (protocol.StateAccounts){
+	teststate := make(protocol.StateAccounts)
+	addr := getNewAddr()
+	fmt.Printf("Test Addr used for consolidation: %v", addr)
+	consAcc := new(protocol.ConsolidatedAccount)
+	consAcc.Account = addr
+	consAcc.Balance = 1000
+	consAcc.Staking = false
+	teststate[addr] = consAcc
+	return teststate
+}
 
 func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, [][32]byte) {
 
@@ -73,21 +96,36 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 		}
 	}
 
-
-
-
 	return hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice
 }
 
 func createTestChain(t *testing.T)([]*protocol.Block) {
 	var blockList []*protocol.Block
 	var numberOfTestBlocks = 2
+	testState := getTestState()
 	prevHash := [32]byte{}
 
 	// Create blocks filled with random transactions, finalize (PoW etc.) and validate (state change)
 	for cnt := int(accA.TxCnt); cnt < numberOfTestBlocks; cnt++ {
 		b := newBlock(prevHash, [32]byte{}, [32]byte{}, uint32(cnt))
 		createBlock(t, b)
+
+		consTx, err := protocol.ConstrConsolidationTx(0, testState, prevHash)
+		if err != nil {
+			t.Errorf("Could not create test consolidationTx: %v\n", err)
+		}
+		if cnt == 1 {
+			if err := addTx(b, consTx); err == nil {
+				//Might be that we generated a block that was already generated before
+				if storage.ReadOpenTx(consTx.Hash()) != nil || storage.ReadClosedTx(consTx.Hash()) != nil {
+					continue
+				}
+				storage.WriteOpenTx(consTx)
+			} else {
+				fmt.Print(err)
+			}
+		}
+		// Add consolidation tx
 		if err := finalizeBlock(b); err != nil {
 			t.Errorf("Could not finalize block: %v\n", err)
 		}
@@ -106,28 +144,7 @@ func TestBasicConsolidationTx(t *testing.T) {
 	cleanAndPrepare()
 	chain := createTestChain(t)
 
-	// Create a snapshot of the current state
-	state := make(protocol.StateAccounts)
-
-	// Process all the blocks in the chain
-	for _, block := range chain {
-		// Skip empty blocks
-		if block == nil {
-			continue
-		}
-		if _, exists := state[block.Beneficiary]; !exists {
-			initialiseConsAccount(state, block.Beneficiary)
-		}
-
-		processFundsTx(state, block)
-		processStakeTx(state, block)
-		// process other TX
-	}
-
-	// The consolidation tx creates a snapshot of the system till a certain
-	// block of which we have to keep track of
-	lastBlockHash := chain[len(chain)-1].Hash
-	consTx, err := protocol.ConstrConsolidationTx(0, state, lastBlockHash)
+	consTx, err := GetConsolidationTxFromChain(chain)
 	if err != nil {
 		t.Error(err)
 	}

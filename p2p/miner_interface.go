@@ -15,6 +15,7 @@ var (
 	AccTxChan    = make(chan *protocol.AccTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
 	StakeTxChan  = make(chan *protocol.StakeTx)
+	ConsolidationTxChan  = make(chan *protocol.ConsolidationTx)
 
 	BlockReqChan = make(chan []byte)
 )
@@ -67,7 +68,15 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 			return
 		}
 		StakeTxChan <- stakeTx
+	case CONSOLIDATIONTX_RES:
+		var ConsolidationTx *protocol.ConsolidationTx
+		ConsolidationTx = ConsolidationTx.Decode(payload)
+		if ConsolidationTx == nil {
+			return
+		}
+		ConsolidationTxChan <- ConsolidationTx
 	}
+
 }
 
 func forwardBlockReqToMiner(p *peer, payload []byte) {

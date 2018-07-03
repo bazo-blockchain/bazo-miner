@@ -13,6 +13,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		processTxBrdcst(p, payload, CONFIGTX_BRDCST)
 	case STAKETX_BRDCST:
 		processTxBrdcst(p, payload, STAKETX_BRDCST)
+	case CONSOLIDATIONTX_BRDCST:
+		processTxBrdcst(p, payload, CONSOLIDATIONTX_BRDCST)
 	case BLOCK_BRDCST:
 		forwardBlockToMiner(p, payload)
 	case TIME_BRDCST:
@@ -27,6 +29,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		txRes(p, payload, CONFIGTX_REQ)
 	case STAKETX_REQ:
 		txRes(p, payload, STAKETX_REQ)
+	case CONSOLIDATIONTX_REQ:
+		txRes(p, payload, CONSOLIDATIONTX_REQ)
 	case BLOCK_REQ:
 		blockRes(p, payload)
 	case ACC_REQ:
@@ -55,6 +59,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardTxReqToMiner(p, payload, CONFIGTX_RES)
 	case STAKETX_RES:
 		forwardTxReqToMiner(p, payload, STAKETX_RES)
+	case CONSOLIDATIONTX_RES:
+		forwardTxReqToMiner(p, payload, CONSOLIDATIONTX_RES)
 	default:
 		//Send default NOT_FOUND
 		packet := BuildPacket(NOT_FOUND, nil)
