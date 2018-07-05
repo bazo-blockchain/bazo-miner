@@ -3,7 +3,7 @@ package p2p
 import "fmt"
 
 //All incoming messages are processed here and acted upon accordingly
-func processIncomingMsg(p *Peer, header *Header, payload []byte) {
+func processIncomingMsg(p *peer, header *Header, payload []byte) {
 
 	switch header.TypeID {
 	//BROADCASTING

@@ -28,12 +28,12 @@ func receiveBlockFromMiner() {
 	}
 }
 
-func forwardBlockToMiner(p *Peer, payload []byte) {
+func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
 //These are transactions the miner specifically requested.
-func forwardTxReqToMiner(p *Peer, payload []byte, txType uint8) {
+func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 	if payload == nil {
 		return
 	}
@@ -70,7 +70,7 @@ func forwardTxReqToMiner(p *Peer, payload []byte, txType uint8) {
 	}
 }
 
-func forwardBlockReqToMiner(p *Peer, payload []byte) {
+func forwardBlockReqToMiner(p *peer, payload []byte) {
 	BlockReqChan <- payload
 }
 

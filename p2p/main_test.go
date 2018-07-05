@@ -23,8 +23,8 @@ func TestMain(m *testing.M) {
 	//channels for specific miner requests
 
 	brdcstMsg = make(chan []byte)
-	register = make(chan *Peer)
-	disconnect = make(chan *Peer)
+	register = make(chan *peer)
+	disconnect = make(chan *peer)
 
 	iplistChan = make(chan string, MIN_MINERS)
 

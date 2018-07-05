@@ -11,7 +11,7 @@ import (
 )
 
 //This file responds to incoming requests from miners in a synchronous fashion
-func txRes(p *Peer, payload []byte, txKind uint8) {
+func txRes(p *peer, payload []byte, txKind uint8) {
 	var txHash [32]byte
 	copy(txHash[:], payload[0:32])
 
@@ -49,7 +49,7 @@ func txRes(p *Peer, payload []byte, txKind uint8) {
 }
 
 //Here as well, checking open and closed block storage
-func blockRes(p *Peer, payload []byte) {
+func blockRes(p *peer, payload []byte) {
 	var packet []byte
 	var block *protocol.Block
 	var blockHash [32]byte
@@ -80,7 +80,7 @@ func blockRes(p *Peer, payload []byte) {
 }
 
 //Response the requested block SPV header
-func blockHeaderRes(p *Peer, payload []byte) {
+func blockHeaderRes(p *peer, payload []byte) {
 	var encodedHeader, packet []byte
 
 	//If no specific header is requested, send latest
@@ -108,7 +108,7 @@ func blockHeaderRes(p *Peer, payload []byte) {
 }
 
 //Responds to an account request from another miner
-func accRes(p *Peer, payload []byte) {
+func accRes(p *peer, payload []byte) {
 	var packet []byte
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
@@ -122,7 +122,7 @@ func accRes(p *Peer, payload []byte) {
 	sendData(p, packet)
 }
 
-func rootAccRes(p *Peer, payload []byte) {
+func rootAccRes(p *peer, payload []byte) {
 	var packet []byte
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
@@ -137,7 +137,7 @@ func rootAccRes(p *Peer, payload []byte) {
 }
 
 //Completes the handshake with another miner.
-func pongRes(p *Peer, payload []byte, peerType uint) {
+func pongRes(p *peer, payload []byte, peerType uint) {
 	//Payload consists of a 2 bytes array (port number [big endian encoded]).
 	port := _pongRes(payload)
 
@@ -177,7 +177,7 @@ func _pongRes(payload []byte) string {
 	}
 }
 
-func neighborRes(p *Peer) {
+func neighborRes(p *peer) {
 	//only supporting ipv4 addresses for now, makes fixed-size structure easier
 	//in the future following structure is possible:
 	//1) nr of ipv4 addresses, 2) nr of ipv6 addresses, followed by list of both
@@ -226,7 +226,7 @@ func _neighborRes(ipportList []string) (payload []byte) {
 	return payload
 }
 
-func intermediateNodesRes(p *Peer, payload []byte) {
+func intermediateNodesRes(p *peer, payload []byte) {
 	var blockHash, txHash [32]byte
 	var nodeHashes [][]byte
 	var packet []byte

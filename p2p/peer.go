@@ -15,7 +15,7 @@ const (
 //The reason we use an additional listener port is because the port the miner connected to this peer
 //is not the same as the one it listens to for new connections. When we are queried for neighbors
 //we send the IP address in p.conn.RemotAddr() with the listenerPort.
-type Peer struct {
+type peer struct {
 	conn         net.Conn
 	ch           chan []byte
 	l            sync.Mutex
@@ -25,8 +25,8 @@ type Peer struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func NewPeer(conn net.Conn, listenerPort string, peerType uint) *Peer {
-	p := new(Peer)
+func NewPeer(conn net.Conn, listenerPort string, peerType uint) *peer {
+	p := new(peer)
 	p.conn = conn
 	p.ch = nil
 	p.l = sync.Mutex{}
@@ -39,12 +39,12 @@ func NewPeer(conn net.Conn, listenerPort string, peerType uint) *Peer {
 
 //PeerStruct is a thread-safe map that supports all necessary map operations needed by the server.
 type peersStruct struct {
-	minerConns  map[*Peer]bool
-	clientConns map[*Peer]bool
+	minerConns  map[*peer]bool
+	clientConns map[*peer]bool
 	peerMutex   sync.Mutex
 }
 
-func (p *Peer) getIPPort() string {
+func (p *peer) getIPPort() string {
 	ip := strings.Split(p.conn.RemoteAddr().String(), ":")
 	//Cut off original port.
 	port := p.listenerPort
@@ -52,7 +52,7 @@ func (p *Peer) getIPPort() string {
 	return ip[0] + ":" + port
 }
 
-func (peers peersStruct) add(p *Peer) {
+func (peers peersStruct) add(p *peer) {
 	peers.peerMutex.Lock()
 	defer peers.peerMutex.Unlock()
 
@@ -64,7 +64,7 @@ func (peers peersStruct) add(p *Peer) {
 	}
 }
 
-func (peers peersStruct) delete(p *Peer) {
+func (peers peersStruct) delete(p *peer) {
 	peers.peerMutex.Lock()
 	defer peers.peerMutex.Unlock()
 
@@ -87,7 +87,7 @@ func (peers peersStruct) len(peerType uint) (length int) {
 	return length
 }
 
-func (peers peersStruct) getRandomPeer(peerType uint) (p *Peer) {
+func (peers peersStruct) getRandomPeer(peerType uint) (p *peer) {
 	//Acquire list before locking, otherwise deadlock
 	peerList := peers.getAllPeers(peerType)
 
@@ -98,11 +98,11 @@ func (peers peersStruct) getRandomPeer(peerType uint) (p *Peer) {
 	}
 }
 
-func (peers peersStruct) getAllPeers(peerType uint) []*Peer {
+func (peers peersStruct) getAllPeers(peerType uint) []*peer {
 	peers.peerMutex.Lock()
 	defer peers.peerMutex.Unlock()
 
-	var peerList []*Peer
+	var peerList []*peer
 
 	if peerType == PEERTYPE_MINER {
 		for p := range peers.minerConns {

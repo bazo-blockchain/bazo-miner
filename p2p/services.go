@@ -32,7 +32,7 @@ func broadcastService() {
 }
 
 //Belongs to the broadcast service
-func peerBroadcast(p *Peer) {
+func peerBroadcast(p *peer) {
 	for msg := range p.ch {
 		sendData(p, msg)
 	}

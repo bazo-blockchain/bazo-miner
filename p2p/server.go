@@ -18,8 +18,8 @@ var (
 
 	iplistChan = make(chan string, MIN_MINERS)
 	brdcstMsg  = make(chan []byte)
-	register   = make(chan *Peer)
-	disconnect = make(chan *Peer)
+	register   = make(chan *peer)
+	disconnect = make(chan *peer)
 )
 
 //Entry point for p2p package
@@ -28,8 +28,8 @@ func Init(ipport string) {
 	InitLogging()
 
 	//Initialize peer map
-	peers.minerConns = make(map[*Peer]bool)
-	peers.clientConns = make(map[*Peer]bool)
+	peers.minerConns = make(map[*peer]bool)
+	peers.clientConns = make(map[*peer]bool)
 
 	//Start all services that are running concurrently
 	go broadcastService()
@@ -58,7 +58,7 @@ func bootstrap() {
 	go peerConn(p)
 }
 
-func initiateNewMinerConnection(dial string) (*Peer, error) {
+func initiateNewMinerConnection(dial string) (*peer, error) {
 	var conn net.Conn
 
 	//Check if we already established a dial with that ip or if the ip belongs to us
@@ -129,7 +129,7 @@ func listener(ipport string) {
 	}
 }
 
-func handleNewConn(p *Peer) {
+func handleNewConn(p *peer) {
 	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
 	header, payload, err := RcvData(p)
 
@@ -141,7 +141,7 @@ func handleNewConn(p *Peer) {
 	processIncomingMsg(p, header, payload)
 }
 
-func peerConn(p *Peer) {
+func peerConn(p *peer) {
 	if p.peerType == PEERTYPE_MINER {
 		logger.Printf("Adding a new miner: %v\n", p.getIPPort())
 	} else if p.peerType == PEERTYPE_CLIENT {

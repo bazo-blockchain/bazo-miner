@@ -9,7 +9,7 @@ import (
 
 //Process tx broadcasts from other miners. We can't broadcast incoming messages directly, first check if
 //the tx has already been broadcast before, whether it is a valid tx etc.
-func processTxBrdcst(p *Peer, payload []byte, brdcstType uint8) {
+func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 
 	var tx protocol.Transaction
 
@@ -67,7 +67,7 @@ func processTxBrdcst(p *Peer, payload []byte, brdcstType uint8) {
 	brdcstMsg <- toBrdcst
 }
 
-func processTimeRes(p *Peer, payload []byte) {
+func processTimeRes(p *peer, payload []byte) {
 
 	time := int64(binary.BigEndian.Uint64(payload))
 	//Concurrent writes need to be protected
@@ -78,7 +78,7 @@ func processTimeRes(p *Peer, payload []byte) {
 	p.time = time
 }
 
-func processNeighborRes(p *Peer, payload []byte) {
+func processNeighborRes(p *peer, payload []byte) {
 
 	//Parse the incoming ipv4 addresses
 	ipportList := _processNeighborRes(payload)

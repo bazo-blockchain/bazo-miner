@@ -24,7 +24,7 @@ func Connect(connectionString string) *net.TCPConn {
 	return conn
 }
 
-func RcvData(p *Peer) (header *Header, payload []byte, err error) {
+func RcvData(p *peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = ReadHeader(reader)
 
@@ -42,7 +42,7 @@ func RcvData(p *Peer) (header *Header, payload []byte, err error) {
 		}
 	}
 
-	fmt.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[header.TypeID])
+	fmt.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
 
 	return header, payload, nil
 }
@@ -67,8 +67,8 @@ func RcvData_(c net.Conn) (header *Header, payload []byte, err error) {
 	return header, payload, nil
 }
 
-func sendData(p *Peer, payload []byte) {
-	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[payload[4]], len(payload)-HEADER_LEN)
+func sendData(p *peer, payload []byte) {
+	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN)
 
 	p.l.Lock()
 	p.conn.Write(payload)
