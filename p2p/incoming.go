@@ -29,12 +29,12 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
 		blockRes(p, payload)
+	case BLOCK_HEADER_REQ:
+		blockHeaderRes(p, payload)
 	case ACC_REQ:
 		accRes(p, payload)
 	case ROOTACC_REQ:
 		rootAccRes(p, payload)
-	case BLOCK_HEADER_REQ:
-		blockHeaderRes(p, payload)
 	case MINER_PING:
 		pongRes(p, payload, MINER_PING)
 	case CLIENT_PING:
