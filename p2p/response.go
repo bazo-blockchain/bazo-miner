@@ -123,7 +123,7 @@ func rootAccRes(p *peer, payload []byte) {
 	if acc, _ := storage.GetRootAccount(hash); acc != nil {
 		packet = BuildPacket(ROOTACC_RES, acc.Encode())
 	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
+		packet = BuildPacket(ROOTACC_RES, nil)
 	}
 
 	sendData(p, packet)
