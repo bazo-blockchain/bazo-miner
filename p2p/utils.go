@@ -42,7 +42,7 @@ func RcvData(p *peer) (header *Header, payload []byte, err error) {
 		}
 	}
 
-	fmt.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
+	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
 
 	return header, payload, nil
 }
