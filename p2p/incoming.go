@@ -1,7 +1,5 @@
 package p2p
 
-import "fmt"
-
 //All incoming messages are processed here and acted upon accordingly
 func processIncomingMsg(p *peer, header *Header, payload []byte) {
 
@@ -20,7 +18,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case TIME_BRDCST:
 		processTimeRes(p, payload)
 
-		//Requests
+		//REQUESTS
 	case FUNDSTX_REQ:
 		txRes(p, payload, FUNDSTX_REQ)
 	case ACCTX_REQ:
@@ -30,8 +28,6 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case STAKETX_REQ:
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
-		//TODO Remove
-		fmt.Printf("Receiving request block(hash): %x\n", payload)
 		blockRes(p, payload)
 	case ACC_REQ:
 		accRes(p, payload)
@@ -48,12 +44,10 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case INTERMEDIATE_NODES_REQ:
 		intermediateNodesRes(p, payload)
 
-	//Responses
+		//RESPONSES
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
-		//TODO Remove
-		fmt.Printf("Receiving BLOCK_RES\n")
 		forwardBlockReqToMiner(p, payload)
 	case FUNDSTX_RES:
 		forwardTxReqToMiner(p, payload, FUNDSTX_RES)

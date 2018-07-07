@@ -3,7 +3,6 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -58,8 +57,6 @@ func blockRes(p *peer, payload []byte) {
 	if len(payload) > 0 {
 		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
-			//TODO Remove
-			fmt.Printf("No closed block. Search open block(hash): %x\n", blockHash)
 			block = storage.ReadOpenBlock(blockHash)
 		}
 	} else {
@@ -68,12 +65,8 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
-		//TODO Remove
-		fmt.Printf("Sending block(hash): %x\n", blockHash)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
-		//TODO Remove
-		fmt.Printf("Block(hash) not found: %x\n", blockHash)
 	}
 
 	sendData(p, packet)
