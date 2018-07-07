@@ -69,9 +69,15 @@ func GetTxPubKeys(block *protocol.Block) (txPubKeys [][32]byte) {
 //Get all pubKey involved in AccTx
 func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][32]byte) {
 	for _, txHash := range accTxData {
+		var tx protocol.Transaction
 		var accTx *protocol.AccTx
-		closedTx := ReadClosedTx(txHash)
-		accTx = closedTx.(*protocol.AccTx)
+
+		tx = ReadClosedTx(txHash)
+		if tx == nil {
+			tx = ReadOpenTx(txHash)
+		}
+
+		accTx = tx.(*protocol.AccTx)
 		accTxPubKeys = append(accTxPubKeys, accTx.Issuer)
 		accTxPubKeys = append(accTxPubKeys, protocol.SerializeHashContent(accTx.PubKey))
 	}
@@ -82,9 +88,15 @@ func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][32]byte) {
 //Get all pubKey involved in FundsTx
 func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	for _, txHash := range fundsTxData {
+		var tx protocol.Transaction
 		var fundsTx *protocol.FundsTx
-		closedTx := ReadClosedTx(txHash)
-		fundsTx = closedTx.(*protocol.FundsTx)
+
+		tx = ReadClosedTx(txHash)
+		if tx == nil {
+			tx = ReadOpenTx(txHash)
+		}
+
+		fundsTx = tx.(*protocol.FundsTx)
 		fundsTxPubKeys = append(fundsTxPubKeys, fundsTx.From)
 		fundsTxPubKeys = append(fundsTxPubKeys, fundsTx.To)
 	}
