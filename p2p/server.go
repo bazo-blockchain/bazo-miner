@@ -16,10 +16,11 @@ var (
 	Ipport string
 	peers  peersStruct
 
-	iplistChan = make(chan string, MIN_MINERS)
-	brdcstMsg  = make(chan []byte)
-	register   = make(chan *peer)
-	disconnect = make(chan *peer)
+	iplistChan      = make(chan string, MIN_MINERS)
+	minerBrdcstMsg  = make(chan []byte)
+	clientBrdcstMsg = make(chan []byte)
+	register        = make(chan *peer)
+	disconnect      = make(chan *peer)
 )
 
 //Entry point for p2p package
@@ -35,7 +36,8 @@ func Init(ipport string) {
 	go broadcastService()
 	go checkHealthService()
 	go timeService()
-	go receiveBlockFromMiner()
+	go forwardBlockBrdcstToMiner()
+	go forwardBlockHeaderBrdcstToMiner()
 	go peerService()
 
 	//Set localPort global, this will be the listening port for incoming connection
@@ -147,7 +149,6 @@ func peerConn(p *peer) {
 	} else if p.peerType == PEERTYPE_CLIENT {
 		logger.Printf("Adding a new client: %v\n", p.getIPPort())
 	}
-
 
 	//Give the peer a channel
 	p.ch = make(chan []byte)

@@ -22,9 +22,13 @@ func broadcastService() {
 	for {
 		select {
 		//Broadcasting all messages
-		case msg := <-brdcstMsg:
+		case msg := <-minerBrdcstMsg:
 			for p := range peers.minerConns {
 				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away
+				p.ch <- msg
+			}
+		case msg := <-clientBrdcstMsg:
+			for p := range peers.clientConns {
 				p.ch <- msg
 			}
 		}
@@ -85,6 +89,6 @@ func timeService() {
 	for {
 		time.Sleep(TIME_BRDCST_INTERVAL * time.Second)
 		packet := BuildPacket(TIME_BRDCST, getTime())
-		brdcstMsg <- packet
+		minerBrdcstMsg <- packet
 	}
 }

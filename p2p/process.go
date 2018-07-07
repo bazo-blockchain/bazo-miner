@@ -64,7 +64,7 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	logger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
 	storage.WriteOpenTx(tx)
 	toBrdcst := BuildPacket(brdcstType, payload)
-	brdcstMsg <- toBrdcst
+	minerBrdcstMsg <- toBrdcst
 }
 
 func processTimeRes(p *peer, payload []byte) {
