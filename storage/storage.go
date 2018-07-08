@@ -88,6 +88,13 @@ func Init(dbname string, ipport string) {
 		return nil
 	})
 	db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucket([]byte("closedconsolidations"))
+		if err != nil {
+			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
+		}
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
 		_, err = tx.CreateBucket([]byte("closedconfigs"))
 		if err != nil {
 			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)

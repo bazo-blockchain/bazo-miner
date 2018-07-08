@@ -50,6 +50,8 @@ func DeleteClosedTx(transaction protocol.Transaction) {
 		bucket = "closedconfigs"
 	case *protocol.StakeTx:
 		bucket = "closedstakes"
+	case *protocol.ConsolidationTx:
+		bucket = "closedconsolidations"
 	}
 
 	hash := transaction.Hash()
@@ -110,6 +112,14 @@ func DeleteAll() {
 	})
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("closedstakes"))
+		b.ForEach(func(k, v []byte) error {
+			b.Delete(k)
+			return nil
+		})
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("closedconsolidations"))
 		b.ForEach(func(k, v []byte) error {
 			b.Delete(k)
 			return nil

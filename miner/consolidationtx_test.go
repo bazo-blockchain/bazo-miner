@@ -101,7 +101,7 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 
 func createTestChain(t *testing.T)([]*protocol.Block) {
 	var blockList []*protocol.Block
-	var numberOfTestBlocks = 2
+	var numberOfTestBlocks = 4
 	testState := getTestState()
 	prevHash := [32]byte{}
 
@@ -110,11 +110,12 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 		b := newBlock(prevHash, [32]byte{}, [32]byte{}, uint32(cnt))
 		createBlock(t, b)
 
-		consTx, err := protocol.ConstrConsolidationTx(0, testState, prevHash)
-		if err != nil {
-			t.Errorf("Could not create test consolidationTx: %v\n", err)
-		}
-		if cnt == 1 {
+		if cnt == 2 {
+			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash)
+			if err != nil {
+				t.Errorf("Could not create test consolidationTx: %v\n", err)
+			}
+			fmt.Printf("created tx %v\n", consTx.Hash())
 			if err := addTx(b, consTx); err == nil {
 				//Might be that we generated a block that was already generated before
 				if storage.ReadOpenTx(consTx.Hash()) != nil || storage.ReadClosedTx(consTx.Hash()) != nil {

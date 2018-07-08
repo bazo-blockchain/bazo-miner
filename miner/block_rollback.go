@@ -78,7 +78,7 @@ func preValidationRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fun
 		var consolidationTx *protocol.ConsolidationTx
 		tx := storage.ReadClosedTx(hash)
 		if tx == nil {
-			return nil, nil, nil, nil, nil, errors.New("CRITICAL: Validated stakeTx was not in the confirmed tx storage")
+			return nil, nil, nil, nil, nil, errors.New("CRITICAL: Validated ConsolidationTx was not in the confirmed tx storage")
 		} else {
 			consolidationTx = tx.(*protocol.ConsolidationTx)
 		}

@@ -68,6 +68,12 @@ func BuildMerkleTree(b *Block) *MerkleTree {
 		}
 	}
 
+	if b.ConsolidationTxData != nil {
+		for _, txHash := range b.ConsolidationTxData {
+			txHashes = append(txHashes, txHash)
+		}
+	}
+
 	//Merkle root for no transactions is 0 hash
 	if len(txHashes) == 0 {
 		return nil

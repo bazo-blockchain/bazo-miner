@@ -40,7 +40,6 @@ func WriteLastClosedBlock(block *protocol.Block) (err error) {
 
 //Changing the "tx" shortcut here and using "transaction" to distinguish between bolt's transactions
 func WriteOpenTx(transaction protocol.Transaction) {
-
 	txMemPool[transaction.Hash()] = transaction
 }
 
@@ -56,6 +55,8 @@ func WriteClosedTx(transaction protocol.Transaction) (err error) {
 		bucket = "closedconfigs"
 	case *protocol.StakeTx:
 		bucket = "closedstakes"
+	case *protocol.ConsolidationTx:
+		bucket = "closedconsolidations"
 	}
 
 	hash := transaction.Hash()

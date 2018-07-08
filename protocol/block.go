@@ -10,7 +10,7 @@ import (
 
 const (
 	HASH_LEN                = 32
-	MIN_BLOCKSIZE           = 318
+	MIN_BLOCKSIZE           = 320
 	MIN_BLOCKHEADER_SIZE    = 68
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
@@ -97,8 +97,8 @@ func (b *Block) GetSize() uint64 {
 			int(b.NrAccTx)*HASH_LEN +
 			int(b.NrFundsTx)*HASH_LEN +
 			int(b.NrConfigTx)*HASH_LEN +
-			int(b.NrStakeTx)*HASH_LEN
-	//TODO(fontana): +ConsolidationTx?
+			int(b.NrStakeTx)*HASH_LEN +
+			int(b.NrConsolidationTx)*HASH_LEN
 
 	if b.BloomFilter != nil {
 		encodedBF, _ := b.BloomFilter.GobEncode()
@@ -151,11 +151,11 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[147:149], nrAccTx[:])
 	encodedBlock[149] = byte(b.NrConfigTx)
 	copy(encodedBlock[150:152], nrStakeTx[:])
-	copy(encodedBlock[152:184], b.SlashedAddress[:])
-	copy(encodedBlock[184:186], nrElementsBF[:])
-	//TODO(fontana): ConsolidationTx?
+	copy(encodedBlock[152:154], nrConsolidationTx[:])
+	copy(encodedBlock[154:186], b.SlashedAddress[:])
+	copy(encodedBlock[186:188], nrElementsBF[:])
 
-	index := 186
+	index := 188
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -196,6 +196,11 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	}
 
 	for _, txHash := range b.StakeTxData {
+		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
+		index += HASH_LEN
+	}
+
+	for _, txHash := range b.ConsolidationTxData {
 		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
 		index += HASH_LEN
 	}
@@ -259,11 +264,11 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[147:149])
 	b.NrConfigTx = uint8(encodedBlock[149])
 	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
-	copy(b.SlashedAddress[:], encodedBlock[152:184])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[184:186])
-	//TODO(fontana): ConsolidationTx?
+	b.NrConsolidationTx = binary.BigEndian.Uint16(encodedBlock[152:154])
+	copy(b.SlashedAddress[:], encodedBlock[154:186])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[186:188])
 
-	index := 186
+	index := 188
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
@@ -315,6 +320,12 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	for cnt := 0; cnt < int(b.NrStakeTx); cnt++ {
 		copy(hash[:], encodedBlock[index:index+HASH_LEN])
 		b.StakeTxData = append(b.StakeTxData, hash)
+		index += HASH_LEN
+	}
+
+	for cnt := 0; cnt < int(b.NrConsolidationTx); cnt++ {
+		copy(hash[:], encodedBlock[index:index+HASH_LEN])
+		b.ConsolidationTxData = append(b.ConsolidationTxData, hash)
 		index += HASH_LEN
 	}
 

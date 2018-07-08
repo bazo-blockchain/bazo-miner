@@ -43,6 +43,13 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 			return
 		}
 		tx = sTx
+	case CONSOLIDATIONTX_BRDCST:
+		var sTx *protocol.ConsolidationTx
+		sTx = sTx.Decode(payload)
+		if sTx == nil {
+			return
+		}
+		tx = sTx
 	}
 
 	//Response tx acknowledgment

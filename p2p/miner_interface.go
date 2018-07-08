@@ -69,12 +69,12 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 		}
 		StakeTxChan <- stakeTx
 	case CONSOLIDATIONTX_RES:
-		var ConsolidationTx *protocol.ConsolidationTx
-		ConsolidationTx = ConsolidationTx.Decode(payload)
-		if ConsolidationTx == nil {
+		var consolidationTx *protocol.ConsolidationTx
+		consolidationTx = consolidationTx.Decode(payload)
+		if consolidationTx == nil {
 			return
 		}
-		ConsolidationTxChan <- ConsolidationTx
+		ConsolidationTxChan <- consolidationTx
 	}
 
 }

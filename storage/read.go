@@ -133,10 +133,9 @@ func ReadClosedTx(hash [32]byte) (transaction protocol.Transaction) {
 		return staketx.Decode(encodedTx)
 	}
 
-
 	var consolidationtx *protocol.ConsolidationTx
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedstakes"))
+		b := tx.Bucket([]byte("closedconsolidations"))
 		encodedTx = b.Get(hash[:])
 		return nil
 	})

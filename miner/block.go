@@ -231,6 +231,7 @@ func addConsolidationTx(b *protocol.Block, tx *protocol.ConsolidationTx) error {
 	//No further checks needed, static checks were already done with verify()
 	b.ConsolidationTxData = append(b.ConsolidationTxData, tx.Hash())
 	logger.Printf("Added tx to the ConsolidationTxData slice: %v", *tx)
+	fmt.Printf("Added tx to the ConsolidationTxData slice: %v\n", *tx)
 	return nil
 }
 
@@ -278,6 +279,16 @@ func finalizeBlock(block *protocol.Block) error {
 	//Put pieces together to get the final hash
 	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
 
+	// Add ConsolidationTx if necessary
+	if (lastBlock.Height +1) % 10 == 0 {
+		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
+		storage.WriteOpenTx(consolidationTx)
+
+		if err != nil {
+			fmt.Println("Error while adding consolidation tx")
+		}
+
+	}
 	//This doesn't need to be hashed, because we already have the merkle tree taking care of consistency
 	block.NrAccTx = uint16(len(block.AccTxData))
 	block.NrFundsTx = uint16(len(block.FundsTxData))
@@ -765,10 +776,10 @@ func fetchConsolidationTxData(block *protocol.Block, ConsolidationTxSlice []*pro
 		}
 
 		var tx protocol.Transaction
-		var ConsolidationTx *protocol.ConsolidationTx
+		var consolidationTx *protocol.ConsolidationTx
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
-			ConsolidationTx = tx.(*protocol.ConsolidationTx)
+			consolidationTx = tx.(*protocol.ConsolidationTx)
 		} else {
 			err := p2p.TxReq(txHash, p2p.CONSOLIDATIONTX_REQ)
 			if err != nil {
@@ -777,17 +788,16 @@ func fetchConsolidationTxData(block *protocol.Block, ConsolidationTxSlice []*pro
 			}
 
 			select {
-			case ConsolidationTx = <-p2p.ConsolidationTxChan:
+			case consolidationTx = <-p2p.ConsolidationTxChan:
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
 				errChan <- errors.New("ConsolidationTx fetch timed out.")
 				return
 			}
-			if ConsolidationTx.Hash() != txHash {
+			if consolidationTx.Hash() != txHash {
 				errChan <- errors.New("Received txHash did not correspond to our request")
 			}
 		}
-
-		ConsolidationTxSlice[cnt] = ConsolidationTx
+		ConsolidationTxSlice[cnt] = consolidationTx
 	}
 	errChan <- nil
 }
@@ -862,6 +872,11 @@ func postValidation(data blockData) {
 	}
 
 	for _, tx := range data.stakeTxSlice {
+		storage.WriteClosedTx(tx)
+		storage.DeleteOpenTx(tx)
+	}
+
+	for _, tx := range data.consolidationTxSlice {
 		storage.WriteClosedTx(tx)
 		storage.DeleteOpenTx(tx)
 	}

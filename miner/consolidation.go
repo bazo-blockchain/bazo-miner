@@ -42,6 +42,10 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 			var stakeTx *protocol.StakeTx
 			stakeTx = stakeTx.Decode(payload)
 			tx = stakeTx
+		case p2p.CONSOLIDATIONTX_RES:
+			var consolidationTx *protocol.ConsolidationTx
+			consolidationTx = consolidationTx.Decode(payload)
+			tx = consolidationTx
 		}
 
 		conn.Close()
@@ -84,11 +88,10 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 
 func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.ConsolidationTxData {
-		fmt.Printf("reqeuestingg %v\n", txHash)
-		tx := reqTx(p2p.CONSOLIDATIONTX_RES, txHash)
+		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
 		fmt.Println(tx)
 		consolidationTx := tx.(*protocol.ConsolidationTx)
-		fmt.Println("CCCCCCC:\n %v\n:", consolidationTx)
+		fmt.Printf("CCCCCCC:\n %v\n:", consolidationTx)
 	}
 }
 
@@ -128,7 +131,7 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
 
-	// Process all the blocks in the chain
+	//Process all the blocks in the chain
 	for i := len(chain) - 1; i >= 0; i-- {
 		block := chain[i]
 		// Skip empty blocks
@@ -147,10 +150,10 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 
 	// The consolidation tx creates a snapshot of the system till a certain
 	// block of which we have to keep track of
-	lastBlockHash := chain[len(chain)-1].Hash
-	consTx, err := protocol.ConstrConsolidationTx(0, state, lastBlockHash)
+	lastBlockHash := chain[0].Hash
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash)
 	if err != nil {
-		errors.New(fmt.Sprintf("Error creating the seed file."))
-		}
+		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
+	}
 	return consTx, nil
 }

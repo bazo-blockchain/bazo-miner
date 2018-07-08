@@ -194,7 +194,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	//Should throw an error and result in a rollback, because of acc balance overflow
 	tmpBlock := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	tmpBlock.Beneficiary = minerHash
-	data := blockData{nil, funds2, nil, nil, tmpBlock}
+	data := blockData{nil, funds2, nil, nil, nil, tmpBlock}
 	if err := stateValidation(data); err == nil ||
 		minerBal != minerAcc.Balance ||
 		accA.Balance != accABal ||

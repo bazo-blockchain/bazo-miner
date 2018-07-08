@@ -2,10 +2,12 @@ package protocol
 
 import (
 	"fmt"
+	"encoding/binary"
 )
 
 const (
-	CONSOLIDATIONTX_SIZE = 213
+	CONSOLIDATIONTX_SIZE = 49
+	CONS_ACCOUNT_SIZE = 65
 )
 
 type ConsolidatedAccount struct {
@@ -21,7 +23,6 @@ type ConsolidationTx struct {
 	Header     byte
 	Fee        uint64
 	LastBlock  [32]byte
-	NumAccounts int // not needed
 	// TODO: length of the body should be included somewhere because I need to know how much body i need to read
 
 	// Body
@@ -33,7 +34,6 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 	tx.Header = header
 	tx.LastBlock = lastBlockHash
 	tx.Fee = 1
-	tx.NumAccounts = len(state)
 	totalBalance := uint64(0)
 	for hash, cons := range state {
 		consAccount := new(ConsolidatedAccount)
@@ -54,11 +54,10 @@ func (tx *ConsolidationTx) Hash() (hash [32]byte) {
 
 	txHash := struct {
 		Header byte
-		NumAccounts int
-
+		LastBlock   [32]byte
 	}{
 		tx.Header,
-		tx.NumAccounts,
+		tx.LastBlock,
 	}
 
 	return SerializeHashContent(txHash)
@@ -70,32 +69,83 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 	if tx == nil {
 		return nil
 	}
+	var fee, numberAccounts, balance [8]byte
+	binary.BigEndian.PutUint64(fee[:], tx.Fee)
+	binary.BigEndian.PutUint64(numberAccounts[:], uint64(len(tx.Accounts)))
 
-	encodedTx = make([]byte, CONSOLIDATIONTX_SIZE)
+	encodedTx = make([]byte, CONSOLIDATIONTX_SIZE+CONS_ACCOUNT_SIZE*len(tx.Accounts))
+
 	encodedTx[0] = tx.Header
+	copy(encodedTx[1:9], fee[:])
+	copy(encodedTx[9:41], tx.LastBlock[:])
+	copy(encodedTx[41:49], numberAccounts[:])
+	var isStaking byte
+	fmt.Printf("encode last block %v\n ", tx.LastBlock)
+	fmt.Printf("encode numaccounts %v\n ", len(tx.Accounts))
+	for i := 0; i < len(tx.Accounts); i++ {
+		acc := tx.Accounts[i]
+		if acc.Staking == true {
+			isStaking = 1
+		} else {
+			isStaking = 0
+		}
+		fmt.Printf("encode acc %v address %v\n ", i, acc.Account)
+		fmt.Printf("encode acc %v staking %v\n ", i, acc.Staking)
+		fmt.Printf("encode acc %v balance %v\n ", i, acc.Balance)
+		offset := 49 + i*(CONS_ACCOUNT_SIZE)
+		copy(encodedTx[offset:offset+32], acc.Account[:])
+		offset += 32
+		encodedTx[offset] = isStaking
+		offset += 1
+		binary.BigEndian.PutUint64(balance[:], uint64(acc.Balance))
+		copy(encodedTx[offset:offset+32], balance[:])
+	}
 
 	return encodedTx
 }
 
 func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 	tx = new(ConsolidationTx)
-
+	fmt.Printf("DencodedTx %v\n ", encodedTx)
 	tx.Header = encodedTx[0]
+	tx.Fee = binary.BigEndian.Uint64(encodedTx[1:9])
+	fmt.Printf("decode txFee %v\n ", tx.Fee)
+	copy(tx.LastBlock[:], encodedTx[9:41])
+	var numAccounts int
+	numAccounts = int(binary.BigEndian.Uint64(encodedTx[41:49]))
+	fmt.Printf("decode last block %v\n ", tx.LastBlock)
+	fmt.Printf("decode numaccounts %v\n ", numAccounts)
+	for i := 0; i < numAccounts; i++ {
+		offset := CONSOLIDATIONTX_SIZE + CONS_ACCOUNT_SIZE*i
+		consAccount := new(ConsolidatedAccount)
+		copy(consAccount.Account[:], encodedTx[offset:offset+32])
+		isStakingAsByte := encodedTx[offset+32]
+		consAccount.Staking = isStakingAsByte == 1
+		consAccount.Balance = binary.BigEndian.Uint64(encodedTx[offset+33:offset+65])
+		tx.Accounts = append(tx.Accounts, *consAccount)
+		fmt.Printf("decode acc %v address %v\n ", i, consAccount.Account)
+		fmt.Printf("decode acc %v staking %v\n ", i, consAccount.Staking)
+		fmt.Printf("decode acc %v balance %v\n ", i, consAccount.Balance)
+	}
 
 	return tx
 }
 
 func (tx *ConsolidationTx) TxFee() uint64 { return tx.Fee }
-func (tx *ConsolidationTx) Size() uint64  { return CONSOLIDATIONTX_SIZE }
+func (tx *ConsolidationTx) Size() uint64 {
+	return CONSOLIDATIONTX_SIZE + CONS_ACCOUNT_SIZE*uint64(len(tx.Accounts))
+}
 
 func (tx ConsolidationTx) String() string {
 	status := fmt.Sprintf(
-		"\nHeader: %v\n" +
-		"lastBlockHash: %v\n" +
-		"numAccounts: %v\n",
+		"\ntxhash: %v\n" +
+		"Header: %v\n" +
+		"LastBlockHash: %v\n" +
+		"Consolidated accounts: %v\n",
+		tx.Hash(),
 		tx.Header,
 		tx.LastBlock,
-		tx.NumAccounts,
+		len(tx.Accounts),
 	)
 	mapping := ""
 	for _, cons := range tx.Accounts {
