@@ -91,7 +91,16 @@ func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, bl
 		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
 		fmt.Println(tx)
 		consolidationTx := tx.(*protocol.ConsolidationTx)
-		fmt.Printf("CCCCCCC:\n %v\n:", consolidationTx)
+
+		for i := 0; i < len(consolidationTx.Accounts); i++ {
+			acc := consolidationTx.Accounts[i]
+			address := acc.Account
+			if _, exists := state[address]; !exists {
+				initialiseConsAccount(state, address)
+			}
+			state[address].Balance = acc.Balance
+			state[address].Staking = acc.Staking
+		}
 	}
 }
 
