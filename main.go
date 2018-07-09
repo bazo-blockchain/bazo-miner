@@ -10,6 +10,7 @@ import (
 func main() {
 	logger := storage.InitLogger()
 
+	//TODO Handle bootstrap address as app arg.
 	if len(os.Args) != 6 {
 		logger.Println("Usage: bazo-miner <dbname> <ipport> <validator> <seedfile> <multisig>")
 		return

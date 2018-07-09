@@ -48,6 +48,8 @@ func checkHealthService() {
 	for {
 		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 
+		//TODO If not connect to bootstrap miner, try to.
+
 		//Periodically check if we are well-connected
 		if len(peers.minerConns) >= MIN_MINERS {
 			continue
