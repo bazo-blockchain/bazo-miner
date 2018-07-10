@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"reflect"
 	"testing"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 //Tests whether state is the same before validation and after rollback of a block
@@ -66,9 +67,9 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	tmpState := make(map[[64]byte]protocol.Account)
 
 	//system parameters
-	var paramb []Parameters
-	var paramb2 []Parameters
-	var paramb3 []Parameters
+	var paramb []conf.Parameters
+	var paramb2 []conf.Parameters
+	var paramb3 []conf.Parameters
 
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
@@ -81,7 +82,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		stateb[acc.Address] = *acc
 	}
 
-	paramb = make([]Parameters, len(parameterSlice))
+	paramb = make([]conf.Parameters, len(parameterSlice))
 	copy(paramb, parameterSlice)
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
@@ -95,7 +96,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		stateb2[acc.Address] = *acc
 	}
 
-	paramb2 = make([]Parameters, len(parameterSlice))
+	paramb2 = make([]conf.Parameters, len(parameterSlice))
 	copy(paramb2, parameterSlice)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
@@ -109,7 +110,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		stateb3[acc.Address] = *acc
 	}
 
-	paramb3 = make([]Parameters, len(parameterSlice))
+	paramb3 = make([]conf.Parameters, len(parameterSlice))
 	copy(paramb3, parameterSlice)
 
 	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)

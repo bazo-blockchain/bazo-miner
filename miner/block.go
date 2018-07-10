@@ -258,7 +258,7 @@ func finalizeBlock(block *protocol.Block) error {
 
 	partialHash := block.HashBlock()
 
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+	prevSeeds := GetLatestSeeds(activeParameters.Num_included_prev_seeds, block)
 
 	//get the current hash of the seed that is stored in my account
 	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
@@ -491,7 +491,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 	}
 
 	//invalid if pos calculation is not correct
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+	prevSeeds := GetLatestSeeds(activeParameters.Num_included_prev_seeds, block)
 
 	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
 		return nil, nil, nil, nil, nil,errors.New("The nonce is incorrect.")

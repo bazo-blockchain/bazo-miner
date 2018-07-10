@@ -9,13 +9,14 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"sync"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 var (
 	logger              *log.Logger
 	blockValidation     = &sync.Mutex{}
-	parameterSlice      []Parameters
-	activeParameters    *Parameters
+	parameterSlice      []conf.Parameters
+	activeParameters    *conf.Parameters
 	uptodate            bool
 	slashingDict        map[[32]byte]SlashingProof
 	validatorAccAddress [64]byte

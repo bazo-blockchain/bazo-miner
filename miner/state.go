@@ -6,6 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 func accStateChange(txSlice []*protocol.AccTx) error {
@@ -101,7 +102,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
 //software with corresponding code to act on the configTx id/payload
 func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
-	var newParameters Parameters
+	var newParameters conf.Parameters
 	//Initialize it to state right now (before validating config txs)
 	newParameters = *activeParameters
 
@@ -119,7 +120,7 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 }
 
 //Separate function to reuse mechanism in client implementation
-func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol.ConfigTx) (change bool) {
+func CheckAndChangeParameters(parameters *conf.Parameters, configTxSlice *[]*protocol.ConfigTx) (change bool) {
 	for _, tx := range *configTxSlice {
 		switch tx.Id {
 		case protocol.FEE_MINIMUM_ID:

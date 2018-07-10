@@ -15,6 +15,7 @@ import (
 	"testing"
 	"log"
 	"io/ioutil"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 const (
@@ -209,7 +210,7 @@ func cleanAndPrepare() {
 	currentTargetTime = new(timerange)
 	target = append(target, 8)
 
-	var tmpSlice []Parameters
+	var tmpSlice []conf.Parameters
 	tmpSlice = append(tmpSlice, NewDefaultParameters())
 
 	slashingDict = make(map[[32]byte]SlashingProof)
@@ -232,7 +233,7 @@ func cleanAndPrepare() {
 	}
 
 	seedFile = TestSeedFileName
-	activeParameters.num_included_prev_seeds = 0
+	activeParameters.Num_included_prev_seeds = 0
 	activeParameters.Slash_reward = 1
 	activeParameters.Block_reward = 1
 	addTestingAccounts()
