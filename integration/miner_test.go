@@ -17,6 +17,7 @@ var (
 	waitTimeSeconds     = time.Duration(20) * time.Second
 	cmdCreateMiner      = []string{"accTx", "0", "1", RootKey, MinerKey}
 	cmdFundMiner        = []string{"fundsTx", "0", "1000", "1", "0", RootKey, MinerKey, MultisigKey}
+	cmdFundMiner2        = []string{"fundsTx", "0", "123", "2", "1", RootKey, MinerKey, MultisigKey}
 	cmdStakeMiner       = []string{"stakeTx", "0", "5", "1", MinerKey, MinerKey}
 	minerIpPort         = "127.0.0.1:8002"
 	minerDbName         = "miner_test.db"
@@ -31,6 +32,7 @@ func TestMiner (t *testing.T){
 
 	createMiner(t)
 	fundMiner(t)
+	fundMiner2(t)
 	stakeMiner(t)
 	//..start miner and check that everything is ok
 	startMiner(t)
@@ -62,6 +64,20 @@ func fundMiner(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(1000), acc.Balance, "incorrect balance")
 }
+
+func fundMiner2(t *testing.T) {
+	client.Process(cmdFundMiner2)
+	time.Sleep(waitTimeSeconds)
+
+	MinerPubKey, _, _ := storage.ExtractKeyFromFile(MinerKey)
+	MinerAccAddress := storage.GetAddressFromPubKey(&MinerPubKey)
+	client.InitState()
+
+	acc, _, err := client.GetAccount(MinerAccAddress)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1123), acc.Balance, "incorrect balance")
+}
+
 
 func stakeMiner(t *testing.T) {
 	client.Process(cmdStakeMiner)

@@ -7,12 +7,13 @@ import (
 
 const (
 	CONSOLIDATIONTX_SIZE = 49
-	CONS_ACCOUNT_SIZE = 65
+	CONS_ACCOUNT_SIZE = 97
 )
 
 type ConsolidatedAccount struct {
 	Account [32]byte
 	Balance uint64
+	TxCnt   uint32
 	Staking bool
 }
 type StateAccounts map[[32]byte]*ConsolidatedAccount
@@ -38,6 +39,7 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 	for hash, cons := range state {
 		consAccount := new(ConsolidatedAccount)
 		consAccount.Account = hash
+		consAccount.TxCnt = cons.TxCnt
 		consAccount.Balance = cons.Balance
 		consAccount.Staking = cons.Staking
 		totalBalance += cons.Balance
@@ -69,7 +71,7 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 	if tx == nil {
 		return nil
 	}
-	var fee, numberAccounts, balance [8]byte
+	var fee, numberAccounts, balance, txCnt [8]byte
 	binary.BigEndian.PutUint64(fee[:], tx.Fee)
 	binary.BigEndian.PutUint64(numberAccounts[:], uint64(len(tx.Accounts)))
 
@@ -92,6 +94,7 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		fmt.Printf("encode acc %v address %v\n ", i, acc.Account)
 		fmt.Printf("encode acc %v staking %v\n ", i, acc.Staking)
 		fmt.Printf("encode acc %v balance %v\n ", i, acc.Balance)
+		fmt.Printf("encode acc %v txcnt %v\n ", i, acc.TxCnt)
 		offset := 49 + i*(CONS_ACCOUNT_SIZE)
 		copy(encodedTx[offset:offset+32], acc.Account[:])
 		offset += 32
@@ -99,6 +102,9 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		offset += 1
 		binary.BigEndian.PutUint64(balance[:], uint64(acc.Balance))
 		copy(encodedTx[offset:offset+32], balance[:])
+		offset += 32
+		binary.BigEndian.PutUint32(txCnt[:], uint32(acc.TxCnt))
+		copy(encodedTx[offset:offset+32], txCnt[:])
 	}
 
 	return encodedTx
@@ -119,13 +125,18 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 		offset := CONSOLIDATIONTX_SIZE + CONS_ACCOUNT_SIZE*i
 		consAccount := new(ConsolidatedAccount)
 		copy(consAccount.Account[:], encodedTx[offset:offset+32])
-		isStakingAsByte := encodedTx[offset+32]
+		offset += 32
+		isStakingAsByte := encodedTx[offset]
 		consAccount.Staking = isStakingAsByte == 1
-		consAccount.Balance = binary.BigEndian.Uint64(encodedTx[offset+33:offset+65])
+		offset += 1
+		consAccount.Balance = binary.BigEndian.Uint64(encodedTx[offset:offset+32])
+		offset += 32
+		consAccount.TxCnt = binary.BigEndian.Uint32(encodedTx[offset:offset+32])
 		tx.Accounts = append(tx.Accounts, *consAccount)
 		fmt.Printf("decode acc %v address %v\n ", i, consAccount.Account)
 		fmt.Printf("decode acc %v staking %v\n ", i, consAccount.Staking)
 		fmt.Printf("decode acc %v balance %v\n ", i, consAccount.Balance)
+		fmt.Printf("decode acc %v txcount %v\n ", i, consAccount.TxCnt)
 	}
 
 	return tx

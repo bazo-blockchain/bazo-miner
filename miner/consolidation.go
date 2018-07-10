@@ -10,7 +10,7 @@ import (
 
 
 func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, account [32]byte) {
-	state[account] = &protocol.ConsolidatedAccount{account, 0, false, }
+	state[account] = &protocol.ConsolidatedAccount{account, 0, 0, false, }
 }
 
 
@@ -69,6 +69,9 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 		}
 		state[source].Balance = state[source].Balance - fundsTx.Fee - fundsTx.Amount
 		state[dest].Balance += fundsTx.Amount
+		if state[source].TxCnt < fundsTx.TxCnt {
+			state[source].TxCnt = fundsTx.TxCnt
+		}
 		state[block.Beneficiary].Balance += fundsTx.Fee
 	}
 }
@@ -76,20 +79,28 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.StakeTxData {
 		tx := reqTx(p2p.STAKETX_REQ, txHash)
-		fmt.Println(tx)
 		stakeTx := tx.(*protocol.StakeTx)
-		if _, exists := state[stakeTx.Account]; !exists {
-			initialiseConsAccount(state, stakeTx.Account)
+		addr := stakeTx.Account
+		if _, exists := state[addr]; !exists {
+			initialiseConsAccount(state, addr)
 		}
-		state[stakeTx.Account].Staking = stakeTx.IsStaking
+		state[addr].Staking = stakeTx.IsStaking
 		state[block.Beneficiary].Balance += stakeTx.Fee
+	}
+}
+
+func processConfigTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
+	for _, txHash := range block.ConfigTxData {
+		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
+		configTx := tx.(*protocol.ConfigTx)
+		fmt.Println(configTx)
+		// TODO: How to consolidate? *txCount payload etc
 	}
 }
 
 func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.ConsolidationTxData {
 		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
-		fmt.Println(tx)
 		consolidationTx := tx.(*protocol.ConsolidationTx)
 
 		for i := 0; i < len(consolidationTx.Accounts); i++ {
@@ -153,6 +164,7 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 
 		processFundsTx(state, block)
 		processStakeTx(state, block)
+		processConfigTx(state, block)
 		processConsolidationTx(state, block)
 		// process other TX types
 	}

@@ -121,6 +121,7 @@ func (*FundsTx) Decode(encodedTx []byte) (tx *FundsTx) {
 	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
 	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])
+
 	copy(tx.From[:], encodedTx[21:53])
 	copy(tx.To[:], encodedTx[53:85])
 	copy(tx.Sig1[:], encodedTx[85:149])
