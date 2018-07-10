@@ -17,7 +17,7 @@ const (
 	BLOCKHASH_SIZE       = 32      //Byte
 	FEE_MINIMUM          = 1       //Coins
 	BLOCK_SIZE           = 5000000 //Byte
-	DIFF_INTERVAL        = 2016    //Blocks
+	DIFF_INTERVAL        = 50    //Blocks
 	BLOCK_INTERVAL       = 60      //Sec
 	BLOCK_REWARD         = 0       //Coins
 	STAKING_MINIMUM      = 1000    //Coins
