@@ -30,7 +30,7 @@ const (
 	NUM_INCL_PREV_SEEDS  = 5   //number of previous seeds included in the PoS condition
 
 	// Consolidation params
-	CONSOLIDATION_HEIGHT = 10  // After how many blocks a consolidation tx should be created
+	DEFAULT_CONS_INTERVAL = 10  // After how many blocks a consolidation tx should be created
 )
 
 var (

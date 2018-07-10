@@ -178,6 +178,11 @@ func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol
 				parameters.Slash_reward = tx.Payload
 				change = true
 			}
+		case protocol.CONSOLIDATION_INTERVAL:
+			if parameterBoundsChecking(protocol.CONSOLIDATION_INTERVAL, tx.Payload) {
+				parameters.Consolidation_interval = tx.Payload
+				change = true
+			}
 		}
 	}
 
@@ -311,6 +316,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 		tmpStakeTx = append(tmpStakeTx, tx)
 	}
 
+	// TODO: consolidation check?
 	return nil
 }
 

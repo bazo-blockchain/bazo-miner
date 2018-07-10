@@ -280,7 +280,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
 
 	// Add ConsolidationTx if necessary
-	if (lastBlock.Height +1) % 10 == 0 {
+	if (lastBlock.Height +1) % uint32(activeParameters.Consolidation_interval) == 0 {
 		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
 		storage.WriteOpenTx(consolidationTx)
 

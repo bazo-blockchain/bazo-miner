@@ -32,6 +32,7 @@ type Parameters struct {
 	Slashing_window_size    uint64 //number of blocks that a validator cannot vote on two competing chains
 	Slash_reward            uint64 //reward for providing the correct slashing proof
 	num_included_prev_seeds int
+	Consolidation_interval  uint64
 }
 
 func NewDefaultParameters() Parameters {
@@ -48,6 +49,7 @@ func NewDefaultParameters() Parameters {
 		SLASHING_WINDOW_SIZE,
 		SLASH_REWARD,
 		NUM_INCL_PREV_SEEDS,
+		DEFAULT_CONS_INTERVAL,
 	}
 
 	return newParameters
@@ -165,7 +167,8 @@ func (param Parameters) String() string {
 			"Acceptanced time difference: %v\n"+
 			"Slashing window size: %v\n"+
 			"Slash reward: %v\n"+
-			"Num of previous seeds included in PoS: %v\n",
+			"Num of previous seeds included in PoS: %v\n" +
+			"Consolidation interval: %v\n",
 		param.BlockHash[0:8],
 		param.Block_size,
 		param.Diff_interval,
@@ -178,5 +181,6 @@ func (param Parameters) String() string {
 		param.Slashing_window_size,
 		param.Slash_reward,
 		param.num_included_prev_seeds,
+		param.Consolidation_interval,
 	)
 }

@@ -222,9 +222,9 @@ func TestConfigTxStateChangeUnknown(t *testing.T) {
 	cleanAndPrepare()
 	//Issuing configTxs with unknown Id
 	var configs []*protocol.ConfigTx
-	tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 1000, rand.Uint64(), 0, &RootPrivKey)
-	tx2, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 2000, rand.Uint64(), 0, &RootPrivKey)
-	tx3, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 3000, rand.Uint64(), 0, &RootPrivKey)
+	tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 123, 1000, rand.Uint64(), 0, &RootPrivKey)
+	tx2, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 123, 2000, rand.Uint64(), 0, &RootPrivKey)
+	tx3, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 123, 3000, rand.Uint64(), 0, &RootPrivKey)
 
 	//save parameter state
 	tmpParameter := parameterSlice[len(parameterSlice)-1]

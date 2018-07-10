@@ -21,6 +21,7 @@ const (
 	ACCEPTANCE_TIME_DIFF_ID = 8
 	SLASHING_WINDOW_SIZE_ID = 9
 	SLASHING_REWARD_ID      = 10
+	CONSOLIDATION_INTERVAL  = 11
 
 	MIN_BLOCK_SIZE = 1000      //1KB
 	MAX_BLOCK_SIZE = 100000000 //100MB
@@ -51,6 +52,9 @@ const (
 
 	MIN_SLASHING_REWARD = 0                   // reward for providing a valid slashing proof
 	MAX_SLASHING_REWARD = 1152921504606846976 //2^60
+
+	MIN_CONS_INTERVAL = 0  // 0 to disable consolidation
+	MAX_CONS_INTERVAL = 9223372036854775807 //2^60
 )
 
 type ConfigTx struct {

@@ -245,6 +245,10 @@ func parameterBoundsChecking(id uint8, payload uint64) bool {
 		if payload >= protocol.MIN_SLASHING_REWARD && payload <= protocol.MAX_SLASHING_REWARD {
 			return true
 		}
+	case protocol.CONSOLIDATION_INTERVAL:
+		if payload >= protocol.MIN_CONS_INTERVAL && payload <= protocol.MAX_CONS_INTERVAL {
+			return true
+		}
 	}
 
 	return false
