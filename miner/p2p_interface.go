@@ -37,4 +37,9 @@ func processBlock(payload []byte) {
 }
 
 //p2p.BlockOut is a channel whose data get consumed by the p2p package
-func broadcastBlock(block *protocol.Block) { p2p.BlockOut <- block.Encode() }
+func broadcastBlock(block *protocol.Block) {
+	p2p.BlockOut <- block.Encode()
+
+	block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+	p2p.BlockHeaderOut <- block.EncodeHeader()
+}

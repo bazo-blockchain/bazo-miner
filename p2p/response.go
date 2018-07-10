@@ -3,7 +3,6 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -58,8 +57,6 @@ func blockRes(p *peer, payload []byte) {
 	if len(payload) > 0 {
 		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
-			//TODO Remove
-			fmt.Printf("No closed block. Search open block(hash): %x\n", blockHash)
 			block = storage.ReadOpenBlock(blockHash)
 		}
 	} else {
@@ -68,12 +65,8 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
-		//TODO Remove
-		fmt.Printf("Sending block(hash): %x\n", blockHash)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
-		//TODO Remove
-		fmt.Printf("Block(hash) not found: %x\n", blockHash)
 	}
 
 	sendData(p, packet)
@@ -130,16 +123,15 @@ func rootAccRes(p *peer, payload []byte) {
 	if acc, _ := storage.GetRootAccount(hash); acc != nil {
 		packet = BuildPacket(ROOTACC_RES, acc.Encode())
 	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
+		packet = BuildPacket(ROOTACC_RES, nil)
 	}
 
 	sendData(p, packet)
 }
 
-//Completes the handshake with another miner
-func pongRes(p *peer, payload []byte) {
-
-	//Payload consists of a 2 bytes array (port number [big endian encoded])
+//Completes the handshake with another miner.
+func pongRes(p *peer, payload []byte, peerType uint) {
+	//Payload consists of a 2 bytes array (port number [big endian encoded]).
 	port := _pongRes(payload)
 
 	if port != "" {
@@ -150,17 +142,26 @@ func pongRes(p *peer, payload []byte) {
 	}
 
 	//Restrict amount of connected miners
-	if peers.len() >= MAX_MINERS {
+	if peers.len(PEERTYPE_MINER) >= MAX_MINERS {
 		return
 	}
 
-	go minerConn(p)
 	//Complete handshake
-	packet := BuildPacket(MINER_PONG, nil)
+	var packet []byte
+	if peerType == MINER_PING {
+		p.peerType = PEERTYPE_MINER
+		packet = BuildPacket(MINER_PONG, nil)
+	} else if peerType == CLIENT_PING{
+		p.peerType = PEERTYPE_CLIENT
+		packet = BuildPacket(CLIENT_PONG, nil)
+	}
+
+	go peerConn(p)
+
 	sendData(p, packet)
 }
 
-//Decouple the function for testing
+//Decouple the function for testing.
 func _pongRes(payload []byte) string {
 	if len(payload) == PORT_SIZE {
 		return strconv.Itoa(int(binary.BigEndian.Uint16(payload[0:PORT_SIZE])))
@@ -175,7 +176,7 @@ func neighborRes(p *peer) {
 	//1) nr of ipv4 addresses, 2) nr of ipv6 addresses, followed by list of both
 	var packet []byte
 	var ipportList []string
-	peerList := peers.getAllPeers()
+	peerList := peers.getAllPeers(PEERTYPE_MINER)
 
 	for _, p := range peerList {
 		ipportList = append(ipportList, p.getIPPort())

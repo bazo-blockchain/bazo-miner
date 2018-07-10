@@ -5,13 +5,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"net"
 	"time"
 )
 
 func Connect(connectionString string) *net.TCPConn {
-	logger = storage.InitLogger()
 	tcpAddr, err := net.ResolveTCPAddr("tcp", connectionString)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 
@@ -26,7 +24,7 @@ func Connect(connectionString string) *net.TCPConn {
 	return conn
 }
 
-func rcvData(p *peer) (header *Header, payload []byte, err error) {
+func RcvData(p *peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = ReadHeader(reader)
 
@@ -44,12 +42,12 @@ func rcvData(p *peer) (header *Header, payload []byte, err error) {
 		}
 	}
 
-	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[header.TypeID], len(payload))
+	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
 
 	return header, payload, nil
 }
 
-func RcvData(c net.Conn) (header *Header, payload []byte, err error) {
+func RcvData_(c net.Conn) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(c)
 	header, err = ReadHeader(reader)
 	if err != nil {
@@ -70,7 +68,7 @@ func RcvData(c net.Conn) (header *Header, payload []byte, err error) {
 }
 
 func sendData(p *peer, payload []byte) {
-	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), logMapping[payload[4]], len(payload)-HEADER_LEN)
+	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN)
 
 	p.l.Lock()
 	p.conn.Write(payload)
@@ -80,7 +78,7 @@ func sendData(p *peer, payload []byte) {
 //Tested in server_test.go
 func peerExists(newIpport string) bool {
 
-	peerList := peers.getAllPeers()
+	peerList := peers.getAllPeers(PEERTYPE_MINER)
 
 	for _, p := range peerList {
 		ipport := p.getIPPort()

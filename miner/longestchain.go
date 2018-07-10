@@ -69,14 +69,11 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		//TODO Optimize code (duplicated)
 		//Fetch the block we apparently missed from the network.
 		p2p.BlockReq(prevBlockHash)
-		//TODO Remove
-		fmt.Printf("Requesting block(hash): %x\n", prevBlockHash)
+
 		//Blocking wait
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
 			newBlock = newBlock.Decode(encodedBlock)
-			//TODO Remove
-			fmt.Printf("Receiving block(hash): %x\n", newBlock.Hash)
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
 			return nil, nil

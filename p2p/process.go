@@ -46,7 +46,7 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	}
 
 	//Response tx acknowledgment if the peer is a client
-	if !peers.peerConns[p] {
+	if !peers.minerConns[p] {
 		packet := BuildPacket(TX_BRDCST_ACK, nil)
 		sendData(p, packet)
 	}
@@ -64,7 +64,7 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	logger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
 	storage.WriteOpenTx(tx)
 	toBrdcst := BuildPacket(brdcstType, payload)
-	brdcstMsg <- toBrdcst
+	minerBrdcstMsg <- toBrdcst
 }
 
 func processTimeRes(p *peer, payload []byte) {

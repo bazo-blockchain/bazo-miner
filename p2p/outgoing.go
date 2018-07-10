@@ -16,7 +16,7 @@ func SendVerifiedTxs(txs []*protocol.FundsTx) {
 		packet := BuildPacket(VERIFIEDTX_BRDCST, protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE))
 		conn.Write(packet)
 
-		header, _, err := RcvData(conn)
+		header, _, err := RcvData_(conn)
 		if err != nil || header.TypeID != TX_BRDCST_ACK {
 			logger.Printf("Sending verified tx failed.")
 		}
