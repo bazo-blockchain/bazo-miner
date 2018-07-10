@@ -57,9 +57,5 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardTxReqToMiner(p, payload, CONFIGTX_RES)
 	case STAKETX_RES:
 		forwardTxReqToMiner(p, payload, STAKETX_RES)
-	default:
-		//Send default NOT_FOUND
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
 	}
 }
