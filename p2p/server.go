@@ -113,6 +113,7 @@ func PrepareHandshake(pingType uint8, localPort int) ([]byte, error) {
 }
 
 func listener(ipport string) {
+	allowedIps := storage.ReadFile("iplist.txt")
 	//Listen on all interfaces, this NAT stuff easier
 	listener, err := net.Listen("tcp", ipport)
 	if err != nil {
@@ -126,8 +127,14 @@ func listener(ipport string) {
 			logger.Printf("%v\n", err)
 			continue
 		}
-		p := NewPeer(conn, "", 0)
-		go handleNewConn(p)
+
+		for _, allowedIp := range allowedIps {
+			if strings.Split(conn.RemoteAddr().String(), ":")[0] == allowedIp {
+				p := &peer{conn, nil, sync.Mutex{}, "", 0}
+				go handleNewConn(p)
+				break
+			}
+		}
 	}
 }
 
