@@ -75,7 +75,7 @@ func initiateNewMinerConnection(dial string) (*peer, error) {
 	//Open up a tcp dial and instantiate a peer struct, wait for adding it to the peerStruct before we finalize
 	//the handshake
 	conn, err := net.Dial("tcp", dial)
-	p := NewPeer(conn, strings.Split(dial, ":")[1], PEERTYPE_MINER)
+	p := newPeer(conn, strings.Split(dial, ":")[1], PEERTYPE_MINER)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func listener(ipport string) {
 
 		for _, allowedIp := range allowedIps {
 			if strings.Split(conn.RemoteAddr().String(), ":")[0] == allowedIp {
-				p := &peer{conn, nil, sync.Mutex{}, "", 0}
+				p := newPeer(conn, "", 0)
 				go handleNewConn(p)
 				break
 			}

@@ -25,7 +25,7 @@ type peer struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func NewPeer(conn net.Conn, listenerPort string, peerType uint) *peer {
+func newPeer(conn net.Conn, listenerPort string, peerType uint) *peer {
 	p := new(peer)
 	p.conn = conn
 	p.ch = nil
