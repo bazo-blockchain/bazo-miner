@@ -13,8 +13,8 @@ const (
 
 	//Root Public Keys at initialization time. This is the only existing account at startup
 	//All other accounts are created
-	INITROOTPUBKEY1 = "f894ba7a24c1c324bc4b0a833d4b076a0e0f675a380fb7e782672c6568aaab06"
-	INITROOTPUBKEY2 = "69ddbc62f79cb521411840d83ff0abf941a8e717d81af3dfc2973f1bac30308a"
+	INITROOTPUBKEY1 = "f64180705b5d2cf85f8f3ac046ce633c1d00f23a9e7483598d6d6267c40cc811"
+	INITROOTPUBKEY2 = "18f9a1c5accb44c4529b0d3c51f622997dc11881f44771aacf3c2359a67b04ed"
 
 	GENESIS_SEED = "FfhHEtSNQO6JyAUcKPlrlWzUqFXo1EoB"
 
