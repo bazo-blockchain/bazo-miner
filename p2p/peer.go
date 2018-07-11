@@ -44,6 +44,25 @@ type peersStruct struct {
 	peerMutex   sync.Mutex
 }
 
+func (peers peersStruct) contains(ipport string, peerType uint) bool {
+	var peerConns map[*peer]bool
+
+	if peerType == PEERTYPE_MINER {
+		peerConns = peers.minerConns
+	}
+	if peerType == PEERTYPE_CLIENT {
+		peerConns = peers.clientConns
+	}
+
+	for peer, _ := range peerConns {
+		if (peer.getIPPort() == ipport) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (p *peer) getIPPort() string {
 	ip := strings.Split(p.conn.RemoteAddr().String(), ":")
 	//Cut off original port.
