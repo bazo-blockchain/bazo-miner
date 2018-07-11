@@ -102,6 +102,7 @@ func createBlock(t *testing.T, b *protocol.Block) ([][32]byte, [][32]byte, [][32
 func createTestChain(t *testing.T)([]*protocol.Block) {
 	var blockList []*protocol.Block
 	var numberOfTestBlocks = 4
+	params := NewDefaultParameters()
 	testState := getTestState()
 	prevHash := [32]byte{}
 
@@ -111,7 +112,7 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 		createBlock(t, b)
 
 		if cnt == 2 {
-			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash)
+			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash, params)
 			if err != nil {
 				t.Errorf("Could not create test consolidationTx: %v\n", err)
 			}

@@ -122,71 +122,78 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 //Separate function to reuse mechanism in client implementation
 func CheckAndChangeParameters(parameters *conf.Parameters, configTxSlice *[]*protocol.ConfigTx) (change bool) {
 	for _, tx := range *configTxSlice {
-		switch tx.Id {
-		case protocol.FEE_MINIMUM_ID:
-			if parameterBoundsChecking(protocol.FEE_MINIMUM_ID, tx.Payload) {
-				parameters.Fee_minimum = tx.Payload
-				change = true
-			}
-		case protocol.BLOCK_SIZE_ID:
-			if parameterBoundsChecking(protocol.BLOCK_SIZE_ID, tx.Payload) {
-				parameters.Block_size = tx.Payload
-				change = true
-			}
-		case protocol.BLOCK_REWARD_ID:
-			if parameterBoundsChecking(protocol.BLOCK_REWARD_ID, tx.Payload) {
-				parameters.Block_reward = tx.Payload
-				change = true
-			}
-		case protocol.DIFF_INTERVAL_ID:
-			if parameterBoundsChecking(protocol.DIFF_INTERVAL_ID, tx.Payload) {
-				parameters.Diff_interval = tx.Payload
-				change = true
-			}
-		case protocol.BLOCK_INTERVAL_ID:
-			if parameterBoundsChecking(protocol.BLOCK_INTERVAL_ID, tx.Payload) {
-				parameters.Block_interval = tx.Payload
-				change = true
-			}
-		case protocol.STAKING_MINIMUM_ID:
-			if parameterBoundsChecking(protocol.STAKING_MINIMUM_ID, tx.Payload) {
-				parameters.Staking_minimum = tx.Payload
-				change = true
-				//Go through all accounts and remove all validators from the validator sett that no longer fulfill the minimum staking amount
-				for _, account := range storage.State {
-					if account.IsStaking && account.Balance < 0+tx.Payload {
-						account.IsStaking = false
-					}
-				}
-			}
-		case protocol.WAITING_MINIMUM_ID:
-			if parameterBoundsChecking(protocol.WAITING_MINIMUM_ID, tx.Payload) {
-				parameters.Waiting_minimum = tx.Payload
-				change = true
-			}
-		case protocol.ACCEPTANCE_TIME_DIFF_ID:
-			if parameterBoundsChecking(protocol.ACCEPTANCE_TIME_DIFF_ID, tx.Payload) {
-				parameters.Accepted_time_diff = tx.Payload
-				change = true
-			}
-		case protocol.SLASHING_WINDOW_SIZE_ID:
-			if parameterBoundsChecking(protocol.SLASHING_WINDOW_SIZE_ID, tx.Payload) {
-				parameters.Slashing_window_size = tx.Payload
-				change = true
-			}
-		case protocol.SLASHING_REWARD_ID:
-			if parameterBoundsChecking(protocol.SLASHING_REWARD_ID, tx.Payload) {
-				parameters.Slash_reward = tx.Payload
-				change = true
-			}
-		case protocol.CONSOLIDATION_INTERVAL:
-			if parameterBoundsChecking(protocol.CONSOLIDATION_INTERVAL, tx.Payload) {
-				parameters.Consolidation_interval = tx.Payload
-				change = true
-			}
+		if changed := ConfigTxChange(parameters, tx); changed == true {
+			change = true
 		}
 	}
 
+	return change
+}
+
+func ConfigTxChange(parameters *conf.Parameters, tx *protocol.ConfigTx) (change bool){
+	switch tx.Id {
+	case protocol.FEE_MINIMUM_ID:
+		if parameterBoundsChecking(protocol.FEE_MINIMUM_ID, tx.Payload) {
+			parameters.Fee_minimum = tx.Payload
+			change = true
+		}
+	case protocol.BLOCK_SIZE_ID:
+		if parameterBoundsChecking(protocol.BLOCK_SIZE_ID, tx.Payload) {
+			parameters.Block_size = tx.Payload
+			change = true
+		}
+	case protocol.BLOCK_REWARD_ID:
+		if parameterBoundsChecking(protocol.BLOCK_REWARD_ID, tx.Payload) {
+			parameters.Block_reward = tx.Payload
+			change = true
+		}
+	case protocol.DIFF_INTERVAL_ID:
+		if parameterBoundsChecking(protocol.DIFF_INTERVAL_ID, tx.Payload) {
+			parameters.Diff_interval = tx.Payload
+			change = true
+		}
+	case protocol.BLOCK_INTERVAL_ID:
+		if parameterBoundsChecking(protocol.BLOCK_INTERVAL_ID, tx.Payload) {
+			parameters.Block_interval = tx.Payload
+			change = true
+		}
+	case protocol.STAKING_MINIMUM_ID:
+		if parameterBoundsChecking(protocol.STAKING_MINIMUM_ID, tx.Payload) {
+			parameters.Staking_minimum = tx.Payload
+			change = true
+			//Go through all accounts and remove all validators from the validator sett that no longer fulfill the minimum staking amount
+			for _, account := range storage.State {
+				if account.IsStaking && account.Balance < 0+tx.Payload {
+					account.IsStaking = false
+				}
+			}
+		}
+	case protocol.WAITING_MINIMUM_ID:
+		if parameterBoundsChecking(protocol.WAITING_MINIMUM_ID, tx.Payload) {
+			parameters.Waiting_minimum = tx.Payload
+			change = true
+		}
+	case protocol.ACCEPTANCE_TIME_DIFF_ID:
+		if parameterBoundsChecking(protocol.ACCEPTANCE_TIME_DIFF_ID, tx.Payload) {
+			parameters.Accepted_time_diff = tx.Payload
+			change = true
+		}
+	case protocol.SLASHING_WINDOW_SIZE_ID:
+		if parameterBoundsChecking(protocol.SLASHING_WINDOW_SIZE_ID, tx.Payload) {
+			parameters.Slashing_window_size = tx.Payload
+			change = true
+		}
+	case protocol.SLASHING_REWARD_ID:
+		if parameterBoundsChecking(protocol.SLASHING_REWARD_ID, tx.Payload) {
+			parameters.Slash_reward = tx.Payload
+			change = true
+		}
+	case protocol.CONSOLIDATION_INTERVAL:
+		if parameterBoundsChecking(protocol.CONSOLIDATION_INTERVAL, tx.Payload) {
+			parameters.Consolidation_interval = tx.Payload
+			change = true
+		}
+	}
 	return change
 }
 

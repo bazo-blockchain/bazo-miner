@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	"encoding/binary"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 const (
@@ -28,9 +29,10 @@ type ConsolidationTx struct {
 
 	// Body
 	Accounts []ConsolidatedAccount
+	ActiveParameters conf.Parameters
 }
 
-func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]byte) (tx *ConsolidationTx, err error) {
+func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]byte, params conf.Parameters) (tx *ConsolidationTx, err error) {
 	tx = new(ConsolidationTx)
 	tx.Header = header
 	tx.LastBlock = lastBlockHash

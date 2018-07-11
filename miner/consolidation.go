@@ -6,6 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/conf"
 )
 
 
@@ -89,12 +90,12 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 	}
 }
 
-func processConfigTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
+func processConfigTx(params *conf.Parameters, block *protocol.Block) {
 	for _, txHash := range block.ConfigTxData {
 		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
 		configTx := tx.(*protocol.ConfigTx)
 		fmt.Println(configTx)
-		// TODO: How to consolidate? *txCount payload etc
+		ConfigTxChange(params, tx.(*protocol.ConfigTx))
 	}
 }
 
@@ -150,7 +151,7 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.ConsolidationTx, err error) {
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
-
+	params := NewDefaultParameters()
 	//Process all the blocks in the chain
 	for i := len(chain) - 1; i >= 0; i-- {
 		block := chain[i]
@@ -164,15 +165,16 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 
 		processFundsTx(state, block)
 		processStakeTx(state, block)
-		processConfigTx(state, block)
+		processConfigTx(&params, block)
 		processConsolidationTx(state, block)
+
 		// process other TX types
 	}
 
 	// The consolidation tx creates a snapshot of the system till a certain
 	// block of which we have to keep track of
 	lastBlockHash := chain[0].Hash
-	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash)
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash, params)
 	if err != nil {
 		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
 	}
