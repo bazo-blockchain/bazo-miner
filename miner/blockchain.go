@@ -28,7 +28,6 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
-
 	seedFile = seedFileName
 
 	//Set up logger.

@@ -80,19 +80,18 @@ func processTimeRes(p *peer, payload []byte) {
 
 func processNeighborRes(p *peer, payload []byte) {
 
-	//Parse the incoming ipv4 addresses
+	//Parse the incoming ipv4 addresses.
 	ipportList := _processNeighborRes(payload)
 
 	for _, ipportIter := range ipportList {
 		logger.Printf("IP/Port received: %v\n", ipportIter)
-		//iplistChan is a buffered channel to handle ips asynchronously
+		//iplistChan is a buffered channel to handle ips asynchronously.
 		iplistChan <- ipportIter
 	}
 }
 
-//Split the processNeighborRes function in two for cleaner testing
+//Split the processNeighborRes function in two for cleaner testing.
 func _processNeighborRes(payload []byte) (ipportList []string) {
-
 	index := 0
 	for cnt := 0; cnt < len(payload)/(IPV4ADDR_SIZE+PORT_SIZE); cnt++ {
 		var addr string
@@ -101,10 +100,10 @@ func _processNeighborRes(payload []byte) (ipportList []string) {
 			addr += strconv.Itoa(tmp)
 			addr += "."
 		}
-		//Remove trailing dot
+		//Remove trailing dot.
 		addr = addr[:len(addr)-1]
 		addr += ":"
-		//Extract port number
+		//Extract port number.
 		addr += strconv.Itoa(int(binary.BigEndian.Uint16(payload[index+4 : index+6])))
 
 		ipportList = append(ipportList, addr)
