@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	CONSOLIDATIONTX_SIZE = 49
+	CONSOLIDATIONTX_SIZE = 50
+	PARAMETERS_SIZE = 11*8 + 32
 	CONS_ACCOUNT_SIZE = 97
 )
 
@@ -47,7 +48,80 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 		totalBalance += cons.Balance
 		tx.Accounts = append(tx.Accounts, *consAccount)
 	}
+	tx.ActiveParameters = params
 	return tx, nil
+}
+
+
+func (tx *ConsolidationTx) encodeActiveParameters() (encodedTx []byte) {
+	encodedTx = make([]byte, PARAMETERS_SIZE)
+	offset := 0
+	params := tx.ActiveParameters
+	var fee_minimum, block_size, diff_interval, block_interval [8]byte
+	var staking_minimum, waiting_minimum, accepted_time_diff, slashing_window_size [8]byte
+	var slash_reward, num_included_prev_seeds, consolidation_interval  [8]byte
+	binary.BigEndian.PutUint64(fee_minimum[:], uint64(params.Fee_minimum))
+	binary.BigEndian.PutUint64(block_size[:], uint64(params.Block_size))
+	binary.BigEndian.PutUint64(diff_interval[:], uint64(params.Diff_interval))
+	binary.BigEndian.PutUint64(block_interval[:], uint64(params.Block_interval))
+	binary.BigEndian.PutUint64(staking_minimum[:], uint64(params.Staking_minimum))
+	binary.BigEndian.PutUint64(waiting_minimum[:], uint64(params.Waiting_minimum))
+	binary.BigEndian.PutUint64(accepted_time_diff[:], uint64(params.Accepted_time_diff))
+	binary.BigEndian.PutUint64(slashing_window_size[:], uint64(params.Slashing_window_size))
+	binary.BigEndian.PutUint64(slash_reward[:], uint64(params.Slash_reward))
+	binary.BigEndian.PutUint64(num_included_prev_seeds[:], uint64(params.Num_included_prev_seeds))
+	binary.BigEndian.PutUint64(consolidation_interval[:], uint64(params.Consolidation_interval))
+	copy(encodedTx[offset:offset+32], params.BlockHash[:])
+	offset += 32
+	copy(encodedTx[offset:offset+8], fee_minimum[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], block_size[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], diff_interval[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], block_interval[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], staking_minimum[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], waiting_minimum[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], accepted_time_diff[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], slashing_window_size[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], slash_reward[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], num_included_prev_seeds[:])
+	offset += 8
+	copy(encodedTx[offset:offset+8], consolidation_interval[:])
+
+	return encodedTx
+}
+
+
+func (tx *ConsolidationTx) decodeActiveParameters(encodedTx []byte) {
+	offset := 0
+	copy(tx.ActiveParameters.BlockHash[:], encodedTx[offset:offset+32])
+	offset += 32
+	tx.ActiveParameters.Fee_minimum = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Block_size = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Diff_interval = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Staking_minimum = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Waiting_minimum = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Accepted_time_diff = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Slashing_window_size = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Slash_reward = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
+	offset += 8
+	tx.ActiveParameters.Num_included_prev_seeds = int(binary.BigEndian.Uint64(encodedTx[offset:offset+8]))
+	offset += 8
+	tx.ActiveParameters.Consolidation_interval = binary.BigEndian.Uint64(encodedTx[offset:offset+8])
 }
 
 // TODO: calculate proper hash
@@ -74,16 +148,23 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		return nil
 	}
 	var fee, numberAccounts, balance, txCnt [8]byte
+	var isStaking byte
+
 	binary.BigEndian.PutUint64(fee[:], tx.Fee)
 	binary.BigEndian.PutUint64(numberAccounts[:], uint64(len(tx.Accounts)))
 
-	encodedTx = make([]byte, CONSOLIDATIONTX_SIZE+CONS_ACCOUNT_SIZE*len(tx.Accounts))
+	encodedTx = make([]byte, tx.Size())
 
 	encodedTx[0] = tx.Header
 	copy(encodedTx[1:9], fee[:])
 	copy(encodedTx[9:41], tx.LastBlock[:])
 	copy(encodedTx[41:49], numberAccounts[:])
-	var isStaking byte
+	encodedTx[49] = 1  // TODO: always include config parameters?
+	encodedParams := tx.encodeActiveParameters()
+	offset := 50
+	copy(encodedTx[offset:offset+PARAMETERS_SIZE], encodedParams[:])
+	offset = CONSOLIDATIONTX_SIZE+PARAMETERS_SIZE
+
 	fmt.Printf("encode last block %v\n ", tx.LastBlock)
 	fmt.Printf("encode numaccounts %v\n ", len(tx.Accounts))
 	for i := 0; i < len(tx.Accounts); i++ {
@@ -97,7 +178,7 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		fmt.Printf("encode acc %v staking %v\n ", i, acc.Staking)
 		fmt.Printf("encode acc %v balance %v\n ", i, acc.Balance)
 		fmt.Printf("encode acc %v txcnt %v\n ", i, acc.TxCnt)
-		offset := 49 + i*(CONS_ACCOUNT_SIZE)
+		offset = CONSOLIDATIONTX_SIZE+PARAMETERS_SIZE +i*CONS_ACCOUNT_SIZE
 		copy(encodedTx[offset:offset+32], acc.Account[:])
 		offset += 32
 		encodedTx[offset] = isStaking
@@ -108,23 +189,27 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		binary.BigEndian.PutUint32(txCnt[:], uint32(acc.TxCnt))
 		copy(encodedTx[offset:offset+32], txCnt[:])
 	}
-
 	return encodedTx
 }
 
 func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
+	var numAccounts int
 	tx = new(ConsolidationTx)
-	fmt.Printf("DencodedTx %v\n ", encodedTx)
 	tx.Header = encodedTx[0]
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[1:9])
-	fmt.Printf("decode txFee %v\n ", tx.Fee)
 	copy(tx.LastBlock[:], encodedTx[9:41])
-	var numAccounts int
+
 	numAccounts = int(binary.BigEndian.Uint64(encodedTx[41:49]))
+	activeParams := encodedTx[49] == 1
+	tx.decodeActiveParameters(encodedTx[CONSOLIDATIONTX_SIZE:CONSOLIDATIONTX_SIZE+PARAMETERS_SIZE])
+	offset := PARAMETERS_SIZE + CONSOLIDATIONTX_SIZE
+
 	fmt.Printf("decode last block %v\n ", tx.LastBlock)
+	fmt.Printf("decode active params %v\n ", activeParams)
 	fmt.Printf("decode numaccounts %v\n ", numAccounts)
+	fmt.Printf("decode active params %v\n ", activeParams)
 	for i := 0; i < numAccounts; i++ {
-		offset := CONSOLIDATIONTX_SIZE + CONS_ACCOUNT_SIZE*i
+		offset =  PARAMETERS_SIZE + CONSOLIDATIONTX_SIZE+CONS_ACCOUNT_SIZE*i
 		consAccount := new(ConsolidatedAccount)
 		copy(consAccount.Account[:], encodedTx[offset:offset+32])
 		offset += 32
@@ -146,7 +231,7 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 
 func (tx *ConsolidationTx) TxFee() uint64 { return tx.Fee }
 func (tx *ConsolidationTx) Size() uint64 {
-	return CONSOLIDATIONTX_SIZE + CONS_ACCOUNT_SIZE*uint64(len(tx.Accounts))
+	return CONSOLIDATIONTX_SIZE + PARAMETERS_SIZE+CONS_ACCOUNT_SIZE*uint64(len(tx.Accounts))
 }
 
 func (tx ConsolidationTx) String() string {
@@ -154,10 +239,12 @@ func (tx ConsolidationTx) String() string {
 		"\ntxhash: %v\n" +
 		"Header: %v\n" +
 		"LastBlockHash: %v\n" +
+		"ActiveParameters: %v\n" +
 		"Consolidated accounts: %v\n",
 		tx.Hash(),
 		tx.Header,
 		tx.LastBlock,
+		tx.ActiveParameters,
 		len(tx.Accounts),
 	)
 	mapping := ""
