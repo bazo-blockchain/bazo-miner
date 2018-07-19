@@ -41,7 +41,7 @@ func Init(ipport string) {
 	go peerService()
 
 	//Set localPort global, this will be the listening port for incoming connection
-	if Ipport != storage.BOOTSTRAP_SERVER_PORT {
+	if Ipport != storage.Bootstrap_Server {
 		bootstrap()
 	}
 
@@ -52,7 +52,7 @@ func Init(ipport string) {
 func bootstrap() {
 	//Connect to bootstrap server. To make it more fault-tolerant, we can increase the number of bootstrap servers in
 	//the future. initiateNewMinerConn(...) starts with MINER_PING to perform the initial handshake message
-	p, err := initiateNewMinerConnection(storage.BOOTSTRAP_SERVER)
+	p, err := initiateNewMinerConnection(storage.Bootstrap_Server)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v", err)
 	}

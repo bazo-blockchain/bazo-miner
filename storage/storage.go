@@ -15,6 +15,7 @@ var (
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
+	Bootstrap_Server   string
 )
 
 const (
@@ -22,7 +23,8 @@ const (
 )
 
 //Entry function for the storage package
-func Init(dbname string, ipport string) {
+func Init(dbname string, bootstrapIpport string) {
+	Bootstrap_Server = bootstrapIpport
 	logger = InitLogger()
 
 	var err error

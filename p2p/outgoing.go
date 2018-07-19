@@ -6,7 +6,8 @@ import (
 )
 
 func SendVerifiedTxs(txs []*protocol.FundsTx) {
-	if conn := Connect(storage.BOOTSTRAP_SERVER_IP + ":8002"); conn != nil {
+	//TODO Revise connection to Multisig server
+	if conn := Connect(storage.Bootstrap_Server + ":8002"); conn != nil {
 		var verifiedTxs [][]byte
 
 		for _, tx := range txs {
