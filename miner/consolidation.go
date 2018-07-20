@@ -55,6 +55,23 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	return tx
 }
 
+
+func processAccTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
+	for _, txHash := range block.AccTxData {
+		tx := reqTx(p2p.ACCTX_REQ, txHash)
+		accTx := tx.(*protocol.AccTx)
+		address := protocol.SerializeHashContent(accTx.PubKey)
+		// Add accounts in the status
+		if _, exists := state[address]; !exists {
+			initialiseConsAccount(state, address)
+		} else {
+			fmt.Println("This shouldn't happen")  // TODO: better error
+		}
+
+	}
+}
+
+
 func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.FundsTxData {
 		tx := reqTx(p2p.FUNDSTX_REQ, txHash)
@@ -133,7 +150,14 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 		if prevBlock != nil {
 			blockList = append(blockList, prevBlock)
 			prevHash = prevBlock.PrevHash
-			continue
+
+			// Stop at the first consolidation Tx
+			// TODO: clean up this code block
+			if prevBlock.NrConsolidationTx > 0 {
+				break
+			} else {
+				continue
+			}
 		}
 
 		//Fetch the block we apparently missed from the network
@@ -145,15 +169,18 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 		blockList = append(blockList, prevBlock)
 		prevHash = prevBlock.PrevHash
 	}
-	fmt.Printf("len chain %d", len(blockList))
 	return blockList
 }
+
 func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.ConsolidationTx, err error) {
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
 	params := NewDefaultParameters()
+
+	// TODO: take into consideration activeParameters.Num_included_prev_seeds
+	consolidationPoint := len(chain) - activeParameters.Num_included_prev_seeds - 1
 	//Process all the blocks in the chain
-	for i := len(chain) - 1; i >= 0; i-- {
+	for i := len(chain) - 1; i >= consolidationPoint; i-- {
 		block := chain[i]
 		// Skip empty blocks
 		if block == nil {
@@ -163,17 +190,16 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 			initialiseConsAccount(state, block.Beneficiary)
 		}
 
+		processAccTx(state, block)
 		processFundsTx(state, block)
 		processStakeTx(state, block)
 		processConfigTx(&params, block)
 		processConsolidationTx(state, block)
-
-		// process other TX types
 	}
 
 	// The consolidation tx creates a snapshot of the system till a certain
 	// block of which we have to keep track of
-	lastBlockHash := chain[0].Hash
+	lastBlockHash := chain[consolidationPoint].Hash
 	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash, params)
 	if err != nil {
 		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))

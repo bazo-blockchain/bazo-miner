@@ -33,6 +33,7 @@ func TestMiner (t *testing.T){
 	createMiner(t)
 	fundMiner(t)
 	fundMiner2(t)
+	time.Sleep(1000*4)
 	stakeMiner(t)
 	//..start miner and check that everything is ok
 	startMiner(t)
@@ -47,7 +48,10 @@ func createMiner(t *testing.T) {
 	client.InitState()
 
 	acc, _, err := client.GetAccount(MinerAccAddress)
-	assert.NoError(t, err)
+	if err != nil {
+		assert.NoError(t, err)
+		t.Fatal()
+	}
 	assert.Equal(t, uint64(0), acc.Balance, "non zero balance")
 	assert.False(t, acc.IsRoot, "account shouldn't be root")
 }

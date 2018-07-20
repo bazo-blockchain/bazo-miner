@@ -41,7 +41,7 @@ func createBootstrapMiner() {
 	if err != nil {
 		os.Stderr.WriteString(fmt.Sprintf("==> Error: %s\n", err.Error()))
 	}
-	ticker := time.NewTicker(30*time.Second)
+	ticker := time.NewTicker(1*time.Second)
 	go func(ticker *time.Ticker) {
 		for _ = range ticker.C {
 			outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())

@@ -280,7 +280,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
 
 	// Add ConsolidationTx if necessary
-	if (lastBlock.Height +1) % uint32(activeParameters.Consolidation_interval) == 0 {
+	if lastBlock.Height > 0 && (lastBlock.Height) % uint32(activeParameters.Consolidation_interval) == 0 {
 		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
 		storage.WriteOpenTx(consolidationTx)
 
@@ -294,7 +294,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
-	block.NrConsolidationTx = uint16(len(block.ConsolidationTxData))
+	block.NrConsolidationTx = uint8(len(block.ConsolidationTxData))
 	copy(block.Seed[0:32], localSeed[:])
 
 	//create a new seed, store it locally and add to the block

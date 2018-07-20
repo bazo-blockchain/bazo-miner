@@ -97,6 +97,13 @@ func mining(initialBlock *protocol.Block) {
 			if err != nil {
 				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
+
+			// Block has been finalized and validated.
+			// If a consolidation happened at this point we can remove the old blocks.
+			// TODO: move to postvalidation?
+			if currentBlock.NrConsolidationTx != 0 {
+				removeOldBlocks(currentBlock)
+			}
 		}
 
 		//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
@@ -111,6 +118,32 @@ func mining(initialBlock *protocol.Block) {
 	}
 }
 
+func removeOldBlocks(b *protocol.Block) {
+	for _, txHash := range b.ConsolidationTxData {
+		closedTx := storage.ReadClosedTx(txHash)
+		if closedTx == nil {
+			fmt.Printf("ERROR: nil closed tx")
+			return
+		}
+		consTx := closedTx.(*protocol.ConsolidationTx)
+		// Deletion start a this point and continues till there are no more blocks to delete
+		blockHashToDelete := consTx.LastBlock
+		previousBlock := storage.ReadClosedBlock(blockHashToDelete)
+		blockHashToDelete = previousBlock.PrevHash // TODO: remove?
+		for ;blockHashToDelete != [32]byte{}; {
+			blockToDelete := storage.ReadClosedBlock(blockHashToDelete)
+
+			if blockToDelete == nil {
+				fmt.Printf("No more blocks to delete, last one was: %v\n", blockHashToDelete)
+				return
+			}
+			fmt.Printf("Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
+			storage.DeleteClosedBlock(blockHashToDelete)
+			// TODO: delete transactions?
+			blockHashToDelete = blockToDelete.PrevHash
+		}
+	}
+}
 //At least one root key needs to be set which is allowed to create new accounts
 func initRootKey() ([32]byte, error) {
 	address, addressHash := storage.GetInitRootPubKey()

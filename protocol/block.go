@@ -10,8 +10,8 @@ import (
 
 const (
 	HASH_LEN                = 32
-	MIN_BLOCKSIZE           = 320
-	MIN_BLOCKHEADER_SIZE    = 68
+	MIN_BLOCKSIZE           = 319
+	MIN_BLOCKHEADER_SIZE    = 69
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -21,6 +21,7 @@ type Block struct {
 	Hash         [32]byte
 	PrevHash     [32]byte
 	NrConfigTx   uint8
+	NrConsolidationTx     uint8
 	NrElementsBF uint16
 	BloomFilter  *bloom.BloomFilter
 
@@ -32,7 +33,6 @@ type Block struct {
 	NrAccTx               uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
-	NrConsolidationTx     uint16
 	SlashedAddress        [32]byte
 	Seed                  [32]byte
 	Height                uint32
@@ -126,14 +126,13 @@ func (b *Block) Encode() (encodedBlock []byte) {
 
 	//Making byte array of all non-byte data
 	var timeStamp [8]byte
-	var nrFundsTx, nrAccTx, nrStakeTx, nrConsolidationTx, nrElementsBF [2]byte
+	var nrFundsTx, nrAccTx, nrStakeTx, nrElementsBF [2]byte
 	var height [4]byte
 
 	binary.BigEndian.PutUint64(timeStamp[:], uint64(b.Timestamp))
 	binary.BigEndian.PutUint16(nrFundsTx[:], b.NrFundsTx)
 	binary.BigEndian.PutUint16(nrAccTx[:], b.NrAccTx)
 	binary.BigEndian.PutUint16(nrStakeTx[:], b.NrStakeTx)
-	binary.BigEndian.PutUint16(nrConsolidationTx[:], b.NrConsolidationTx)
 	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
 	binary.BigEndian.PutUint32(height[:], b.Height)
 
@@ -150,12 +149,12 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[145:147], nrFundsTx[:])
 	copy(encodedBlock[147:149], nrAccTx[:])
 	encodedBlock[149] = byte(b.NrConfigTx)
-	copy(encodedBlock[150:152], nrStakeTx[:])
-	copy(encodedBlock[152:154], nrConsolidationTx[:])
-	copy(encodedBlock[154:186], b.SlashedAddress[:])
-	copy(encodedBlock[186:188], nrElementsBF[:])
+	encodedBlock[150] = byte(b.NrConsolidationTx)
+	copy(encodedBlock[151:153], nrStakeTx[:])
+	copy(encodedBlock[153:185], b.SlashedAddress[:])
+	copy(encodedBlock[185:187], nrElementsBF[:])
 
-	index := 188
+	index := 187
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -225,7 +224,8 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	copy(encodedHeader[1:33], b.Hash[:])
 	copy(encodedHeader[33:65], b.PrevHash[:])
 	encodedHeader[65] = byte(b.NrConfigTx)
-	copy(encodedHeader[66:68], nrElementsBF[:])
+	encodedHeader[66] = byte(b.NrConsolidationTx)
+	copy(encodedHeader[67:69], nrElementsBF[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -263,12 +263,12 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[145:147])
 	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[147:149])
 	b.NrConfigTx = uint8(encodedBlock[149])
-	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
-	b.NrConsolidationTx = binary.BigEndian.Uint16(encodedBlock[152:154])
-	copy(b.SlashedAddress[:], encodedBlock[154:186])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[186:188])
+	b.NrConsolidationTx = uint8(encodedBlock[150])
+	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[151:153])
+	copy(b.SlashedAddress[:], encodedBlock[153:185])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[185:187])
 
-	index := 188
+	index := 187
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
@@ -346,7 +346,8 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 	copy(b.Hash[:], encodedHeader[1:33])
 	copy(b.PrevHash[:], encodedHeader[33:65])
 	b.NrConfigTx = uint8(encodedHeader[65])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
+	b.NrConsolidationTx = uint8(encodedHeader[66])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[67:69])
 
 	index := MIN_BLOCKHEADER_SIZE
 
