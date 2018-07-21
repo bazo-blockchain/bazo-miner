@@ -41,12 +41,14 @@ func Init(ipport string) {
 	go peerService()
 
 	//Set localPort global, this will be the listening port for incoming connection
-	if Ipport != storage.Bootstrap_Server {
+	bootstrapPort := strings.Split(storage.Bootstrap_Server, ":")[1]
+	localPort := strings.Split(Ipport, ":")[1]
+	if localPort != bootstrapPort {
 		bootstrap()
 	}
 
 	//Listen for all subsequent incoming connections on specified local address/listening port
-	go listener(Ipport)
+	go listener()
 }
 
 func bootstrap() {
@@ -112,10 +114,10 @@ func PrepareHandshake(pingType uint8, localPort int) ([]byte, error) {
 	return packet, nil
 }
 
-func listener(ipport string) {
+func listener() {
 	allowedIps := storage.ReadFile("iplist.txt")
 	//Listen on all interfaces, this NAT stuff easier
-	listener, err := net.Listen("tcp", ipport)
+	listener, err := net.Listen("tcp", ":" + strings.Split(Ipport, ":")[1])
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
