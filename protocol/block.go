@@ -218,7 +218,7 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	copy(encodedHeader[33:65], b.PrevHash[:])
 	encodedHeader[65] = byte(b.NrConfigTx)
 	copy(encodedHeader[66:68], nrElementsBF[:])
-	copy(encodedHeader[69:72], height[:])
+	copy(encodedHeader[68:71], height[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -331,7 +331,7 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 	copy(b.PrevHash[:], encodedHeader[33:65])
 	b.NrConfigTx = uint8(encodedHeader[65])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
-	b.Height = binary.BigEndian.Uint32(encodedHeader[69:72])
+	b.Height = binary.BigEndian.Uint32(encodedHeader[68:71])
 
 	index := MIN_BLOCKHEADER_SIZE
 
