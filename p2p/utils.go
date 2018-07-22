@@ -27,11 +27,11 @@ func Connect(connectionString string) *net.TCPConn {
 func RcvData(p *peer) (header *Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = ReadHeader(reader)
-
 	if err != nil {
 		p.conn.Close()
 		return nil, nil, errors.New(fmt.Sprintf("Connection to %v aborted: %v", p.getIPPort(), err))
 	}
+
 	payload = make([]byte, header.Len)
 
 	for cnt := 0; cnt < int(header.Len); cnt++ {
@@ -77,7 +77,6 @@ func sendData(p *peer, payload []byte) {
 
 //Tested in server_test.go
 func peerExists(newIpport string) bool {
-
 	peerList := peers.getAllPeers(PEERTYPE_MINER)
 
 	for _, p := range peerList {
@@ -96,21 +95,23 @@ func peerSelfConn(newIpport string) bool {
 }
 
 func BuildPacket(typeID uint8, payload []byte) (packet []byte) {
-
 	var payloadLen [4]byte
+
 	packet = make([]byte, HEADER_LEN+len(payload))
 	binary.BigEndian.PutUint32(payloadLen[:], uint32(len(payload)))
 	copy(packet[0:4], payloadLen[:])
 	packet[4] = byte(typeID)
 	copy(packet[5:], payload)
+
 	return packet
 }
 
 func ReadHeader(reader *bufio.Reader) (*Header, error) {
-	//the first four bytes of any incoming messages is the length of the payload
-	//error catching after every read is necessary to avoid panicking
+	//The first four bytes of any incoming messages is the length of the payload.
+	//Error catching after every read is necessary to avoid panicking.
 	var headerArr [HEADER_LEN]byte
-	//reading byte by byte is surprisingly fast and works a lot better for concurrent connections
+
+	//Reading byte by byte is surprisingly fast and works a lot better for concurrent connections.
 	for i := range headerArr {
 		extr, err := reader.ReadByte()
 		if err != nil {
@@ -120,12 +121,12 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	}
 
 	header := extractHeader(headerArr[:])
+
 	return header, nil
 }
 
-//Decoupled functionality for testing reasons
+//Decoupled functionality for testing reasons.
 func extractHeader(headerData []byte) *Header {
-
 	header := new(Header)
 
 	lenBuf := [4]byte{headerData[0], headerData[1], headerData[2], headerData[3]}
@@ -133,5 +134,6 @@ func extractHeader(headerData []byte) *Header {
 
 	header.Len = packetLen
 	header.TypeID = uint8(headerData[4])
+
 	return header
 }
