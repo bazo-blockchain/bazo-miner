@@ -8,8 +8,7 @@ var (
 	//Block from the network, to the miner
 	BlockIn chan []byte = make(chan []byte)
 	//Block from the miner, to the network
-	BlockOut         chan []byte = make(chan []byte)
-	BlockRollbackOut chan []byte = make(chan []byte)
+	BlockOut       chan []byte = make(chan []byte)
 	//BlockHeader from the miner, to the clients
 	BlockHeaderOut chan []byte = make(chan []byte)
 
@@ -25,18 +24,15 @@ var (
 //This is for blocks and txs that the miner successfully validated.
 func forwardBlockBrdcstToMiner() {
 	for {
-		select {
-		case block := <-BlockOut:
-			minerBrdcstMsg <- BuildPacket(BLOCK_BRDCST, block)
-		case block := <-BlockRollbackOut:
-			clientBrdcstMsg <- BuildPacket(BLOCK_RLBCK_BRDCST, block)
-		}
+		block := <-BlockOut
+		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
+		minerBrdcstMsg <- toBrdcst
 	}
 }
 
 func forwardBlockHeaderBrdcstToMiner() {
 	for {
-		blockHeader := <-BlockHeaderOut
+		blockHeader := <- BlockHeaderOut
 		clientBrdcstMsg <- BuildPacket(BLOCK_HEADER_BRDCST, blockHeader)
 	}
 }

@@ -22,9 +22,8 @@ func InitLogging() {
 	LogMapping[4] = "STAKETX_BRDCST"
 	LogMapping[5] = "VERIFIEDTX_BRDCST"
 	LogMapping[6] = "BLOCK_BRDCST"
-	LogMapping[7] = "BLOCK_RLBCK_BRDCST"
-	LogMapping[8] = "BLOCK_HEADER_BRDCST"
-	LogMapping[9] = "TX_BRDCST_ACK"
+	LogMapping[7] = "BLOCK_HEADER_BRDCST"
+	LogMapping[8] = "TX_BRDCST_ACK"
 
 	LogMapping[10] = "FUNDSTX_REQ"
 	LogMapping[11] = "ACCTX_REQ"

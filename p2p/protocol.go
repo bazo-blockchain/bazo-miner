@@ -12,9 +12,8 @@ const (
 	STAKETX_BRDCST      = 4
 	VERIFIEDTX_BRDCST   = 5
 	BLOCK_BRDCST        = 6
-	BLOCK_RLBCK_BRDCST  = 7
-	BLOCK_HEADER_BRDCST = 8
-	TX_BRDCST_ACK       = 9
+	BLOCK_HEADER_BRDCST = 7
+	TX_BRDCST_ACK       = 8
 
 	FUNDSTX_REQ            = 10
 	ACCTX_REQ              = 11
