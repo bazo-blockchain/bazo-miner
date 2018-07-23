@@ -43,3 +43,7 @@ func broadcastBlock(block *protocol.Block) {
 	block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
 	p2p.BlockHeaderOut <- block.EncodeHeader()
 }
+
+func broadcastBlockRollback(block *protocol.Block) {
+	p2p.BlockRollbackOut <- block.Encode()
+}

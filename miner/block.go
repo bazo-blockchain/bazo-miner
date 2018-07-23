@@ -528,6 +528,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			if err := rollback(block); err != nil {
 				return err
 			}
+			broadcastBlockRollback(block)
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
 		for _, block := range blocksToValidate {
