@@ -1,10 +1,8 @@
 package protocol
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
-	"strconv"
 )
 
 const (
@@ -42,38 +40,36 @@ func (acc *Account) Hash() (hash [32]byte) {
 }
 
 func (acc *Account) Encode() (encodedAcc []byte) {
-
 	if acc == nil {
 		return nil
 	}
 
 	encodedAcc = make([]byte, ACC_SIZE)
 
-	var balanceBuf [8]byte
-	var txCntBuf [4]byte
-	var isStakingBuf [1]byte
-	var stakingBlockHeightBuf [4]byte
+	var balance [8]byte
+	var txCnt [4]byte
+	var isStaking byte
+	var stakingBlockHeight [4]byte
 
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, acc.IsStaking)
-	copy(isStakingBuf[:], buf.Bytes())
-
-	binary.BigEndian.PutUint64(balanceBuf[:], acc.Balance)
-	binary.BigEndian.PutUint32(txCntBuf[:], acc.TxCnt)
-	binary.BigEndian.PutUint32(stakingBlockHeightBuf[:], acc.StakingBlockHeight)
+	binary.BigEndian.PutUint64(balance[:], acc.Balance)
+	binary.BigEndian.PutUint32(txCnt[:], acc.TxCnt)
+	if acc.IsStaking {
+		isStaking = 1
+	}
+	binary.BigEndian.PutUint32(stakingBlockHeight[:], acc.StakingBlockHeight)
 
 	copy(encodedAcc[0:64], acc.Address[:])
-	copy(encodedAcc[64:72], balanceBuf[:])
-	copy(encodedAcc[72:76], txCntBuf[:])
-	copy(encodedAcc[76:77], isStakingBuf[:])
+	copy(encodedAcc[64:72], balance[:])
+	copy(encodedAcc[72:76], txCnt[:])
+	encodedAcc[76] = isStaking
 	copy(encodedAcc[77:109], acc.HashedSeed[:])
-	copy(encodedAcc[109:113], stakingBlockHeightBuf[:])
+	copy(encodedAcc[109:113], stakingBlockHeight[:])
 
+	fmt.Printf("acc bytes: %x\n", encodedAcc)
 	return encodedAcc
 }
 
 func (*Account) Decode(encodedAcc []byte) (acc *Account) {
-
 	if len(encodedAcc) != ACC_SIZE {
 		return nil
 	}
@@ -82,7 +78,12 @@ func (*Account) Decode(encodedAcc []byte) (acc *Account) {
 	copy(acc.Address[:], encodedAcc[0:64])
 	acc.Balance = binary.BigEndian.Uint64(encodedAcc[64:72])
 	acc.TxCnt = binary.BigEndian.Uint32(encodedAcc[72:76])
-	acc.IsStaking, _ = strconv.ParseBool(string(encodedAcc[76:77]))
+	if encodedAcc[76] == 1 {
+		fmt.Println("halleluja")
+		acc.IsStaking = true
+	} else {
+		acc.IsStaking = false
+	}
 	copy(acc.HashedSeed[:], encodedAcc[77:109])
 	acc.StakingBlockHeight = binary.BigEndian.Uint32(encodedAcc[109:113])
 
