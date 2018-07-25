@@ -4,6 +4,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"fmt"
 )
 
 //The code in this source file communicates with the p2p package via channels
@@ -23,6 +24,7 @@ func processBlock(payload []byte) {
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
 		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
+		fmt.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 		return
 	}
 
@@ -30,6 +32,7 @@ func processBlock(payload []byte) {
 	err := validateBlock(block)
 	if err != nil {
 		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		fmt.Printf("Received block (%x) (height %v) could not be validated: %v\n", block.Hash[0:8], block.Height, err)
 	} else {
 		broadcastBlock(block)
 	}

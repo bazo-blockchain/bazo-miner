@@ -807,6 +807,9 @@ func fetchConsolidationTxData(block *protocol.Block, ConsolidationTxSlice []*pro
 func stateValidation(data blockData) error {
 	//The sequence of validation matters. If we start with accs, then fund transfers can be done in the same block
 	//even though the accounts did not exist before the block validation
+	if err := consStateChange(data.consolidationTxSlice); err != nil {
+		return err
+	}
 	if err := accStateChange(data.accTxSlice); err != nil {
 		return err
 	}
@@ -839,6 +842,7 @@ func stateValidation(data blockData) error {
 	}
 
 	//TODO stakeStateChangeRollback needed?
+	//TODO how to handle consolidationTx for rollback (ignore)?
 	if err := collectSlashReward(activeParameters.Slash_reward, data.block); err != nil {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		fundsStateChangeRollback(data.fundsTxSlice)

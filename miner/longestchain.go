@@ -22,16 +22,25 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 	}
 
 	//Count how many blocks there are on the currently active chain
+
+	// TODO: why is lastblock 0 at the beginning?
+
 	tmpBlock := lastBlock
 	for {
 		if tmpBlock.Hash == ancestor.Hash {
 			break
 		}
+		if tmpBlock.PrevHash == [32]byte{} {
+			// TODO: better solution?
+			fmt.Printf("prevBlokc is 0\n")
+			break
+		}
 		blocksToRollback = append(blocksToRollback, tmpBlock)
+		fmt.Printf("the block needs to be in closed storage: tmpBlock:\n%v\n", tmpBlock)
 		//the block needs to be in closed storage
 		tmpBlock = storage.ReadClosedBlock(tmpBlock.PrevHash)
 	}
-
+	fmt.Printf("len(blocksToRollback) >= len(newChain): %v >= %v\n", len(blocksToRollback),len(newChain))
 	//Compare current length with new chain length
 	if len(blocksToRollback) >= len(newChain) {
 		//Current chain length is longer or equal (our consensus protocol states that in this case we reject the block)
@@ -59,6 +68,11 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 			newChain = InvertBlockArray(newChain)
 
 			return potentialAncestor, newChain
+		}
+		// TODO: better solution? Is  this correct?
+		if newBlock.NrConsolidationTx > 0 {
+			newChain = InvertBlockArray(newChain)
+			return newBlock, newChain
 		}
 
 		//It might be the case that we already started a sync and the block is in the openblock storage

@@ -10,8 +10,14 @@ import (
 )
 
 
-func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, account [32]byte) {
-	state[account] = &protocol.ConsolidatedAccount{account, 0, 0, false, }
+func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, pubKey [64]byte) {
+	address := protocol.SerializeHashContent(pubKey)
+	isStaking := storage.State[address].IsStaking
+	// TODO: is the root account always staking?
+	if _, isRoot := storage.RootKeys[address]; isRoot {
+		isStaking = true
+	}
+	state[address] = &protocol.ConsolidatedAccount{address, pubKey, 0, 0, isStaking,}
 }
 
 
@@ -63,7 +69,7 @@ func processAccTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *proto
 		address := protocol.SerializeHashContent(accTx.PubKey)
 		// Add accounts in the status
 		if _, exists := state[address]; !exists {
-			initialiseConsAccount(state, address)
+			initialiseConsAccount(state, accTx.PubKey)
 		} else {
 			fmt.Println("This shouldn't happen")  // TODO: better error
 		}
@@ -80,10 +86,12 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 		dest := fundsTx.To
 		// Add accounts in the map if they don't exist
 		if _, exists := state[source]; !exists {
-			initialiseConsAccount(state, source)
+			sourceadd := storage.GetAccount(source)
+			initialiseConsAccount(state, sourceadd.Address)
 		}
 		if _, exists := state[dest]; !exists {
-			initialiseConsAccount(state, dest)
+			destadd := storage.GetAccount(dest)
+			initialiseConsAccount(state, destadd.Address)
 		}
 		state[source].Balance = state[source].Balance - fundsTx.Fee - fundsTx.Amount
 		state[dest].Balance += fundsTx.Amount
@@ -100,7 +108,8 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 		stakeTx := tx.(*protocol.StakeTx)
 		addr := stakeTx.Account
 		if _, exists := state[addr]; !exists {
-			initialiseConsAccount(state, addr)
+			acc := storage.GetAccount(addr)
+			initialiseConsAccount(state, acc.Address)
 		}
 		state[addr].Staking = stakeTx.IsStaking
 		state[block.Beneficiary].Balance += stakeTx.Fee
@@ -125,7 +134,8 @@ func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, bl
 			acc := consolidationTx.Accounts[i]
 			address := acc.Account
 			if _, exists := state[address]; !exists {
-				initialiseConsAccount(state, address)
+				add := storage.GetAccount(address)
+				initialiseConsAccount(state, add.Address)
 			}
 			state[address].Balance = acc.Balance
 			state[address].Staking = acc.Staking
@@ -187,7 +197,8 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 			continue
 		}
 		if _, exists := state[block.Beneficiary]; !exists {
-			initialiseConsAccount(state, block.Beneficiary)
+			add := storage.GetAccount(block.Beneficiary)
+			initialiseConsAccount(state, add.Address)
 		}
 
 		processAccTx(state, block)

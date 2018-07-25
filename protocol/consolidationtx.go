@@ -9,11 +9,12 @@ import (
 const (
 	CONSOLIDATIONTX_SIZE = 50
 	PARAMETERS_SIZE = 11*8 + 32
-	CONS_ACCOUNT_SIZE = 97
+	CONS_ACCOUNT_SIZE = 97 + 64
 )
 
 type ConsolidatedAccount struct {
 	Account [32]byte
+	Address [64]byte
 	Balance uint64
 	TxCnt   uint32
 	Staking bool
@@ -42,6 +43,7 @@ func ConstrConsolidationTx(header byte, state StateAccounts, lastBlockHash [32]b
 	for hash, cons := range state {
 		consAccount := new(ConsolidatedAccount)
 		consAccount.Account = hash
+		consAccount.Address = cons.Address
 		consAccount.TxCnt = cons.TxCnt
 		consAccount.Balance = cons.Balance
 		consAccount.Staking = cons.Staking
@@ -174,13 +176,16 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		} else {
 			isStaking = 0
 		}
-		fmt.Printf("encode acc %v address %v\n ", i, acc.Account)
+		fmt.Printf("encode acc %v account %v\n ", i, acc.Account)
+		fmt.Printf("encode acc %v address %v\n ", i, acc.Address)
 		fmt.Printf("encode acc %v staking %v\n ", i, acc.Staking)
 		fmt.Printf("encode acc %v balance %v\n ", i, acc.Balance)
 		fmt.Printf("encode acc %v txcnt %v\n ", i, acc.TxCnt)
 		offset = CONSOLIDATIONTX_SIZE+PARAMETERS_SIZE +i*CONS_ACCOUNT_SIZE
 		copy(encodedTx[offset:offset+32], acc.Account[:])
 		offset += 32
+		copy(encodedTx[offset:offset+64], acc.Address[:])
+		offset += 64
 		encodedTx[offset] = isStaking
 		offset += 1
 		binary.BigEndian.PutUint64(balance[:], uint64(acc.Balance))
@@ -213,6 +218,8 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 		consAccount := new(ConsolidatedAccount)
 		copy(consAccount.Account[:], encodedTx[offset:offset+32])
 		offset += 32
+		copy(consAccount.Address[:], encodedTx[offset:offset+64])
+		offset += 64
 		isStakingAsByte := encodedTx[offset]
 		consAccount.Staking = isStakingAsByte == 1
 		offset += 1
@@ -220,7 +227,8 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 		offset += 32
 		consAccount.TxCnt = binary.BigEndian.Uint32(encodedTx[offset:offset+32])
 		tx.Accounts = append(tx.Accounts, *consAccount)
-		fmt.Printf("decode acc %v address %v\n ", i, consAccount.Account)
+		fmt.Printf("decode acc %v account  %v\n ", i, consAccount.Account)
+		fmt.Printf("decode acc %v address  %v\n ", i, consAccount.Address)
 		fmt.Printf("decode acc %v staking %v\n ", i, consAccount.Staking)
 		fmt.Printf("decode acc %v balance %v\n ", i, consAccount.Balance)
 		fmt.Printf("decode acc %v txcount %v\n ", i, consAccount.TxCnt)

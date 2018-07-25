@@ -37,6 +37,29 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 	return nil
 }
 
+
+func consStateChange(txSlice []*protocol.ConsolidationTx) error {
+	for _, tx := range txSlice {
+		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
+
+			for i := 0; i < len(tx.Accounts); i++ {
+				a := tx.Accounts[i]
+				if _, exists := storage.State[a.Account]; !exists {
+					acc := protocol.NewAccount(a.Address, a.Balance, a.Staking, [32]byte{})
+					storage.State[a.Account] = &acc
+				} else {
+					// TODO: uncommenting this breaks everything
+					//storage.State[a.Account].Balance += a.Balance
+					storage.State[a.Account].IsStaking = a.Staking
+				}
+
+			}
+		}
+	}
+
+	return nil
+}
+
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 	for index, tx := range txSlice {
 		//Check if we have to issue new coins (in case a root account signed the tx)

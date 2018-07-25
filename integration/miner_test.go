@@ -12,6 +12,9 @@ import (
 	"os"
 )
 
+// TODO: add test to see what happens after staking -> consolidation tx -> de staking
+//       staking amount should go back to staker so the staking amount should also be part
+//       of the consolidationstate
 
 var (
 	waitTimeSeconds     = time.Duration(20) * time.Second
@@ -103,6 +106,7 @@ func _startMiner() {
 	// TODO: find out why MinerKey cannot be used. How would the miner receive the root key safely?
 	minerPubKey, _, _ := storage.ExtractKeyFromFile(RootKey)
 	multisigPubKey, _, _ := storage.ExtractKeyFromFile(MultisigKey)
+	fmt.Printf("\n\n\nStarting test miner\n")
 	miner.Init(&minerPubKey, &multisigPubKey, minerSeedFileName, false)
 }
 
@@ -110,16 +114,28 @@ func startMiner(t *testing.T) {
 	os.Remove(minerDbName)
 	miner.InitialRootBalance = InitRootBalance
 	multisigPubKey, _, _ := storage.ExtractKeyFromFile(RootKey)
+	minerPubKey, _, _ := storage.ExtractKeyFromFile(MinerKey)
 	storage.INITROOTPUBKEY1 = multisigPubKey.X.Text(16)
 	storage.INITROOTPUBKEY2 = multisigPubKey.Y.Text(16)
 	storage.Init(minerDbName, minerIpPort)
 	p2p.Init(minerIpPort)
-
 	go _startMiner()
 	time.Sleep(waitTimeSeconds)
 
-	// We expect the miner to download the blocks and get the current state
+	// Check expected status
 	assert.Equal(t, 2, len(storage.State))
-	// TODO: check balances and other fields to make sure the calculation was correct
+
+	// Check root status
+	validatorAccAddress := storage.GetAddressFromPubKey(&multisigPubKey)
+	hashAddress := storage.SerializeHashContent(validatorAccAddress)
+	acc := storage.GetAccount(hashAddress)
+	assert.Equal(t, true, acc.Balance > 0)
+
+	// Check miner status
+	minerAccAddress := storage.GetAddressFromPubKey(&minerPubKey)
+	minerHashAddress := storage.SerializeHashContent(minerAccAddress)
+	minerAcc := storage.GetAccount(minerHashAddress)
+	assert.Equal(t, uint64(1123), minerAcc.Balance)
+	assert.True(t, minerAcc.IsStaking)
 }
 
