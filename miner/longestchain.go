@@ -21,18 +21,19 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		return nil, nil, errors.New("common ancestor not found")
 	}
 
+	// If the ancestor selected contains a consolidation tx then
+	// use a special condition
+	isConsolidationAncestor := ancestor.NrConsolidationTx > 0
 	//Count how many blocks there are on the currently active chain
-
-	// TODO: why is lastblock 0 at the beginning?
 
 	tmpBlock := lastBlock
 	for {
 		if tmpBlock.Hash == ancestor.Hash {
 			break
 		}
-		if tmpBlock.PrevHash == [32]byte{} {
-			// TODO: better solution?
-			fmt.Printf("prevBlokc is 0\n")
+		// TODO: better solution?
+		if isConsolidationAncestor && tmpBlock.PrevHash == [32]byte{} {
+			fmt.Printf("Found consolidation tx in ancestor block\n")
 			break
 		}
 		blocksToRollback = append(blocksToRollback, tmpBlock)
@@ -40,7 +41,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		//the block needs to be in closed storage
 		tmpBlock = storage.ReadClosedBlock(tmpBlock.PrevHash)
 	}
-	fmt.Printf("len(blocksToRollback) >= len(newChain): %v >= %v\n", len(blocksToRollback),len(newChain))
+
 	//Compare current length with new chain length
 	if len(blocksToRollback) >= len(newChain) {
 		//Current chain length is longer or equal (our consensus protocol states that in this case we reject the block)
@@ -71,6 +72,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		}
 		// TODO: better solution? Is  this correct?
 		if newBlock.NrConsolidationTx > 0 {
+			fmt.Printf("Found consolidation ancestor: %v\n", newBlock)
 			newChain = InvertBlockArray(newChain)
 			return newBlock, newChain
 		}

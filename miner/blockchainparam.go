@@ -51,6 +51,7 @@ func collectStatistics(b *protocol.Block) {
 
 	if localBlockCount == int64(activeParameters.Diff_interval) {
 		currentTargetTime.last = b.Timestamp
+		// TODO: changeancestor
 		//The genesis block has timestamp = 0. This simplifies certain things: Every miner can start with an already
 		//existing genesis block (because all fields are set to 0). The "find common ancestor" algorithm can then
 		//use the genesis block as a common ancestor for new miners who have not synchronized with the chain yet.

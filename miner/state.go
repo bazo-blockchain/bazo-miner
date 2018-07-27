@@ -405,6 +405,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 	var seed [32]byte
 	copy(seed[:], storage.GENESIS_SEED)
 
+	// TODO: changeancestor
 	initialBlock := newBlock([32]byte{}, seed, hashedSeed, 0)
 
 	allClosedBlocks := storage.ReadAllClosedBlocks()
@@ -418,7 +419,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 	}
 
 	collectStatistics(initialBlock)
-
+	// TODO: changeancestor
 	if initialBlock.Hash == [32]byte{} {
 		storage.WriteClosedBlock(initialBlock)
 	}
