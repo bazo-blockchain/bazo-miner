@@ -65,7 +65,6 @@ func (acc *Account) Encode() (encodedAcc []byte) {
 	copy(encodedAcc[77:109], acc.HashedSeed[:])
 	copy(encodedAcc[109:113], stakingBlockHeight[:])
 
-	fmt.Printf("acc bytes: %x\n", encodedAcc)
 	return encodedAcc
 }
 
@@ -79,7 +78,6 @@ func (*Account) Decode(encodedAcc []byte) (acc *Account) {
 	acc.Balance = binary.BigEndian.Uint64(encodedAcc[64:72])
 	acc.TxCnt = binary.BigEndian.Uint32(encodedAcc[72:76])
 	if encodedAcc[76] == 1 {
-		fmt.Println("halleluja")
 		acc.IsStaking = true
 	} else {
 		acc.IsStaking = false
