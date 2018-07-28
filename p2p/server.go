@@ -142,8 +142,8 @@ func listener() {
 
 func handleNewConn(p *peer) {
 	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
-	header, payload, err := RcvData(p)
 
+	header, payload, err := RcvData(p)
 	if err != nil {
 		logger.Printf("Failed to handle incoming connection: %v\n", err)
 		return
