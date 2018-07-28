@@ -62,5 +62,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		case STAKETX_RES:
 			forwardTxReqToMiner(p, payload, STAKETX_RES)
 		}
+	} else {
+		logger.Printf("Incoming message %v not processed.\n", LogMapping[header.TypeID])
 	}
 }
