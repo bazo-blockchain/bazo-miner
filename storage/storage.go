@@ -15,6 +15,7 @@ var (
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
+	Uptodate            bool
 	Bootstrap_Server   string
 )
 

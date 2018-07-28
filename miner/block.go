@@ -492,12 +492,12 @@ func validate(b *protocol.Block, initialSetup bool) error {
 
 	//Verify block time is dynamic and corresponds to system time at the time of retrieval.
 	//If we are syncing or far behind, we cannot do this dynamic check,
-	//therefore we include a boolean uptodate. If it's true we consider ourselves uptodate and
+	//therefore we include a boolean Uptodate. If it's true we consider ourselves Uptodate and
 	//do dynamic time checking.
 	if len(blocksToValidate) > DELAYED_BLOCKS {
-		uptodate = false
+		storage.Uptodate = false
 	} else {
-		uptodate = true
+		storage.Uptodate = true
 	}
 
 	//No rollback needed, just a new block to validate.
@@ -560,7 +560,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
 	//This dynamic check is only done if we're up-to-date with syncing, otherwise timestamp is not checked.
 	//Other miners (which are up-to-date) made sure that this is correct.
-	if !initialSetup && uptodate {
+	if !initialSetup && storage.Uptodate {
 		if err := timestampCheck(block.Timestamp); err != nil {
 			return nil, nil, nil, nil, err
 		}
