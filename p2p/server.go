@@ -130,13 +130,8 @@ func listener() {
 			continue
 		}
 
-		//for _, allowedIp := range allowedIps {
-		//	if strings.Split(conn.RemoteAddr().String(), ":")[0] == allowedIp {
 		p := newPeer(conn, "", 0)
 		go handleNewConn(p)
-		//break
-		//}
-		//}
 	}
 }
 
