@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func Connect(connectionString string) *net.TCPConn {
@@ -117,10 +118,21 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		headerArr[i] = extr
 	}
 
 	header := extractHeader(headerArr[:])
+
+	//Check if the type is registered in the protocol.
+	if LogMapping[header.TypeID] == "" {
+		return nil, errors.New("Header: TypeID not found.")
+	}
+
+	//Check if the payload length does not exceed the MAX_BLOCK_SIZE defined in configtx.go
+	if header.Len > protocol.MAX_BLOCK_SIZE {
+		return nil, errors.New("Header: Payload exceeds MAX_BLOCK_SIZE")
+	}
 
 	return header, nil
 }
