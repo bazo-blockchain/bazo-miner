@@ -12,10 +12,11 @@ import (
 
 var (
 	logger              *log.Logger
-	blockValidation          = &sync.Mutex{}
+	blockValidation     = &sync.Mutex{}
 	parameterSlice      []Parameters
 	activeParameters    *Parameters
-	slashingDict                = make(map[[32]byte]SlashingProof)
+	uptodate            bool
+	slashingDict        = make(map[[32]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
 	seedFile            string

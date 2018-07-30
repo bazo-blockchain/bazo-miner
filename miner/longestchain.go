@@ -13,9 +13,7 @@ import (
 //Covers both cases (if block belongs to the longest chain or not).
 func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToValidate []*protocol.Block, err error) {
 	//Fetch all blocks that are needed to validate.
-	storage.Uptodate = false
 	ancestor, newChain := getNewChain(newBlock)
-	storage.Uptodate = true
 
 	//Common ancestor not found, discard block.
 	if ancestor == nil {

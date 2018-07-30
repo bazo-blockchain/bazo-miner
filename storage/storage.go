@@ -15,7 +15,6 @@ var (
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
-	Uptodate           bool
 	Bootstrap_Server   string
 )
 
@@ -25,7 +24,6 @@ const (
 
 //Entry function for the storage package
 func Init(dbname string, bootstrapIpport string) {
-	Uptodate = true
 	Bootstrap_Server = bootstrapIpport
 	logger = InitLogger()
 
