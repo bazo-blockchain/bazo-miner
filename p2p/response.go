@@ -106,11 +106,8 @@ func accRes(p *peer, payload []byte) {
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
 
-	if acc, _ := storage.GetAccount(hash); acc != nil {
-		packet = BuildPacket(ACC_RES, acc.Encode())
-	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
-	}
+	acc, _ := storage.GetAccount(hash)
+	packet = BuildPacket(ACC_RES, acc.Encode())
 
 	sendData(p, packet)
 }
@@ -151,7 +148,7 @@ func pongRes(p *peer, payload []byte, peerType uint) {
 	if peerType == MINER_PING {
 		p.peerType = PEERTYPE_MINER
 		packet = BuildPacket(MINER_PONG, nil)
-	} else if peerType == CLIENT_PING{
+	} else if peerType == CLIENT_PING {
 		p.peerType = PEERTYPE_CLIENT
 		packet = BuildPacket(CLIENT_PONG, nil)
 	}
