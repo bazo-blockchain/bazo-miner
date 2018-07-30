@@ -40,6 +40,6 @@ func processBlock(payload []byte) {
 func broadcastBlock(block *protocol.Block) {
 	p2p.BlockOut <- block.Encode()
 
-	block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+	block.InitBloomFilter(storage.GetTxPubKeys(block))
 	p2p.BlockHeaderOut <- block.EncodeHeader()
 }

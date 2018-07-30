@@ -11,7 +11,7 @@ import (
 const (
 	HASH_LEN                = 32
 	MIN_BLOCKSIZE           = 318
-	MIN_BLOCKHEADER_SIZE    = 72
+	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -24,12 +24,12 @@ type Block struct {
 	NrElementsBF uint16
 	BloomFilter  *bloom.BloomFilter
 	Height       uint32
+	Beneficiary  [32]byte
 
 	//Body
 	Nonce                 [8]byte
 	Timestamp             int64
 	MerkleRoot            [32]byte
-	Beneficiary           [32]byte
 	NrAccTx               uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
@@ -219,6 +219,7 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	encodedHeader[65] = byte(b.NrConfigTx)
 	copy(encodedHeader[66:68], nrElementsBF[:])
 	copy(encodedHeader[68:72], height[:])
+	copy(encodedHeader[72:104], b.Beneficiary[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -332,6 +333,7 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 	b.NrConfigTx = uint8(encodedHeader[65])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
 	b.Height = binary.BigEndian.Uint32(encodedHeader[68:72])
+	copy(b.Beneficiary[:], encodedHeader[72:104])
 
 	index := MIN_BLOCKHEADER_SIZE
 
