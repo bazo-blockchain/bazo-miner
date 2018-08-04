@@ -99,5 +99,7 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 func collectBlockRewardRollback(reward uint64, minerHash [32]byte) {
 	minerAcc := storage.GetAccount(minerHash)
-	minerAcc.Balance -= reward
+	if minerAcc != nil {
+		minerAcc.Balance -= reward
+	}
 }

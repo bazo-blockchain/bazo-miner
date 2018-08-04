@@ -64,7 +64,7 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 
 func processAccTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.AccTxData {
-		tx := reqTx(p2p.ACCTX_REQ, txHash)
+		tx := getTransaction(p2p.ACCTX_REQ, txHash)
 		accTx := tx.(*protocol.AccTx)
 		address := protocol.SerializeHashContent(accTx.PubKey)
 		// Add accounts in the status
@@ -80,7 +80,7 @@ func processAccTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *proto
 
 func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.FundsTxData {
-		tx := reqTx(p2p.FUNDSTX_REQ, txHash)
+		tx := getTransaction(p2p.FUNDSTX_REQ, txHash)
 		fundsTx := tx.(*protocol.FundsTx)
 		source := fundsTx.From
 		dest := fundsTx.To
@@ -104,7 +104,7 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 
 func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.StakeTxData {
-		tx := reqTx(p2p.STAKETX_REQ, txHash)
+		tx := getTransaction(p2p.STAKETX_REQ, txHash)
 		stakeTx := tx.(*protocol.StakeTx)
 		addr := stakeTx.Account
 		if _, exists := state[addr]; !exists {
@@ -112,22 +112,23 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 			initialiseConsAccount(state, acc.Address)
 		}
 		state[addr].Staking = stakeTx.IsStaking
+		//fmt.Printf("ADDING TO BL %v fee %v", state[addr].Balance , stakeTx.Fee)
+		state[addr].Balance -= stakeTx.Fee
 		state[block.Beneficiary].Balance += stakeTx.Fee
 	}
 }
 
 func processConfigTx(params *conf.Parameters, block *protocol.Block) {
 	for _, txHash := range block.ConfigTxData {
-		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
+		tx := getTransaction(p2p.CONFIGTX_REQ, txHash)
 		configTx := tx.(*protocol.ConfigTx)
-		fmt.Println(configTx)
-		ConfigTxChange(params, tx.(*protocol.ConfigTx))
+		ConfigTxChange(params, configTx)
 	}
 }
 
 func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *protocol.Block) {
 	for _, txHash := range block.ConsolidationTxData {
-		tx := reqTx(p2p.CONSOLIDATIONTX_REQ, txHash)
+		tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, txHash)
 		consolidationTx := tx.(*protocol.ConsolidationTx)
 
 		for i := 0; i < len(consolidationTx.Accounts); i++ {
@@ -137,7 +138,7 @@ func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, bl
 				add := storage.GetAccount(address)
 				initialiseConsAccount(state, add.Address)
 			}
-			state[address].Balance = acc.Balance
+			state[address].Balance += acc.Balance
 			state[address].Staking = acc.Staking
 		}
 	}
@@ -161,9 +162,17 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 			blockList = append(blockList, prevBlock)
 			prevHash = prevBlock.PrevHash
 
+			if prevHash == [32]byte{} {
+				prevBlock := storage.ReadClosedBlock(prevHash)
+				blockList = append(blockList, prevBlock)
+				break
+			}
 			// Stop at the first consolidation Tx
 			// TODO: clean up this code block
 			if prevBlock.NrConsolidationTx > 0 {
+				prevBlock := storage.ReadClosedBlock(prevHash)
+				fmt.Printf("GetFullChainFromBlock:\n%v\n", prevBlock)
+				blockList = append(blockList, prevBlock)
 				break
 			} else {
 				continue
@@ -175,7 +184,7 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		prevBlock = storage.ReadOpenBlock(prevHash)
+		prevBlock = storage.ReadClosedBlock(prevHash)
 		blockList = append(blockList, prevBlock)
 		prevHash = prevBlock.PrevHash
 	}
@@ -186,14 +195,27 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
 	params := NewDefaultParameters()
-
+	prevConsolidationHash := findPreviousCondolidationHash(chain)
+	fmt.Printf("Chain to consolidate is long %v\n", len(chain))
 	// TODO: take into consideration activeParameters.Num_included_prev_seeds
 	consolidationPoint := len(chain) - activeParameters.Num_included_prev_seeds - 1
 	//Process all the blocks in the chain
-	for i := len(chain) - 1; i >= consolidationPoint; i-- {
+	for i := 0; i < len(chain); i++ {
 		block := chain[i]
+
+		processConsolidationTx(state, block)
+		if block.Hash == prevConsolidationHash {
+			fmt.Printf("Previous consolidation Block, abort")
+			break
+		}
+	}
+
+	for i := 0; i < len(chain); i++ {
+		block := chain[i]
+		fmt.Printf("Analyzing Block: \n%v\n", block.Height)
+
 		// Skip empty blocks
-		if block == nil {
+		if block == nil || block.Hash == [32]byte{} {
 			continue
 		}
 		if _, exists := state[block.Beneficiary]; !exists {
@@ -205,15 +227,42 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 		processFundsTx(state, block)
 		processStakeTx(state, block)
 		processConfigTx(&params, block)
-		processConsolidationTx(state, block)
+		if block.Hash == prevConsolidationHash {
+			fmt.Printf("Previous consolidation Block, abort")
+			break
+		}
+	}
+	fmt.Printf("ConsolidationState\n")
+	for _, acc1 := range state {
+		fmt.Printf("Address %v  Balance %v\n", acc1.Address, acc1.Balance)
 	}
 
 	// The consolidation tx creates a snapshot of the system till a certain
 	// block of which we have to keep track of
 	lastBlockHash := chain[consolidationPoint].Hash
-	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash, params)
+
+	fmt.Printf("Previous consolidation hash selected: %x\n", prevConsolidationHash)
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, lastBlockHash, prevConsolidationHash, params)
+
 	if err != nil {
 		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
 	}
 	return consTx, nil
+}
+
+func findPreviousCondolidationHash(chain []*protocol.Block) (prevConsolidationHash[32]byte ) {
+	fmt.Printf("Finding findPreviousCondolidationHash\n")
+	var prevConsolidationBlock *protocol.Block
+	for i := len(chain) - 1; i >= 0; i-- {
+		block := chain[i]
+		fmt.Printf("PrevConsBlock:\n%v\n", block)
+		if block.NrConsolidationTx > 0 || block.Hash == [32]byte{} {
+			fmt.Printf("Previous Consolidation Block: \n%v\n", block)
+			prevConsolidationBlock = block
+			break
+		}
+	}
+	prevConsolidationHash = prevConsolidationBlock.Hash
+	fmt.Printf("Previous Consolidation Block (chain0): \n%v\n",  prevConsolidationBlock)
+	return prevConsolidationHash
 }

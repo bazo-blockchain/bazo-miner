@@ -89,7 +89,7 @@ func mining(initialBlock *protocol.Block) {
 		if err != nil {
 			fmt.Printf("%v\n", err)
 		} else {
-			fmt.Println("Block mined")
+			fmt.Printf("Block mined: %v\n", currentBlock.Height)
 			//else a block was received meanwhile that was added to the chain, all the effort was in vain :(
 			//wait for lock here only
 			broadcastBlock(currentBlock)
@@ -121,15 +121,15 @@ func mining(initialBlock *protocol.Block) {
 func removeOldBlocks(b *protocol.Block) {
 	for _, txHash := range b.ConsolidationTxData {
 		closedTx := storage.ReadClosedTx(txHash)
+
 		if closedTx == nil {
 			fmt.Printf("ERROR: nil closed tx")
 			return
 		}
 		consTx := closedTx.(*protocol.ConsolidationTx)
 		// Deletion start a this point and continues till there are no more blocks to delete
-		blockHashToDelete := consTx.LastBlock
-		previousBlock := storage.ReadClosedBlock(blockHashToDelete)
-		blockHashToDelete = previousBlock.PrevHash // TODO: remove?
+		blockHashToDelete := consTx.PreviousConsHash
+
 		for ;blockHashToDelete != [32]byte{}; {
 			blockToDelete := storage.ReadClosedBlock(blockHashToDelete)
 
@@ -137,9 +137,13 @@ func removeOldBlocks(b *protocol.Block) {
 				fmt.Printf("No more blocks to delete, last one was: %v\n", blockHashToDelete)
 				return
 			}
-			fmt.Printf("Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
-			storage.DeleteClosedBlock(blockHashToDelete)
-			// TODO: delete transactions?
+			if blockToDelete.NrConsolidationTx > 0 {
+				fmt.Printf("Not Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
+			} else {
+				fmt.Printf("Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
+				storage.DeleteClosedBlock(blockHashToDelete)
+				// TODO: delete transactions?
+			}
 			blockHashToDelete = blockToDelete.PrevHash
 		}
 	}

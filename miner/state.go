@@ -48,9 +48,11 @@ func consStateChange(txSlice []*protocol.ConsolidationTx) error {
 					acc := protocol.NewAccount(a.Address, a.Balance, a.Staking, [32]byte{})
 					storage.State[a.Account] = &acc
 				} else {
-					// TODO: uncommenting this breaks everything
-					//storage.State[a.Account].Balance += a.Balance
-					storage.State[a.Account].IsStaking = a.Staking
+					acc2 := storage.GetAccount(a.Account)
+					if !storage.IsRootKey(acc2.Hash()) {
+						acc2.Balance = a.Balance
+					}
+					acc2.IsStaking = a.Staking
 				}
 
 			}
@@ -423,7 +425,7 @@ func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
 	if initialBlock.Hash == [32]byte{} {
 		storage.WriteClosedBlock(initialBlock)
 	}
-
+	fmt.Printf("Initial Block:\n%v\n", initialBlock)
 	blockDataMap := make(map[[32]byte]blockData)
 
 	//Validate all closed blocks and update state

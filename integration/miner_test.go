@@ -12,16 +12,13 @@ import (
 	"os"
 )
 
-// TODO: add test to see what happens after staking -> consolidation tx -> de staking
-//       staking amount should go back to staker so the staking amount should also be part
-//       of the consolidationstate
-
 var (
 	waitTimeSeconds     = time.Duration(20) * time.Second
 	cmdCreateMiner      = []string{"accTx", "0", "1", RootKey, MinerKey}
 	cmdFundMiner        = []string{"fundsTx", "0", "1000", "1", "0", RootKey, MinerKey, MultisigKey}
 	cmdFundMiner2        = []string{"fundsTx", "0", "123", "2", "1", RootKey, MinerKey, MultisigKey}
 	cmdStakeMiner       = []string{"stakeTx", "0", "5", "1", MinerKey, MinerKey}
+	cmdUnstakeMiner     = []string{"stakeTx", "1", "5", "0", MinerKey, MinerKey}
 	minerIpPort         = "127.0.0.1:8002"
 	minerDbName         = "miner_test.db"
 	minerSeedFileName   = "miner_seed_test.json"
@@ -32,11 +29,9 @@ func TestMiner (t *testing.T){
 	// We want to create a new miner from scratch and run it
 	client.AutoRefresh = false
 	client.Init()
-
 	createMiner(t)
 	fundMiner(t)
 	fundMiner2(t)
-	time.Sleep(1000*4)
 	stakeMiner(t)
 	//..start miner and check that everything is ok
 	startMiner(t)
@@ -135,7 +130,15 @@ func startMiner(t *testing.T) {
 	minerAccAddress := storage.GetAddressFromPubKey(&minerPubKey)
 	minerHashAddress := storage.SerializeHashContent(minerAccAddress)
 	minerAcc := storage.GetAccount(minerHashAddress)
-	assert.Equal(t, uint64(1123), minerAcc.Balance)
+	// 1000 + 123 - 5
+	assert.Equal(t, uint64(1118), minerAcc.Balance)
 	assert.True(t, minerAcc.IsStaking)
+
+	// Unstake miner
+	client.Process(cmdUnstakeMiner)
+	time.Sleep(waitTimeSeconds)
+	acc = storage.GetAccount(hashAddress)
+	assert.False(t, minerAcc.IsStaking)
+
 }
 

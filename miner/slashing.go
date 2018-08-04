@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"fmt"
 )
 
 type SlashingProof struct {
@@ -19,10 +21,11 @@ func seekSlashingProof(block *protocol.Block) error {
 		return errors.New("Latest block not found.")
 	}
 
-	//fmt.Println(lastClosedBlock, block)
+	//fmt.Printf("lastClosedBlock, block\nlastClosedBlock:\n%v\n, block:\n%v\n", lastClosedBlock, block)
 
 	//when the block is added ontop of your chain then there is no slashing needed
 	if lastClosedBlock.Hash == block.PrevHash {
+		//fmt.Printf("lastClosedBlock.Hash == block.PrevHash - %x == %x", lastClosedBlock.Hash, block.PrevHash)
 		return nil
 	} else {
 		//get the latest blocks and check if there is proof for multivoting within the slashing window
@@ -31,15 +34,29 @@ func seekSlashingProof(block *protocol.Block) error {
 		if prevBlocks == nil {
 			return nil
 		}
+		fmt.Printf("Printing Closed Blocks")
+		//for ii, prevBlock := range prevBlocks {
+		//	//fmt.Printf("%v   -  %v\n", ii, prevBlock)
+		//}
+
 		for _, prevBlock := range prevBlocks {
+			if prevBlock == nil {
+				continue
+			}
+			//fmt.Printf("is block %v in preBlock %v \n", block, prevBlock)
+			//fmt.Printf("is block %v in preBlock %v \n", block.Height, prevBlock.Height)
 			if IsInSameChain(prevBlock, block) {
 				return nil
 			}
-			if prevBlock.Beneficiary == block.Beneficiary &&
-				(uint64(prevBlock.Height) < uint64(block.Height)+activeParameters.Slashing_window_size ||
-					uint64(block.Height) < uint64(prevBlock.Height)+activeParameters.Slashing_window_size) {
-				slashingDict[block.Beneficiary] = SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
-			}
+			//if prevBlock.Beneficiary == block.Beneficiary &&
+			//	(uint64(prevBlock.Height) < uint64(block.Height)+activeParameters.Slashing_window_size ||
+			//		uint64(block.Height) < uint64(prevBlock.Height)+activeParameters.Slashing_window_size) {
+			//			fmt.Printf("block.Beneficiary:\n%v\n", block)
+			//			fmt.Printf("block.Beneficiary:\n%v\n", block.Beneficiary)
+			//			fmt.Printf("prevblock.Beneficiary:\n%v\n", prevBlock)
+			//			fmt.Printf("slashingDict:\n%v\n", slashingDict)f
+			//	slashingDict[block.Beneficiary] = SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
+			//}
 		}
 	}
 	return nil
@@ -59,9 +76,21 @@ func IsInSameChain(b1, b2 *protocol.Block) bool {
 		higherBlock = b2
 		lowerBlock = b1
 	}
-	for higherBlock.Height > 0 {
+
+	// TODO: prove that this is correct
+	if higherBlock.Height > 0 && higherBlock.NrConsolidationTx > 0{
+		txHash := higherBlock.ConsolidationTxData[0]
+		tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, txHash)
+		consolidationTx := tx.(*protocol.ConsolidationTx)
+		if consolidationTx.PreviousConsHash == lowerBlock.Hash {
+			return true
+		}
+	}
+
+	for higherBlock != nil && higherBlock.Height > 0 {
 		higherBlock = storage.ReadClosedBlock(higherBlock.PrevHash)
-		if higherBlock.Hash == lowerBlock.Hash {
+
+		if higherBlock!= nil && higherBlock.Hash == lowerBlock.Hash {
 			return true
 		}
 	}

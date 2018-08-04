@@ -73,17 +73,19 @@ func preValidationRollback(b *protocol.Block) (accTxSlice []*protocol.AccTx, fun
 		}
 		stakeTxSlice = append(stakeTxSlice, stakeTx)
 	}
-
-	for _, hash := range b.ConsolidationTxData {
-		var consolidationTx *protocol.ConsolidationTx
-		tx := storage.ReadClosedTx(hash)
-		if tx == nil {
-			return nil, nil, nil, nil, nil, errors.New("CRITICAL: Validated ConsolidationTx was not in the confirmed tx storage")
-		} else {
-			consolidationTx = tx.(*protocol.ConsolidationTx)
-		}
-		consolidationTxSlice = append(consolidationTxSlice, consolidationTx)
-	}
+	// TODO: uncommenting this causes problems during rollback.
+	// More specifically the transactions will be added to the openTx storage in postValidationRollback.
+	// This will cause  the next block to add them which is wrong.
+	//for _, hash := range b.ConsolidationTxData {
+	//	var consolidationTx *protocol.ConsolidationTx
+	//	tx := storage.ReadClosedTx(hash)
+	//	if tx == nil {
+	//		return nil, nil, nil, nil, nil, errors.New("CRITICAL: Validated ConsolidationTx was not in the confirmed tx storage")
+	//	} else {
+	//		consolidationTx = tx.(*protocol.ConsolidationTx)
+	//	}
+	//	consolidationTxSlice = append(consolidationTxSlice, consolidationTx)
+	//}
 
 	return accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, consolidationTxSlice, nil
 }

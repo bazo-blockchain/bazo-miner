@@ -281,6 +281,7 @@ func finalizeBlock(block *protocol.Block) error {
 
 	// Add ConsolidationTx if necessary
 	if lastBlock.Height > 0 && (lastBlock.Height) % uint32(activeParameters.Consolidation_interval) == 0 {
+		fmt.Printf("Creating Consolidation tx for height %v\n", lastBlock)
 		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
 		storage.WriteOpenTx(consolidationTx)
 
@@ -349,7 +350,9 @@ func validateBlock(b *protocol.Block) error {
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners)
 			accTxs, fundsTxs, configTxs, stakeTxs, consolidationTxs, err := preValidation(block)
-
+			if err != nil {
+				fmt.Printf("Failed preValidation: %v\n", err)
+			}
 			//check if the validator that added the block has previously voted on different competing chains (find slashing proof)
 			//the proof will be stored in the global slashing dictionary
 			if block.Height > 0 {
@@ -357,15 +360,17 @@ func validateBlock(b *protocol.Block) error {
 			}
 
 			if err != nil {
+				fmt.Printf("State validation failed: %v\n", err)
 				return err
 			}
 
 			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, consolidationTxs, block}
 
 			if err := stateValidation(blockDataMap[block.Hash]); err != nil {
+				fmt.Printf("State validation failed: %v\n", err)
 				return err
 			}
-
+			fmt.Printf("State validation done:\n%v\n", storage.GetState())
 			postValidation(blockDataMap[block.Hash])
 		}
 	} else {
@@ -496,7 +501,7 @@ func preValidation(block *protocol.Block) (accTxSlice []*protocol.AccTx, fundsTx
 	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
 		return nil, nil, nil, nil, nil,errors.New("The nonce is incorrect.")
 	} else {
-		logger.Printf("PoS validation successful\n")
+		logger.Printf("PoS validation successful of block %v\n", block.Height)
 	}
 
 	//invalid if pos is too far in the future
@@ -819,6 +824,7 @@ func stateValidation(data blockData) error {
 		return err
 	}
 
+	//TODO: consolidationChangeRollback needed?
 	//TODO accStateChangeRollback and fundsStateChangeRollback needed?
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
 		stakeStateChangeRollback(data.stakeTxSlice)
@@ -833,6 +839,7 @@ func stateValidation(data blockData) error {
 	}
 
 	//TODO stakeStateChangeRollback needed?
+	//TODO: collect consolidationReward?
 	if err := collectBlockReward(activeParameters.Block_reward, data.block.Beneficiary); err != nil {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		fundsStateChangeRollback(data.fundsTxSlice)
@@ -899,12 +906,18 @@ func postValidation(data blockData) {
 	// Write last block to db and delete last block's ancestor
 	storage.WriteLastClosedBlock(data.block)
 	storage.DeleteLastClosedBlock(data.block.PrevHash)
+	if data.block.NrConsolidationTx > 0 {
+		tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, data.block.ConsolidationTxData[0])
+		consTx := tx.(*protocol.ConsolidationTx)
+		// Make sure to delete block from LastClosed storage
+		storage.DeleteLastClosedBlock(consTx.PreviousConsHash)
+	}
 
 	//It might be that block is not in the openblock storage, but this doesn't matter
 	storage.DeleteOpenBlock(data.block.Hash)
 
 	if err := storage.WriteClosedBlock(data.block); err == nil {
-		logger.Printf("Closed block %x saved in DB\n", data.block.Hash[0:8])
+		logger.Printf("Closed block %v %x saved in DB\n", data.block.Height, data.block.Hash)
 		logger.Print(data.block)
 		logger.Printf("\n%s", storage.GetState())
 	}

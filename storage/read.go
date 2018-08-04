@@ -64,8 +64,12 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 		if nextBlock.Hash != [32]byte{} {
 			for hasNext {
 				nextBlock = ReadClosedBlock(nextBlock.PrevHash)
-				allClosedBlocks = append(allClosedBlocks, nextBlock)
-				if nextBlock.Hash == [32]byte{} {
+				if nextBlock != nil {
+					allClosedBlocks = append(allClosedBlocks, nextBlock)
+				}
+
+				// TODO: check if this is correct
+				if nextBlock == nil || nextBlock.Hash == [32]byte{} {
 					hasNext = false
 				}
 			}
