@@ -7,7 +7,7 @@ const (
 	MIN_MINERS = 2
 	//MAX_MINERS is an upper bound of connections. Miner handshakes are rejected if the amount of connections
 	//grows above this number. Client connections are always accepted
-	MAX_MINERS = 5
+	MAX_MINERS = 20
 	//In order to get a reasonable system time, there needs to be a minimal amount of times available from other peers
 	MIN_PEERS_FOR_TIME = 5
 	//Interval to check system health in seconds
