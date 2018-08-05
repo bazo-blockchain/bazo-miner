@@ -73,7 +73,7 @@ func TestGetBlockSequences(t *testing.T) {
 	if len(rollback) != 2 ||
 		rollback[0].Hash != b2.Hash ||
 		rollback[1].Hash != b.Hash {
-		t.Error("Rollback of current chain failed\n")
+		t.Errorf("Rollback of current chain failed. Rollback length is %v\n", len(rollback))
 	}
 
 	if len(validate) != 3 ||

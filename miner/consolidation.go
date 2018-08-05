@@ -12,7 +12,12 @@ import (
 
 func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, pubKey [64]byte) {
 	address := protocol.SerializeHashContent(pubKey)
-	isStaking := storage.State[address].IsStaking
+	isStaking := false
+	if _, exists := storage.State[address]; exists {
+		isStaking = storage.State[address].IsStaking
+	}
+
+
 	// TODO: is the root account always staking?
 	if _, isRoot := storage.RootKeys[address]; isRoot {
 		isStaking = true
@@ -135,8 +140,7 @@ func processConsolidationTx(state map[[32]byte]*protocol.ConsolidatedAccount, bl
 			acc := consolidationTx.Accounts[i]
 			address := acc.Account
 			if _, exists := state[address]; !exists {
-				add := storage.GetAccount(address)
-				initialiseConsAccount(state, add.Address)
+				initialiseConsAccount(state, acc.Address)
 			}
 			state[address].Balance += acc.Balance
 			state[address].Staking = acc.Staking

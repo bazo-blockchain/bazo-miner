@@ -34,29 +34,23 @@ func seekSlashingProof(block *protocol.Block) error {
 		if prevBlocks == nil {
 			return nil
 		}
-		fmt.Printf("Printing Closed Blocks")
-		//for ii, prevBlock := range prevBlocks {
-		//	//fmt.Printf("%v   -  %v\n", ii, prevBlock)
-		//}
 
 		for _, prevBlock := range prevBlocks {
 			if prevBlock == nil {
 				continue
 			}
-			//fmt.Printf("is block %v in preBlock %v \n", block, prevBlock)
-			//fmt.Printf("is block %v in preBlock %v \n", block.Height, prevBlock.Height)
 			if IsInSameChain(prevBlock, block) {
 				return nil
 			}
-			//if prevBlock.Beneficiary == block.Beneficiary &&
-			//	(uint64(prevBlock.Height) < uint64(block.Height)+activeParameters.Slashing_window_size ||
-			//		uint64(block.Height) < uint64(prevBlock.Height)+activeParameters.Slashing_window_size) {
-			//			fmt.Printf("block.Beneficiary:\n%v\n", block)
-			//			fmt.Printf("block.Beneficiary:\n%v\n", block.Beneficiary)
-			//			fmt.Printf("prevblock.Beneficiary:\n%v\n", prevBlock)
-			//			fmt.Printf("slashingDict:\n%v\n", slashingDict)f
-			//	slashingDict[block.Beneficiary] = SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
-			//}
+			if prevBlock.Beneficiary == block.Beneficiary &&
+				(uint64(prevBlock.Height) < uint64(block.Height)+activeParameters.Slashing_window_size ||
+					uint64(block.Height) < uint64(prevBlock.Height)+activeParameters.Slashing_window_size) {
+						fmt.Printf("block.Beneficiary:\n%v\n", block)
+						fmt.Printf("block.Beneficiary:\n%v\n", block.Beneficiary)
+						fmt.Printf("prevblock.Beneficiary:\n%v\n", prevBlock)
+						fmt.Printf("slashingDict:\n%v\n", slashingDict)
+				slashingDict[block.Beneficiary] = SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
+			}
 		}
 	}
 	return nil

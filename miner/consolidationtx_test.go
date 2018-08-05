@@ -12,20 +12,7 @@ import (
 	"crypto/elliptic"
 )
 
-/**
- TODO: strategy to decide where and when to start the consolidation
- TODO: strategy to decide how many blocks should be included (ignore latest X blocks)
-Should X be part of the configuration?
 
- TODO: who does the consolidation?
-     Anybody should be able to create a consolidationTx
-
-
-TODO: Check whether the miner consolidated it correctly so we cannot prune it directly
-TODO: Consolidation between genesis/previous consolidation and latest X blocks
- Enforce rule that a consolidationTx:
-   - check if there are some tx that have been left out, if yes then reject the block.
- */
 var InitialBalance uint64 = 100000
 /**
  * Steps for basic test
@@ -38,22 +25,23 @@ var InitialBalance uint64 = 100000
 
 
 
-func getNewAddr() (hash [32]byte){
+
+
+func getNewKey() (pubKey [64]byte ) {
 	newKey, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
 	newAccPub1, newAccPub2 := newKey.PublicKey.X.Bytes(), newKey.PublicKey.Y.Bytes()
-	var pubKey [64]byte
 	copy(pubKey[0:32], newAccPub1)
 	copy(pubKey[32:64], newAccPub2)
-	address := storage.GetAddressFromPubKey(&newKey.PublicKey)
-	return storage.SerializeHashContent(address)
+	return pubKey
 }
-
 func getTestState() (protocol.StateAccounts){
 	teststate := make(protocol.StateAccounts)
-	addr := getNewAddr()
+	pubKey := getNewKey()
+	addr := storage.SerializeHashContent(pubKey)
 	fmt.Printf("Test Addr used for consolidation: %v", addr)
 	consAcc := new(protocol.ConsolidatedAccount)
 	consAcc.Account = addr
+	consAcc.Address = pubKey
 	consAcc.Balance = 1000
 	consAcc.Staking = false
 	teststate[addr] = consAcc
@@ -105,6 +93,7 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 	params := NewDefaultParameters()
 	testState := getTestState()
 	prevHash := [32]byte{}
+	prevConsHash := [32]byte{}
 
 	// Create blocks filled with random transactions, finalize (PoW etc.) and validate (state change)
 	for cnt := int(accA.TxCnt); cnt < numberOfTestBlocks; cnt++ {
@@ -112,7 +101,7 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 		createBlock(t, b)
 
 		if cnt == 2 {
-			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash, params)
+			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash, prevConsHash, params)
 			if err != nil {
 				t.Errorf("Could not create test consolidationTx: %v\n", err)
 			}

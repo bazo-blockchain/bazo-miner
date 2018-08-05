@@ -83,6 +83,7 @@ func TestGetLatestSeeds(t *testing.T) {
 	}
 	if !reflect.DeepEqual(3, len(prevSeeds)) {
 		t.Error("Could not retrieve the correct amount of previous seeds (all seeds).", 3, len(prevSeeds))
+		return
 	}
 
 	prevSeeds = GetLatestSeeds(2, b3)

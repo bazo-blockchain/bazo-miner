@@ -42,11 +42,12 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 
 			tmpBlock = prevConsBlock
 			continue
+		} else {
+			blocksToRollback = append(blocksToRollback, tmpBlock)
 		}
-
-		if tmpBlock.Hash == [32]byte{} && len(newChain) > 0 {
-			break
-		}
+		//if tmpBlock.Hash == [32]byte{} && len(newChain) > 0 {
+		//	break
+		//}
 		tmpBlock2 := storage.ReadClosedBlock(tmpBlock.PrevHash)
 		if tmpBlock2 != nil {
 			fmt.Printf("storage.ReadClosedBlock(tmpBlock.PrevHash):\n%v\n", tmpBlock2)

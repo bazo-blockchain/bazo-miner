@@ -147,10 +147,7 @@ func GetLatestSeeds(n int, block *protocol.Block) (prevSeeds [][32]byte) {
 		return prevSeeds
 	}
 	b := storage.ReadClosedBlock(block.PrevHash)
-	// TODO: check if this is needed
-	if b == nil || b.PrevHash == [32]byte{} {
-		return prevSeeds
-	}
+
 	cnt := 0
 	for n > 0 {
 		prevSeeds = append(prevSeeds, b.Seed)
@@ -165,9 +162,10 @@ func GetLatestSeeds(n int, block *protocol.Block) (prevSeeds [][32]byte) {
 		}
 		b = storage.ReadClosedBlock(b.PrevHash)
 		// TODO: check b == nil is still needed
-		if b == nil || b.PrevHash == [32]byte{} {
+		if b == nil{
 			return prevSeeds
 		}
+
 	}
 	return prevSeeds
 }
