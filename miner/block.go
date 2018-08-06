@@ -279,17 +279,6 @@ func finalizeBlock(block *protocol.Block) error {
 	//Put pieces together to get the final hash
 	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
 
-	// Add ConsolidationTx if necessary
-	if lastBlock.Height > 0 && (lastBlock.Height) % uint32(activeParameters.Consolidation_interval) == 0 {
-		fmt.Printf("Creating Consolidation tx for height %v\n", lastBlock)
-		consolidationTx, err := GetConsolidationTx(lastBlock.PrevHash)
-		storage.WriteOpenTx(consolidationTx)
-
-		if err != nil {
-			fmt.Println("Error while adding consolidation tx")
-		}
-
-	}
 	//This doesn't need to be hashed, because we already have the merkle tree taking care of consistency
 	block.NrAccTx = uint16(len(block.AccTxData))
 	block.NrFundsTx = uint16(len(block.FundsTxData))

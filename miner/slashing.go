@@ -49,7 +49,12 @@ func seekSlashingProof(block *protocol.Block) error {
 						fmt.Printf("block.Beneficiary:\n%v\n", block.Beneficiary)
 						fmt.Printf("prevblock.Beneficiary:\n%v\n", prevBlock)
 						fmt.Printf("slashingDict:\n%v\n", slashingDict)
-				slashingDict[block.Beneficiary] = SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
+				slashProof := SlashingProof{ConflictingBlockHash1: block.Hash, ConflictingBlockHash2: prevBlock.Hash}
+				fmt.Printf("slashProof:\n%v\n", slashProof)
+				if slashingDict == nil {
+					slashingDict = make(map[[32]byte]SlashingProof)
+				}
+				slashingDict[block.Beneficiary] = slashProof
 			}
 		}
 	}

@@ -71,7 +71,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 	var prevBlockHash [32]byte
 	newBlockHash := newBlock.Hash
 	for {
-		fmt.Printf("Processing newBlock:\n%v\n", newBlock)
+		fmt.Printf("Processing newBlock: %v\n", newBlock.Height)
 		newChain = append(newChain, newBlock)
 		//Search for an ancestor (which needs to be in closed storage -> validated block)
 		if newBlock.Hash != newBlockHash && newBlock.NrConsolidationTx > 0 {

@@ -113,9 +113,24 @@ func mining(initialBlock *protocol.Block) {
 		blockValidation.Lock()
 		nextBlock := newBlock(lastBlock.Hash, [32]byte{}, [32]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
+
+		// Create ConsolidationTx
+		if currentBlock.Height > 0 && currentBlock.Height % uint32(activeParameters.Consolidation_interval) == 0 {
+			fmt.Printf("Creating Consolidation tx for height %v\n", currentBlock.Height)
+			consolidationTx, err := GetConsolidationTx(currentBlock.PrevHash)
+			if err != nil {
+				fmt.Println("Error while adding consolidation tx")
+			}
+			// ConsolidationTx will be added in finalizeBlock
+			storage.WriteOpenTx(consolidationTx)
+		}
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
 	}
+}
+
+func GetActiveParameters() (parameter *conf.Parameters) {
+	return activeParameters
 }
 
 func removeOldBlocks(b *protocol.Block) {

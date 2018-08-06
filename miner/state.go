@@ -41,7 +41,9 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 func consStateChange(txSlice []*protocol.ConsolidationTx) error {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-
+			// Copy parameters
+			copyParameter(activeParameters, &tx.ActiveParameters)
+			// Copy all consolidated accounts
 			for i := 0; i < len(tx.Accounts); i++ {
 				a := tx.Accounts[i]
 				if _, exists := storage.State[a.Account]; !exists {
@@ -54,7 +56,6 @@ func consStateChange(txSlice []*protocol.ConsolidationTx) error {
 					}
 					acc2.IsStaking = a.Staking
 				}
-
 			}
 		}
 	}

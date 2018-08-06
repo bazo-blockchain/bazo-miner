@@ -10,15 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 var (
 	waitTimeSeconds     = time.Duration(20) * time.Second
 	cmdCreateMiner      = []string{"accTx", "0", "1", RootKey, MinerKey}
 	cmdFundMiner        = []string{"fundsTx", "0", "1000", "1", "0", RootKey, MinerKey, MultisigKey}
-	cmdFundMiner2        = []string{"fundsTx", "0", "123", "2", "1", RootKey, MinerKey, MultisigKey}
+	cmdFundMiner2       = []string{"fundsTx", "0", "123", "2", "1", RootKey, MinerKey, MultisigKey}
 	cmdStakeMiner       = []string{"stakeTx", "0", "5", "1", MinerKey, MinerKey}
 	cmdUnstakeMiner     = []string{"stakeTx", "1", "5", "0", MinerKey, MinerKey}
+	newConsInterval	    = "11"
+	cmdConsConfig       = []string{"configTx", "0", "11", newConsInterval, "1", "0", RootKey}
 	minerIpPort         = "127.0.0.1:8002"
 	minerDbName         = "miner_test.db"
 	minerSeedFileName   = "miner_seed_test.json"
@@ -30,9 +33,11 @@ func TestMiner (t *testing.T){
 	client.AutoRefresh = false
 	client.Init()
 	createMiner(t)
+	sendConsConfig(t)
 	fundMiner(t)
 	fundMiner2(t)
 	stakeMiner(t)
+	unstakeMiner(t)
 	//..start miner and check that everything is ok
 	startMiner(t)
 }
@@ -52,6 +57,11 @@ func createMiner(t *testing.T) {
 	}
 	assert.Equal(t, uint64(0), acc.Balance, "non zero balance")
 	assert.False(t, acc.IsRoot, "account shouldn't be root")
+}
+
+func sendConsConfig(t *testing.T) {
+	client.Process(cmdConsConfig)
+	time.Sleep(waitTimeSeconds)
 }
 
 func fundMiner(t *testing.T) {
@@ -97,6 +107,23 @@ func stakeMiner(t *testing.T) {
 	//assert.True(t, acc.isStaking, "miner is not staking")
 }
 
+
+func unstakeMiner(t *testing.T) {
+	client.Process(cmdUnstakeMiner)
+	time.Sleep(waitTimeSeconds)
+
+	MinerPubKey, _, _ := storage.ExtractKeyFromFile(MinerKey)
+	MinerAccAddress := storage.GetAddressFromPubKey(&MinerPubKey)
+
+	client.InitState()
+	acc, _, err := client.GetAccount(MinerAccAddress)
+	assert.NoError(t, err)
+	fmt.Println(acc)
+	// TODO: staking is not implemented in client so these are not correct
+	//assert.Equal(t, uint64(995), acc.Balance, "incorrect balance:\n%v", acc)
+	//assert.False(t, acc.isStaking, "miner is staking")
+}
+
 func _startMiner() {
 	// TODO: find out why MinerKey cannot be used. How would the miner receive the root key safely?
 	minerPubKey, _, _ := storage.ExtractKeyFromFile(RootKey)
@@ -131,14 +158,13 @@ func startMiner(t *testing.T) {
 	minerHashAddress := storage.SerializeHashContent(minerAccAddress)
 	minerAcc := storage.GetAccount(minerHashAddress)
 	// 1000 + 123 - 5
-	assert.Equal(t, uint64(1118), minerAcc.Balance)
-	assert.True(t, minerAcc.IsStaking)
-
-	// Unstake miner
-	client.Process(cmdUnstakeMiner)
-	time.Sleep(waitTimeSeconds)
-	acc = storage.GetAccount(hashAddress)
+	assert.Equal(t, uint64(1113), minerAcc.Balance)
 	assert.False(t, minerAcc.IsStaking)
+
+	parameters := miner.GetActiveParameters()
+	expectedConsInterval, _ := strconv.Atoi(newConsInterval)
+	assert.Equal(t, uint64(expectedConsInterval), parameters.Consolidation_interval)
+
 
 }
 
