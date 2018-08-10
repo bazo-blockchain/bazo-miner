@@ -101,7 +101,7 @@ func createTestChain(t *testing.T)([]*protocol.Block) {
 		createBlock(t, b)
 
 		if cnt == 2 {
-			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevHash, prevConsHash, params)
+			consTx, err := protocol.ConstrConsolidationTx(0x01, testState, prevConsHash, params)
 			if err != nil {
 				t.Errorf("Could not create test consolidationTx: %v\n", err)
 			}

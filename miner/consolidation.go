@@ -260,12 +260,8 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 		fmt.Printf("Address %x Balance %v\n", acc1.Address, acc1.Balance)
 	}
 
-	// The consolidation tx creates a snapshot of the system till a certain
-	// block of which we have to keep track of
-	//lastBlockHash := chain[consolidationPoint].Hash
-
 	fmt.Printf("Previous consolidation hash selected: %x\n", prevConsolidationHash)
-	consTx, err := protocol.ConstrConsolidationTx(0x01, state, [32]byte{}, prevConsolidationHash, params)
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, prevConsolidationHash, params)
 	if err != nil {
 		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
 	}
