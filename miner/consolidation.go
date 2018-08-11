@@ -219,23 +219,14 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 	// Create a snapshot of the current state
 	state := make(protocol.StateAccounts)
 	params := NewDefaultParameters()
-	prevConsolidationHash := findPreviousConsolidationHash(chain)
+	prevConsolidationBlock := findPreviousConsolidationBlock(chain)
 
-	// Process all the consolidationTxs of the consolidation block
-	// TODO: remove for (findPreviousConsolidationHash -> findPreviousConsolidationBlock)
-	for i := 0; i < len(chain); i++ {
-		block := chain[i]
-		processConsolidationTx(&params, state, block)
-		if block.Hash == prevConsolidationHash {
-			fmt.Printf("Previous consolidation Block, abort:\n%v\n", params)
-			break
-		}
-	}
+	// Process all the previous consolidationTxs
+	processConsolidationTx(&params, state, prevConsolidationBlock)
 
 	// Process the other blocks/transactions
 	for i := 0; i < len(chain); i++ {
 		block := chain[i]
-		fmt.Printf("Analyzing Block: \n%v\n", block.Height)
 
 		// Skip empty blocks
 		if block == nil || block.Hash == [32]byte{} {
@@ -251,7 +242,7 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 		processStakeTx(state, block)
 		processConfigTx(&params, block)
 		// Stop at the first consolidation block
-		if block.Hash == prevConsolidationHash {
+		if block.Hash == prevConsolidationBlock.Hash {
 			break
 		}
 	}
@@ -260,25 +251,21 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 		fmt.Printf("Address %x Balance %v\n", acc1.Address, acc1.Balance)
 	}
 
-	fmt.Printf("Previous consolidation hash selected: %x\n", prevConsolidationHash)
-	consTx, err := protocol.ConstrConsolidationTx(0x01, state, prevConsolidationHash, params)
+	fmt.Printf("Previous consolidation hash selected: %x\n", prevConsolidationBlock.Hash)
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, prevConsolidationBlock.Hash, params)
 	if err != nil {
 		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
 	}
 	return consTx, nil
 }
 
-func findPreviousConsolidationHash(chain []*protocol.Block) (prevConsolidationHash[32]byte ) {
-	var prevConsolidationBlock *protocol.Block
-
+func findPreviousConsolidationBlock(chain []*protocol.Block) (*protocol.Block) {
 	for i := len(chain) - 1; i >= 0; i-- {
 		block := chain[i]
 		if block.NrConsolidationTx > 0 || block.Hash == [32]byte{} {
 			fmt.Printf("Previous Consolidation Block: \n%v\n", block)
-			prevConsolidationBlock = block
-			break
+			return block
 		}
 	}
-	prevConsolidationHash = prevConsolidationBlock.Hash
-	return prevConsolidationHash
+	return nil
 }
