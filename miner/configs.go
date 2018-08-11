@@ -31,6 +31,10 @@ const (
 
 	// Consolidation params
 	DEFAULT_CONS_INTERVAL = 10  // After how many blocks a consolidation tx should be created
+	// How many consolidation blocks to wait before deleting old non consolidation blocks.
+	// The number big enough so that blocks that might be needed are deleted too early (e.g in
+	// case of a rollback)
+	CONS_BEFORE_DELETION = 5
 )
 
 var (

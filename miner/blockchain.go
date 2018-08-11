@@ -102,7 +102,8 @@ func mining(initialBlock *protocol.Block) {
 			// If a consolidation happened at this point we can remove the old blocks.
 			// TODO: move to postvalidation?
 			if currentBlock.NrConsolidationTx != 0 {
-				removeOldBlocks(currentBlock)
+				blocksDeleted := removeOldBlocks(currentBlock)
+				fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
 			}
 		}
 
@@ -133,35 +134,53 @@ func GetActiveParameters() (parameter *conf.Parameters) {
 	return activeParameters
 }
 
-func removeOldBlocks(b *protocol.Block) {
-	for _, txHash := range b.ConsolidationTxData {
-		closedTx := storage.ReadClosedTx(txHash)
+func removeOldBlocks(b *protocol.Block) (blocksDeleted int){
+	// Find point where the deletion should start
+	pastConsolidations := 0
+	pastConsBlock := b
 
-		if closedTx == nil {
-			fmt.Printf("ERROR: nil closed tx")
+	for pastConsolidations < CONS_BEFORE_DELETION {
+		fmt.Printf("pastConsolidations < CONS_BEFORE_DELETION: %v < %v\n", pastConsolidations, CONS_BEFORE_DELETION)
+		if pastConsBlock.Hash == [32]byte{} {
+			// Nothing to delete before this block
+			return 0
+		}
+		consTxHash := pastConsBlock.ConsolidationTxData[0]
+		tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, consTxHash)
+		consTx := tx.(*protocol.ConsolidationTx)
+		pastConsBlock = getBlockSync(consTx.PreviousConsHash)
+		pastConsolidations++
+	}
+	if pastConsolidations < CONS_BEFORE_DELETION || pastConsBlock.Hash == [32]byte{} {
+		return 0
+	}
+	// Deletion start a this point and continues till there are no more blocks to delete
+	blockHashToDelete := pastConsBlock.Hash
+	fmt.Printf("Past cons block:\n%v\n", pastConsBlock)
+	prevConsTxHash := pastConsBlock.ConsolidationTxData[0]
+	tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, prevConsTxHash)
+	prevConsTx := tx.(*protocol.ConsolidationTx)
+	prevConsHash := prevConsTx.PreviousConsHash
+
+	for ;blockHashToDelete != [32]byte{} && blockHashToDelete != prevConsHash; {
+		blockToDelete := storage.ReadClosedBlock(blockHashToDelete)
+
+		if blockToDelete == nil {
+			fmt.Printf("No more blocks to delete, last one was: %v\n", blockHashToDelete)
 			return
 		}
-		consTx := closedTx.(*protocol.ConsolidationTx)
-		// Deletion start a this point and continues till there are no more blocks to delete
-		blockHashToDelete := consTx.PreviousConsHash
-
-		for ;blockHashToDelete != [32]byte{}; {
-			blockToDelete := storage.ReadClosedBlock(blockHashToDelete)
-
-			if blockToDelete == nil {
-				fmt.Printf("No more blocks to delete, last one was: %v\n", blockHashToDelete)
-				return
-			}
-			if blockToDelete.NrConsolidationTx > 0 {
-				fmt.Printf("Not Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
-			} else {
-				fmt.Printf("Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
-				storage.DeleteClosedBlock(blockHashToDelete)
-				// TODO: delete transactions?
-			}
-			blockHashToDelete = blockToDelete.PrevHash
+		if blockToDelete.NrConsolidationTx > 0 {
+			fmt.Printf("Not Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
+		} else {
+			fmt.Printf("Deleting Block: %v -- %v\n", blockToDelete.Height, blockHashToDelete)
+			storage.DeleteClosedBlock(blockHashToDelete)
+			blocksDeleted += 1
+			// TODO: delete transactions?
 		}
+		blockHashToDelete = blockToDelete.PrevHash
 	}
+
+	return blocksDeleted
 }
 //At least one root key needs to be set which is allowed to create new accounts
 func initRootKey() ([32]byte, error) {
