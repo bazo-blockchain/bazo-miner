@@ -757,7 +757,7 @@ func postValidate(data blockData, initialSetup bool) {
 		}
 
 		if len(data.fundsTxSlice) > 0 {
-			p2p.SendVerifiedTxs(data.fundsTxSlice)
+			broadcastVerifiedTxs(data.fundsTxSlice)
 		}
 
 		//It might be that block is not in the openblock storage, but this doesn't matter.

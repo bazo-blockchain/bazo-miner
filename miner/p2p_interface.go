@@ -46,3 +46,13 @@ func broadcastBlock(block *protocol.Block) {
 	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
 	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
 }
+
+func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
+	var verifiedTxs [][]byte
+
+	for _, tx := range txs {
+		verifiedTxs = append(verifiedTxs, tx.Encode()[:])
+	}
+
+	p2p.VerifiedTxsOut <- protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE)
+}

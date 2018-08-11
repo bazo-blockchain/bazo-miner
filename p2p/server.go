@@ -38,6 +38,7 @@ func Init(ipport string) {
 	go timeService()
 	go forwardBlockBrdcstToMiner()
 	go forwardBlockHeaderBrdcstToMiner()
+	go forwardVerifiedTxsToMiner()
 	go peerService()
 
 	//Set localPort global, this will be the listening port for incoming connection

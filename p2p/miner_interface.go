@@ -12,6 +12,8 @@ var (
 	//BlockHeader from the miner, to the clients
 	BlockHeaderOut chan []byte = make(chan []byte)
 
+	VerifiedTxsOut chan []byte = make(chan []byte)
+
 	//Data requested by miner, to allow parallelism, we have a chan for every tx type.
 	FundsTxChan  = make(chan *protocol.FundsTx)
 	AccTxChan    = make(chan *protocol.AccTx)
@@ -34,6 +36,13 @@ func forwardBlockHeaderBrdcstToMiner() {
 	for {
 		blockHeader := <- BlockHeaderOut
 		clientBrdcstMsg <- BuildPacket(BLOCK_HEADER_BRDCST, blockHeader)
+	}
+}
+
+func forwardVerifiedTxsToMiner() {
+	for {
+		verifiedTxs := <- VerifiedTxsOut
+		clientBrdcstMsg <- BuildPacket(VERIFIEDTX_BRDCST, verifiedTxs)
 	}
 }
 
