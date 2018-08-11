@@ -913,7 +913,10 @@ func postValidation(data blockData) {
 
 	// If a consolidation happened at this point we can remove the old blocks.
 	if data.block.NrConsolidationTx != 0 {
-		blocksDeleted := removeOldBlocks(data.block)
-		fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
+		// Speed up by continuing without waiting
+		go func() {
+			blocksDeleted := removeOldBlocks(data.block)
+			fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
+		}()
 	}
 }
