@@ -915,8 +915,8 @@ func postValidation(data blockData) {
 	if data.block.NrConsolidationTx != 0 {
 		// Speed up by continuing without waiting
 		go func() {
-			blocksDeleted := removeOldBlocks(data.block)
-			fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
+			blocksDeleted, txsDeleted := removeOldBlocks(data.block)
+			fmt.Printf("Deleted %v blocks and %v txs from local storage\n", blocksDeleted, txsDeleted)
 		}()
 	}
 }
