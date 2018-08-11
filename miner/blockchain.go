@@ -99,12 +99,6 @@ func mining(initialBlock *protocol.Block) {
 			}
 
 			// Block has been finalized and validated.
-			// If a consolidation happened at this point we can remove the old blocks.
-			// TODO: move to postvalidation?
-			if currentBlock.NrConsolidationTx != 0 {
-				blocksDeleted := removeOldBlocks(currentBlock)
-				fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
-			}
 		}
 
 		//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
@@ -140,7 +134,6 @@ func removeOldBlocks(b *protocol.Block) (blocksDeleted int){
 	pastConsBlock := b
 
 	for pastConsolidations < CONS_BEFORE_DELETION {
-		fmt.Printf("pastConsolidations < CONS_BEFORE_DELETION: %v < %v\n", pastConsolidations, CONS_BEFORE_DELETION)
 		if pastConsBlock.Hash == [32]byte{} {
 			// Nothing to delete before this block
 			return 0
@@ -156,7 +149,6 @@ func removeOldBlocks(b *protocol.Block) (blocksDeleted int){
 	}
 	// Deletion start a this point and continues till there are no more blocks to delete
 	blockHashToDelete := pastConsBlock.Hash
-	fmt.Printf("Past cons block:\n%v\n", pastConsBlock)
 	prevConsTxHash := pastConsBlock.ConsolidationTxData[0]
 	tx := getTransaction(p2p.CONSOLIDATIONTX_REQ, prevConsTxHash)
 	prevConsTx := tx.(*protocol.ConsolidationTx)

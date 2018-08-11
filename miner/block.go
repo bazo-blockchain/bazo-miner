@@ -910,4 +910,10 @@ func postValidation(data blockData) {
 		logger.Print(data.block)
 		logger.Printf("\n%s", storage.GetState())
 	}
+
+	// If a consolidation happened at this point we can remove the old blocks.
+	if data.block.NrConsolidationTx != 0 {
+		blocksDeleted := removeOldBlocks(data.block)
+		fmt.Printf("Deleted %v blocks from local storage\n", blocksDeleted)
+	}
 }
