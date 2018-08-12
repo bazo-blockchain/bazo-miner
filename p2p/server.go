@@ -127,8 +127,8 @@ func listener() {
 	for {
 		conn, err := listener.Accept()
 
-		//Connection does not time out if idle.
-		conn.SetDeadline(time.Time{})
+		conn.(*net.TCPConn).SetKeepAlive(true)
+		conn.(*net.TCPConn).SetKeepAlivePeriod(1 * time.Minute)
 
 		if err != nil {
 			logger.Printf("%v\n", err)
