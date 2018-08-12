@@ -152,6 +152,7 @@ func startMiner(t *testing.T) {
 	hashAddress := storage.SerializeHashContent(validatorAccAddress)
 	acc := storage.GetAccount(hashAddress)
 	assert.Equal(t, true, acc.Balance > 0)
+	assert.Equal(t, uint32(2), acc.TxCnt)
 
 	// Check miner status
 	minerAccAddress := storage.GetAddressFromPubKey(&minerPubKey)
@@ -160,7 +161,9 @@ func startMiner(t *testing.T) {
 	fmt.Printf("State:\n%v\n", storage.GetState())
 	// 1000 + 123 - 5
 	assert.Equal(t, uint64(1113), minerAcc.Balance)
+	assert.Equal(t, uint32(0), minerAcc.TxCnt)
 	assert.False(t, minerAcc.IsStaking)
+
 
 	parameters := miner.GetActiveParameters()
 	expectedConsInterval, _ := strconv.Atoi(newConsInterval)

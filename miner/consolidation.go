@@ -99,10 +99,8 @@ func processFundsTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 			initialiseConsAccount(state, destadd.Address)
 		}
 		state[source].Balance = state[source].Balance - fundsTx.Fee - fundsTx.Amount
+		state[source].TxCnt += 1
 		state[dest].Balance += fundsTx.Amount
-		if state[source].TxCnt < fundsTx.TxCnt {
-			state[source].TxCnt = fundsTx.TxCnt
-		}
 		state[block.Beneficiary].Balance += fundsTx.Fee
 	}
 }
@@ -162,6 +160,7 @@ func processConsolidationTx(params *conf.Parameters, state map[[32]byte]*protoco
 				initialiseConsAccount(state, acc.Address)
 			}
 			state[address].Balance += acc.Balance
+			state[address].TxCnt += acc.TxCnt
 			state[address].Staking = acc.Staking
 		}
 	}

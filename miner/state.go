@@ -55,6 +55,7 @@ func consStateChange(txSlice []*protocol.ConsolidationTx) error {
 						acc2.Balance = a.Balance
 					}
 					acc2.IsStaking = a.Staking
+					acc2.TxCnt = a.TxCnt
 				}
 			}
 		}
