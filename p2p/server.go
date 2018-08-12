@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -125,6 +126,10 @@ func listener() {
 
 	for {
 		conn, err := listener.Accept()
+
+		//Connection does not time out if idle.
+		conn.SetDeadline(time.Time{})
+
 		if err != nil {
 			logger.Printf("%v\n", err)
 			continue
