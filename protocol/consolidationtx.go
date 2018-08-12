@@ -9,7 +9,7 @@ import (
 const (
 	CONSOLIDATIONTX_SIZE = 50
 	PARAMETERS_SIZE = 11*8 + 32
-	CONS_ACCOUNT_SIZE = 97 + 64
+	CONS_ACCOUNT_SIZE = 97 + 96
 )
 
 type ConsolidatedAccount struct {
@@ -18,7 +18,9 @@ type ConsolidatedAccount struct {
 	Balance uint64
 	TxCnt   uint32
 	Staking bool
+	StakingBlockHeight uint32
 }
+
 type StateAccounts map[[32]byte]*ConsolidatedAccount
 
 //when we broadcast transactions we need a way to distinguish with a type
@@ -46,6 +48,7 @@ func ConstrConsolidationTx(header byte, state StateAccounts, prevConsolidationHa
 		consAccount.TxCnt = cons.TxCnt
 		consAccount.Balance = cons.Balance
 		consAccount.Staking = cons.Staking
+		consAccount.StakingBlockHeight = cons.StakingBlockHeight
 		totalBalance += cons.Balance
 		tx.Accounts = append(tx.Accounts, *consAccount)
 	}
@@ -150,7 +153,7 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 	if tx == nil {
 		return nil
 	}
-	var fee, numberAccounts, balance, txCnt [8]byte
+	var fee, numberAccounts, balance, txCnt, stakingBlockHeight [8]byte
 	var isStaking byte
 
 	binary.BigEndian.PutUint64(fee[:], tx.Fee)
@@ -194,6 +197,9 @@ func (tx *ConsolidationTx) Encode() (encodedTx []byte) {
 		offset += 32
 		binary.BigEndian.PutUint32(txCnt[:], uint32(acc.TxCnt))
 		copy(encodedTx[offset:offset+32], txCnt[:])
+		offset += 32
+		binary.BigEndian.PutUint32(stakingBlockHeight[:], uint32(acc.StakingBlockHeight))
+		copy(encodedTx[offset:offset+32], stakingBlockHeight[:])
 	}
 	return encodedTx
 }
@@ -225,9 +231,12 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 		consAccount.Balance = binary.BigEndian.Uint64(encodedTx[offset:offset+32])
 		offset += 32
 		consAccount.TxCnt = binary.BigEndian.Uint32(encodedTx[offset:offset+32])
+		offset += 32
+		consAccount.StakingBlockHeight = binary.BigEndian.Uint32(encodedTx[offset:offset+32])
 		tx.Accounts = append(tx.Accounts, *consAccount)
-		fmt.Printf("decoded consolidation account #%v acc %x address %x staking %v balance %v txcount %v\n ",
-			i, consAccount.Account, consAccount.Address, consAccount.Staking, consAccount.Balance, consAccount.TxCnt)
+		fmt.Printf("decoded consolidation account #%v acc %x address %x staking %v balance %v txcount %v staking height %v\n ",
+			i, consAccount.Account, consAccount.Address, consAccount.Staking, consAccount.Balance, consAccount.TxCnt,
+				consAccount.StakingBlockHeight)
 	}
 
 	return tx

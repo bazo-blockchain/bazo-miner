@@ -159,8 +159,8 @@ func startMiner(t *testing.T) {
 	minerHashAddress := storage.SerializeHashContent(minerAccAddress)
 	minerAcc := storage.GetAccount(minerHashAddress)
 	fmt.Printf("State:\n%v\n", storage.GetState())
-	// 1000 + 123 - 5
-	assert.Equal(t, uint64(1113), minerAcc.Balance)
+	// 1000 + 123
+	assert.Equal(t, uint64(1123), minerAcc.Balance)
 	assert.Equal(t, uint32(0), minerAcc.TxCnt)
 	assert.False(t, minerAcc.IsStaking)
 

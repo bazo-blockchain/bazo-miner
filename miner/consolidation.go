@@ -17,12 +17,11 @@ func initialiseConsAccount(state map[[32]byte]*protocol.ConsolidatedAccount, pub
 		isStaking = storage.State[address].IsStaking
 	}
 
-
 	// TODO: is the root account always staking?
 	if _, isRoot := storage.RootKeys[address]; isRoot {
 		isStaking = true
 	}
-	state[address] = &protocol.ConsolidatedAccount{address, pubKey, 0, 0, isStaking,}
+	state[address] = &protocol.ConsolidatedAccount{address, pubKey, 0, 0, isStaking, 0}
 }
 
 
@@ -115,7 +114,8 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 			initialiseConsAccount(state, acc.Address)
 		}
 		state[addr].Staking = stakeTx.IsStaking
-		state[addr].Balance -= stakeTx.Fee
+		//state[addr].Balance -= stakeTx.Fee
+		state[addr].StakingBlockHeight = block.Height
 		state[block.Beneficiary].Balance += stakeTx.Fee
 	}
 }
