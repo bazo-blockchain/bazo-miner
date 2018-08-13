@@ -175,6 +175,7 @@ func removeOldBlocks(b *protocol.Block) (blocksDeleted, transactionsDeleted int)
 			txsHashesToDelete = append(txsHashesToDelete, blockToDelete.ConfigTxData...)
 			txsHashesToDelete = append(txsHashesToDelete, blockToDelete.StakeTxData...)
 			for _, txHash := range txsHashesToDelete {
+				fmt.Printf("Deleting txHash %x\n", txHash)
 				if tx := storage.ReadClosedTx(txHash); tx != nil {
 					txsToDelete = append(txsToDelete, tx)
 				}

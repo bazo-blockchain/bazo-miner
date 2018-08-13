@@ -548,9 +548,7 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 	conflictingBlock1 := storage.ReadClosedBlock(conflictingBlockHash1)
 	conflictingBlock2 := storage.ReadClosedBlock(conflictingBlockHash2)
 
-	if IsInSameChain(conflictingBlock1, conflictingBlock2) {
-		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are on the same chain.")
-	}
+
 
 	//if this block is unknown we need to check if its in the openblock storage or we must request it
 	if conflictingBlock1 == nil {
@@ -596,6 +594,10 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		if ancestor == nil {
 			return false, errors.New("Invalid proof for slashing. Could not find a ancestor for the provided conflicting hash (2).")
 		}
+	}
+
+	if IsInSameChain(conflictingBlock1, conflictingBlock2) {
+		return false, errors.New("Invalid proof for slashing. Conflicting block hashes are on the same chain.")
 	}
 
 	// Now we have found the height of the blocks and the height of the blocks can be checked.
@@ -675,7 +677,7 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, e
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("FundsTx fetch timed out.")
+				errChan <- errors.New(fmt.Sprintf("FundsTx %x from block %x fetch timed out.", txHash, block.Hash))
 				return
 			}
 			if fundsTx.Hash() != txHash {

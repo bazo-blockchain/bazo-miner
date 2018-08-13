@@ -234,7 +234,7 @@ func (*ConsolidationTx) Decode(encodedTx []byte) (tx *ConsolidationTx) {
 		offset += 32
 		consAccount.StakingBlockHeight = binary.BigEndian.Uint32(encodedTx[offset:offset+32])
 		tx.Accounts = append(tx.Accounts, *consAccount)
-		fmt.Printf("decoded consolidation account #%v acc %x address %x staking %v balance %v txcount %v staking height %v\n ",
+		fmt.Printf("decoded consolidation account #%v acc %x address %x staking %v balance %v txcount %v staking height %v\n",
 			i, consAccount.Account, consAccount.Address, consAccount.Staking, consAccount.Balance, consAccount.TxCnt,
 				consAccount.StakingBlockHeight)
 	}

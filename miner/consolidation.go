@@ -114,7 +114,8 @@ func processStakeTx(state map[[32]byte]*protocol.ConsolidatedAccount, block *pro
 			initialiseConsAccount(state, acc.Address)
 		}
 		state[addr].Staking = stakeTx.IsStaking
-		//state[addr].Balance -= stakeTx.Fee
+		fmt.Printf("state[addr].StakingBlockHeight = block.Height: %v = %v\n", state[addr].StakingBlockHeight, block.Height)
+
 		state[addr].StakingBlockHeight = block.Height
 		state[block.Beneficiary].Balance += stakeTx.Fee
 	}
@@ -162,6 +163,8 @@ func processConsolidationTx(params *conf.Parameters, state map[[32]byte]*protoco
 			state[address].Balance += acc.Balance
 			state[address].TxCnt += acc.TxCnt
 			state[address].Staking = acc.Staking
+			fmt.Printf("state[address].StakingBlockHeight = acc.StakingBlockHeight: %v = %v\n", state[address].StakingBlockHeight, acc.StakingBlockHeight)
+			state[address].StakingBlockHeight = acc.StakingBlockHeight
 		}
 	}
 }
@@ -240,6 +243,8 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 		processFundsTx(state, block)
 		processStakeTx(state, block)
 		processConfigTx(&params, block)
+
+		state[block.Beneficiary].StakingBlockHeight += 1
 		// Stop at the first consolidation block
 		if block.Hash == prevConsolidationBlock.Hash {
 			break

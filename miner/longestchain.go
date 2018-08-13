@@ -19,7 +19,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 	if ancestor == nil {
 		return nil, nil, errors.New("common ancestor not found")
 	}
-
+	fmt.Printf("Ancestor: %x\n", ancestor.Hash)
 	//Count how many blocks there are on the currently active chain
 
 	tmpBlock := lastBlock
@@ -118,12 +118,14 @@ func getTransaction(txType uint8, txHash [32]byte) (consolidationTx protocol.Tra
 }
 
 func getBlockSync(blockHash [32]byte) (newBlock *protocol.Block) {
-	fmt.Printf("fetching block %v\n", blockHash)
+	fmt.Printf("getting block %x\n", blockHash)
 
 	newBlock = storage.ReadClosedBlock(blockHash)
 	if newBlock != nil {
 		return newBlock
 	}
+
+	fmt.Printf("requesting block %x\n", blockHash)
 	//Fetch the block we apparently missed from the network
 	p2p.BlockReq(blockHash)
 
@@ -131,9 +133,10 @@ func getBlockSync(blockHash [32]byte) (newBlock *protocol.Block) {
 	select {
 	case encodedBlock := <-p2p.BlockReqChan:
 		newBlock = newBlock.Decode(encodedBlock)
+		fmt.Printf("got requested block %x\n", blockHash)
 		return newBlock
 		//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting
-	case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+	case <-time.After(BLOCKFETCH_TIMEOUT * time.Second*3):
 		fmt.Printf("Timeout while fetching block %x\n", blockHash)
 		return nil
 	}

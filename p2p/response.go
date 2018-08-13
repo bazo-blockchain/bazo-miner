@@ -7,6 +7,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 //This file responds to incoming requests from miners in a synchronous fashion
@@ -53,6 +54,7 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 func blockRes(p *peer, payload []byte) {
 	var packet []byte
 	var block *protocol.Block
+	fmt.Printf("Sending response for block %x\n", payload)
 
 	//If no specific block is requested, send latest
 	if len(payload) > 0 {

@@ -6,7 +6,8 @@ const (
 	DELAYED_BLOCKS = 10
 
 	//After requesting a tx/block, timeout after this amount of seconds
-	TXFETCH_TIMEOUT    = 20
+	//TODO: solve issues caused by low timeout
+	TXFETCH_TIMEOUT    = 20*4
 	BLOCKFETCH_TIMEOUT = 40
 
 	INITIALINITROOTBALANCE = 1000

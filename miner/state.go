@@ -56,6 +56,7 @@ func consStateChange(txSlice []*protocol.ConsolidationTx) error {
 					}
 					acc2.IsStaking = a.Staking
 					acc2.TxCnt = a.TxCnt
+					fmt.Printf("acc2.StakingBlockHeight = a.StakingBlockHeight: %x.%v = %x.%v\n", storage.SerializeHashContent(acc2),acc2.StakingBlockHeight,  storage.SerializeHashContent(a), a.StakingBlockHeight)
 					acc2.StakingBlockHeight = a.StakingBlockHeight
 				}
 			}
