@@ -228,10 +228,33 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 
 
 func addConsolidationTx(b *protocol.Block, tx *protocol.ConsolidationTx) error {
-	//No further checks needed, static checks were already done with verify()
+	// Check is done here before
+	blockList := GetFullChainFromBlock(b.PrevHash)
+	expectedState, _, prevConsHash, err := GetConsolidatedStateFromChain(blockList)
+	expectedAccState := make(map[[32]byte]*protocol.ConsolidatedAccount)
+	for _, acc := range expectedState {
+		expectedAccState[acc.Account] = acc
+	}
+
+	if err != nil {
+		return errors.New("Error while validating consolidation tx")
+	}
+	if tx.PreviousConsHash != prevConsHash {
+		return errors.New("Unexpected previous consolidation Hash")
+	}
+
+	// Check if the consolidated account corresponds to the actual state
+	// up to the given block.
+	// TODO: check other account properties
+	for _, acc := range tx.Accounts {
+		if acc.Balance != expectedAccState[acc.Account].Balance {
+			return errors.New("Unexpected balance in consolidationTx")
+		}
+	}
+
+	// TODO: check system parameters
 	b.ConsolidationTxData = append(b.ConsolidationTxData, tx.Hash())
 	logger.Printf("Added tx to the ConsolidationTxData slice: %v", *tx)
-	fmt.Printf("Added tx to the ConsolidationTxData slice: %v\n", *tx)
 	return nil
 }
 

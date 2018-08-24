@@ -171,7 +171,15 @@ func processConsolidationTx(params *conf.Parameters, state map[[32]byte]*protoco
 
 func GetConsolidationTx(lastHash [32]byte) (tx *protocol.ConsolidationTx, err error) {
 	blockList := GetFullChainFromBlock(lastHash)
-	return GetConsolidationTxFromChain(blockList)
+	state, params, prevConsHash, err := GetConsolidatedStateFromChain(blockList)
+	if err != nil {
+		errors.New(fmt.Sprintf("Error creating the consolidation state."))
+	}
+	consTx, err := protocol.ConstrConsolidationTx(0x01, state, prevConsHash, params)
+	if err != nil {
+		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
+	}
+	return consTx, nil
 }
 
 // Create the list of blocks needed to create the consolidationTx
@@ -217,10 +225,10 @@ func GetFullChainFromBlock(lastHash [32]byte)(chain []*protocol.Block) {
 	return blockList
 }
 
-func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.ConsolidationTx, err error) {
+func GetConsolidatedStateFromChain(chain []*protocol.Block) (state protocol.StateAccounts, params conf.Parameters, prevHash [32]byte, err error) {
 	// Create a snapshot of the current state
-	state := make(protocol.StateAccounts)
-	params := NewDefaultParameters()
+	state = make(protocol.StateAccounts)
+	params = NewDefaultParameters()
 	prevConsolidationBlock := findPreviousConsolidationBlock(chain)
 
 	// Process all the previous consolidationTxs
@@ -256,11 +264,8 @@ func GetConsolidationTxFromChain(chain []*protocol.Block) (tx *protocol.Consolid
 	}
 
 	fmt.Printf("Previous consolidation hash selected: %x\n", prevConsolidationBlock.Hash)
-	consTx, err := protocol.ConstrConsolidationTx(0x01, state, prevConsolidationBlock.Hash, params)
-	if err != nil {
-		errors.New(fmt.Sprintf("Error creating the ConstrConsolidationTx."))
-	}
-	return consTx, nil
+
+	return state, params, prevConsolidationBlock.Hash, nil
 }
 
 func findPreviousConsolidationBlock(chain []*protocol.Block) (*protocol.Block) {

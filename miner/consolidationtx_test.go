@@ -135,7 +135,7 @@ func TestBasicConsolidationTx(t *testing.T) {
 	cleanAndPrepare()
 	chain := createTestChain(t)
 
-	consTx, err := GetConsolidationTxFromChain(chain)
+	consTx, err := GetConsolidatedStateFromChain(chain)
 	if err != nil {
 		t.Error(err)
 	}
