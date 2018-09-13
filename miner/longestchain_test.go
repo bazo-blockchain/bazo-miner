@@ -14,24 +14,27 @@ func TestGetBlockSequences(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validate(b)
+	validate(b, false)
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	validate(b2)
+	validate(b2, false)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 	createBlockWithTxs(b3)
-	finalizeBlock(b3)
+	if err := finalizeBlock(b3); err != nil {
+		t.Error(err)
+		return
+	}
 
-	rollback, validate := getBlockSequences(b3)
+	rollback, blocksToValidate, _ := getBlockSequences(b3)
 
 	if len(rollback) != 0 {
 		t.Error("Rollback shouldn't execute here\n")
 	}
 
-	if len(validate) != 1 || validate[0].Hash != b3.Hash {
+	if len(blocksToValidate) != 1 || blocksToValidate[0].Hash != b3.Hash {
 		t.Error("Wrong validation sequence\n")
 	}
 
@@ -39,14 +42,20 @@ func TestGetBlockSequences(t *testing.T) {
 	lastBlock = storage.ReadClosedBlock([32]byte{})
 	c := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(c)
-	finalizeBlock(c)
+	if err := finalizeBlock(c); err != nil {
+		t.Error(err)
+		return
+	}
 	storage.WriteOpenBlock(c)
 
 	//PoW needs lastBlock, have to set it manually
 	lastBlock = c
 	c2 := newBlock(c.Hash, [32]byte{}, [32]byte{}, c.Height+1)
 	createBlockWithTxs(c2)
-	finalizeBlock(c2)
+	if err := finalizeBlock(c2); err != nil {
+		t.Error(err)
+		return
+	}
 	storage.WriteOpenBlock(c2)
 
 	//PoW needs lastBlock, have to set it manually
@@ -58,7 +67,7 @@ func TestGetBlockSequences(t *testing.T) {
 	lastBlock = b2
 	//Blockchain now: genesis <- b <- b2
 	//New Blockchain of longer size: genesis <- c <- c2 <- c3
-	rollback, validate = getBlockSequences(c3)
+	rollback, blocksToValidate, _ = getBlockSequences(c3)
 
 	//Rollback slice needs to include b2 and b (in that order)
 	if len(rollback) != 2 ||
@@ -67,10 +76,10 @@ func TestGetBlockSequences(t *testing.T) {
 		t.Error("Rollback of current chain failed\n")
 	}
 
-	if len(validate) != 3 ||
-		validate[0].Hash != c.Hash ||
-		validate[1].Hash != c2.Hash ||
-		validate[2].Hash != c3.Hash {
+	if len(blocksToValidate) != 3 ||
+		blocksToValidate[0].Hash != c.Hash ||
+		blocksToValidate[1].Hash != c2.Hash ||
+		blocksToValidate[2].Hash != c3.Hash {
 		t.Error("Validation failed\n")
 	}
 
@@ -79,17 +88,17 @@ func TestGetBlockSequences(t *testing.T) {
 	b = newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validate(b)
+	validate(b, false)
 
 	b2 = newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	validate(b2)
+	validate(b2, false)
 
 	b3 = newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	validate(b3)
+	validate(b3, false)
 
 	//Blockchain now: genesis <- b <- b2 <- b3
 	//Competing chain: genesis <- c <- c2 <- c3
@@ -112,8 +121,8 @@ func TestGetBlockSequences(t *testing.T) {
 
 	//Make sure that the new blockchain of equal length does not get activated
 	lastBlock = b3
-	rollback, validate = getBlockSequences(c3)
-	if rollback != nil || validate != nil {
+	rollback, blocksToValidate, _ = getBlockSequences(c3)
+	if rollback != nil || blocksToValidate != nil {
 		t.Error("Did not properly detect longest chain\n")
 	}
 }
@@ -126,7 +135,7 @@ func TestGetNewChain(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	validate(b)
+	validate(b, false)
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, b.Height+1)
 	createBlockWithTxs(b2)
