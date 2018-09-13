@@ -24,8 +24,12 @@ func TestValidateBlockRollback(t *testing.T) {
 
 	//Fill block with random transactions, finalize (PoW etc.) and validate (state change)
 	createBlockWithTxs(b)
-	finalizeBlock(b)
-	validate(b)
+	if err := finalizeBlock(b); err != nil {
+		t.Errorf("Could not finalize block: %v\n", err)
+	}
+	if err := validate(b, false); err != nil {
+		t.Errorf("Could not validate block: %v\n", err)
+	}
 
 	for _, acc := range storage.State {
 		accsAfter[acc.Address] = *acc
@@ -35,7 +39,7 @@ func TestValidateBlockRollback(t *testing.T) {
 		t.Errorf("State wasn't changed despite validating a block!\n%v\n\n%v", accsBefore, accsAfter)
 	}
 
-	err := validateBlockRollback(b)
+	err := rollback(b)
 	if err != nil {
 		t.Errorf("%v\n", err)
 	}
@@ -43,7 +47,8 @@ func TestValidateBlockRollback(t *testing.T) {
 	for _, acc := range storage.State {
 		accsBefore2[acc.Address] = *acc
 	}
-
+	accsBefore2 = resetStakingBlockHeight(accsBefore2)
+	accsBefore = resetStakingBlockHeight(accsBefore)
 	if !reflect.DeepEqual(accsBefore, accsBefore2) {
 		t.Error("State wasn't rolled back")
 	}
@@ -68,7 +73,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	if err := validate(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -82,7 +87,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	if err := validate(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block failed: %v\n", b2)
 	}
 
@@ -96,7 +101,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	if err := validate(b3); err != nil {
+	if err := validate(b3, false); err != nil {
 		t.Errorf("Block failed: %v\n", b3)
 	}
 
@@ -110,32 +115,37 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
-	if err := validate(b4); err != nil {
+	if err := validate(b4, false); err != nil {
 		t.Errorf("Block failed: %v\n", b4)
 	}
 
 	//STARTING ROLLBACKS---------------------------------------------
-	if err := validateBlockRollback(b4); err != nil {
+	if err := rollback(b4); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
 		tmpState[acc.Address] = *acc
 	}
-
+	tmpState = resetStakingBlockHeight(tmpState)
+	stateb3 = resetStakingBlockHeight(stateb3)
 	if !reflect.DeepEqual(tmpState, stateb3) || !reflect.DeepEqual(paramb3, parameterSlice) {
 		t.Error("Block rollback failed.")
+		return
 	}
 	//delete tmpState
 	for k := range tmpState {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b3); err != nil {
+	if err := rollback(b3); err != nil {
 		t.Errorf("%v\n", err)
+		return
 	}
 	for _, acc := range storage.State {
 		tmpState[acc.Address] = *acc
 	}
+	tmpState = resetStakingBlockHeight(tmpState)
+	stateb2 = resetStakingBlockHeight(stateb2)
 	if !reflect.DeepEqual(tmpState, stateb2) || !reflect.DeepEqual(paramb2, parameterSlice) {
 		t.Error("Block rollback failed.")
 	}
@@ -143,12 +153,14 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b2); err != nil {
+	if err := rollback(b2); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
 		tmpState[acc.Address] = *acc
 	}
+	tmpState = resetStakingBlockHeight(tmpState)
+	stateb = resetStakingBlockHeight(stateb)
 	if !reflect.DeepEqual(tmpState, stateb) || !reflect.DeepEqual(paramb, parameterSlice) {
 		t.Error("Block rollback failed.")
 	}
@@ -156,7 +168,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b); err != nil {
+	if err := rollback(b); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
@@ -166,4 +178,16 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	for k := range tmpState {
 		delete(tmpState, k)
 	}
+}
+
+// resetStakingBlockHeight sets the StackingBlockHeight of all accounts to 0.
+// This is needed so that the other fields can get tested.
+// TODO Remove this function if rollback of StakingBlockHeight gets implemented.
+func resetStakingBlockHeight(accounts map[[64]byte]protocol.Account) map[[64]byte]protocol.Account {
+	accountsNoStakingBlockHeight := make(map[[64]byte]protocol.Account)
+	for hash, acc := range accounts {
+		acc.StakingBlockHeight = 0
+		accountsNoStakingBlockHeight[hash] = acc
+	}
+	return accountsNoStakingBlockHeight
 }
