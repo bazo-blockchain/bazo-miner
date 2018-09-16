@@ -50,7 +50,7 @@ func Init(ipport string) {
 	}
 
 	//Listen for all subsequent incoming connections on specified local address/listening port
-	go listener()
+	go listener(Ipport)
 }
 
 func bootstrap() {
@@ -116,9 +116,9 @@ func PrepareHandshake(pingType uint8, localPort int) ([]byte, error) {
 	return packet, nil
 }
 
-func listener() {
+func listener(ipport string) {
 	//Listen on all interfaces, this NAT stuff easier
-	listener, err := net.Listen("tcp", ":"+strings.Split(Ipport, ":")[1])
+	listener, err := net.Listen("tcp", ":"+strings.Split(ipport, ":")[1])
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
