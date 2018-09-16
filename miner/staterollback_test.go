@@ -1,19 +1,20 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Rollback tests for all tx types
 func TestFundsStateChangeRollback(t *testing.T) {
 
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
@@ -35,9 +36,9 @@ func TestFundsStateChangeRollback(t *testing.T) {
 	balanceA := accA.Balance
 	balanceB := accB.Balance
 
-	loopMax := int(rand.Uint32()%testSize + 1)
+	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -48,7 +49,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 			t.Errorf("Block rejected a valid transaction: %v\n", ftx)
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyB)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -84,7 +85,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 func TestAccStateChangeRollback(t *testing.T) {
 
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	var testSize uint32
 	testSize = 1000
@@ -92,9 +93,10 @@ func TestAccStateChangeRollback(t *testing.T) {
 	var accs []*protocol.AccTx
 
 	//Store accs that are to be changed and rolled back in a accTx slice
-	loopMax := int(rand.Uint32()%testSize) + 1
+	nullAddress := [64]byte{}
+	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &RootPrivKey)
 		accs = append(accs, tx)
 	}
 
@@ -150,7 +152,7 @@ func TestConfigStateChangeRollback(t *testing.T) {
 func TestCollectTxFeesRollback(t *testing.T) {
 
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	var funds, funds2 []*protocol.FundsTx
 
@@ -161,9 +163,9 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal := minerAcc.Balance
 	//Rollback everything
 	var fee uint64
-	loopMax := int(rand.Uint64() % 1000)
+	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i < loopMax+1; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil)
 
 		funds = append(funds, tx)
 		fee += tx.Fee
@@ -183,7 +185,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal = minerAcc.Balance
 	//Miner gets fees, the miner account balance will overflow at some point
 	for i := 2; i < 100; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyA, nil)
 		funds2 = append(funds2, tx)
 		fee2 += tx.Fee
 	}
