@@ -788,7 +788,7 @@ func timestampCheck(timestamp int64) error {
 }
 
 func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
-	prefix := "Invalid slashing proof. "
+	prefix := "Invalid slashing proof: "
 
 	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {
 		return false, errors.New(fmt.Sprintf(prefix + "Invalid conflicting block hashes provided."))
