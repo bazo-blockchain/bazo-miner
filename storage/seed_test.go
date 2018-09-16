@@ -2,15 +2,11 @@ package storage
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
-
-	"bytes"
-	"encoding/binary"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"golang.org/x/crypto/sha3"
 )
 
 //Write and Read test on the seed json store
