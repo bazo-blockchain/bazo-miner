@@ -7,7 +7,6 @@ import (
 
 //Testing whether target calculation responds to block rollbacks
 func TestTargetHistory(t *testing.T) {
-
 	cleanAndPrepare()
 
 	activeParameters.Diff_interval = 5
@@ -64,7 +63,6 @@ func TestTargetHistory(t *testing.T) {
 
 //Tests whether system changes of relevant parameters influence the code
 func TestTimestamps(t *testing.T) {
-
 	cleanAndPrepare()
 
 	//tweak parameters to test target update
@@ -76,8 +74,8 @@ func TestTimestamps(t *testing.T) {
 		b := newBlock(prevHash, [32]byte{}, [32]byte{}, 1)
 
 		if cnt == 8 {
-			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, &RootPrivKey)
-			tx2, err2 := protocol.ConstrConfigTx(0, protocol.BLOCK_INTERVAL_ID, 60, 2, 0, &RootPrivKey)
+			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, &PrivKeyRoot)
+			tx2, err2 := protocol.ConstrConfigTx(0, protocol.BLOCK_INTERVAL_ID, 60, 2, 0, &PrivKeyRoot)
 			if err != nil || err2 != nil {
 				t.Errorf("Creating config txs failed: %v, %v\n", err, err2)
 			}
@@ -106,7 +104,6 @@ func TestTimestamps(t *testing.T) {
 
 //Tests whether the diff logic respects edge cases
 func TestCalculateNewDifficulty(t *testing.T) {
-
 	cleanAndPrepare()
 
 	//set new system parameters

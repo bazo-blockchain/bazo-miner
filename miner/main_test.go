@@ -23,7 +23,6 @@ const (
 	TestKeyFileName  = "test_root"
 )
 
-//Some user accounts for testing
 const (
 	PubA1 = "c2be9abbeaec39a066c2a09cee23bb9ab2a0b88f2880b1e785b4d317adf0dc7c"
 	PubA2 = "8ce020fde838d9c443f6c93345dafe7fd74f091c4d2f30b37e2453679a257ed5"
@@ -31,164 +30,146 @@ const (
 	PubB1 = "5d7eefd58e3d2f309471928ab4bbd104e52973372c159fa652b8ca6b57ff68b8"
 	PubB2 = "ab301a6a77b201c416ddc13a2d33fdf200a5302f6f687e0ea09085debaf8a1d9"
 	PrivB = "7a0a9babcc97ea7991ed67ed7f800f70c5e04e99718960ad8efab2ca052f00c7"
-)
 
-//Root account for testing
-const (
-	RootPub1 = "6323cc034597195ae69bcfb628ecdffa5989c7503154c566bab4a87f3e9910ac"
-	RootPub2 = "f6115b77a15852764c609c6a5c1739e698ebc6e49bf14617c561b9110039cec7"
-	RootPriv = "277ed539f56122c25a6fc115d07d632b47e71416c9aebf1beb54ee704f11842c"
-)
+	//Root account for testing
+	PubRoot1 = "6323cc034597195ae69bcfb628ecdffa5989c7503154c566bab4a87f3e9910ac"
+	PubRoot2 = "f6115b77a15852764c609c6a5c1739e698ebc6e49bf14617c561b9110039cec7"
+	PrivRoot = "277ed539f56122c25a6fc115d07d632b47e71416c9aebf1beb54ee704f11842c"
 
-//Validator account (multisig)
-var (
-	VerPub1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
-	VerPub2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
-	VerPriv = "b8d1fa3cc7476eafca970ea222676647da1817d1d9dc602e9446290454ffe1a4"
+	//Multisig account for testing
+	MultiSigPub1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
+	MultiSigPub2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
+	MultiSigPriv = "b8d1fa3cc7476eafca970ea222676647da1817d1d9dc602e9446290454ffe1a4"
 )
 
 //Globally accessible values for all other tests, (root)account-related
 var (
-	accA, accB, minerAcc,
-	validatorAcc *protocol.Account
-	PrivKeyA, PrivKeyB, MinerPrivKey ecdsa.PrivateKey
-
-	PubKeyA, PubKeyB, multiSignTest ecdsa.PublicKey
-	RootPrivKey, multiSignPrivKeyA  ecdsa.PrivateKey
-	GenesisBlock                    *protocol.Block
-	rootHash                        [32]byte
+	accA, accB, validatorAcc, multiSigAcc, rootAcc         *protocol.Account
+	PrivKeyAccA, PrivKeyAccB, PrivKeyMultiSig, PrivKeyRoot ecdsa.PrivateKey
+	genesisBlock *protocol.Block
 )
 
 //Create some accounts that are used by the tests
 func addTestingAccounts() {
+	accA, accB, validatorAcc, multiSigAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account), new(protocol.Account)
 
-	accA, accB, minerAcc, validatorAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account), new(protocol.Account)
-
-	puba1, _ := new(big.Int).SetString(PubA1, 16)
-	puba2, _ := new(big.Int).SetString(PubA2, 16)
-	priva, _ := new(big.Int).SetString(PrivA, 16)
-	PubKeyA = ecdsa.PublicKey{
+	pubAccA1, _ := new(big.Int).SetString(PubA1, 16)
+	pubAccA2, _ := new(big.Int).SetString(PubA2, 16)
+	privAccA, _ := new(big.Int).SetString(PrivA, 16)
+	pubKeyAccA := ecdsa.PublicKey{
 		elliptic.P256(),
-		puba1,
-		puba2,
+		pubAccA1,
+		pubAccA2,
 	}
-	PrivKeyA = ecdsa.PrivateKey{
-		PubKeyA,
-		priva,
+	PrivKeyAccA = ecdsa.PrivateKey{
+		pubKeyAccA,
+		privAccA,
 	}
 
-	pubb1, _ := new(big.Int).SetString(PubB1, 16)
-	pubb2, _ := new(big.Int).SetString(PubB2, 16)
-	privb, _ := new(big.Int).SetString(PrivB, 16)
-	PubKeyB = ecdsa.PublicKey{
+	copy(accA.Address[0:32], PrivKeyAccA.PublicKey.X.Bytes())
+	copy(accA.Address[32:64], PrivKeyAccA.PublicKey.Y.Bytes())
+	hashAccA := protocol.SerializeHashContent(accA.Address)
+
+	pubAccB1, _ := new(big.Int).SetString(PubB1, 16)
+	pubAccB2, _ := new(big.Int).SetString(PubB2, 16)
+	privAccB, _ := new(big.Int).SetString(PrivB, 16)
+	pubKeyAccB := ecdsa.PublicKey{
 		elliptic.P256(),
-		pubb1,
-		pubb2,
+		pubAccB1,
+		pubAccB2,
 	}
-	PrivKeyB = ecdsa.PrivateKey{
-		PubKeyB,
-		privb,
+	PrivKeyAccB = ecdsa.PrivateKey{
+		pubKeyAccB,
+		privAccB,
 	}
 
-	copy(accA.Address[0:32], PrivKeyA.PublicKey.X.Bytes())
-	copy(accA.Address[32:64], PrivKeyA.PublicKey.Y.Bytes())
-	hashA := protocol.SerializeHashContent(accA.Address)
+	copy(accB.Address[0:32], PrivKeyAccB.PublicKey.X.Bytes())
+	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
+	hashAccB := protocol.SerializeHashContent(accB.Address)
 
-	//This one is just for testing purposes
-	copy(accB.Address[0:32], PrivKeyB.PublicKey.X.Bytes())
-	copy(accB.Address[32:64], PrivKeyB.PublicKey.Y.Bytes())
-	hashB := protocol.SerializeHashContent(accB.Address)
-
-	// Another pubkey to simulate multisig (Validator)
-	multiSignTest, _ = storage.GetPubKeyFromString(VerPub1, VerPub2)
-
-	multisigPubKey = &multiSignTest
-	multisignpriv, _ := new(big.Int).SetString(VerPriv, 16)
-	multiSignPrivKeyA = ecdsa.PrivateKey{
-		multiSignTest,
-		multisignpriv,
+	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
+	pubKeyMultiSig, _ := storage.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
+	PrivKeyMultiSig = ecdsa.PrivateKey{
+		pubKeyMultiSig,
+		privMultiSig,
 	}
-	copy(validatorAcc.Address[0:32], multiSignPrivKeyA.PublicKey.X.Bytes())
-	copy(validatorAcc.Address[32:64], multiSignPrivKeyA.PublicKey.Y.Bytes())
-	copy(validatorAccAddress[0:32], multiSignPrivKeyA.PublicKey.X.Bytes())
-	copy(validatorAccAddress[32:64], multiSignPrivKeyA.PublicKey.Y.Bytes())
-	validatorHash := protocol.SerializeHashContent(validatorAcc.Address)
-	storage.State[validatorHash] = validatorAcc
-	//create and store an initial seed for the validator account
+
+	copy(multiSigAcc.Address[0:32], PrivKeyMultiSig.PublicKey.X.Bytes())
+	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
+	hashMultiSig := protocol.SerializeHashContent(multiSigAcc.Address)
+
+	//Set the global variable in blockchain.go
+	multisigPubKey = &pubKeyMultiSig
+
+	privKeyValidator, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	copy(validatorAcc.Address[:32], privKeyValidator.X.Bytes())
+	copy(validatorAcc.Address[32:64], privKeyValidator.Y.Bytes())
+	hashValidator := protocol.SerializeHashContent(validatorAcc.Address)
+
+	//Create and store an initial seed for the validator account.
 	seed := protocol.CreateRandomSeed()
 	hashedSeed := protocol.SerializeHashContent(seed)
-	_ = storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+
 	validatorAcc.HashedSeed = hashedSeed
-	validatorAcc.Balance = 100000
+	validatorAcc.Balance = activeParameters.Staking_minimum
 	validatorAcc.IsStaking = true
 
-	//just to bootstrap
-	storage.State[hashA] = accA
-	storage.State[hashB] = accB
+	//Set the global variable in blockchain.go
+	validatorAccAddress = validatorAcc.Address
 
-	minerPrivKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	var pubKey [64]byte
-	var shortMiner [8]byte
-	copy(pubKey[:32], minerPrivKey.X.Bytes())
-	copy(pubKey[32:], minerPrivKey.Y.Bytes())
-	minerHash := protocol.SerializeHashContent(pubKey)
-	copy(shortMiner[:], minerHash[0:8])
-	minerAcc.Address = pubKey
-	storage.State[minerHash] = minerAcc
+	storage.State[hashAccA] = accA
+	storage.State[hashAccB] = accB
+	storage.State[hashMultiSig] = multiSigAcc
+	storage.State[hashValidator] = validatorAcc
 }
 
 //Create some root accounts that are used by the tests
 func addRootAccounts() {
+	rootAcc = new(protocol.Account)
 
-	var pubKey [64]byte
-
-	pub1, _ := new(big.Int).SetString(RootPub1, 16)
-	pub2, _ := new(big.Int).SetString(RootPub2, 16)
-	priv, _ := new(big.Int).SetString(RootPriv, 16)
-	PubKeyA = ecdsa.PublicKey{
+	pubRoot1, _ := new(big.Int).SetString(PubRoot1, 16)
+	pubRoot2, _ := new(big.Int).SetString(PubRoot2, 16)
+	privRoot, _ := new(big.Int).SetString(PrivRoot, 16)
+	pubKeyRoot := ecdsa.PublicKey{
 		elliptic.P256(),
-		pub1,
-		pub2,
+		pubRoot1,
+		pubRoot2,
 	}
-	RootPrivKey = ecdsa.PrivateKey{
-		PubKeyA,
-		priv,
+	PrivKeyRoot = ecdsa.PrivateKey{
+		pubKeyRoot,
+		privRoot,
 	}
 
-	copy(pubKey[32-len(pub1.Bytes()):32], pub1.Bytes())
-	copy(pubKey[64-len(pub2.Bytes()):], pub2.Bytes())
+	copy(rootAcc.Address[:32], PrivKeyRoot.X.Bytes())
+	copy(rootAcc.Address[32:64], PrivKeyRoot.Y.Bytes())
+	hashRoot := protocol.SerializeHashContent(rootAcc.Address)
 
-	rootHash = protocol.SerializeHashContent(pubKey)
-
-	rootAcc := protocol.Account{Address: pubKey}
-
-	//create root file
+	//Create root file
 	file, _ := os.Create(TestKeyFileName)
-	_, _ = file.WriteString(RootPub1 + "\n")
-	_, _ = file.WriteString(RootPub2 + "\n")
-	_, _ = file.WriteString(RootPriv + "\n")
+	_, _ = file.WriteString(PubRoot1 + "\n")
+	_, _ = file.WriteString(PubRoot2 + "\n")
+	_, _ = file.WriteString(PrivRoot + "\n")
 
 	var hashedSeed [32]byte
 
-	//create and store an initial seed for the root account
+	//Create and store an initial seed for the root account.
 	seed := protocol.CreateRandomSeed()
 	hashedSeed = protocol.SerializeHashContent(seed)
-	_ = storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 	rootAcc.HashedSeed = hashedSeed
-
-	//set funds of root account in order to avoid zero division for PoS
-	rootAcc.Balance = 10000000000
+	rootAcc.Balance = activeParameters.Staking_minimum
 	rootAcc.IsStaking = true
 
-	storage.State[rootHash] = &rootAcc
-	storage.RootKeys[rootHash] = &rootAcc
+	storage.State[hashRoot] = rootAcc
+	storage.RootKeys[hashRoot] = rootAcc
 }
 
 //The state changes (accounts, funds, system parameters etc.) need to be reverted before any new test starts
 //So every test has the same view on the blockchain
 func cleanAndPrepare() {
-
 	storage.DeleteAll()
 
 	tmpState := make(map[[32]byte]*protocol.Account)
@@ -215,29 +196,31 @@ func cleanAndPrepare() {
 	parameterSlice = tmpSlice
 	activeParameters = &tmpSlice[0]
 
-	GenesisBlock = newBlock([32]byte{}, [32]byte{}, [32]byte{}, 0)
+	slashingDict = make(map[[32]byte]SlashingProof)
 
-	var genesisSeedSlice [32]byte
-	copy(genesisSeedSlice[:], storage.GENESIS_SEED)
-	GenesisBlock.Seed = genesisSeedSlice
+	genesisBlock = newBlock([32]byte{}, [32]byte{}, [32]byte{}, 0)
+	copy(genesisBlock.Seed[:], storage.GENESIS_SEED)
 
-	collectStatistics(GenesisBlock)
-	if err := storage.WriteClosedBlock(GenesisBlock); err != nil {
+	collectStatistics(genesisBlock)
+	if err := storage.WriteClosedBlock(genesisBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
-	if err := storage.WriteLastClosedBlock(GenesisBlock); err != nil {
+	if err := storage.WriteLastClosedBlock(genesisBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 
 	seedFile = TestSeedFileName
+
+	//Override some params to ensure tests work correctly.
 	activeParameters.num_included_prev_seeds = 0
-	activeParameters.Slash_reward = 1
 	activeParameters.Block_reward = 1
+	activeParameters.Slash_reward = 1
+
 	addTestingAccounts()
 	addRootAccounts()
 
 	//Some meaningful balance to simplify testing
-	minerAcc.Balance = 0
+	//validatorAcc.Balance = 1000
 	accA.Balance = 123232345678
 	accB.Balance = 823237654321
 	accA.TxCnt = 0
@@ -248,6 +231,7 @@ func TestMain(m *testing.M) {
 	storage.Init(TestDBFileName, TestIpPort)
 	p2p.Init(TestIpPort)
 
+	cleanAndPrepare()
 	addTestingAccounts()
 	addRootAccounts()
 	//We don't want logging msgs when testing, we have designated messages

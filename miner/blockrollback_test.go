@@ -9,8 +9,8 @@ import (
 
 //Tests whether state is the same before validation and after rollback of a block
 func TestValidateBlockRollback(t *testing.T) {
-
 	cleanAndPrepare()
+
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 
 	//Make state snapshot
@@ -185,9 +185,11 @@ func TestMultipleBlocksRollback(t *testing.T) {
 // TODO Remove this function if rollback of StakingBlockHeight gets implemented.
 func resetStakingBlockHeight(accounts map[[64]byte]protocol.Account) map[[64]byte]protocol.Account {
 	accountsNoStakingBlockHeight := make(map[[64]byte]protocol.Account)
+
 	for hash, acc := range accounts {
 		acc.StakingBlockHeight = 0
 		accountsNoStakingBlockHeight[hash] = acc
 	}
+
 	return accountsNoStakingBlockHeight
 }

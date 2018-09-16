@@ -11,8 +11,8 @@ import (
 )
 
 func TestProofOfStake(t *testing.T) {
-
 	cleanAndPrepare()
+
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	balance := uint64(randVar.Int() % 1000)
@@ -41,6 +41,7 @@ func TestProofOfStake(t *testing.T) {
 
 func TestGetLatestSeeds(t *testing.T) {
 	cleanAndPrepare()
+
 	var seeds [][32]byte
 	var genesisSeedSlice [32]byte
 	copy(genesisSeedSlice[:], storage.GENESIS_SEED)

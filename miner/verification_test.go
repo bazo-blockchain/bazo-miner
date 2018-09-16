@@ -15,7 +15,7 @@ func TestFundsTxVerification(t *testing.T) {
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100000+1, randVar.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100000+1, randVar.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig)
 		if verifyFundsTx(tx) == false {
 			t.Errorf("Tx could not be verified: \n%v", tx)
 		}
@@ -29,7 +29,7 @@ func TestAccTx(t *testing.T) {
 	nullAccount := [64]byte{1}
 	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i <= loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%100+1, nullAccount, &RootPrivKey)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%100+1, nullAccount, &PrivKeyRoot)
 		if verifyAccTx(tx) == false {
 			t.Errorf("AccTx could not be verified: %v\n", tx)
 		}
@@ -40,14 +40,14 @@ func TestConfigTx(t *testing.T) {
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	//creating some root-signed config txs
-	tx, err := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 1, 5000, randVar.Uint64(), 0, &RootPrivKey)
-	tx2, err2 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 2, 5000, randVar.Uint64(), 0, &RootPrivKey)
-	tx3, err3 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 3, 5000, randVar.Uint64(), 0, &RootPrivKey)
-	tx4, err4 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 4, 5000, randVar.Uint64(), 0, &RootPrivKey)
-	tx5, err5 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 5, 5000, randVar.Uint64(), 0, &RootPrivKey)
+	tx, err := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 1, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx2, err2 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 2, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx3, err3 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 3, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx4, err4 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 4, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx5, err5 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 5, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
 
 	//Add an invalid configTx, should not be accepted
-	txfail, err6 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 20, 5000, randVar.Uint64(), 0, &RootPrivKey)
+	txfail, err6 := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 20, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
 
 	if (verifyConfigTx(tx) == false || err != nil) &&
 		(verifyConfigTx(tx2) == false || err2 != nil) &&
