@@ -4,8 +4,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"golang.org/x/crypto/sha3"
 	"testing"
+
+	"golang.org/x/crypto/sha3"
 )
 
 func TestBuildMerkleTree3N(t *testing.T) {
@@ -17,7 +18,7 @@ func TestBuildMerkleTree3N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 3; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -49,7 +50,7 @@ func TestBuildMerkleTree2N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 2; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -76,7 +77,7 @@ func TestBuildMerkleTree4N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 4; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -111,7 +112,7 @@ func TestBuildMerkleTree6N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 6; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -154,7 +155,7 @@ func TestBuildMerkleTree8N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 8; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -203,7 +204,7 @@ func TestBuildMerkleTree10N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 10; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -260,7 +261,7 @@ func TestBuildMerkleTree11N(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 11; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -323,7 +324,7 @@ func TestGetIntermediate(t *testing.T) {
 	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 11; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA)
+		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [32]byte{'1'}, [32]byte{'2'}, privA, privA, nil)
 		hashSlice = append(hashSlice, tx.Hash())
 	}
 
@@ -390,5 +391,4 @@ func TestGetIntermediate(t *testing.T) {
 	if intermediates[4].Hash != hash12345678 {
 		t.Errorf("Hashes don't match: %x != %x\n", intermediates[4].Hash, hash12345678)
 	}
-
 }

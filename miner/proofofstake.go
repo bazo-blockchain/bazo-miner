@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"time"
+
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"golang.org/x/crypto/sha3"
-	"time"
 )
 
 //Tests whether the first diff bits are zero
@@ -57,9 +58,8 @@ func validateProofOfStake(diff uint8, prevSeeds [][32]byte, height uint32, balan
 	return true
 }
 
-//diff and partialHash is needed to calculate a valid PoW, prevHash is needed to check whether we should stop
-//PoW calculation because another block has been validated meanwhile
-
+//diff and partialHash is needed to calculate a valid PoS, prevHash is needed to check whether we should stop
+//PoS calculation because another block has been validated meanwhile
 func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height uint32, balance uint64, localSeed [32]byte) (int64, error) {
 
 	var (
@@ -81,7 +81,7 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 
-	//all required parameters are concatinated in the following order:
+	//all required parameters are concatenated in the following order:
 	//([PrevSeeds] ⋅ LocalSeed ⋅ CurrentBlockHeight ⋅ Seconds)
 	index := 0
 	for _, prevSeed := range prevSeeds {
@@ -91,7 +91,7 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 	copy(hashArgs[index:index+32], localSeed[:])    //32 bytes
 	copy(hashArgs[index+32:index+36], heightBuf[:]) //4 bytes
 
-	for _ = range time.Tick(time.Second) {
+	for range time.Tick(time.Second) {
 		//lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		//block has been validated
 		if prevHash != lastBlock.Hash {

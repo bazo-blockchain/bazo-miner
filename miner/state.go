@@ -3,9 +3,10 @@ package miner
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"strconv"
 )
 
 //Separate function to reuse mechanism in client implementation
@@ -145,7 +146,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header != 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, tx.Contract, tx.ContractVariables)
 			newAccHash := newAcc.Hash()
 
 			acc, _ := storage.GetAccount(newAccHash)

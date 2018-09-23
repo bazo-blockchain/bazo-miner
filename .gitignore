@@ -1,7 +1,7 @@
 # MacOS
 .DS_store
 
-#Intellij-Project files
+# Intellij-Project files
 .idea
 
 # Binaries for programs and plugins
@@ -18,3 +18,11 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+
+# Test files
+**/test_seed.json
+**/test_root
+**/test.db
+**/testseed
+storage/seeds_test.json

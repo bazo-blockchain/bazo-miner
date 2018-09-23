@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -138,6 +139,17 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 			pubKey,
 			privInt,
 		}
+	}
+
+	//Make sure the key being used is a valid one, that can sign and verify hashes/transactions
+	hashed := []byte("testing")
+	r, s, err := ecdsa.Sign(rand.Reader, &privKey, hashed)
+	if err != nil {
+		return  pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
+	}
+
+	if !ecdsa.Verify(&pubKey, hashed, r, s) {
+		return pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot verify hashes")
 	}
 
 	return pubKey, privKey, nil

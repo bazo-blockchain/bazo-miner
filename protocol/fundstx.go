@@ -1,9 +1,10 @@
 package protocol
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 )
 
@@ -22,9 +23,10 @@ type FundsTx struct {
 	To     [32]byte
 	Sig1   [64]byte
 	Sig2   [64]byte
+	Data   []byte
 }
 
-func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey) (tx *FundsTx, err error) {
+func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header
@@ -33,6 +35,7 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 	tx.Amount = amount
 	tx.Fee = fee
 	tx.TxCnt = txCnt
+	tx.Data = data
 
 	txHash := tx.Hash()
 
@@ -70,6 +73,7 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 		TxCnt  uint32
 		From   [32]byte
 		To     [32]byte
+		Data   []byte
 	}{
 		tx.Header,
 		tx.Amount,
@@ -77,6 +81,7 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 		tx.TxCnt,
 		tx.From,
 		tx.To,
+		tx.Data,
 	}
 
 	return SerializeHashContent(txHash)
@@ -85,48 +90,29 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 //when we serialize the struct with binary.Write, unexported field get serialized as well, undesired
 //behavior. Therefore, writing own encoder/decoder
 func (tx *FundsTx) Encode() (encodedTx []byte) {
-	if tx == nil {
-		return nil
+	// Encode
+	encodeData := FundsTx{
+		Header: tx.Header,
+		Amount: tx.Amount,
+		Fee:    tx.Fee,
+		TxCnt:  tx.TxCnt,
+		From:   tx.From,
+		To:     tx.To,
+		Sig1:   tx.Sig1,
+		Sig2:   tx.Sig2,
+		Data:   tx.Data,
 	}
-
-	var amount, fee [8]byte
-	var txCnt [4]byte
-
-	binary.BigEndian.PutUint64(amount[:], tx.Amount)
-	binary.BigEndian.PutUint64(fee[:], tx.Fee)
-	binary.BigEndian.PutUint32(txCnt[:], tx.TxCnt)
-
-	encodedTx = make([]byte, FUNDSTX_SIZE)
-
-	encodedTx[0] = tx.Header
-	copy(encodedTx[1:9], amount[:])
-	copy(encodedTx[9:17], fee[:])
-	copy(encodedTx[17:21], txCnt[:])
-	copy(encodedTx[21:53], tx.From[:])
-	copy(encodedTx[53:85], tx.To[:])
-	copy(encodedTx[85:149], tx.Sig1[:])
-	copy(encodedTx[149:213], tx.Sig2[:])
-
-	return encodedTx
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encodeData)
+	return buffer.Bytes()
 }
 
-func (*FundsTx) Decode(encodedTx []byte) (tx *FundsTx) {
-	tx = new(FundsTx)
-
-	if len(encodedTx) != FUNDSTX_SIZE {
-		return nil
-	}
-
-	tx.Header = encodedTx[0]
-	tx.Amount = binary.BigEndian.Uint64(encodedTx[1:9])
-	tx.Fee = binary.BigEndian.Uint64(encodedTx[9:17])
-	tx.TxCnt = binary.BigEndian.Uint32(encodedTx[17:21])
-	copy(tx.From[:], encodedTx[21:53])
-	copy(tx.To[:], encodedTx[53:85])
-	copy(tx.Sig1[:], encodedTx[85:149])
-	copy(tx.Sig2[:], encodedTx[149:213])
-
-	return tx
+func (*FundsTx) Decode(encodedTx []byte) *FundsTx {
+	var decoded FundsTx
+	buffer := bytes.NewBuffer(encodedTx)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
 }
 
 func (tx *FundsTx) TxFee() uint64 { return tx.Fee }
@@ -141,7 +127,8 @@ func (tx FundsTx) String() string {
 			"From: %x\n"+
 			"To: %x\n"+
 			"Sig1: %x\n"+
-			"Sig2: %x\n",
+			"Sig2: %x\n"+
+			"Data: %v\n",
 		tx.Header,
 		tx.Amount,
 		tx.Fee,
@@ -150,5 +137,6 @@ func (tx FundsTx) String() string {
 		tx.To[0:8],
 		tx.Sig1[0:8],
 		tx.Sig2[0:8],
+		tx.Data,
 	)
 }

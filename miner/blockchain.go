@@ -4,10 +4,11 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"sync"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
 	"github.com/willf/bloom"
 	"golang.org/x/crypto/sha3"
 )
@@ -315,6 +316,8 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		b.StakeTxData = append(b.StakeTxData, hash)
 		index += HASH_LEN
 	}
+
+	b.StateCopy = make(map[[32]byte]*Account)
 
 	return b
 }

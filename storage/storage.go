@@ -2,10 +2,11 @@ package storage
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/boltdb/bolt"
 	"log"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/boltdb/bolt"
 )
 
 var (
