@@ -38,7 +38,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -49,7 +49,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 			t.Errorf("Block rejected a valid transaction: %v\n", ftx)
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -96,7 +96,7 @@ func TestAccStateChangeRollback(t *testing.T) {
 	nullAddress := [64]byte{}
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot, nil, nil)
 		accs = append(accs, tx)
 	}
 
@@ -165,7 +165,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	var fee uint64
 	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i < loopMax+1; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, nil, nil)
 
 		funds = append(funds, tx)
 		fee += tx.Fee
@@ -185,7 +185,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal = validatorAcc.Balance
 	//Miner gets fees, the miner account balance will overflow at some point
 	for i := 2; i < 100; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyAccA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, &PrivKeyAccA, nil, nil)
 		funds2 = append(funds2, tx)
 		fee2 += tx.Fee
 	}

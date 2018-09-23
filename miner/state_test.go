@@ -37,7 +37,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, nil, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -46,7 +46,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyAccB, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyAccB, nil, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -84,7 +84,7 @@ func TestAccountOverflow(t *testing.T) {
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -112,7 +112,7 @@ func TestAccTxStateChange(t *testing.T) {
 	nullAddress := [64]byte{}
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot, nil, nil)
 		accs = append(accs, tx)
 	}
 
@@ -129,7 +129,7 @@ func TestAccTxStateChange(t *testing.T) {
 
 	//Create a new root account, set the header to 0x01
 	var singleSlice []*protocol.AccTx
-	tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot)
+	tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot, nil, nil)
 	singleSlice = append(singleSlice, tx)
 	var pubKeyTmp [64]byte
 	copy(pubKeyTmp[:], tx.PubKey[:])

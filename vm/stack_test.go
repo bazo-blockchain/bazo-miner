@@ -56,7 +56,7 @@ func TestStack_Peek(t *testing.T) {
 	actual := s.GetLength()
 
 	if expected != actual {
-		t.Errorf("Expected Stack with size '%v' but got %v",expected, s.GetLength())
+		t.Errorf("Expected Stack with size '%v' but got %v", expected, s.GetLength())
 	}
 }
 
@@ -72,7 +72,7 @@ func TestStack_PopIndexAt(t *testing.T) {
 	expected := 3
 	actual := s.GetLength()
 	if expected != actual {
-		t.Errorf("Expected Stack with size '%v' but got %v",expected, s.GetLength())
+		t.Errorf("Expected Stack with size '%v' but got %v", expected, s.GetLength())
 	}
 
 	expected = 5

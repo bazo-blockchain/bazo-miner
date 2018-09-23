@@ -166,7 +166,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, nil)
 		if err := addTx(b, tx); err == nil {
 			//Might  be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
@@ -182,7 +182,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	nullAddress := [64]byte{}
 	loopMax = int(randVar.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%100+1, nullAddress, &PrivKeyRoot)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%100+1, nullAddress, &PrivKeyRoot, nil, nil)
 		if err := addTx(b, tx); err == nil {
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 				continue

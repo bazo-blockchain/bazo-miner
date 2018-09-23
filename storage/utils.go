@@ -145,7 +145,7 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	hashed := []byte("testing")
 	r, s, err := ecdsa.Sign(rand.Reader, &privKey, hashed)
 	if err != nil {
-		return  pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
+		return pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
 	}
 
 	if !ecdsa.Verify(&pubKey, hashed, r, s) {
