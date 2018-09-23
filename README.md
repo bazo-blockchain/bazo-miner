@@ -1,7 +1,7 @@
 # bazo-miner
 [![Build Status](https://travis-ci.org/bazo-blockchain/bazo-miner.svg?branch=master)](https://travis-ci.org/bazo-blockchain/bazo-miner)
 
-## Setup Instructions 
+## Setup Instructions
 
 The programming language Go (developed and tested with version >= 1.9) must be installed, the properties $GOROOT and $GOPATH must be set. For more information, please check out the [official documentation](https://github.com/golang/go/wiki/SettingGOPATH).
 
@@ -40,8 +40,8 @@ go get github.com/bazo-blockchain/bazo-miner
 2. Copy both previously generated files `validator.txt` and `multisig.txt` into the root folder of the bazo-miner folder.
 ```
 $GOPATH/src/github.com/bazo-blockchain/bazo-keypairgen
-cp validator.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/validator.txt 
-cp multisig.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/multisig.txt 
+cp validator.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/validator.txt
+cp multisig.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/multisig.txt
 ```
 
 3. Open the storage configuration file `storage.configs.go` in an editor of your choice.
@@ -49,7 +49,7 @@ cp multisig.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/multisig.txt
 $GOPATH/src/github.com/bazo-blockchain/bazo-miner/storage/configs.go
 ```
 
-Replace the value of `INITROOTPUBKEY1` with the first line of `validator.txt`. Replace the value of `INITROOTPUBKEY2` with the second line of `validator.txt`. 
+Replace the value of `INITROOTPUBKEY1` with the first line of `validator.txt`. Replace the value of `INITROOTPUBKEY2` with the second line of `validator.txt`.
 
 4. Build the application.
 ```
@@ -62,4 +62,4 @@ go build
 ./bazo-miner "database_file.db" ":8000" "validator.txt" "seedfile.txt" "multisig.txt"
 ```
 
-The ipport number must be preﬁxed with ":". If the miner is intended to run locally, the localhost ip address has to be passed with the ipport. Otherwise the miner tries to connect to the network. Note that "database_file.db" and "seedfile.txt" are created if they do not exist. 
+The ipport number must be preﬁxed with ":". If the miner is intended to run locally, the localhost ip address has to be passed with the ipport. Otherwise the miner tries to connect to the network. Note that "database_file.db" and "seedfile.txt" are created if they do not exist.

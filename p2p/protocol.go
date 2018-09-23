@@ -6,13 +6,14 @@ const HEADER_LEN = 5
 
 //Mapping constants, used to parse incoming messages
 const (
-	FUNDSTX_BRDCST    = 1
-	ACCTX_BRDCST      = 2
-	CONFIGTX_BRDCST   = 3
-	STAKETX_BRDCST    = 4
-	VERIFIEDTX_BRDCST = 5
-	BLOCK_BRDCST      = 6
-	TX_BRDCST_ACK     = 7
+	FUNDSTX_BRDCST      = 1
+	ACCTX_BRDCST        = 2
+	CONFIGTX_BRDCST     = 3
+	STAKETX_BRDCST      = 4
+	VERIFIEDTX_BRDCST   = 5
+	BLOCK_BRDCST        = 6
+	BLOCK_HEADER_BRDCST = 7
+	TX_BRDCST_ACK       = 8
 
 	FUNDSTX_REQ            = 10
 	ACCTX_REQ              = 11
@@ -35,13 +36,14 @@ const (
 	INTERMEDIATE_NODES_RES = 28
 
 	NEIGHBOR_REQ = 30
-
 	NEIGHBOR_RES = 40
 
 	TIME_BRDCST = 50
 
-	MINER_PING = 100
-	MINER_PONG = 101
+	MINER_PING  = 100
+	MINER_PONG  = 101
+	CLIENT_PING = 102
+	CLIENT_PONG = 103
 
 	//Used to signal error
 	NOT_FOUND = 110

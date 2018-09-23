@@ -51,10 +51,10 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 func blockRes(p *peer, payload []byte) {
 	var packet []byte
 	var block *protocol.Block
+	var blockHash [32]byte
 
 	//If no specific block is requested, send latest
 	if len(payload) > 0 {
-		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
 			block = storage.ReadOpenBlock(blockHash)
@@ -81,12 +81,12 @@ func blockHeaderRes(p *peer, payload []byte) {
 		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block := storage.ReadClosedBlock(blockHash); block != nil {
-			block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+			block.InitBloomFilter(append(storage.GetTxPubKeys(block)))
 			encodedHeader = block.EncodeHeader()
 		}
 	} else {
 		if block := storage.ReadLastClosedBlock(); block != nil {
-			block.InitBloomFilter(append(storage.GetTxPubKeys(block), block.Beneficiary))
+			block.InitBloomFilter(append(storage.GetTxPubKeys(block)))
 			encodedHeader = block.EncodeHeader()
 		}
 	}
@@ -106,11 +106,8 @@ func accRes(p *peer, payload []byte) {
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
 
-	if acc := storage.GetAccount(hash); acc != nil {
-		packet = BuildPacket(ACC_RES, acc.Encode())
-	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
-	}
+	acc, _ := storage.GetAccount(hash)
+	packet = BuildPacket(ACC_RES, acc.Encode())
 
 	sendData(p, packet)
 }
@@ -120,19 +117,15 @@ func rootAccRes(p *peer, payload []byte) {
 	var hash [32]byte
 	copy(hash[:], payload[0:32])
 
-	if acc := storage.GetRootAccount(hash); acc != nil {
-		packet = BuildPacket(ROOTACC_RES, acc.Encode())
-	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
-	}
+	acc, _ := storage.GetRootAccount(hash)
+	packet = BuildPacket(ROOTACC_RES, acc.Encode())
 
 	sendData(p, packet)
 }
 
-//Completes the handshake with another miner
-func pongRes(p *peer, payload []byte) {
-
-	//Payload consists of a 2 bytes array (port number [big endian encoded])
+//Completes the handshake with another miner.
+func pongRes(p *peer, payload []byte, peerType uint) {
+	//Payload consists of a 2 bytes array (port number [big endian encoded]).
 	port := _pongRes(payload)
 
 	if port != "" {
@@ -143,17 +136,26 @@ func pongRes(p *peer, payload []byte) {
 	}
 
 	//Restrict amount of connected miners
-	if peers.len() >= MAX_MINERS {
+	if peers.len(PEERTYPE_MINER) >= MAX_MINERS {
 		return
 	}
 
-	go minerConn(p)
 	//Complete handshake
-	packet := BuildPacket(MINER_PONG, nil)
+	var packet []byte
+	if peerType == MINER_PING {
+		p.peerType = PEERTYPE_MINER
+		packet = BuildPacket(MINER_PONG, nil)
+	} else if peerType == CLIENT_PING {
+		p.peerType = PEERTYPE_CLIENT
+		packet = BuildPacket(CLIENT_PONG, nil)
+	}
+
+	go peerConn(p)
+
 	sendData(p, packet)
 }
 
-//Decouple the function for testing
+//Decouple the function for testing.
 func _pongRes(payload []byte) string {
 	if len(payload) == PORT_SIZE {
 		return strconv.Itoa(int(binary.BigEndian.Uint16(payload[0:PORT_SIZE])))
@@ -168,7 +170,7 @@ func neighborRes(p *peer) {
 	//1) nr of ipv4 addresses, 2) nr of ipv6 addresses, followed by list of both
 	var packet []byte
 	var ipportList []string
-	peerList := peers.getAllPeers()
+	peerList := peers.getAllPeers(PEERTYPE_MINER)
 
 	for _, p := range peerList {
 		ipportList = append(ipportList, p.getIPPort())

@@ -12,7 +12,7 @@ import (
 const (
 	HASH_LEN                = 32
 	MIN_BLOCKSIZE           = 318
-	MIN_BLOCKHEADER_SIZE    = 68
+	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -24,18 +24,18 @@ type Block struct {
 	NrConfigTx   uint8
 	NrElementsBF uint16
 	BloomFilter  *bloom.BloomFilter
+	Height       uint32
+	Beneficiary  [32]byte
 
 	//Body
 	Nonce                 [8]byte
 	Timestamp             int64
 	MerkleRoot            [32]byte
-	Beneficiary           [32]byte
 	NrAccTx               uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
 	SlashedAddress        [32]byte
 	Seed                  [32]byte
-	Height                uint32
 	HashedSeed            [32]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
@@ -206,8 +206,10 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 
 	//Making byte array of all non-byte data
 	var nrElementsBF [2]byte
+	var height [4]byte
 
 	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
+	binary.BigEndian.PutUint32(height[:], b.Height)
 
 	//Allocate memory
 	encodedHeader = make([]byte, b.GetHeaderSize())
@@ -217,6 +219,8 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	copy(encodedHeader[33:65], b.PrevHash[:])
 	encodedHeader[65] = byte(b.NrConfigTx)
 	copy(encodedHeader[66:68], nrElementsBF[:])
+	copy(encodedHeader[68:72], height[:])
+	copy(encodedHeader[72:104], b.Beneficiary[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -331,6 +335,8 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 	copy(b.PrevHash[:], encodedHeader[33:65])
 	b.NrConfigTx = uint8(encodedHeader[65])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
+	b.Height = binary.BigEndian.Uint32(encodedHeader[68:72])
+	copy(b.Beneficiary[:], encodedHeader[72:104])
 
 	index := MIN_BLOCKHEADER_SIZE
 

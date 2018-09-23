@@ -9,116 +9,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
-func accStateChange(txSlice []*protocol.AccTx) error {
-	for _, tx := range txSlice {
-		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, tx.Contract, tx.ContractVariables)
-			newAccHash := newAcc.Hash()
-			if acc := storage.GetAccount(newAccHash); acc != nil {
-				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
-				errors.New("Address already exists in the state.")
-			}
-			//If acc does not exist, write to state
-			storage.State[newAccHash] = &newAcc
-
-			switch tx.Header {
-			case 1:
-				//First bit set, given account will be a new root account
-				//It might be cleaner to move this to the storage package (e.g., storage.Delete(...))
-				//leave it here for now (not fully convinced yet)
-				storage.RootKeys[newAccHash] = &newAcc
-			case 2:
-				//Second bit set, delete account from root account
-				delete(storage.RootKeys, newAccHash)
-			}
-		}
-	}
-
-	return nil
-}
-
-func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
-	for index, tx := range txSlice {
-		//Check if we have to issue new coins (in case a root account signed the tx)
-		if rootAcc := storage.RootKeys[tx.From]; rootAcc != nil {
-			if rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
-				err = errors.New("Root account has max amount of coins reached.")
-			}
-			rootAcc.Balance += tx.Amount
-			rootAcc.Balance += tx.Fee
-		}
-
-		accSender, accReceiver := storage.GetAccount(tx.From), storage.GetAccount(tx.To)
-		if accSender == nil {
-			err = errors.New("Sender does not exist in the State.")
-		}
-
-		if accReceiver == nil {
-			err = errors.New("Receiver does not exist in the State.")
-		}
-
-		//Check transaction counter
-		if tx.TxCnt != accSender.TxCnt {
-			err = errors.New(fmt.Sprintf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt).", tx.TxCnt, accSender.TxCnt))
-		}
-
-		//Check sender balance
-		if (tx.Amount + tx.Fee) > accSender.Balance {
-			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, tx.Amount, tx.Fee))
-		}
-
-		//TODO Please check & verify if statement:
-		//if accSender.IsStaking && !((tx.Fee + protocol.MIN_STAKING_MINIMUM) > accSender.Balance) to
-		//if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM) > accSender.Balance)
-		//After Tx fees, account must still have more than the minimum staking amount
-		if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
-			err = errors.New("Sender is staking and does not have enough funds in order to fulfill the required staking minimum.")
-		}
-
-		//Overflow protection
-		if tx.Amount+accReceiver.Balance > MAX_MONEY {
-			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
-		}
-
-		if err != nil {
-			//If it was the first tx in the block, no rollback needed
-			if index == 0 {
-				return err
-			}
-			fundsStateChangeRollback(txSlice[0 : index-1])
-			storage.DeleteOpenTx(tx)
-			return err
-		}
-
-		//We're manipulating pointer, no need to write back
-		accSender.TxCnt += 1
-		accSender.Balance -= tx.Amount
-		accReceiver.Balance += tx.Amount
-	}
-
-	return nil
-}
-
-//We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
-//software with corresponding code to act on the configTx id/payload
-func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
-	var newParameters Parameters
-	//Initialize it to state right now (before validating config txs)
-	newParameters = *activeParameters
-
-	if len(configTxSlice) == 0 {
-		return
-	}
-
-	//Only add a new parameter struct if a relevant system parameter changed
-	if CheckAndChangeParameters(&newParameters, &configTxSlice) {
-		newParameters.BlockHash = blockHash
-		parameterSlice = append(parameterSlice, newParameters)
-		activeParameters = &parameterSlice[len(parameterSlice)-1]
-		logger.Printf("Config parameters changed. New configuration: %v", *activeParameters)
-	}
-}
-
 //Separate function to reuse mechanism in client implementation
 func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol.ConfigTx) (change bool) {
 	for _, tx := range *configTxSlice {
@@ -185,60 +75,216 @@ func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol
 	return change
 }
 
-func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
-	for index, tx := range txSlice {
-		var err error
+//For logging purposes
+func getState() (state string) {
+	for _, acc := range storage.State {
+		state += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Hash()), acc)
+	}
+	return state
+}
 
-		//Check if we have to issue new coins (in case a root account signed the tx)
-		for hash, rootAcc := range storage.RootKeys {
-			if hash == tx.Account {
-				if rootAcc.Balance+tx.Fee > MAX_MONEY {
-					err = errors.New("Account balance is too high.")
-				}
-				//fmt.Println("Account Balance:", rootAcc.Balance, "TxFee:", tx.Fee, "minStake:", activeParameters.Staking_minimum)
+func initState() (initialBlock *protocol.Block, err error) {
+	var seed [32]byte
+	copy(seed[:], storage.GENESIS_SEED)
 
-				if rootAcc.Balance < activeParameters.Staking_minimum+tx.Fee {
-					rootAcc.Balance = activeParameters.Staking_minimum + tx.Fee
-					fmt.Println("Root balance increased to:", rootAcc.Balance)
-				}
+	allClosedBlocks := storage.ReadAllClosedBlocks()
+
+	//Switch array order to validate genesis block first
+	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
+
+	if len(storage.AllClosedBlocksAsc) > 0 {
+		//Set the last closed block as the initial block
+		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
+	} else {
+		initialBlock = newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
+
+		//Append genesis block to the map and save in storage
+		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
+
+		storage.WriteLastClosedBlock(initialBlock)
+		storage.WriteClosedBlock(initialBlock)
+	}
+
+	//Validate all closed blocks and update state
+	for _, blockToValidate := range storage.AllClosedBlocksAsc {
+		//Prepare datastructure to fill tx payloads
+		blockDataMap := make(map[[32]byte]blockData)
+
+		//Do not validate the genesis block, since a lot of properties are set to nil
+		if blockToValidate.Hash != [32]byte{} {
+			//Fetching payload data from the txs (if necessary, ask other miners)
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
 			}
+
+			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
+
+			err = validateState(blockDataMap[blockToValidate.Hash])
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Block (%x) could not be statevalidated: %v\n", blockToValidate.Hash[0:8], err))
+			}
+
+			postValidate(blockDataMap[blockToValidate.Hash], true)
+		} else {
+			blockDataMap[blockToValidate.Hash] = blockData{nil, nil, nil, nil, blockToValidate}
+
+			postValidate(blockDataMap[blockToValidate.Hash], true)
 		}
 
-		accSender := storage.GetAccount(tx.Account)
-		if accSender == nil {
-			logger.Printf("CRITICAL: Sender does not exist in the State: %x\n", tx.Account[0:8])
-			err = errors.New("Sender does not exist in the State.")
+		logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
+
+		//Set the last validated block as the lastBlock
+		lastBlock = blockToValidate
+	}
+
+	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
+
+	return initialBlock, nil
+}
+
+func accStateChange(txSlice []*protocol.AccTx) error {
+	for _, tx := range txSlice {
+		if tx.Header != 2 {
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, tx.Contract, tx.ContractVariables)
+			newAccHash := newAcc.Hash()
+
+			acc, _ := storage.GetAccount(newAccHash)
+			if acc != nil {
+				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
+				return errors.New("Address already exists in the state.")
+			}
+
+			//If acc does not exist, write to state
+			storage.State[newAccHash] = &newAcc
+
+			if tx.Header == 1 {
+				//First bit set, given account will be a new root account
+				//It might be cleaner to move this to the storage package (e.g., storage.Delete(...))
+				//leave it here for now (not fully convinced yet)
+				storage.RootKeys[newAccHash] = &newAcc
+			}
+		} else if tx.Header == 2 {
+			accHash := protocol.SerializeHashContent(tx.PubKey)
+			_, err := storage.GetAccount(accHash)
+			if err != nil {
+				return err
+			}
+
+			//Second bit set, delete account from root account
+			delete(storage.RootKeys, accHash)
 		}
+	}
+
+	return nil
+}
+
+func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
+	for _, tx := range txSlice {
+		var rootAcc *protocol.Account
+		//Check if we have to issue new coins (in case a root account signed the tx)
+		if rootAcc, err = storage.GetRootAccount(tx.From); err != nil {
+			return err
+		}
+
+		if rootAcc != nil && rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
+			return errors.New("Transaction amount would lead to balance overflow at the receiver (root) account.")
+		}
+
+		//Will not be reached if errors occured
+		if rootAcc != nil {
+			rootAcc.Balance += tx.Amount
+			rootAcc.Balance += tx.Fee
+		}
+
+		var accSender, accReceiver *protocol.Account
+		accSender, err = storage.GetAccount(tx.From)
+		accReceiver, err = storage.GetAccount(tx.To)
+
+		//Check transaction counter
+		if tx.TxCnt != accSender.TxCnt {
+			err = errors.New(fmt.Sprintf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt).", tx.TxCnt, accSender.TxCnt))
+		}
+
+		//Check sender balance
+		if (tx.Amount + tx.Fee) > accSender.Balance {
+			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, tx.Amount, tx.Fee))
+		}
+
+		//After Tx fees, account must still have more than the minimum staking amount
+		if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
+			err = errors.New("Sender is staking and does not have enough funds in order to fulfill the required staking minimum.")
+		}
+
+		//Overflow protection
+		if tx.Amount+accReceiver.Balance > MAX_MONEY {
+			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
+		}
+
+		if err != nil {
+			if rootAcc != nil {
+				//Rollback root's credits if error occurs
+				rootAcc.Balance -= tx.Amount
+				rootAcc.Balance -= tx.Fee
+			}
+
+			return err
+		}
+
+		//We're manipulating pointer, no need to write back
+		accSender.TxCnt += 1
+		accSender.Balance -= tx.Amount
+		accReceiver.Balance += tx.Amount
+	}
+
+	return nil
+}
+
+//We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
+//software with corresponding code to act on the configTx id/payload
+func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
+	var newParameters Parameters
+	//Initialize it to state right now (before validating config txs)
+	newParameters = *activeParameters
+
+	if len(configTxSlice) == 0 {
+		return
+	}
+
+	//Only add a new parameter struct if a relevant system parameter changed
+	if CheckAndChangeParameters(&newParameters, &configTxSlice) {
+		newParameters.BlockHash = blockHash
+		parameterSlice = append(parameterSlice, newParameters)
+		activeParameters = &parameterSlice[len(parameterSlice)-1]
+		logger.Printf("Config parameters changed. New configuration: %v", *activeParameters)
+	}
+}
+
+func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
+	for _, tx := range txSlice {
+		var accSender *protocol.Account
+		accSender, err = storage.GetAccount(tx.Account)
 
 		//Check staking state
 		if tx.IsStaking == accSender.IsStaking {
-			logger.Printf("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
 			err = errors.New("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
 		}
 
 		//Check minimum amount
 		if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-			logger.Printf("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum: %x\n", accSender.Balance)
-			err = errors.New("Sender wants to stake but does not have enough funds in order to fulfill the required staking minimum.")
+			err = errors.New(fmt.Sprintf("Sender wants to stake but does not have enough funds (%v) in order to fulfill the required staking minimum (%v).", accSender.Balance, STAKING_MINIMUM))
 		}
 
 		//Check sender balance
 		if tx.Fee > accSender.Balance {
-			logger.Printf("Sender does not have enough balance: %x\n", accSender.Balance)
-			err = errors.New("Sender does not have enough funds for the transaction.")
+			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, 0, tx.Fee))
 		}
 
 		if err != nil {
-			//If it was the first tx in the block, no rollback needed
-			if index == 0 {
-				return err
-			}
-			stakeStateChangeRollback(txSlice[0 : index-1])
 			return err
 		}
 
 		//We're manipulating pointer, no need to write back
-
 		accSender.IsStaking = tx.IsStaking
 		accSender.HashedSeed = tx.HashedSeed
 		accSender.StakingBlockHeight = height
@@ -247,20 +293,28 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) error {
 	return nil
 }
 
-func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) error {
+func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) (err error) {
 	var tmpAccTx []*protocol.AccTx
 	var tmpFundsTx []*protocol.FundsTx
 	var tmpConfigTx []*protocol.ConfigTx
 	var tmpStakeTx []*protocol.StakeTx
 
-	minerAcc := storage.GetAccount(minerHash)
+	minerAcc, err := storage.GetAccount(minerHash)
+	if err != nil {
+		return err
+	}
+
+	var senderAcc *protocol.Account
 
 	for _, tx := range accTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			return err
 		}
 
 		//Money gets created from thin air, no need to subtract money from root key
@@ -272,24 +326,31 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	for _, tx := range fundsTxSlice {
 		//Prevent protocol account from overflowing
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		senderAcc, err = storage.GetAccount(tx.From)
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			return err
 		}
+
 		minerAcc.Balance += tx.Fee
-
-		senderAcc := storage.GetAccount(tx.From)
 		senderAcc.Balance -= tx.Fee
-
 		tmpFundsTx = append(tmpFundsTx, tx)
 	}
 
 	for _, tx := range configTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
+		}
+
+		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			return err
 		}
 
 		//No need to subtract money because signed by root account
@@ -299,15 +360,18 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 	for _, tx := range stakeTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
-			//Rollback of all previously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
-			logger.Printf("Miner balance (%v) overflows with transaction fee (%v).\n", minerAcc.Balance, tx.Fee)
-			return errors.New("Miner balance overflows with transaction fee.\n")
+			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
 		}
 
-		senderAcc := storage.GetAccount(tx.Account)
-		senderAcc.Balance -= tx.Fee
+		senderAcc, err = storage.GetAccount(tx.Account)
 
+		if err != nil {
+			//Rollback of all perviously transferred transaction fees to the protocol's account
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
+			return err
+		}
+
+		senderAcc.Balance -= tx.Fee
 		minerAcc.Balance += tx.Fee
 		tmpStakeTx = append(tmpStakeTx, tx)
 	}
@@ -315,153 +379,57 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	return nil
 }
 
-func collectBlockReward(reward uint64, minerHash [32]byte) error {
-	miner := storage.GetAccount(minerHash)
-
-	if miner == nil {
-		return errors.New("Miner doesn't exist in the state!")
-	}
+func collectBlockReward(reward uint64, minerHash [32]byte) (err error) {
+	var miner *protocol.Account
+	miner, err = storage.GetAccount(minerHash)
 
 	if miner.Balance+reward > MAX_MONEY {
-		logger.Printf("Miner balance (%v) overflows with block reward (%v).\n", miner.Balance, reward)
-		return errors.New("Miner balance overflows with transaction fee.\n")
-	}
-	miner.Balance += reward
-	return nil
-}
-
-func collectSlashReward(reward uint64, block *protocol.Block) error {
-	miner := storage.GetAccount(block.Beneficiary)
-	if miner == nil {
-		return errors.New("Miner doesn't exist in the state!")
+		err = errors.New("Block reward would lead to balance overflow at the miner account.")
 	}
 
-	if miner.Balance+reward > MAX_MONEY {
-		logger.Printf("Miner balance (%v) overflows with block reward (%v).\n", miner.Balance, reward)
-		return errors.New("Miner balance overflows with transaction fee.\n")
-	}
-
-	//check if proof is provided. if proof was incorrect, the prevalidation step would already have failed.
-	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
-
-		//validator is rewarded with slashing reward for providing a valid slashing proof
-		miner.Balance += reward
-
-		slashedAccount := storage.GetAccount(block.SlashedAddress)
-		//slashed account looses the minimum staking amount
-		slashedAccount.Balance -= activeParameters.Staking_minimum
-		//slashed account is being removed from the validator set
-		slashedAccount.IsStaking = false
-	}
-
-	return nil
-}
-
-//For logging purposes
-func getState() (state string) {
-	for _, acc := range storage.State {
-		state += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Hash()), acc)
-	}
-	return state
-}
-
-func SetUpInitialState(hashedSeed [32]byte) (block *protocol.Block, err error) {
-	var seed [32]byte
-	copy(seed[:], storage.GENESIS_SEED)
-
-	initialBlock := newBlock([32]byte{}, seed, hashedSeed, 0)
-
-	allClosedBlocks := storage.ReadAllClosedBlocks()
-
-	//Switch order in array to validate genesis block first
-	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
-
-	//Set the last closed block as the initial block
-	if len(storage.AllClosedBlocksAsc) > 0 {
-		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
-	}
-
-	collectStatistics(initialBlock)
-
-	if initialBlock.Hash == [32]byte{} {
-		storage.WriteClosedBlock(initialBlock)
-	}
-
-	blockDataMap := make(map[[32]byte]blockData)
-
-	//Validate all closed blocks and update state
-	for _, blockToValidate := range storage.AllClosedBlocksAsc {
-		//Do not validate the genesis block
-		if blockToValidate.Hash != [32]byte{} {
-			accTxs := make([]*protocol.AccTx, blockToValidate.NrAccTx)
-			fundsTxs := make([]*protocol.FundsTx, blockToValidate.NrFundsTx)
-			configTxs := make([]*protocol.ConfigTx, blockToValidate.NrConfigTx)
-			stakeTxs := make([]*protocol.StakeTx, blockToValidate.NrStakeTx)
-
-			for cnt, txHash := range blockToValidate.AccTxData {
-				var tx protocol.Transaction
-				var accTx *protocol.AccTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					accTx = tx.(*protocol.AccTx)
-				}
-
-				accTxs[cnt] = accTx
-			}
-
-			for cnt, txHash := range blockToValidate.FundsTxData {
-				var tx protocol.Transaction
-				var fundsTx *protocol.FundsTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					fundsTx = tx.(*protocol.FundsTx)
-				}
-
-				fundsTxs[cnt] = fundsTx
-			}
-
-			for cnt, txHash := range blockToValidate.ConfigTxData {
-				var tx protocol.Transaction
-				var configTx *protocol.ConfigTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					configTx = tx.(*protocol.ConfigTx)
-				}
-
-				configTxs[cnt] = configTx
-			}
-
-			for cnt, txHash := range blockToValidate.StakeTxData {
-				var tx protocol.Transaction
-				var stakeTx *protocol.StakeTx
-				tx = storage.ReadClosedTx(txHash)
-				if tx != nil {
-					stakeTx = tx.(*protocol.StakeTx)
-				}
-
-				stakeTxs[cnt] = stakeTx
-			}
-
-			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
-			if err := stateValidation(blockDataMap[blockToValidate.Hash]); err != nil {
-				return nil, errors.New(fmt.Sprintf("Received block (%x) could not be validated: %v", blockToValidate.Hash[0:8], err))
-			}
-
-			configStateChange(blockDataMap[blockToValidate.Hash].configTxSlice, blockDataMap[blockToValidate.Hash].block.Hash)
-		}
-	}
-
-	logger.Printf("%v blocks up to this date are validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
-
-	return initialBlock, nil
-}
-
-func updateStakingHeight(beneficiary [32]byte, height uint32) (err error) {
-	acc := storage.GetAccount(beneficiary)
 	if err != nil {
 		return err
 	}
-	acc.StakingBlockHeight = height
 
-	return err
+	miner.Balance += reward
+
+	return nil
+}
+
+func collectSlashReward(reward uint64, block *protocol.Block) (err error) {
+	//Check if proof is provided. If proof was incorrect, prevalidation would already have failed.
+	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+		var minerAcc, slashedAcc *protocol.Account
+		minerAcc, err = storage.GetAccount(block.Beneficiary)
+		slashedAcc, err = storage.GetAccount(block.SlashedAddress)
+
+		if minerAcc.Balance+reward > MAX_MONEY {
+			err = errors.New("Slash reward would lead to balance overflow at the miner account.")
+		}
+
+		if err != nil {
+			return err
+		}
+
+		//Validator is rewarded with slashing reward for providing a valid slashing proof
+		minerAcc.Balance += reward
+		//Slashed account looses the minimum staking amount
+		slashedAcc.Balance -= activeParameters.Staking_minimum
+		//Slashed account is being removed from the validator set
+		slashedAcc.IsStaking = false
+	}
+
+	return nil
+}
+
+//No rollback method exists
+func updateStakingHeight(block *protocol.Block) error {
+	acc, err := storage.GetAccount(block.Beneficiary)
+	if err != nil {
+		return err
+	}
+
+	acc.StakingBlockHeight = block.Height
+
+	return nil
 }

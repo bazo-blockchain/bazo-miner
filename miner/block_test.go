@@ -31,7 +31,7 @@ func TestBlock(t *testing.T) {
 
 	decodedBlock = decodedBlock.Decode(encodedBlock)
 
-	err = validateBlock(decodedBlock)
+	err = validate(decodedBlock, false)
 
 	b.StateCopy = nil
 	decodedBlock.StateCopy = nil
@@ -68,13 +68,13 @@ func TestBlockTxDuplicates(t *testing.T) {
 	}
 
 	//This is a normal block validation, should pass
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation failed. (%v)\n", err)
 	}
 	t.Log(lastBlock)
 
 	//Rollback the block and add a duplicate
-	err := validateBlockRollback(b)
+	err := rollback(b)
 	if err != nil {
 		t.Log(err)
 	}
@@ -88,7 +88,7 @@ func TestBlockTxDuplicates(t *testing.T) {
 		t.Errorf("Block finalization failed. (%v)\n", err)
 	}
 
-	if err := validateBlock(b); err == nil {
+	if err := validate(b, false); err == nil {
 		t.Errorf("Duplicate Tx not detected.\n")
 	}
 	t.Log(lastBlock)
@@ -97,41 +97,41 @@ func TestBlockTxDuplicates(t *testing.T) {
 
 //Blocks that link to the previous block and have valid txs should pass
 func TestMultipleBlocks(t *testing.T) {
-
 	cleanAndPrepare()
+
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	if err := validateBlock(b3); err != nil {
+	if err := validate(b3, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
 	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
-	if err := validateBlock(b4); err != nil {
+	if err := validate(b4, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 }
 
 //Test the blocktimestamp check
 func TestTimestampCheck(t *testing.T) {
-
 	cleanAndPrepare()
+
 	timePast := time.Now().Unix() - 4000
 	timeFuture := time.Now().Unix() + 4000
 	timeNow := time.Now().Unix() + 50
@@ -151,7 +151,6 @@ func TestTimestampCheck(t *testing.T) {
 
 //Helper function used by lots of test to fill the block with some random data
 func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, [][32]byte) {
-
 	var testSize uint32
 	testSize = 100
 
@@ -161,13 +160,13 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	var hashStakeSlice [][32]byte
 
 	//in order to create valid funds transactions we need to know the tx count of acc A
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
-	loopMax := int(rand.Uint32()%testSize) + 1
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
+	loopMax := int(randVar.Uint32()%testSize) + 1
 	loopMax += int(accA.TxCnt)
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
 		accAHash := protocol.SerializeHashContent(accA.Address)
 		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, nil)
 		if err := addTx(b, tx); err == nil {
 			//Might  be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
@@ -181,9 +180,9 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	}
 
 	nullAddress := [64]byte{}
-	loopMax = int(rand.Uint32()%testSize) + 1
+	loopMax = int(randVar.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey, nil, nil)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%100+1, nullAddress, &PrivKeyRoot, nil, nil)
 		if err := addTx(b, tx); err == nil {
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
 				continue
@@ -196,9 +195,9 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	}
 
 	//NrConfigTx is saved in a uint8, so testsize shouldn't be larger than 255
-	loopMax = int(rand.Uint32()%testSize) + 1
+	loopMax = int(randVar.Uint32()%testSize) + 1
 	for cnt := 0; cnt < loopMax; cnt++ {
-		tx, err := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%10+1), rand.Uint64()%2342873423, rand.Uint64()%1000+1, uint8(cnt), &RootPrivKey)
+		tx, err := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), uint8(randVar.Uint32()%10+1), randVar.Uint64()%2342873423, randVar.Uint64()%1000+1, uint8(cnt), &PrivKeyRoot)
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -218,25 +217,26 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 			fmt.Print(err)
 		}
 	}
+
 	return hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice
 }
 
-func TestReadLastClosedBlock(t *testing.T) {
-
-	cleanAndPrepare()
-
-	lastClosedBlock := storage.ReadLastClosedBlock()
-
-	if !reflect.DeepEqual(lastClosedBlock, GenesisBlock) {
-		t.Errorf("Genesis Block is not read as a closed block:\n%v\n%v", lastClosedBlock, GenesisBlock)
-		return
-	}
-
-	var lastClosedBlocksAfterGenesis []*protocol.Block
-	lastClosedBlocksAfterGenesis = append(lastClosedBlocksAfterGenesis, GenesisBlock)
-
-	lastClosedBlocks := storage.ReadAllClosedBlocks()
-	if !reflect.DeepEqual(lastClosedBlocks, lastClosedBlocksAfterGenesis) {
-		t.Errorf("Closed blocks are not equal after genesis block:\n%v\n%v", lastClosedBlocks, lastClosedBlocksAfterGenesis)
-	}
-}
+//TODO
+//func TestReadLastClosedBlock(t *testing.T) {
+//	cleanAndPrepare()
+//
+//	lastClosedBlock := storage.ReadLastClosedBlock()
+//
+//	if !reflect.DeepEqual(lastClosedBlock, genesisBlock) {
+//		t.Errorf("Genesis Block is not read as a closed block:\n%v\n%v", lastClosedBlock, genesisBlock)
+//		return
+//	}
+//
+//	var lastClosedBlocksAfterGenesis []*protocol.Block
+//	lastClosedBlocksAfterGenesis = append(lastClosedBlocksAfterGenesis, genesisBlock)
+//
+//	lastClosedBlocks := storage.ReadAllClosedBlocks()
+//	if !reflect.DeepEqual(lastClosedBlocks, lastClosedBlocksAfterGenesis) {
+//		t.Errorf("Closed blocks are not equal after genesis block:\n%v\n%v", lastClosedBlocks, lastClosedBlocksAfterGenesis)
+//	}
+//}

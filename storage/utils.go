@@ -30,16 +30,21 @@ func SerializeHashContent(data interface{}) (hash [32]byte) {
 }
 
 //Needed by miner and p2p package
-func GetAccount(hash [32]byte) *protocol.Account {
-	return State[hash]
+func GetAccount(hash [32]byte) (acc *protocol.Account, err error) {
+	if acc = State[hash]; acc != nil {
+		return acc, nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("Acc (%x) not in the state.", hash[0:8]))
+	}
 }
 
-func GetRootAccount(hash [32]byte) *protocol.Account {
+func GetRootAccount(hash [32]byte) (acc *protocol.Account, err error) {
 	if IsRootKey(hash) {
-		return GetAccount(hash)
+		acc, err = GetAccount(hash)
+		return acc, err
 	}
 
-	return nil
+	return nil, err
 }
 
 func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
@@ -65,9 +70,15 @@ func GetTxPubKeys(block *protocol.Block) (txPubKeys [][32]byte) {
 //Get all pubKey involved in AccTx
 func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][32]byte) {
 	for _, txHash := range accTxData {
+		var tx protocol.Transaction
 		var accTx *protocol.AccTx
-		closedTx := ReadClosedTx(txHash)
-		accTx = closedTx.(*protocol.AccTx)
+
+		tx = ReadClosedTx(txHash)
+		if tx == nil {
+			tx = ReadOpenTx(txHash)
+		}
+
+		accTx = tx.(*protocol.AccTx)
 		accTxPubKeys = append(accTxPubKeys, accTx.Issuer)
 		accTxPubKeys = append(accTxPubKeys, protocol.SerializeHashContent(accTx.PubKey))
 	}
@@ -78,9 +89,15 @@ func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][32]byte) {
 //Get all pubKey involved in FundsTx
 func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	for _, txHash := range fundsTxData {
+		var tx protocol.Transaction
 		var fundsTx *protocol.FundsTx
-		closedTx := ReadClosedTx(txHash)
-		fundsTx = closedTx.(*protocol.FundsTx)
+
+		tx = ReadClosedTx(txHash)
+		if tx == nil {
+			tx = ReadOpenTx(txHash)
+		}
+
+		fundsTx = tx.(*protocol.FundsTx)
 		fundsTxPubKeys = append(fundsTxPubKeys, fundsTx.From)
 		fundsTxPubKeys = append(fundsTxPubKeys, fundsTx.To)
 	}
@@ -88,22 +105,12 @@ func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	return fundsTxPubKeys
 }
 
-func GetAllAccounts() map[[32]byte]*protocol.Account {
-	return State
-}
-
-func GetState() (state string) {
-	for _, acc := range State {
-		state += fmt.Sprintf("Is root: %v, %v\n", IsRootKey(acc.Hash()), acc)
-	}
-	return state
-}
-
 func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
 	filehandle, err := os.Open(filename)
 	if err != nil {
 		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
 	}
+	defer filehandle.Close()
 
 	reader := bufio.NewReader(filehandle)
 
@@ -138,7 +145,7 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	hashed := []byte("testing")
 	r, s, err := ecdsa.Sign(rand.Reader, &privKey, hashed)
 	if err != nil {
-		return  pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
+		return pubKey, privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
 	}
 
 	if !ecdsa.Verify(&pubKey, hashed, r, s) {
@@ -146,6 +153,26 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	}
 
 	return pubKey, privKey, nil
+}
+
+func ReadFile(filename string) (lines []string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return lines
 }
 
 func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {

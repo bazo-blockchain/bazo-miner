@@ -7,7 +7,6 @@ import (
 	"log"
 	"sync"
 
-	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
@@ -18,82 +17,67 @@ var (
 	parameterSlice      []Parameters
 	activeParameters    *Parameters
 	uptodate            bool
-	slashingDict        map[[32]byte]SlashingProof
+	slashingDict        = make(map[[32]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
 	seedFile            string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string, isBootstrap bool) {
-	var hashedSeed [32]byte
-	var blockToMine *protocol.Block
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
+	var err error
 
-	//Set up logger
-	logger = storage.InitLogger()
-
-	// Initialise variables
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
 	seedFile = seedFileName
+
+	//Set up logger.
+	logger = storage.InitLogger()
+
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
+
+	//Initialize root key.
+	//The hashedSeed is necessary since it must be included in the initial block.
+	initRootKey()
+	if err != nil {
+		logger.Printf("Could not create a root account.\n")
+	}
+
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	logger.Printf("Active config params:%v", activeParameters)
-
-	//We must first update the state before we can start mining.
-	// In order to make PoS we must know our balance in the state
-	if isBootstrap {
-		// Get the last closed block from DB or create genesis
-		initialBlock, err := SetUpInitialState(hashedSeed)
-		blockToMine = initialBlock
-		if err != nil {
-			logger.Printf("Could not set up initial state: %v.\n", err)
-			return
-		}
-		//Initialize root key
-		//the hashedSeed is necessary since it must be included in the initial block
-		if hashedSeed, err = initRootKey(); err != nil {
-			logger.Printf("Could not create a root account.\n")
-			return
-		}
-		validatorAccount := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
-		if validatorAccount == nil {
-			fmt.Printf("Error: Validator address not found in state!\n"+
-				"This means that you are trying to bootstrap with a key that is not part of the state.\n"+
-				"Validator address expected: %x\n", validatorAccAddress)
-			return
-		}
-	} else {
-		payload := <-p2p.BlockIn
-		processBlock(payload)
-		blockToMine = lastBlock
-		logger.Println("############################start mining############################")
+	initialBlock, err := initState()
+	if err != nil {
+		logger.Printf("Could not set up initial state: %v.\n", err)
+		return
 	}
 
-	// Listen for incoming blocks
+	logger.Printf("Active config params:%v", activeParameters)
+
+	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
-	// Start the mining
-	mining(blockToMine)
+	mining(initialBlock)
 }
 
-//Mining is a constant process, trying to come up with a successful PoW
+//Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
 	currentBlock := newBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			logger.Printf("%v\n", err)
 		} else {
-			fmt.Println("Block mined")
-			//else a block was received meanwhile that was added to the chain, all the effort was in vain :(
-			//wait for lock here only
+			logger.Println("Block mined")
+		}
+
+		if err == nil {
 			broadcastBlock(currentBlock)
-			err := validateBlock(currentBlock)
-			if err != nil {
+			err := validate(currentBlock, false)
+			if err == nil {
+				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
 		}
@@ -101,7 +85,7 @@ func mining(initialBlock *protocol.Block) {
 		//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 		//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
-		//when we finish the block
+		//when we finish the block.
 		blockValidation.Lock()
 		nextBlock := newBlock(lastBlock.Hash, [32]byte{}, [32]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
@@ -110,27 +94,23 @@ func mining(initialBlock *protocol.Block) {
 	}
 }
 
-//At least one root key needs to be set which is allowed to create new accounts
+//At least one root key needs to be set which is allowed to create new accounts.
 func initRootKey() ([32]byte, error) {
 	address, addressHash := storage.GetInitRootPubKey()
 
 	var seed [32]byte
 	copy(seed[:], storage.INIT_ROOT_SEED[:])
 
-	//Create the hash of the seed which will be included in the transaction
+	//Create the hash of the seed which will be included in the transaction.
 	hashedSeed := protocol.SerializeHashContent(seed)
 
-	newSeed := storage.SeedJson{
-		HashedSeed: fmt.Sprintf("%x", string(hashedSeed[:])),
-		Seed:       string(seed[:])}
-
-	if err := storage.AppendNewSeed(seedFile, newSeed); err != nil {
+	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	if err != nil {
 		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
 	}
 
-	//Balance must be greater staking minimum
-	rootAcc := protocol.NewAccount(address, [32]byte{}, INITIALINITROOTBALANCE, true, hashedSeed, nil, nil)
-	//Add root key to the state
+	//Balance must be greater than the staking minimum.
+	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, hashedSeed, nil, nil)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 

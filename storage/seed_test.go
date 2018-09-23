@@ -2,11 +2,11 @@ package storage
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 //Write and Read test on the seed json store

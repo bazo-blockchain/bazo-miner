@@ -10,8 +10,8 @@ import (
 
 //Tests whether state is the same before validation and after rollback of a block
 func TestValidateBlockRollback(t *testing.T) {
-
 	cleanAndPrepare()
+
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 
 	//Make state snapshot
@@ -28,7 +28,7 @@ func TestValidateBlockRollback(t *testing.T) {
 	if err := finalizeBlock(b); err != nil {
 		t.Errorf("Could not finalize block: %v\n", err)
 	}
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Could not validate block: %v\n", err)
 	}
 
@@ -40,7 +40,7 @@ func TestValidateBlockRollback(t *testing.T) {
 		t.Errorf("State wasn't changed despite validating a block!\n%v\n\n%v", accsBefore, accsAfter)
 	}
 
-	err := validateBlockRollback(b)
+	err := rollback(b)
 	if err != nil {
 		t.Errorf("%v\n", err)
 	}
@@ -74,7 +74,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -88,7 +88,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block failed: %v\n", b2)
 	}
 
@@ -102,7 +102,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
-	if err := validateBlock(b3); err != nil {
+	if err := validate(b3, false); err != nil {
 		t.Errorf("Block failed: %v\n", b3)
 	}
 
@@ -116,12 +116,12 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
-	if err := validateBlock(b4); err != nil {
+	if err := validate(b4, false); err != nil {
 		t.Errorf("Block failed: %v\n", b4)
 	}
 
 	//STARTING ROLLBACKS---------------------------------------------
-	if err := validateBlockRollback(b4); err != nil {
+	if err := rollback(b4); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
@@ -138,7 +138,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b3); err != nil {
+	if err := rollback(b3); err != nil {
 		t.Errorf("%v\n", err)
 		return
 	}
@@ -154,7 +154,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b2); err != nil {
+	if err := rollback(b2); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
@@ -169,7 +169,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 		delete(tmpState, k)
 	}
 
-	if err := validateBlockRollback(b); err != nil {
+	if err := rollback(b); err != nil {
 		t.Errorf("%v\n", err)
 	}
 	for _, acc := range storage.State {
@@ -186,9 +186,11 @@ func TestMultipleBlocksRollback(t *testing.T) {
 // TODO Remove this function if rollback of StakingBlockHeight gets implemented.
 func resetStakingBlockHeight(accounts map[[64]byte]protocol.Account) map[[64]byte]protocol.Account {
 	accountsNoStakingBlockHeight := make(map[[64]byte]protocol.Account)
+
 	for hash, acc := range accounts {
 		acc.StakingBlockHeight = 0
 		accountsNoStakingBlockHeight[hash] = acc
 	}
+
 	return accountsNoStakingBlockHeight
 }

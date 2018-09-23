@@ -27,13 +27,32 @@ func processBlock(payload []byte) {
 	}
 
 	//Start validation process
-	err := validateBlock(block)
-	if err != nil {
-		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-	} else {
+	err := validate(block, false)
+	if err == nil {
+		logger.Printf("Validated block: %vState:\n%v", block, getState())
 		broadcastBlock(block)
+	} else {
+		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 	}
 }
 
 //p2p.BlockOut is a channel whose data get consumed by the p2p package
-func broadcastBlock(block *protocol.Block) { p2p.BlockOut <- block.Encode() }
+func broadcastBlock(block *protocol.Block) {
+	p2p.BlockOut <- block.Encode()
+
+	//Make a deep copy of the block (since it is a pointer and will be saved to db later).
+	//Otherwise the block's bloom filter is initialized on the original block.
+	var blockCopy = *block
+	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
+	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
+}
+
+func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
+	var verifiedTxs [][]byte
+
+	for _, tx := range txs {
+		verifiedTxs = append(verifiedTxs, tx.Encode()[:])
+	}
+
+	p2p.VerifiedTxsOut <- protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE)
+}

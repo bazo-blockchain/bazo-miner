@@ -5,38 +5,37 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
-	"strings"
 )
 
 func main() {
 	logger := storage.InitLogger()
 
-	if len(os.Args) != 6 {
-		logger.Println("Usage: bazo-miner <dbname> <ipport> <validator> <seedfile> <multisig>")
+	if len(os.Args) != 7 {
+		logger.Println("Usage: bazo-miner <dbname> <bootstrap ip:port> <this ip:port> <validatorfile> <seedfile> <multisigfile>")
 		return
 	}
 
 	dbname := os.Args[1]
-	ipport := os.Args[2]
-	validator := os.Args[3]
-	seedFileName := os.Args[4]
-	multisig := os.Args[5]
-	isBootstrap := strings.HasSuffix(ipport, storage.BOOTSTRAP_SERVER_PORT)
+	bootstrapIpport := os.Args[2]
+	thisIpport := os.Args[3]
+	validatorFileName := os.Args[4]
+	seedFileName := os.Args[5]
+	multisigFileName := os.Args[6]
 
-	storage.Init(dbname, ipport)
-	p2p.Init(ipport)
+	storage.Init(dbname, bootstrapIpport)
+	p2p.Init(thisIpport)
 
-	validatorPubKey, _, err := storage.ExtractKeyFromFile(validator)
+	validatorPubKey, _, err := storage.ExtractKeyFromFile(validatorFileName)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
 	}
 
-	multisigPubKey, _, err := storage.ExtractKeyFromFile(multisig)
+	multisigPubKey, _, err := storage.ExtractKeyFromFile(multisigFileName)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName, isBootstrap)
+	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName)
 }

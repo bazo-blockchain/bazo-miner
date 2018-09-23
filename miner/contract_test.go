@@ -24,7 +24,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -34,7 +34,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 }
@@ -54,7 +54,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -64,11 +64,12 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	}
 	hash := createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	contractVariables := storage.GetAccount(hash).ContractVariables
+	acc, _ := storage.GetAccount(hash)
+	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 17}}
 	if !reflect.DeepEqual(contractVariables, expected) {
 		t.Errorf("State change not persisted, expected: '%v', is '%v'.", expected, contractVariables)
@@ -90,7 +91,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -100,7 +101,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractCallTx(b2, transactionData)
 	finalizeBlock(b2)
-	if err := validateBlock(b2); err != nil {
+	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
@@ -110,11 +111,12 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	}
 	hash := createBlockWithSingleContractCallTx(b3, transactionData)
 	finalizeBlock(b3)
-	if err := validateBlock(b3); err != nil {
+	if err := validate(b3, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	contractVariables := storage.GetAccount(hash).ContractVariables
+	acc, _ := storage.GetAccount(hash)
+	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 32}}
 	if !reflect.DeepEqual(contractVariables, expected) {
 		t.Errorf("State change not persisted, expected: '%v', is %v.", expected, contractVariables)
@@ -130,7 +132,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -141,7 +143,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 	}
 	createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
-	if err := validateBlock(b1); err != nil {
+	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 }
@@ -168,7 +170,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 
 	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -180,11 +182,12 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	}
 	hash := createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
-	if err := validateBlock(b1); err != nil {
+	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	m, err := vm.MapFromByteArray(storage.GetAccount(hash).ContractVariables[2])
+	acc, _ := storage.GetAccount(hash)
+	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -222,7 +225,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 
 	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
-	if err := validateBlock(b); err != nil {
+	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
@@ -234,11 +237,12 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	}
 	hash := createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
-	if err := validateBlock(b1); err != nil {
+	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	m, err := vm.MapFromByteArray(storage.GetAccount(hash).ContractVariables[2])
+	acc, _ := storage.GetAccount(hash)
+	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -256,7 +260,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
-	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, &RootPrivKey, contract, contractVariables)
+	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, &PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return tx.Issuer
@@ -267,12 +271,13 @@ func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, c
 }
 
 func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) [32]byte {
-	for hash := range storage.GetAllAccounts() {
-		if storage.GetAccount(hash).Contract != nil {
+	for hash := range storage.State {
+		acc, _ := storage.GetAccount(hash)
+		if acc.Contract != nil {
 			accAHash := protocol.SerializeHashContent(accA.Address)
-			accBHash := storage.GetAccount(hash).Hash()
+			accBHash := acc.Hash()
 
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {
@@ -285,10 +290,10 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 }
 
 func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionData []byte, from [32]byte, to [32]byte) {
-	accAHash := storage.GetAccount(from).Hash()
-	accBHash := storage.GetAccount(to).Hash()
+	accA, _ := storage.GetAccount(from)
+	accB, _ := storage.GetAccount(to)
 
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyA, &multiSignPrivKeyA, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {
@@ -298,9 +303,10 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 
 func getAccountsWithContracts() []protocol.Account {
 	var accounts []protocol.Account
-	for hash := range storage.GetAllAccounts() {
-		if storage.GetAccount(hash).Contract != nil {
-			accounts = append(accounts, *storage.GetAccount(hash))
+	for hash := range storage.State {
+		acc, _ := storage.GetAccount(hash)
+		if acc.Contract != nil {
+			accounts = append(accounts, *acc)
 		}
 	}
 	return accounts

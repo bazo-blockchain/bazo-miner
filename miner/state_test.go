@@ -13,11 +13,12 @@ import (
 //Testing state change, rollback and fee collection
 func TestFundsTxStateChange(t *testing.T) {
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(minerAcc.Address)
+	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
 
 	var testSize uint32
 	testSize = 1000
@@ -32,11 +33,11 @@ func TestFundsTxStateChange(t *testing.T) {
 	accB.Balance = 2947939489348234
 	balanceA := accA.Balance
 	balanceB := accB.Balance
-	minerBal := minerAcc.Balance
+	minerBal := validatorAcc.Balance
 
-	loopMax := int(rand.Uint32()%testSize + 1)
+	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000000+1, rand.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, nil, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -45,7 +46,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%1000+1, rand.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyB, nil, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accAHash, &PrivKeyAccB, nil, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -62,28 +63,28 @@ func TestFundsTxStateChange(t *testing.T) {
 	}
 
 	collectTxFees(nil, funds, nil, nil, minerAccHash)
-	if feeA+feeB != minerAcc.Balance-minerBal {
+	if feeA+feeB != validatorAcc.Balance-minerBal {
 		t.Error("Fee Collection failed!")
 	}
 
 	t.Log(activeParameters)
-	balBeforeRew := minerAcc.Balance
+	balBeforeRew := validatorAcc.Balance
 	collectBlockReward(activeParameters.Block_reward, minerAccHash)
-	if minerAcc.Balance != balBeforeRew+activeParameters.Block_reward {
+	if validatorAcc.Balance != balBeforeRew+activeParameters.Block_reward {
 		t.Error("Block reward collection failed!")
 	}
 }
 
 func TestAccountOverflow(t *testing.T) {
-
 	cleanAndPrepare()
+
 	var accSlice []*protocol.FundsTx
 	accAHash := protocol.SerializeHashContent(accA.Address)
 	accBHash := protocol.SerializeHashContent(accB.Address)
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyB, &multiSignPrivKeyA, nil)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -99,9 +100,9 @@ func TestAccountOverflow(t *testing.T) {
 }
 
 func TestAccTxStateChange(t *testing.T) {
-
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	var testSize uint32
 	testSize = 1000
@@ -109,9 +110,9 @@ func TestAccTxStateChange(t *testing.T) {
 	var accs []*protocol.AccTx
 
 	nullAddress := [64]byte{}
-	loopMax := int(rand.Uint32()%testSize) + 1
+	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%1000, nullAddress, &RootPrivKey, nil, nil)
+		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot, nil, nil)
 		accs = append(accs, tx)
 	}
 
@@ -128,7 +129,7 @@ func TestAccTxStateChange(t *testing.T) {
 
 	//Create a new root account, set the header to 0x01
 	var singleSlice []*protocol.AccTx
-	tx, _, _ := protocol.ConstrAccTx(0x01, rand.Uint64()%1000, nullAddress, &RootPrivKey, nil, nil)
+	tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%1000, nullAddress, &PrivKeyRoot, nil, nil)
 	singleSlice = append(singleSlice, tx)
 	var pubKeyTmp [64]byte
 	copy(pubKeyTmp[:], tx.PubKey[:])
@@ -153,14 +154,14 @@ func TestAccTxStateChange(t *testing.T) {
 func TestConfigTxStateChange(t *testing.T) {
 	cleanAndPrepare()
 
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	var testSize uint32
 	testSize = 1000
 	var configs []*protocol.ConfigTx
 
-	loopMax := int(rand.Uint32()%testSize) + 1
+	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, err := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%5+1), rand.Uint64()%10000000, rand.Uint64(), uint8(i), &RootPrivKey)
+		tx, err := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), uint8(randVar.Uint32()%5+1), randVar.Uint64()%10000000, randVar.Uint64(), uint8(i), &PrivKeyRoot)
 		if err != nil {
 			t.Errorf("ConfigTx Creation failed (%v)\n", err)
 		}
@@ -180,16 +181,16 @@ func TestConfigTxStateChange(t *testing.T) {
 	cleanAndPrepare()
 	var configs2 []*protocol.ConfigTx
 	//test the inner workings of configStateChange as well...
-	tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 1, 1000, rand.Uint64(), 0, &RootPrivKey)
-	tx2, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 2, 2000, rand.Uint64(), 0, &RootPrivKey)
-	tx3, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 3, 3000, rand.Uint64(), 0, &RootPrivKey)
-	tx4, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 4, 4000, rand.Uint64(), 0, &RootPrivKey)
-	tx5, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 5, 5000, rand.Uint64(), 0, &RootPrivKey)
-	tx6, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 6, 6000, rand.Uint64(), 0, &RootPrivKey)
-	tx7, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 7, 7, rand.Uint64(), 0, &RootPrivKey)
-	tx8, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 8, 8, rand.Uint64(), 0, &RootPrivKey)
-	tx9, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 9, 9000, rand.Uint64(), 0, &RootPrivKey)
-	tx10, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 10, 10000, rand.Uint64(), 0, &RootPrivKey)
+	tx, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 1, 1000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx2, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 2, 2000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx3, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 3, 3000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx4, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 4, 4000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx5, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 5, 5000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx6, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 6, 6000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx7, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 7, 7, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx8, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 8, 8, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx9, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 9, 9000, randVar.Uint64(), 0, &PrivKeyRoot)
+	tx10, _ := protocol.ConstrConfigTx(uint8(randVar.Uint32()%256), 10, 10000, randVar.Uint64(), 0, &PrivKeyRoot)
 
 	configs2 = append(configs2, tx)
 	configs2 = append(configs2, tx2)
@@ -219,13 +220,13 @@ func TestConfigTxStateChange(t *testing.T) {
 
 //If we parse configTxs which are unknown, we don't change parameter datastructure
 func TestConfigTxStateChangeUnknown(t *testing.T) {
-
 	cleanAndPrepare()
+
 	//Issuing configTxs with unknown Id
 	var configs []*protocol.ConfigTx
-	tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 1000, rand.Uint64(), 0, &RootPrivKey)
-	tx2, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 2000, rand.Uint64(), 0, &RootPrivKey)
-	tx3, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 3000, rand.Uint64(), 0, &RootPrivKey)
+	tx, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 1000, rand.Uint64(), 0, &PrivKeyRoot)
+	tx2, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 2000, rand.Uint64(), 0, &PrivKeyRoot)
+	tx3, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 11, 3000, rand.Uint64(), 0, &PrivKeyRoot)
 
 	//save parameter state
 	tmpParameter := parameterSlice[len(parameterSlice)-1]
@@ -247,7 +248,7 @@ func TestConfigTxStateChangeUnknown(t *testing.T) {
 	}
 
 	//Adding a tx that changes state
-	tx4, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 2, 3000, rand.Uint64(), 0, &RootPrivKey)
+	tx4, _ := protocol.ConstrConfigTx(uint8(rand.Uint32()%256), 2, 3000, rand.Uint64(), 0, &PrivKeyRoot)
 	configs = append(configs, tx4)
 
 	configStateChange(configs, [32]byte{'0', '1'})
@@ -273,7 +274,8 @@ func TestConfigTxStateChangeUnknown(t *testing.T) {
 //Testing state change, rollback and fee collection
 func TestStakeTxStateChange(t *testing.T) {
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
+
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	accAHash := protocol.SerializeHashContent(accA.Address)
 
@@ -285,7 +287,7 @@ func TestStakeTxStateChange(t *testing.T) {
 	seed := protocol.CreateRandomSeed()
 	hashedSeed := protocol.SerializeHashContent(seed)
 
-	stx, _ := protocol.ConstrStakeTx(0x01, rand.Uint64()%100+1, true, hashedSeed, accAHash, &PrivKeyA)
+	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, hashedSeed, accAHash, &PrivKeyAccA)
 	if addTx(b, stx) == nil {
 		stakingA = true
 		stake = append(stake, stx)
@@ -296,7 +298,7 @@ func TestStakeTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v", accA.IsStaking, stakingA)
 	}
 
-	stx2, _ := protocol.ConstrStakeTx(0x01, rand.Uint64()%100+1, false, [32]byte{}, accAHash, &PrivKeyA)
+	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, [32]byte{}, accAHash, &PrivKeyAccA)
 	if addTx(b, stx) == nil {
 		stakingA = false
 		stake2 = append(stake2, stx2)

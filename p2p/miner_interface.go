@@ -6,11 +6,15 @@ import (
 
 var (
 	//Block from the network, to the miner
-	BlockIn = make(chan []byte)
+	BlockIn chan []byte = make(chan []byte)
 	//Block from the miner, to the network
-	BlockOut = make(chan []byte)
+	BlockOut       chan []byte = make(chan []byte)
+	//BlockHeader from the miner, to the clients
+	BlockHeaderOut chan []byte = make(chan []byte)
 
-	//Data requested by miner, to allow parallelism, we have a chan for every tx type
+	VerifiedTxsOut chan []byte = make(chan []byte)
+
+	//Data requested by miner, to allow parallelism, we have a chan for every tx type.
 	FundsTxChan  = make(chan *protocol.FundsTx)
 	AccTxChan    = make(chan *protocol.AccTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
@@ -19,12 +23,26 @@ var (
 	BlockReqChan = make(chan []byte)
 )
 
-//This is for blocks and txs that the miner successfully validated
-func receiveBlockFromMiner() {
+//This is for blocks and txs that the miner successfully validated.
+func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
-		brdcstMsg <- toBrdcst
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
+func forwardBlockHeaderBrdcstToMiner() {
+	for {
+		blockHeader := <- BlockHeaderOut
+		clientBrdcstMsg <- BuildPacket(BLOCK_HEADER_BRDCST, blockHeader)
+	}
+}
+
+func forwardVerifiedTxsToMiner() {
+	for {
+		verifiedTxs := <- VerifiedTxsOut
+		clientBrdcstMsg <- BuildPacket(VERIFIEDTX_BRDCST, verifiedTxs)
 	}
 }
 
@@ -32,7 +50,7 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
-//These are transactions the miner specifically requested
+//These are transactions the miner specifically requested.
 func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 	if payload == nil {
 		return

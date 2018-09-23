@@ -4,7 +4,7 @@ package p2p
 const (
 	//MIN_MINERS is a lower bound of connections. If there are less, the system actively requests miner peers
 	//from neighbors and establishes connections to them
-	MIN_MINERS = 1
+	MIN_MINERS = 2
 	//MAX_MINERS is an upper bound of connections. Miner handshakes are rejected if the amount of connections
 	//grows above this number. Client connections are always accepted
 	MAX_MINERS = 20
@@ -13,9 +13,9 @@ const (
 	//Interval to check system health in seconds
 	HEALTH_CHECK_INTERVAL = 30
 	//Broadcast local time to the network in seconds
-	TIME_BRDCST_INTERVAL = 20
+	TIME_BRDCST_INTERVAL = 60
 	//Calculate system time every UPDATE_SYS_TIME seconds
-	UPDATE_SYS_TIME = 60
+	UPDATE_SYS_TIME = 90
 
 	//Protocol constants
 	IPV4ADDR_SIZE = 4

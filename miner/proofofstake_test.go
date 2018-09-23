@@ -11,11 +11,11 @@ import (
 )
 
 func TestProofOfStake(t *testing.T) {
-
 	cleanAndPrepare()
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
-	balance := uint64(rand.Int() % 1000)
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
+
+	balance := uint64(randVar.Int() % 1000)
 
 	var prevSeeds [][32]byte
 	prevSeed1 := protocol.CreateRandomSeed()
@@ -28,7 +28,7 @@ func TestProofOfStake(t *testing.T) {
 	prevSeeds = append(prevSeeds, prevSeed4)
 
 	seed := protocol.CreateRandomSeed()
-	height := uint32(rand.Int())
+	height := uint32(randVar.Int())
 
 	diff := 10
 
@@ -41,6 +41,7 @@ func TestProofOfStake(t *testing.T) {
 
 func TestGetLatestSeeds(t *testing.T) {
 	cleanAndPrepare()
+
 	var seeds [][32]byte
 	var genesisSeedSlice [32]byte
 	copy(genesisSeedSlice[:], storage.GENESIS_SEED)
@@ -64,13 +65,13 @@ func TestGetLatestSeeds(t *testing.T) {
 		t.Error("Error finalizing b1", err)
 	}
 	seeds = Prepend(seeds, b1.Seed)
-	validateBlock(b1)
+	validate(b1, false)
 
 	b2 := newBlock(b1.Hash, [32]byte{}, [32]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
-	validateBlock(b2)
+	validate(b2, false)
 	seeds = Prepend(seeds, b2.Seed)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)

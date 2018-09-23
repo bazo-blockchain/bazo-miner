@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	TestIpPort = "127.0.0.1:8000"
-	TestDbFileName = "test.db"
+	TestIpPort     = "127.0.0.1:8000"
+	TestDBFileName = "test.db"
 )
 
 const (
@@ -32,14 +32,14 @@ const (
 	RootPriv = "277ed539f56122c25a6fc115d07d632b47e71416c9aebf1beb54ee704f11842c"
 )
 
-var accA, accB, minerAcc *protocol.Account
+var accA, accB, minerAcc, rootAcc *protocol.Account
 var PrivKeyA, PrivKeyB ecdsa.PrivateKey
 var PubKeyA, PubKeyB ecdsa.PublicKey
 var RootPrivKey ecdsa.PrivateKey
 
 func TestMain(m *testing.M) {
 
-	Init(TestDbFileName, TestIpPort)
+	Init(TestDBFileName, TestIpPort)
 
 	DeleteAll()
 	addTestingAccounts()
@@ -116,7 +116,9 @@ func addRootAccounts() {
 
 	rootHash := protocol.SerializeHashContent(pubKey)
 
-	rootAcc := protocol.Account{Address: pubKey}
-	State[rootHash] = &rootAcc
-	RootKeys[rootHash] = &rootAcc
+	rootAcc = new(protocol.Account)
+	rootAcc.Address = pubKey
+
+	State[rootHash] = rootAcc
+	RootKeys[rootHash] = rootAcc
 }

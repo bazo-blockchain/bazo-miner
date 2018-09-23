@@ -11,31 +11,30 @@ var (
 
 //Corresponds largely to server.go -> Init(...)
 func TestMain(m *testing.M) {
-
-	initLogger()
-
-	//Used for some tests, the bootstrap server is listening at 8000 at the same time
+	//Used for some tests, the bootstarp server is listening at 8000 at the same time
 	Ipport = "127.0.0.1:9000"
+	InitLogging()
+
+	peers.minerConns = make(map[*peer]bool)
+	peers.clientConns = make(map[*peer]bool)
 
 	BlockIn = make(chan []byte)
 	BlockOut = make(chan []byte)
 
-	//channels for specific miner requests
-
-	peers.peerConns = make(map[*peer]bool)
-	brdcstMsg = make(chan []byte)
+	iplistChan = make(chan string, MIN_MINERS)
+	minerBrdcstMsg = make(chan []byte)
+	clientBrdcstMsg = make(chan []byte)
 	register = make(chan *peer)
 	disconnect = make(chan *peer)
 
-	iplistChan = make(chan string, MIN_MINERS)
-
 	go broadcastService()
-	go timeService()
 	go checkHealthService()
-	go receiveBlockFromMiner()
+	go timeService()
+	go forwardBlockBrdcstToMiner()
+	go peerService()
 
 	//Bootstrap server
-	go listener(MINER_IPPORT)
+	go listener("127.0.0.1:8000")
 
 	os.Exit(m.Run())
 }

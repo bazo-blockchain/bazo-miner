@@ -15,22 +15,22 @@ var (
 	currentTargetTime *timerange //Corresponds to the active timerange
 )
 
-//An instance of this datastructure is created whenever there are system parameter changes
+//An instance of this datastructure is created whenever system parameters change.
 //The blockhash is additionally recorded to know which blocks the parameter change belongs to.
 //This is necessary, because the system records ALL config txs (even those who have no corresponding
 //code to execute [e.g., when they're running an older version of the code]).
 type Parameters struct {
 	BlockHash               [BLOCKHASH_SIZE]byte
-	Fee_minimum             uint64
-	Block_size              uint64
+	Fee_minimum             uint64 //Paid minimum fee for sending a tx.
+	Block_size              uint64 //Block size in bytes.
 	Diff_interval           uint64
 	Block_interval          uint64
-	Block_reward            uint64
-	Staking_minimum         uint64
-	Waiting_minimum         uint64 //number of blocks that must a new validator must wait before it can start validating
-	Accepted_time_diff      uint64 //number of seconds that a block can be received in the future
-	Slashing_window_size    uint64 //number of blocks that a validator cannot vote on two competing chains
-	Slash_reward            uint64 //reward for providing the correct slashing proof
+	Block_reward            uint64 //Reward for delivering the correct PoS.
+	Staking_minimum         uint64 //Minimum amount a validator must own for staking.
+	Waiting_minimum         uint64 //Number of blocks that must a new validator must wait before it can start validating.
+	Accepted_time_diff      uint64 //Number of seconds that a block can be received in the future.
+	Slashing_window_size    uint64 //Number of blocks that a validator cannot vote on two competing chains.
+	Slash_reward            uint64 //Reward for providing the correct slashing proof.
 	num_included_prev_seeds int
 }
 
@@ -53,13 +53,13 @@ func NewDefaultParameters() Parameters {
 	return newParameters
 }
 
-//Captures first and last timestamp of the intended blocks of the range
+//Captures first and last timestamp of the intended blocks of the range.
 type timerange struct {
 	first int64
 	last  int64
 }
 
-//We need to store the history or timeranges to revert in case of rollbacks
+//We need to store the history or timeranges to revert in case of rollbacks.
 var targetTimes []timerange
 
 func collectStatistics(b *protocol.Block) {
@@ -89,10 +89,9 @@ func collectStatistics(b *protocol.Block) {
 }
 
 func collectStatisticsRollback(b *protocol.Block) {
-
 	globalBlockCount--
 
-	//never rollback the genesis blocks
+	//Never rollback the genesis blocks.
 	if localBlockCount == 0 && globalBlockCount != 0 {
 		localBlockCount = int64(activeParameters.Diff_interval) - 1
 		//Target rollback
@@ -107,17 +106,17 @@ func collectStatisticsRollback(b *protocol.Block) {
 }
 
 func calculateNewDifficulty(t *timerange) uint8 {
-	//Time difference between the first and last block in the measured range
+	//Time difference between the first and last block in the measured range.
 	diff_now := t.last - t.first
 
-	//This is how long it should have taken
+	//This is how long it should have taken.
 	diff_wanted := activeParameters.Block_interval * (activeParameters.Diff_interval)
 
 	diff_ratio := float64(diff_wanted) / float64(diff_now)
 
-	//If the last is earlier time than first, we get a negative number, can't take the log from that
-	//this precipitates that reasonable parameter should be chosen for block interval/diff interval
-	//such that this case does not happen. In case it still does, we give the current difficulty back
+	//If the last is earlier time than first, we get a negative number, can't take the log from that.
+	//This precipitates that reasonable parameter should be chosen for block-/diff interval
+	//such that this case does not happen. In case it still does, we give the current difficulty back.
 	if diff_ratio < 0 {
 		return getDifficulty()
 	}
@@ -126,24 +125,24 @@ func calculateNewDifficulty(t *timerange) uint8 {
 	//hard etc.
 	target_change := math.Log2(diff_ratio)
 
-	//the +-0.5 is basically the "round" function
+	//The +-0.5 is basically the "round" function.
 	if target_change > 0 {
 		target_change += 0.5
 	} else if target_change < 0 {
 		target_change -= 0.5
 	}
 
-	//Sanity check! Make it at most 3 times as hard or easy, Bitcoin has a similar check
+	//Sanity check! Make it at most 3 times as hard or easy, Bitcoin has a similar check.
 	if target_change > 3 {
 		target_change = 3
 	} else if target_change < -3 {
 		target_change = -3
 	}
 
-	//Rounding down (for positive values) and runding up (for negative values)
+	//Rounding down (for positive values) and runding up (for negative values).
 	target_change_rounded := uint8(target_change)
 
-	//Return the new target based on the calculation and the current target
+	//Return the new target based on the calculation and the current target.
 	return target_change_rounded + target[len(target)-1]
 }
 

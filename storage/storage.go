@@ -16,6 +16,7 @@ var (
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
+	Bootstrap_Server   string
 )
 
 const (
@@ -23,7 +24,8 @@ const (
 )
 
 //Entry function for the storage package
-func Init(dbname string, ipport string) {
+func Init(dbname string, bootstrapIpport string) {
+	Bootstrap_Server = bootstrapIpport
 	logger = InitLogger()
 
 	var err error
@@ -32,9 +34,8 @@ func Init(dbname string, ipport string) {
 		logger.Fatal(ERROR_MSG, err)
 	}
 
-	//Check if db file is empty for all non-bootstrapping miners
-	//TODO Enable again if needed
-	//if ipport != BOOTSTRAP_SERVER {
+	//Check if db file is empty for all non-bootstraping miners
+	//if ipport != BOOTSTRAP_SERVER_PORT {
 	//	err := db.View(func(tx *bolt.Tx) error {
 	//		err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
 	//			err := bkt.ForEach(func(k, v []byte) error {

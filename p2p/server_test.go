@@ -23,7 +23,7 @@ func TestInitiateNewMinerConnection(t *testing.T) {
 	}
 
 	//We initiate a miner connection so we can test whether already established connections are recognized
-	go minerConn(p)
+	go peerConn(p)
 	time.Sleep(time.Second)
 	//Check that already established connections are recognized
 	_, err = initiateNewMinerConnection("127.0.0.1:8000")
@@ -34,7 +34,7 @@ func TestInitiateNewMinerConnection(t *testing.T) {
 
 func TestPrepareHandshake(t *testing.T) {
 
-	packet, err := prepareHandshake()
+	packet, err := PrepareHandshake(MINER_PING, 9000)
 
 	if err != nil ||
 		packet[0] != 0x00 ||

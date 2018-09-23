@@ -9,9 +9,10 @@ func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
 			accHash := protocol.SerializeHashContent(tx.PubKey)
-			acc := storage.State[accHash]
-			if acc == nil {
-				logger.Fatal("CRITICAL: An account that should have been saved does not exist!")
+
+			acc, err := storage.GetAccount(accHash)
+			if err != nil {
+				logger.Fatal("CRITICAL: An account that should have been saved does not exist.")
 			}
 
 			delete(storage.State, accHash)
@@ -31,13 +32,15 @@ func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
 
-		accSender, accReceiver := storage.GetAccount(tx.From), storage.GetAccount(tx.To)
+		accSender, _ := storage.GetAccount(tx.From)
+		accReceiver, _ := storage.GetAccount(tx.To)
+
 		accSender.TxCnt -= 1
 		accSender.Balance += tx.Amount
 		accReceiver.Balance -= tx.Amount
 
 		//If new coins were issued, revert
-		if rootAcc := storage.RootKeys[tx.From]; rootAcc != nil {
+		if rootAcc, _ := storage.GetRootAccount(tx.From); rootAcc != nil {
 			rootAcc.Balance -= tx.Amount
 			rootAcc.Balance -= tx.Fee
 		}
@@ -66,14 +69,17 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 	//Rollback in reverse order than original state change
 	for cnt := len(txSlice) - 1; cnt >= 0; cnt-- {
 		tx := txSlice[cnt]
-		accSender := storage.GetAccount(tx.Account)
+
+		accSender, _ := storage.GetAccount(tx.Account)
+		//Rolling back hashedSeed & stakingBlockHeight not needed
 		accSender.IsStaking = !accSender.IsStaking
 	}
 }
 
 func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) {
-	minerAcc := storage.GetAccount(minerHash)
-	//subtract fees from sender (check if that is allowed has already been done in the block validation)
+	minerAcc, _ := storage.GetAccount(minerHash)
+
+	//Subtract fees from sender (check if that is allowed has already been done in the block validation)
 	for _, tx := range accTx {
 		//Money was created out of thin air, no need to write back
 		minerAcc.Balance -= tx.Fee
@@ -81,7 +87,8 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range fundsTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc := storage.GetAccount(tx.From)
+
+		senderAcc, _ := storage.GetAccount(tx.From)
 		senderAcc.Balance += tx.Fee
 	}
 
@@ -92,12 +99,24 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 
 	for _, tx := range stakeTx {
 		minerAcc.Balance -= tx.Fee
-		senderAcc := storage.GetAccount(tx.Account)
+
+		senderAcc, _ := storage.GetAccount(tx.Account)
 		senderAcc.Balance += tx.Fee
 	}
 }
 
 func collectBlockRewardRollback(reward uint64, minerHash [32]byte) {
-	minerAcc := storage.GetAccount(minerHash)
+	minerAcc, _ := storage.GetAccount(minerHash)
 	minerAcc.Balance -= reward
+}
+
+func collectSlashRewardRollback(reward uint64, block *protocol.Block) {
+	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+		minerAcc, _ := storage.GetAccount(block.Beneficiary)
+		slashedAcc, _ := storage.GetAccount(block.SlashedAddress)
+
+		minerAcc.Balance -= reward
+		slashedAcc.Balance += activeParameters.Staking_minimum
+		slashedAcc.IsStaking = true
+	}
 }

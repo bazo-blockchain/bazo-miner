@@ -18,7 +18,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case TIME_BRDCST:
 		processTimeRes(p, payload)
 
-		//Requests
+		//REQUESTS
 	case FUNDSTX_REQ:
 		txRes(p, payload, FUNDSTX_REQ)
 	case ACCTX_REQ:
@@ -29,20 +29,22 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
 		blockRes(p, payload)
+	case BLOCK_HEADER_REQ:
+		blockHeaderRes(p, payload)
 	case ACC_REQ:
 		accRes(p, payload)
 	case ROOTACC_REQ:
 		rootAccRes(p, payload)
-	case BLOCK_HEADER_REQ:
-		blockHeaderRes(p, payload)
 	case MINER_PING:
-		pongRes(p, payload)
+		pongRes(p, payload, MINER_PING)
+	case CLIENT_PING:
+		pongRes(p, payload, CLIENT_PING)
 	case NEIGHBOR_REQ:
 		neighborRes(p)
 	case INTERMEDIATE_NODES_REQ:
 		intermediateNodesRes(p, payload)
 
-	//Responses
+		//RESPONSES
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
@@ -55,9 +57,5 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardTxReqToMiner(p, payload, CONFIGTX_RES)
 	case STAKETX_RES:
 		forwardTxReqToMiner(p, payload, STAKETX_RES)
-	default:
-		//Send default NOT_FOUND
-		packet := BuildPacket(NOT_FOUND, nil)
-		sendData(p, packet)
 	}
 }

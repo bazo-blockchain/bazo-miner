@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+const (
+	ACC_SIZE = 113
+)
+
 type Account struct {
 	Address            [64]byte    // 64 Byte
 	Issuer             [32]byte    // 32 Byte
@@ -30,6 +34,7 @@ func NewAccount(address [64]byte, issuer [32]byte, balance uint64, isStaking boo
 		contract,
 		contractVariables,
 	}
+
 	return newAcc
 }
 
@@ -37,6 +42,7 @@ func (acc *Account) Hash() (hash [32]byte) {
 	if acc == nil {
 		return [32]byte{}
 	}
+
 	return SerializeHashContent(acc.Address)
 }
 

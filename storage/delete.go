@@ -7,7 +7,6 @@ import (
 
 //There exist open/closed buckets and closed tx buckets for all types (open txs are in volatile storage)
 func DeleteOpenBlock(hash [32]byte) {
-
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("openblocks"))
 		err := b.Delete(hash[:])
@@ -16,7 +15,6 @@ func DeleteOpenBlock(hash [32]byte) {
 }
 
 func DeleteClosedBlock(hash [32]byte) {
-
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("closedblocks"))
 		err := b.Delete(hash[:])
@@ -25,7 +23,6 @@ func DeleteClosedBlock(hash [32]byte) {
 }
 
 func DeleteLastClosedBlock(hash [32]byte) {
-
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("lastclosedblock"))
 		err := b.Delete(hash[:])
@@ -33,13 +30,22 @@ func DeleteLastClosedBlock(hash [32]byte) {
 	})
 }
 
-func DeleteOpenTx(transaction protocol.Transaction) {
+func DeleteAllLastClosedBlock() {
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("lastclosedblock"))
+		b.ForEach(func(k, v []byte) error {
+			b.Delete(k)
+			return nil
+		})
+		return nil
+	})
+}
 
+func DeleteOpenTx(transaction protocol.Transaction) {
 	delete(txMemPool, transaction.Hash())
 }
 
 func DeleteClosedTx(transaction protocol.Transaction) {
-
 	var bucket string
 	switch transaction.(type) {
 	case *protocol.FundsTx:
@@ -61,7 +67,6 @@ func DeleteClosedTx(transaction protocol.Transaction) {
 }
 
 func DeleteAll() {
-
 	//Delete in-memory storage
 	for key := range txMemPool {
 		delete(txMemPool, key)

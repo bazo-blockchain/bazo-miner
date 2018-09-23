@@ -119,6 +119,7 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 
 		copy(pos[0:32], buf.Bytes())
 
+		//TODO @simibac What do you do here?
 		//Byte check
 		for byteNr = 0; byteNr < (uint8)(diff/8); byteNr++ {
 			if pos[byteNr] != 0 {
