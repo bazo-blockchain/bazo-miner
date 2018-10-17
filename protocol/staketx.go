@@ -8,18 +8,19 @@ import (
 )
 
 const (
-	STAKETX_SIZE = 138
+	STAKETX_SIZE = 394
 )
 
 //when we broadcast transactions we need a way to distinguish with a type
 
 type StakeTx struct {
-	Header     byte     // 1 Byte
-	Fee        uint64   // 8 Byte
-	IsStaking  bool     // 1 Byte
-	HashedSeed [32]byte // 32 Byte
-	Account    [32]byte // 32 Byte
-	Sig        [64]byte // 64 Byte
+	Header     byte     	// 1 Byte
+	Fee        uint64   	// 8 Byte
+	IsStaking  bool     	// 1 Byte
+	HashedSeed [32]byte 	// 32 Byte
+	Account    [32]byte 	// 32 Byte
+	Sig        [64]byte 	// 64 Byte
+	Commitment [256]byte 	// 256 Byte
 }
 
 func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, key *ecdsa.PrivateKey) (tx *StakeTx, err error) {
