@@ -105,7 +105,7 @@ func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][32]byte) {
 	return fundsTxPubKeys
 }
 
-func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
+func ExtractECDSAKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
 	filehandle, err := os.Open(filename)
 	if err != nil {
 		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))

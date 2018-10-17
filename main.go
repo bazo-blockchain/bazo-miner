@@ -25,13 +25,13 @@ func main() {
 	storage.Init(dbname, bootstrapIpport)
 	p2p.Init(thisIpport)
 
-	validatorPubKey, _, err := storage.ExtractKeyFromFile(validatorFileName)
+	validatorPubKey, _, err := storage.ExtractECDSAKeyFromFile(validatorFileName)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
 	}
 
-	multisigPubKey, _, err := storage.ExtractKeyFromFile(multisigFileName)
+	multisigPubKey, _, err := storage.ExtractECDSAKeyFromFile(multisigFileName)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return
