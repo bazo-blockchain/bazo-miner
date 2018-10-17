@@ -11,7 +11,7 @@ func main() {
 	logger := storage.InitLogger()
 
 	if len(os.Args) != 7 {
-		logger.Println("Usage: bazo-miner <dbname> <bootstrap ip:port> <this ip:port> <validatorfile> <seedfile> <multisigfile>")
+		logger.Println("Usage: bazo-miner <dbname> <bootstrap ip:port> <this ip:port> <validatorfile> <seedfile> <multisigfile> <commitmentfile>")
 		return
 	}
 
@@ -21,6 +21,7 @@ func main() {
 	validatorFileName := os.Args[4]
 	seedFileName := os.Args[5]
 	multisigFileName := os.Args[6]
+	commFileName := os.Args[7]
 
 	storage.Init(dbname, bootstrapIpport)
 	p2p.Init(thisIpport)
@@ -37,5 +38,11 @@ func main() {
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey, seedFileName)
+	commPrivKey, err := storage.ExtractRSAKeyFromFile(commFileName)
+	if err != nil {
+		logger.Printf("%v\n", err)
+		return
+	}
+
+	miner.Init(&validatorPubKey, &multisigPubKey, commPrivKey, seedFileName)
 }

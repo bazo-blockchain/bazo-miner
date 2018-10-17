@@ -2,6 +2,7 @@ package miner
 
 import (
 	"crypto/ecdsa"
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"log"
@@ -20,15 +21,17 @@ var (
 	slashingDict        = make(map[[32]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
+	commPrivKey			*rsa.PrivateKey
 	seedFile            string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitment *rsa.PrivateKey, seedFileName string) {
 	var err error
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
+	commPrivKey = commitment
 	seedFile = seedFileName
 
 	//Set up logger.

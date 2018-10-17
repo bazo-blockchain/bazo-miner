@@ -6,11 +6,15 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/binary"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"golang.org/x/crypto/sha3"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
@@ -153,6 +157,18 @@ func ExtractECDSAKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey e
 	}
 
 	return pubKey, privKey, nil
+}
+
+func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error) {
+	pemString, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return privKey, errors.New(fmt.Sprintf("%v", err))
+	}
+
+	block, _ := pem.Decode([]byte(pemString))
+	key, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+	fmt.Println(key.N, key.D)
+	return key, nil
 }
 
 func ReadFile(filename string) (lines []string) {
