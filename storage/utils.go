@@ -167,6 +167,7 @@ func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error)
 
 	block, _ := pem.Decode([]byte(pemString))
 	key, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+
 	return key, nil
 }
 

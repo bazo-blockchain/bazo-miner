@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"crypto/rsa"
 )
 
 const (
@@ -20,10 +21,11 @@ type StakeTx struct {
 	HashedSeed [32]byte 	// 32 Byte
 	Account    [32]byte 	// 32 Byte
 	Sig        [64]byte 	// 64 Byte
-	Commitment [256]byte 	// 256 Byte
+	Commitment [256]byte 	// 256 Byte, RSA Public Key
 }
 
-func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, key *ecdsa.PrivateKey) (tx *StakeTx, err error) {
+func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, signKey *ecdsa.PrivateKey, commKey rsa.PublicKey) (tx *StakeTx, err error) {
+
 	tx = new(StakeTx)
 
 	tx.Header = header
@@ -34,13 +36,15 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account 
 
 	txHash := tx.Hash()
 
-	r, s, err := ecdsa.Sign(rand.Reader, key, txHash[:])
+	r, s, err := ecdsa.Sign(rand.Reader, signKey, txHash[:])
 	if err != nil {
 		return nil, err
 	}
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
+
+	copy(tx.Commitment[256-len(commKey.N.Bytes()):], commKey.N.Bytes())
 
 	return tx, nil
 }
