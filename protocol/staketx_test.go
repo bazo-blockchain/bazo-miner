@@ -20,7 +20,7 @@ func TestStakeTxSerialization(t *testing.T) {
 		seed := createRandomSeed()
 		hashedSeed := SerializeHashContent(seed)
 
-		tx, _ := ConstrStakeTx(0x01, fee, isStaking, hashedSeed, accAHash, &PrivKeyA)
+		tx, _ := ConstrStakeTx(0x01, fee, isStaking, hashedSeed, accAHash, &PrivKeyA, &CommKeyA.PublicKey)
 		data := tx.Encode()
 		var decodedTx *StakeTx
 		decodedTx = decodedTx.Decode(data)

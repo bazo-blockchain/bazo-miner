@@ -10,7 +10,7 @@ import (
 func main() {
 	logger := storage.InitLogger()
 
-	if len(os.Args) != 7 {
+	if len(os.Args) != 8 {
 		logger.Println("Usage: bazo-miner <dbname> <bootstrap ip:port> <this ip:port> <validatorfile> <seedfile> <multisigfile> <commitmentfile>")
 		return
 	}
@@ -44,5 +44,5 @@ func main() {
 		return
 	}
 
-	miner.Init(&validatorPubKey, &multisigPubKey, commPrivKey, seedFileName)
+	miner.Init(&validatorPubKey, &multisigPubKey, &commPrivKey, seedFileName)
 }

@@ -15,16 +15,16 @@ const (
 //when we broadcast transactions we need a way to distinguish with a type
 
 type StakeTx struct {
-	Header     byte     	// 1 Byte
-	Fee        uint64   	// 8 Byte
-	IsStaking  bool     	// 1 Byte
-	HashedSeed [32]byte 	// 32 Byte
-	Account    [32]byte 	// 32 Byte
-	Sig        [64]byte 	// 64 Byte
-	Commitment [256]byte 	// 256 Byte, RSA Public Key
+	Header     byte      // 1 Byte
+	Fee        uint64    // 8 Byte
+	IsStaking  bool      // 1 Byte
+	HashedSeed [32]byte  // 32 Byte
+	Account    [32]byte  // 32 Byte
+	Sig        [64]byte  // 64 Byte
+	CommKey    [256]byte // 256 Byte, RSA Public Key
 }
 
-func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, signKey *ecdsa.PrivateKey, commKey rsa.PublicKey) (tx *StakeTx, err error) {
+func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, signKey *ecdsa.PrivateKey, commKey *rsa.PublicKey) (tx *StakeTx, err error) {
 
 	tx = new(StakeTx)
 
@@ -43,8 +43,7 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account 
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
-
-	copy(tx.Commitment[256-len(commKey.N.Bytes()):], commKey.N.Bytes())
+	copy(tx.CommKey[256-len(commKey.N.Bytes()):], commKey.N.Bytes())
 
 	return tx, nil
 }
@@ -61,12 +60,14 @@ func (tx *StakeTx) Hash() (hash [32]byte) {
 		IsStaking  bool
 		hashedSeed [32]byte
 		Account    [32]byte
+		CommKey    [256]byte
 	}{
 		tx.Header,
 		tx.Fee,
 		tx.IsStaking,
 		tx.HashedSeed,
 		tx.Account,
+		tx.CommKey,
 	}
 
 	return SerializeHashContent(txHash)
@@ -98,6 +99,7 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 	copy(encodedTx[10:42], tx.HashedSeed[:])
 	copy(encodedTx[42:74], tx.Account[:])
 	copy(encodedTx[74:138], tx.Sig[:])
+	copy(encodedTx[138:394], tx.CommKey[:])
 
 	return encodedTx
 }
@@ -117,6 +119,7 @@ func (*StakeTx) Decode(encodedTx []byte) (tx *StakeTx) {
 	copy(tx.HashedSeed[:], encodedTx[10:42])
 	copy(tx.Account[:], encodedTx[42:74])
 	copy(tx.Sig[:], encodedTx[74:138])
+	copy(tx.CommKey[:], encodedTx[138:394])
 
 	if isStakingAsByte == 0 {
 		tx.IsStaking = false
@@ -137,12 +140,14 @@ func (tx StakeTx) String() string {
 			"IsStaking: %v\n"+
 			"hashedSeed: %x\n"+
 			"Account: %x\n"+
-			"Sig: %x\n",
+			"Sig: %x\n"+
+			"Comm: %x\n",
 		tx.Header,
 		tx.Fee,
 		tx.IsStaking,
 		tx.HashedSeed[0:8],
 		tx.Account[0:8],
 		tx.Sig[0:8],
+		tx.CommKey[0:8],
 	)
 }

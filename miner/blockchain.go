@@ -101,8 +101,12 @@ func mining(initialBlock *protocol.Block) {
 func initRootKey() ([32]byte, error) {
 	address, addressHash := storage.GetInitRootPubKey()
 
-	var seed [32]byte
+	var (
+		seed       [32]byte
+		commPubKey [256]byte
+	)
 	copy(seed[:], storage.INIT_ROOT_SEED[:])
+	copy(commPubKey[:], storage.INIT_COMM_PUB_KEY[:])
 
 	//Create the hash of the seed which will be included in the transaction.
 	hashedSeed := protocol.SerializeHashContent(seed)
@@ -113,7 +117,7 @@ func initRootKey() ([32]byte, error) {
 	}
 
 	//Balance must be greater than the staking minimum.
-	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, hashedSeed, nil, nil)
+	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, hashedSeed, commPubKey, nil, nil)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ACC_SIZE = 113
+	ACC_SIZE = 369
 )
 
 type Account struct {
@@ -17,12 +17,21 @@ type Account struct {
 	TxCnt              uint32      // 4 Byte
 	IsStaking          bool        // 1 Byte
 	HashedSeed         [32]byte    // 32 Byte
+	CommitmentPubKey   [256]byte   // 256 Byte
 	StakingBlockHeight uint32      // 4 Byte
 	Contract           []byte      // Arbitrary length
 	ContractVariables  []ByteArray // Arbitrary length
 }
 
-func NewAccount(address [64]byte, issuer [32]byte, balance uint64, isStaking bool, hashedSeed [32]byte, contract []byte, contractVariables []ByteArray) Account {
+func NewAccount(address [64]byte,
+	issuer [32]byte,
+	balance uint64,
+	isStaking bool,
+	hashedSeed [32]byte,
+	commPubKey [256]byte,
+	contract []byte,
+	contractVariables []ByteArray) Account {
+
 	newAcc := Account{
 		address,
 		issuer,
@@ -30,6 +39,7 @@ func NewAccount(address [64]byte, issuer [32]byte, balance uint64, isStaking boo
 		0,
 		isStaking,
 		hashedSeed,
+		commPubKey,
 		0,
 		contract,
 		contractVariables,
@@ -58,6 +68,7 @@ func (acc *Account) Encode() (encodedAcc []byte) {
 		TxCnt:              acc.TxCnt,
 		IsStaking:          acc.IsStaking,
 		HashedSeed:         acc.HashedSeed,
+		CommitmentPubKey:   acc.CommitmentPubKey,
 		StakingBlockHeight: acc.StakingBlockHeight,
 		Contract:           acc.Contract,
 		ContractVariables:  acc.ContractVariables,
@@ -78,5 +89,27 @@ func (*Account) Decode(encodedAcc []byte) (acc *Account) {
 
 func (acc Account) String() string {
 	addressHash := SerializeHashContent(acc.Address)
-	return fmt.Sprintf("Hash: %x, Address: %x, Issuer: %x, TxCnt: %v, Balance: %v, IsStaking: %v, HashedSeed: %x, StakingBlockHeight: %v, Contract: %v, ContractVariables: %v", addressHash[0:8], acc.Address[0:8], acc.Issuer[0:8], acc.TxCnt, acc.Balance, acc.IsStaking, acc.HashedSeed[0:8], acc.StakingBlockHeight, acc.Contract, acc.ContractVariables)
+	return fmt.Sprintf(
+		"Hash: %x, " +
+			"Address: %x, " +
+			"Issuer: %x, " +
+			"TxCnt: %v, " +
+			"Balance: %v, " +
+			"IsStaking: %v, " +
+			"HashedSeed: %x, " +
+			"CommitmentPubKey: %x, " +
+			"StakingBlockHeight: %v, " +
+			"Contract: %v, " +
+			"ContractVariables: %v",
+		addressHash[0:8],
+		acc.Address[0:8],
+		acc.Issuer[0:8],
+		acc.TxCnt,
+		acc.Balance,
+		acc.IsStaking,
+		acc.HashedSeed[0:8],
+		acc.CommitmentPubKey[0:8],
+		acc.StakingBlockHeight,
+		acc.Contract,
+		acc.ContractVariables)
 }

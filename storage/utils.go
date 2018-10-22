@@ -52,7 +52,7 @@ func GetRootAccount(hash [32]byte) (acc *protocol.Account, err error) {
 }
 
 func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
-	pubKey, _ := GetPubKeyFromString(INITROOTPUBKEY1, INITROOTPUBKEY2)
+	pubKey, _ := GetPubKeyFromString(INIT_ROOT_PUB_KEY1, INIT_ROOT_PUB_KEY2)
 	address = GetAddressFromPubKey(&pubKey)
 
 	return address, protocol.SerializeHashContent(address)
@@ -159,16 +159,14 @@ func ExtractECDSAKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey e
 	return pubKey, privKey, nil
 }
 
-func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error) {
+func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) {
 	pemString, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return privKey, errors.New(fmt.Sprintf("%v", err))
 	}
-
 	block, _ := pem.Decode([]byte(pemString))
-	key, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-
-	return key, nil
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	return *key, err
 }
 
 func ReadFile(filename string) (lines []string) {
