@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"crypto/rsa"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -24,11 +25,10 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, seed [32]byte, hashedSeed [32]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [storage.COMM_KEY_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
-	block.Seed = seed
-	block.HashedSeed = hashedSeed
+	block.CommitmentProof = commitmentProof
 	block.Height = height
 	block.StateCopy = make(map[[32]byte]*protocol.Account)
 
@@ -62,17 +62,11 @@ func finalizeBlock(block *protocol.Block) error {
 
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
+	localCommPubKey := validatorAcc.CommitmentPubKey
 	partialHash := block.HashBlock()
+	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
-
-	//Get the current hash of the seed that is stored in my account.
-	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
-	if err != nil {
-		return err
-	}
-
-	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, validatorAcc.Balance, localSeed)
+	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, localCommPubKey)
 	if err != nil {
 		return err
 	}
@@ -90,7 +84,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
-	copy(block.Seed[0:32], localSeed[:])
+	copy(block.CommitmentProof[0:storage.COMM_KEY_LENGTH], localCommPubKey[:])
 
 	//Create a new seed, store it locally and add to the block.
 	newSeed := protocol.CreateRandomSeed()
@@ -648,6 +642,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Invalid if hashedSeed of the previous block is not the same as the hash of the seed of the current block.
+	commPubKey := rsa.PublicKey{ N: fromBase10(acc.CommitmentPubKey), E: protocol.COMM_PUBLIC_EXPONENT }
 	if acc.HashedSeed != protocol.SerializeHashContent(block.Seed) {
 		return nil, nil, nil, nil, errors.New("The submitted seed does not match the previously submitted seed.")
 	}

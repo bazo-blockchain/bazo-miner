@@ -12,7 +12,13 @@ import (
 )
 
 //Tests whether the first diff bits are zero
-func validateProofOfStake(diff uint8, prevSeeds [][32]byte, height uint32, balance uint64, seed [32]byte, timestamp int64) bool {
+func validateProofOfStake(diff uint8,
+	prevProofs [][storage.COMM_KEY_LENGTH]byte,
+	height uint32,
+	balance uint64,
+	commPubKey [storage.COMM_KEY_LENGTH]byte,
+	timestamp int64) bool {
+
 	var hashArgs []byte
 	var heightBuf [4]byte
 	var timestampBuf [8]byte
@@ -20,17 +26,17 @@ func validateProofOfStake(diff uint8, prevSeeds [][32]byte, height uint32, balan
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 	binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
 
-	//allocate memory
-	//n * 32 bytes (prevSeeds) + 32 bytes (localSeed)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevSeeds)*32+32+4+8)
+	// allocate memory
+	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (commPubKey)+ 4 bytes (height) + 8 bytes (count)
+	hashArgs = make([]byte, len(prevProofs)*storage.COMM_KEY_LENGTH+storage.COMM_KEY_LENGTH+4+8)
 
 	index := 0
-	for _, prevSeed := range prevSeeds {
-		copy(hashArgs[index:index+32], prevSeed[:])
-		index += 32
+	for _, prevProof := range prevProofs {
+		copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], prevProof[:])
+		index += storage.COMM_KEY_LENGTH
 	}
 
-	copy(hashArgs[index:index+32], seed[:])
+	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commPubKey[:])
 	copy(hashArgs[index+32:index+36], heightBuf[:])
 	copy(hashArgs[index+36:index+44], timestampBuf[:])
 
@@ -60,7 +66,12 @@ func validateProofOfStake(diff uint8, prevSeeds [][32]byte, height uint32, balan
 
 //diff and partialHash is needed to calculate a valid PoS, prevHash is needed to check whether we should stop
 //PoS calculation because another block has been validated meanwhile
-func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height uint32, balance uint64, localSeed [32]byte) (int64, error) {
+func proofOfStake(diff uint8,
+	prevHash [32]byte,
+	prevProofs [][storage.COMM_KEY_LENGTH]byte,
+	height uint32,
+	balance uint64,
+	localCommPubKey [storage.COMM_KEY_LENGTH]byte) (int64, error) {
 
 	var (
 		pos    [32]byte
@@ -75,25 +86,25 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 		hashArgs []byte
 	)
 
-	//allocate memory
-	//n * 32 bytes (prevSeeds) + 32 bytes (localSeed)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevSeeds)*32+32+4+8)
+	// allocate memory
+	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (localCommPubKey)+ 4 bytes (height) + 8 bytes (count)
+	hashArgs = make([]byte, len(prevProofs)*storage.COMM_KEY_LENGTH+storage.COMM_KEY_LENGTH+4+8)
 
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 
-	//all required parameters are concatenated in the following order:
-	//([PrevSeeds] ⋅ LocalSeed ⋅ CurrentBlockHeight ⋅ Seconds)
+	// all required parameters are concatenated in the following order:
+	// ([PrevSeeds] ⋅ LocalSeed ⋅ CurrentBlockHeight ⋅ Seconds)
 	index := 0
-	for _, prevSeed := range prevSeeds {
-		copy(hashArgs[index:index+32], prevSeed[:])
-		index += 32
+	for _, prevProof := range prevProofs {
+		copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], prevProof[:])
+		index += storage.COMM_KEY_LENGTH
 	}
-	copy(hashArgs[index:index+32], localSeed[:])    //32 bytes
-	copy(hashArgs[index+32:index+36], heightBuf[:]) //4 bytes
+	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], localCommPubKey[:])    	// COMM_KEY_LENGTH bytes
+	copy(hashArgs[index+storage.COMM_KEY_LENGTH:index+36], heightBuf[:]) 		// 4 bytes
 
 	for range time.Tick(time.Second) {
-		//lastBlock is a global variable which points to the last block. This check makes sure we abort if another
-		//block has been validated
+		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
+		// block has been validated
 		if prevHash != lastBlock.Hash {
 			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 		}
@@ -142,17 +153,17 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 	return timestamp, nil
 }
 
-func GetLatestSeeds(n int, block *protocol.Block) (prevSeeds [][32]byte) {
+func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][storage.COMM_KEY_LENGTH]byte) {
 	b := storage.ReadClosedBlock(block.PrevHash)
 	cnt := 0
 	for n > 0 {
-		prevSeeds = append(prevSeeds, b.Seed)
+		prevProofs = append(prevProofs, b.CommitmentProof)
 		n -= 1
 		cnt += 1
 		if b.Height == 0 {
-			return prevSeeds
+			return prevProofs
 		}
 		b = storage.ReadClosedBlock(b.PrevHash)
 	}
-	return prevSeeds
+	return prevProofs
 }

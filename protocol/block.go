@@ -11,7 +11,8 @@ import (
 
 const (
 	HASH_LEN                = 32
-	MIN_BLOCKSIZE           = 318
+	HEIGHT_LEN				= 4
+	MIN_BLOCKSIZE           = 510
 	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
@@ -35,8 +36,7 @@ type Block struct {
 	NrFundsTx             uint16
 	NrStakeTx             uint16
 	SlashedAddress        [32]byte
-	Seed                  [32]byte
-	HashedSeed            [32]byte
+	CommitmentProof       [256]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
 	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
@@ -57,8 +57,7 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		timestamp             int64
 		merkleRoot            [32]byte
 		beneficiary           [32]byte
-		hashedSeed            [32]byte
-		seed                  [32]byte
+		commitmentProof       [256]byte
 		slashedAddress        [32]byte
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
@@ -67,8 +66,7 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		b.Timestamp,
 		b.MerkleRoot,
 		b.Beneficiary,
-		b.HashedSeed,
-		b.Seed,
+		b.CommitmentProof,
 		b.SlashedAddress,
 		b.ConflictingBlockHash1,
 		b.ConflictingBlockHash2,
@@ -164,12 +162,10 @@ func (b *Block) Encode() (encodedBlock []byte) {
 		index += encodedBFSize
 	}
 
-	copy(encodedBlock[index:index+HASH_LEN], b.Seed[:])
-	index += HASH_LEN
-	copy(encodedBlock[index:index+4], height[:])
-	index += 4
-	copy(encodedBlock[index:index+HASH_LEN], b.HashedSeed[:])
-	index += HASH_LEN
+	copy(encodedBlock[index:index+HEIGHT_LEN], height[:])
+	index += HEIGHT_LEN
+	copy(encodedBlock[index:index+COMM_KEY_LEN], b.CommitmentProof[:])
+	index += COMM_KEY_LEN
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash1[:])
 	index += HASH_LEN
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash2[:])
@@ -206,7 +202,7 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 
 	//Making byte array of all non-byte data
 	var nrElementsBF [2]byte
-	var height [4]byte
+	var height [HEIGHT_LEN]byte
 
 	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
 	binary.BigEndian.PutUint32(height[:], b.Height)
@@ -280,12 +276,10 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 		index += encodedBFSize
 	}
 
-	copy(b.Seed[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+4])
-	index += 4
-	copy(b.HashedSeed[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
+	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+HEIGHT_LEN])
+	index += HEIGHT_LEN
+	copy(b.CommitmentProof[:], encodedBlock[index:index+COMM_KEY_LEN])
+	index += COMM_KEY_LEN
 	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
 	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+HASH_LEN])
@@ -370,9 +364,8 @@ func (b Block) String() string {
 		"Amount of accTx: %v\n"+
 		"Amount of configTx: %v\n"+
 		"Amount of stakeTx: %v\n"+
-		"Seed: %x\n"+
 		"Height: %d\n"+
-		"Hashed Seed: %x\n"+
+		"Commitment Proof: %x\n"+
 		"Slashed Address:%x\n"+
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
@@ -386,9 +379,8 @@ func (b Block) String() string {
 		b.NrAccTx,
 		b.NrConfigTx,
 		b.NrStakeTx,
-		b.Seed[0:8],
 		b.Height,
-		b.HashedSeed[0:8],
+		b.CommitmentProof[0:8],
 		b.SlashedAddress[0:8],
 		b.ConflictingBlockHash1[0:8],
 		b.ConflictingBlockHash2[0:8],
