@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"crypto/rsa"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -62,11 +61,17 @@ func finalizeBlock(block *protocol.Block) error {
 
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
-	localCommPubKey := validatorAcc.CommitmentPubKey
+	// Cryptographic Sortition for PoS in Bazo
+	// The commitment proof stores a signed message of the Height that this block was created at.
+	commitmentProof, err := storage.SignMessageWithRsaKey(commPrivKey, string(block.Height))
+	if err != nil {
+		return err
+	}
+
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
-	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, localCommPubKey)
+	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
@@ -84,16 +89,8 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
-	copy(block.CommitmentProof[0:storage.COMM_KEY_LENGTH], localCommPubKey[:])
 
-	//Create a new seed, store it locally and add to the block.
-	newSeed := protocol.CreateRandomSeed()
-
-	//Create the hash of the seed.
-	newHashedSeed := protocol.SerializeHashContent(newSeed)
-
-	storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
-	copy(block.HashedSeed[0:32], newHashedSeed[:])
+	copy(block.CommitmentProof[0:storage.COMM_KEY_LENGTH], commitmentProof[:])
 
 	return nil
 }
@@ -641,17 +638,20 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 		return nil, nil, nil, nil, errors.New("Validator is not part of the validator set.")
 	}
 
-	//Invalid if hashedSeed of the previous block is not the same as the hash of the seed of the current block.
-	commPubKey := rsa.PublicKey{ N: fromBase10(acc.CommitmentPubKey), E: protocol.COMM_PUBLIC_EXPONENT }
-	if acc.HashedSeed != protocol.SerializeHashContent(block.Seed) {
-		return nil, nil, nil, nil, errors.New("The submitted seed does not match the previously submitted seed.")
+	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
+	//Second, check if the commitment proof of the proposed block can be verified with the public key
+	//Invalid if the commitment proof can not be verified with the public key of the proposer
+	commitmentPubKey := storage.CreateRsaPubKey(acc.CommitmentKey)
+	err = storage.VerifyMessageWithRsaKey(commitmentPubKey, string(block.Height), block.CommitmentProof)
+	if err != nil {
+		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
 	}
 
 	//Invalid if PoS calculation is not correct.
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+	prevSeeds := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
 	//PoS validation
-	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
+	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.CommitmentProof, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
 	}
 

@@ -26,12 +26,12 @@ var (
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitment *rsa.PrivateKey, seedFileName string) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.PrivateKey, seedFileName string) {
 	var err error
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
-	commPrivKey = commitment
+	commPrivKey = commitmentPrivKey
 	seedFile = seedFileName
 
 	//Set up logger.
@@ -65,7 +65,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitment *rsa.PrivateKey
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
-	currentBlock := newBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
+	currentBlock := newBlock(initialBlock.Hash, [storage.COMM_KEY_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
@@ -90,7 +90,7 @@ func mining(initialBlock *protocol.Block) {
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
 		//when we finish the block.
 		blockValidation.Lock()
-		nextBlock := newBlock(lastBlock.Hash, [32]byte{}, [32]byte{}, lastBlock.Height+1)
+		nextBlock := newBlock(lastBlock.Hash, [storage.COMM_KEY_LENGTH]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()

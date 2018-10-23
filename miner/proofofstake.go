@@ -16,7 +16,7 @@ func validateProofOfStake(diff uint8,
 	prevProofs [][storage.COMM_KEY_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	commPubKey [storage.COMM_KEY_LENGTH]byte,
+	commitmentProof [storage.COMM_KEY_LENGTH]byte,
 	timestamp int64) bool {
 
 	var hashArgs []byte
@@ -27,7 +27,7 @@ func validateProofOfStake(diff uint8,
 	binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
 
 	// allocate memory
-	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (commPubKey)+ 4 bytes (height) + 8 bytes (count)
+	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (commitmentProof)+ 4 bytes (height) + 8 bytes (count)
 	hashArgs = make([]byte, len(prevProofs)*storage.COMM_KEY_LENGTH+storage.COMM_KEY_LENGTH+4+8)
 
 	index := 0
@@ -36,7 +36,7 @@ func validateProofOfStake(diff uint8,
 		index += storage.COMM_KEY_LENGTH
 	}
 
-	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commPubKey[:])
+	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commitmentProof[:])
 	copy(hashArgs[index+32:index+36], heightBuf[:])
 	copy(hashArgs[index+36:index+44], timestampBuf[:])
 
@@ -71,7 +71,7 @@ func proofOfStake(diff uint8,
 	prevProofs [][storage.COMM_KEY_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	localCommPubKey [storage.COMM_KEY_LENGTH]byte) (int64, error) {
+	commitmentProof [storage.COMM_KEY_LENGTH]byte) (int64, error) {
 
 	var (
 		pos    [32]byte
@@ -99,7 +99,7 @@ func proofOfStake(diff uint8,
 		copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], prevProof[:])
 		index += storage.COMM_KEY_LENGTH
 	}
-	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], localCommPubKey[:])    	// COMM_KEY_LENGTH bytes
+	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commitmentProof[:])    	// COMM_KEY_LENGTH bytes
 	copy(hashArgs[index+storage.COMM_KEY_LENGTH:index+36], heightBuf[:]) 		// 4 bytes
 
 	for range time.Tick(time.Second) {

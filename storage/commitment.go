@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"strconv"
 )
 
 const (
-	COMM_KEY_BITS_SIZE 	= 2048
-	COMM_KEY_LENGTH		= 256
-	COMM_NOF_PRIMES    	= 2
+	COMM_KEY_BITS_SIZE 		= 2048
+	COMM_PUBLIC_EXPONENT 	= 65537
+	COMM_KEY_LENGTH    		= 256
+	COMM_NOF_PRIMES    		= 2
 )
 
 func fromBase10(base10 string, err *error) (*big.Int, error) {
@@ -48,24 +48,20 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 	scanner := bufio.NewScanner(filehandle)
 
 	modulus, err := fromBase10(nextLine(scanner), &err)
-	pubExponent, err := strconv.Atoi(nextLine(scanner))
 	privExponent, err := fromBase10(nextLine(scanner), &err)
 	primes := make([]*big.Int, COMM_NOF_PRIMES)
-	primes[0], err = fromBase10(nextLine(scanner), &err)
-	primes[1], err = fromBase10(nextLine(scanner), &err)
+	for i := 0; i < COMM_NOF_PRIMES; i++ {
+		primes[i], err = fromBase10(nextLine(scanner), &err)
+	}
 
 	if scanErr := scanner.Err(); scanErr != nil || err != nil {
 		return privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
-	fmt.Println(modulus)
-	fmt.Println(pubExponent)
-	fmt.Println(privExponent)
-
 	privKey = rsa.PrivateKey{
 		PublicKey: rsa.PublicKey{
 			N: modulus,
-			E: pubExponent,
+			E: COMM_PUBLIC_EXPONENT,
 		},
 		D:      privExponent,
 		Primes: primes,
@@ -82,9 +78,8 @@ func nextLine(scanner *bufio.Scanner) string {
 
 // Creates an RSA key file with the following lines
 // 1 	Public Modulus N
-// 2 	Public Exponent E
-// 3 	Private Exponent D
-// 4+	Private Primes
+// 2 	Private Exponent D
+// 3+	Private Primes (depending on COMM_NOF_PRIMES)
 func createRSAKeyFile(filename string) (err error) {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -92,13 +87,14 @@ func createRSAKeyFile(filename string) (err error) {
 	}
 
 	key, err := rsa.GenerateMultiPrimeKey(rand.Reader, COMM_NOF_PRIMES, COMM_KEY_BITS_SIZE)
+	key.E = COMM_PUBLIC_EXPONENT // make sure that the right public exponent is used in future version of Golang
+	key.Precompute()
+
 	if err != nil {
 		return err
 	}
 
-	commString := key.N.String() + "\n" +
-		strconv.Itoa(key.E) + "\n" +
-		key.D.String()
+	commString := key.N.String() + "\n" + key.D.String()
 
 	for _, prime := range key.Primes {
 		commString += "\n" + prime.String()
@@ -108,12 +104,27 @@ func createRSAKeyFile(filename string) (err error) {
 	return err
 }
 
-func SignMessageWithRsaKey(privKey *rsa.PrivateKey, msg string) (sig []byte, err error) {
-	hashed := sha256.Sum256([]byte(msg))
-	return rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
+func CreateRsaPubKey(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
+	modulus2 := make([]byte, 0)
+	copy(modulus2[:], modulus[:])
+	n := new(big.Int).SetBytes(modulus2)
+	return &rsa.PublicKey{
+		N: n,
+		E: COMM_PUBLIC_EXPONENT,
+	}
 }
 
-func VerifyMessageWithRsaKey(pubKey *rsa.PublicKey, msg string, sig []byte) (err error) {
+func SignMessageWithRsaKey(privKey *rsa.PrivateKey, msg string) (fixedSig [COMM_KEY_LENGTH]byte, err error) {
 	hashed := sha256.Sum256([]byte(msg))
-	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], sig)
+	sig, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
+	if err != nil {
+		return fixedSig, err
+	}
+	copy(fixedSig[:], sig[:])
+	return fixedSig, nil
+}
+
+func VerifyMessageWithRsaKey(pubKey *rsa.PublicKey, msg string, fixedSig [COMM_KEY_LENGTH]byte) (err error) {
+	hashed := sha256.Sum256([]byte(msg))
+	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], fixedSig[:])
 }

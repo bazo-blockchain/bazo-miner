@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 
 	"github.com/willf/bloom"
 	"golang.org/x/crypto/sha3"
@@ -36,7 +37,7 @@ type Block struct {
 	NrFundsTx             uint16
 	NrStakeTx             uint16
 	SlashedAddress        [32]byte
-	CommitmentProof       [256]byte
+	CommitmentProof       [storage.COMM_KEY_LENGTH]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
 	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
@@ -57,7 +58,7 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		timestamp             int64
 		merkleRoot            [32]byte
 		beneficiary           [32]byte
-		commitmentProof       [256]byte
+		commitmentProof       [storage.COMM_KEY_LENGTH]byte
 		slashedAddress        [32]byte
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
@@ -164,8 +165,8 @@ func (b *Block) Encode() (encodedBlock []byte) {
 
 	copy(encodedBlock[index:index+HEIGHT_LEN], height[:])
 	index += HEIGHT_LEN
-	copy(encodedBlock[index:index+COMM_KEY_LEN], b.CommitmentProof[:])
-	index += COMM_KEY_LEN
+	copy(encodedBlock[index:index+storage.COMM_KEY_LENGTH], b.CommitmentProof[:])
+	index += storage.COMM_KEY_LENGTH
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash1[:])
 	index += HASH_LEN
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash2[:])
@@ -278,8 +279,8 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 
 	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+HEIGHT_LEN])
 	index += HEIGHT_LEN
-	copy(b.CommitmentProof[:], encodedBlock[index:index+COMM_KEY_LEN])
-	index += COMM_KEY_LEN
+	copy(b.CommitmentProof[:], encodedBlock[index:index+storage.COMM_KEY_LENGTH])
+	index += storage.COMM_KEY_LENGTH
 	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
 	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+HASH_LEN])
