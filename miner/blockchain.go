@@ -3,8 +3,6 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"errors"
-	"fmt"
 	"log"
 	"sync"
 
@@ -22,17 +20,15 @@ var (
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
 	commPrivKey			*rsa.PrivateKey
-	seedFile            string
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.PrivateKey, seedFileName string) {
+func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.PrivateKey) {
 	var err error
 
 	validatorAccAddress = storage.GetAddressFromPubKey(validatorPubKey)
 	multisigPubKey = multisig
 	commPrivKey = commitmentPrivKey
-	seedFile = seedFileName
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -41,7 +37,6 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.Pri
 	activeParameters = &parameterSlice[0]
 
 	//Initialize root key.
-	//The hashedSeed is necessary since it must be included in the initial block.
 	initRootKey()
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
@@ -98,28 +93,17 @@ func mining(initialBlock *protocol.Block) {
 }
 
 //At least one root key needs to be set which is allowed to create new accounts.
-func initRootKey() ([32]byte, error) {
+func initRootKey() error {
 	address, addressHash := storage.GetInitRootPubKey()
 
-	var (
-		seed       [32]byte
-		commPubKey [256]byte
-	)
-	copy(seed[:], storage.INIT_ROOT_SEED[:])
+	var commPubKey [256]byte
+
 	copy(commPubKey[:], storage.INIT_COMM_PUB_KEY[:])
 
-	//Create the hash of the seed which will be included in the transaction.
-	hashedSeed := protocol.SerializeHashContent(seed)
-
-	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
-	if err != nil {
-		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
-	}
-
 	//Balance must be greater than the staking minimum.
-	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, hashedSeed, commPubKey, nil, nil)
+	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 
-	return hashedSeed, nil
+	return nil
 }

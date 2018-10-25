@@ -21,13 +21,10 @@
 
 
 # Test files
-**/test_seed.json
 **/test_root
 **/test.db
-**/testseed
-storage/seeds_test.json
 
-# Put seed files, miner databases and other stuff that should not be visible
+# Put commitment key, miner databases and other stuff that should not be visible
 # to others into the folder tmp.
 tmp/
 bazo-miner

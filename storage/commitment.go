@@ -13,23 +13,15 @@ import (
 )
 
 const (
-	COMM_KEY_BITS_SIZE 		= 2048
+	// Note that this is the default public exponent set by Golang in rsa.go
+	// See https://github.com/golang/go/blob/6269dcdc24d74379d8a609ce886149811020b2cc/src/crypto/rsa/rsa.go#L226
 	COMM_PUBLIC_EXPONENT 	= 65537
+	// When changing COMM_KEY_BITS_SIZE, remember to change COMM_KEY_LENGTH
+	COMM_KEY_BITS_SIZE 		= 2048
+	// When changing COMM_KEY_LENGTH, remember to change ACC_SIZE, STAKETX_SIZE, ...
 	COMM_KEY_LENGTH    		= 256
 	COMM_NOF_PRIMES    		= 2
 )
-
-func fromBase10(base10 string, err *error) (*big.Int, error) {
-	if *err != nil {
-		return nil, *err
-	}
-
-	i, ok := new(big.Int).SetString(base10, 10)
-	if !ok {
-		return nil, errors.New("Could not convert to Base10 integer")
-	}
-	return i, nil
-}
 
 func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -71,6 +63,43 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 	return privKey, nil
 }
 
+func CreateRSAPubKeyFromModulus(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
+	modulus2 := make([]byte, 0)
+	copy(modulus2[:], modulus[:])
+	n := new(big.Int).SetBytes(modulus2)
+	return &rsa.PublicKey{
+		N: n,
+		E: COMM_PUBLIC_EXPONENT,
+	}
+}
+
+func SignMessageWithRSAKey(privKey *rsa.PrivateKey, msg string) (fixedSig [COMM_KEY_LENGTH]byte, err error) {
+	hashed := sha256.Sum256([]byte(msg))
+	sig, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
+	if err != nil {
+		return fixedSig, err
+	}
+	copy(fixedSig[:], sig[:])
+	return fixedSig, nil
+}
+
+func VerifyMessageWithRSAKey(pubKey *rsa.PublicKey, msg string, fixedSig [COMM_KEY_LENGTH]byte) (err error) {
+	hashed := sha256.Sum256([]byte(msg))
+	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], fixedSig[:])
+}
+
+func fromBase10(base10 string, err *error) (*big.Int, error) {
+	if *err != nil {
+		return nil, *err
+	}
+
+	i, ok := new(big.Int).SetString(base10, 10)
+	if !ok {
+		return nil, errors.New("Could not convert to Base10 integer")
+	}
+	return i, nil
+}
+
 func nextLine(scanner *bufio.Scanner) string {
 	scanner.Scan()
 	return scanner.Text()
@@ -87,44 +116,18 @@ func createRSAKeyFile(filename string) (err error) {
 	}
 
 	key, err := rsa.GenerateMultiPrimeKey(rand.Reader, COMM_NOF_PRIMES, COMM_KEY_BITS_SIZE)
-	key.E = COMM_PUBLIC_EXPONENT // make sure that the right public exponent is used in future version of Golang
-	key.Precompute()
-
 	if err != nil {
 		return err
 	}
 
-	commString := key.N.String() + "\n" + key.D.String()
+	_, err = file.WriteString(stringifyRSAKey(key))
+	return
+}
 
+func stringifyRSAKey(key *rsa.PrivateKey) (keyString string) {
+	keyString = key.N.String() + "\n" + key.D.String()
 	for _, prime := range key.Primes {
-		commString += "\n" + prime.String()
+		keyString += "\n" + prime.String()
 	}
-
-	_, err = file.WriteString(commString)
-	return err
-}
-
-func CreateRsaPubKey(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
-	modulus2 := make([]byte, 0)
-	copy(modulus2[:], modulus[:])
-	n := new(big.Int).SetBytes(modulus2)
-	return &rsa.PublicKey{
-		N: n,
-		E: COMM_PUBLIC_EXPONENT,
-	}
-}
-
-func SignMessageWithRsaKey(privKey *rsa.PrivateKey, msg string) (fixedSig [COMM_KEY_LENGTH]byte, err error) {
-	hashed := sha256.Sum256([]byte(msg))
-	sig, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
-	if err != nil {
-		return fixedSig, err
-	}
-	copy(fixedSig[:], sig[:])
-	return fixedSig, nil
-}
-
-func VerifyMessageWithRsaKey(pubKey *rsa.PublicKey, msg string, fixedSig [COMM_KEY_LENGTH]byte) (err error) {
-	hashed := sha256.Sum256([]byte(msg))
-	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], fixedSig[:])
+	return
 }

@@ -3,35 +3,34 @@ package protocol
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/binary"
 	"fmt"
-	"crypto/rsa"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 const (
-	STAKETX_SIZE = 394
+	STAKETX_SIZE = 362
 )
 
 //when we broadcast transactions we need a way to distinguish with a type
 
 type StakeTx struct {
-	Header     byte      // 1 Byte
-	Fee        uint64    // 8 Byte
-	IsStaking  bool      // 1 Byte
-	HashedSeed [32]byte  // 32 Byte
-	Account    [32]byte  // 32 Byte
-	Sig        [64]byte  // 64 Byte
-	CommKey    [256]byte // 256 Byte, RSA Public Key
+	Header        byte      					// 1 Byte
+	Fee           uint64    					// 8 Byte
+	IsStaking     bool      					// 1 Byte
+	Account       [32]byte  					// 32 Byte
+	Sig           [64]byte  					// 64 Byte
+	CommitmentKey [storage.COMM_KEY_LENGTH]byte // 256 Byte, the modulus N of the RSA public key
 }
 
-func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account [32]byte, signKey *ecdsa.PrivateKey, commKey *rsa.PublicKey) (tx *StakeTx, err error) {
+func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, signKey *ecdsa.PrivateKey, commitmentKey *rsa.PrivateKey) (tx *StakeTx, err error) {
 
 	tx = new(StakeTx)
 
 	tx.Header = header
 	tx.Fee = fee
 	tx.IsStaking = isStaking
-	tx.HashedSeed = hashedSeed
 	tx.Account = account
 
 	txHash := tx.Hash()
@@ -43,7 +42,8 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, hashedSeed, account 
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
-	copy(tx.CommKey[256-len(commKey.N.Bytes()):], commKey.N.Bytes())
+
+	copy(tx.CommitmentKey[:], commitmentKey.N.Bytes())
 
 	return tx, nil
 }
@@ -58,16 +58,14 @@ func (tx *StakeTx) Hash() (hash [32]byte) {
 		Header     byte
 		Fee        uint64
 		IsStaking  bool
-		hashedSeed [32]byte
 		Account    [32]byte
-		CommKey    [256]byte
+		CommKey    [storage.COMM_KEY_LENGTH]byte
 	}{
 		tx.Header,
 		tx.Fee,
 		tx.IsStaking,
-		tx.HashedSeed,
 		tx.Account,
-		tx.CommKey,
+		tx.CommitmentKey,
 	}
 
 	return SerializeHashContent(txHash)
@@ -96,10 +94,9 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 	encodedTx[0] = tx.Header
 	copy(encodedTx[1:9], fee[:])
 	encodedTx[9] = isStaking
-	copy(encodedTx[10:42], tx.HashedSeed[:])
-	copy(encodedTx[42:74], tx.Account[:])
-	copy(encodedTx[74:138], tx.Sig[:])
-	copy(encodedTx[138:394], tx.CommKey[:])
+	copy(encodedTx[10:42], tx.Account[:])
+	copy(encodedTx[42:106], tx.Sig[:])
+	copy(encodedTx[106:106+storage.COMM_KEY_LENGTH], tx.CommitmentKey[:])
 
 	return encodedTx
 }
@@ -116,10 +113,9 @@ func (*StakeTx) Decode(encodedTx []byte) (tx *StakeTx) {
 	tx.Header = encodedTx[0]
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[1:9])
 	isStakingAsByte = encodedTx[9]
-	copy(tx.HashedSeed[:], encodedTx[10:42])
-	copy(tx.Account[:], encodedTx[42:74])
-	copy(tx.Sig[:], encodedTx[74:138])
-	copy(tx.CommKey[:], encodedTx[138:394])
+	copy(tx.Account[:], encodedTx[10:42])
+	copy(tx.Sig[:], encodedTx[42:106])
+	copy(tx.CommitmentKey[:], encodedTx[106:106+storage.COMM_KEY_LENGTH])
 
 	if isStakingAsByte == 0 {
 		tx.IsStaking = false
@@ -138,16 +134,14 @@ func (tx StakeTx) String() string {
 		"\nHeader: %x\n"+
 			"Fee: %v\n"+
 			"IsStaking: %v\n"+
-			"hashedSeed: %x\n"+
 			"Account: %x\n"+
 			"Sig: %x\n"+
-			"Comm: %x\n",
+			"CommitmentKey: %x\n",
 		tx.Header,
 		tx.Fee,
 		tx.IsStaking,
-		tx.HashedSeed[0:8],
 		tx.Account[0:8],
 		tx.Sig[0:8],
-		tx.CommKey[0:8],
+		tx.CommitmentKey[0:8],
 	)
 }

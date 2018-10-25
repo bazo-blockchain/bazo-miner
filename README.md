@@ -57,9 +57,9 @@ $GOPATH/src/github.com/bazo-blockchain/bazo-miner
 go build
 ```
 
-5. Run the application.
+5. Run the application (bootstrap node).
 ```
-./bazo-miner "database_file.db" ":8000" "validator.txt" "seedfile.txt" "multisig.txt"
+./bazo-miner "database_file.db" "localhost:8000" "localhost:8000" "validator.txt" "multisig.txt" "commitment.txt"
 ```
 
-The ipport number must be preﬁxed with ":". If the miner is intended to run locally, the localhost ip address has to be passed with the ipport. Otherwise the miner tries to connect to the network. Note that "database_file.db" and "seedfile.txt" are created if they do not exist.
+The ipport number must be preﬁxed with ":". If the miner is intended to run locally, the localhost ip address has to be passed with the ipport. Otherwise the miner tries to connect to the network. Note that "database_file.db" and "commitment.txt" are created if they do not exist.

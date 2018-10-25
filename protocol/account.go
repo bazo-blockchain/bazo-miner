@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	ACC_SIZE = 369
+	ACC_SIZE = 337
 )
 
 type Account struct {
@@ -17,7 +17,6 @@ type Account struct {
 	Balance            uint64      						// 8 Byte
 	TxCnt              uint32      						// 4 Byte
 	IsStaking          bool        						// 1 Byte
-	HashedSeed         [32]byte    						// 32 Byte
 	CommitmentKey      [storage.COMM_KEY_LENGTH]byte   	// represents the modulus N of the RSA public key
 	StakingBlockHeight uint32      						// 4 Byte
 	Contract           []byte      						// Arbitrary length
@@ -28,7 +27,6 @@ func NewAccount(address [64]byte,
 	issuer [32]byte,
 	balance uint64,
 	isStaking bool,
-	hashedSeed [32]byte,
 	commitmentKey [storage.COMM_KEY_LENGTH]byte,
 	contract []byte,
 	contractVariables []ByteArray) Account {
@@ -39,7 +37,6 @@ func NewAccount(address [64]byte,
 		balance,
 		0,
 		isStaking,
-		hashedSeed,
 		commitmentKey,
 		0,
 		contract,
@@ -68,7 +65,6 @@ func (acc *Account) Encode() (encodedAcc []byte) {
 		Balance:            acc.Balance,
 		TxCnt:              acc.TxCnt,
 		IsStaking:          acc.IsStaking,
-		HashedSeed:         acc.HashedSeed,
 		CommitmentKey:   	acc.CommitmentKey,
 		StakingBlockHeight: acc.StakingBlockHeight,
 		Contract:           acc.Contract,
@@ -97,7 +93,6 @@ func (acc Account) String() string {
 			"TxCnt: %v, " +
 			"Balance: %v, " +
 			"IsStaking: %v, " +
-			"HashedSeed: %x, " +
 			"CommitmentKey: %x, " +
 			"StakingBlockHeight: %v, " +
 			"Contract: %v, " +
@@ -108,7 +103,6 @@ func (acc Account) String() string {
 		acc.TxCnt,
 		acc.Balance,
 		acc.IsStaking,
-		acc.HashedSeed[0:8],
 		acc.CommitmentKey[0:8],
 		acc.StakingBlockHeight,
 		acc.Contract,

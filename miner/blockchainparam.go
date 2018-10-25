@@ -164,7 +164,7 @@ func (param Parameters) String() string {
 			"Acceptanced time difference: %v\n"+
 			"Slashing window size: %v\n"+
 			"Slash reward: %v\n"+
-			"Num of previous seeds included in PoS: %v\n",
+			"Num of previous proofs included in PoS: %v\n",
 		param.BlockHash[0:8],
 		param.Block_size,
 		param.Diff_interval,
@@ -176,6 +176,6 @@ func (param Parameters) String() string {
 		param.Accepted_time_diff,
 		param.Slashing_window_size,
 		param.Slash_reward,
-		param.num_included_prev_seeds,
+		param.num_included_prev_proofs,
 	)
 }

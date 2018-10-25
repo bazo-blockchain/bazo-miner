@@ -84,7 +84,7 @@ func getState() (state string) {
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
-	var seed [32]byte
+	var commitment [32]byte
 	copy(seed[:], storage.GENESIS_SEED)
 
 	allClosedBlocks := storage.ReadAllClosedBlocks()
@@ -146,7 +146,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header != 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, [256]byte{}, tx.Contract, tx.ContractVariables)
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [storage.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
 			newAccHash := newAcc.Hash()
 
 			acc, _ := storage.GetAccount(newAccHash)
@@ -286,7 +286,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 
 		//We're manipulating pointer, no need to write back
 		accSender.IsStaking = tx.IsStaking
-		accSender.HashedSeed = tx.HashedSeed
+		accSender.CommitmentKey = tx.CommitmentKey
 		accSender.StakingBlockHeight = height
 	}
 
