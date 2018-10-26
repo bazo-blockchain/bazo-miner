@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 const (
@@ -17,7 +16,7 @@ type Account struct {
 	Balance            uint64      						// 8 Byte
 	TxCnt              uint32      						// 4 Byte
 	IsStaking          bool        						// 1 Byte
-	CommitmentKey      [storage.COMM_KEY_LENGTH]byte   	// represents the modulus N of the RSA public key
+	CommitmentKey      [COMM_KEY_LENGTH]byte   	// represents the modulus N of the RSA public key
 	StakingBlockHeight uint32      						// 4 Byte
 	Contract           []byte      						// Arbitrary length
 	ContractVariables  []ByteArray 						// Arbitrary length
@@ -27,7 +26,7 @@ func NewAccount(address [64]byte,
 	issuer [32]byte,
 	balance uint64,
 	isStaking bool,
-	commitmentKey [storage.COMM_KEY_LENGTH]byte,
+	commitmentKey [COMM_KEY_LENGTH]byte,
 	contract []byte,
 	contractVariables []ByteArray) Account {
 

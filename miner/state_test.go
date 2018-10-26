@@ -279,7 +279,7 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	accAHash := protocol.SerializeHashContent(accA.Address)
 
-	b := newBlock([32]byte{}, [storage.COMM_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false

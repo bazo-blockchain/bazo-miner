@@ -4,6 +4,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"os"
 )
 
@@ -37,7 +38,7 @@ func main() {
 		return
 	}
 
-	commPrivKey, err := storage.ExtractRSAKeyFromFile(commFileName)
+	commPrivKey, err := protocol.ExtractRSAKeyFromFile(commFileName)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return

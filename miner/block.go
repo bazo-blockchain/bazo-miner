@@ -24,7 +24,7 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, commitmentProof [storage.COMM_KEY_LENGTH]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_KEY_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
@@ -63,7 +63,7 @@ func finalizeBlock(block *protocol.Block) error {
 
 	// Cryptographic Sortition for PoS in Bazo
 	// The commitment proof stores a signed message of the Height that this block was created at.
-	commitmentProof, err := storage.SignMessageWithRSAKey(commPrivKey, string(block.Height))
+	commitmentProof, err := protocol.SignMessageWithRSAKey(commPrivKey, string(block.Height))
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
 
-	copy(block.CommitmentProof[0:storage.COMM_KEY_LENGTH], commitmentProof[:])
+	copy(block.CommitmentProof[0:protocol.COMM_KEY_LENGTH], commitmentProof[:])
 
 	return nil
 }
@@ -641,8 +641,8 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
 	//Second, check if the commitment proof of the proposed block can be verified with the public key
 	//Invalid if the commitment proof can not be verified with the public key of the proposer
-	commitmentPubKey := storage.CreateRSAPubKeyFromModulus(acc.CommitmentKey)
-	err = storage.VerifyMessageWithRSAKey(commitmentPubKey, string(block.Height), block.CommitmentProof)
+	commitmentPubKey := protocol.CreateRSAPubKeyFromModulus(acc.CommitmentKey)
+	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, string(block.Height), block.CommitmentProof)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
 	}

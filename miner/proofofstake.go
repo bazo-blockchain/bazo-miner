@@ -13,10 +13,10 @@ import (
 
 //Tests whether the first diff bits are zero
 func validateProofOfStake(diff uint8,
-	prevProofs [][storage.COMM_KEY_LENGTH]byte,
+	prevProofs [][protocol.COMM_KEY_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	commitmentProof [storage.COMM_KEY_LENGTH]byte,
+	commitmentProof [protocol.COMM_KEY_LENGTH]byte,
 	timestamp int64) bool {
 
 	var hashArgs []byte
@@ -28,15 +28,15 @@ func validateProofOfStake(diff uint8,
 
 	// allocate memory
 	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (commitmentProof)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevProofs)*storage.COMM_KEY_LENGTH+storage.COMM_KEY_LENGTH+4+8)
+	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_KEY_LENGTH+protocol.COMM_KEY_LENGTH+4+8)
 
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], prevProof[:])
-		index += storage.COMM_KEY_LENGTH
+		copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], prevProof[:])
+		index += protocol.COMM_KEY_LENGTH
 	}
 
-	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commitmentProof[:])
+	copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], commitmentProof[:])
 	copy(hashArgs[index+32:index+36], heightBuf[:])
 	copy(hashArgs[index+36:index+44], timestampBuf[:])
 
@@ -68,10 +68,10 @@ func validateProofOfStake(diff uint8,
 //PoS calculation because another block has been validated meanwhile
 func proofOfStake(diff uint8,
 	prevHash [32]byte,
-	prevProofs [][storage.COMM_KEY_LENGTH]byte,
+	prevProofs [][protocol.COMM_KEY_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	commitmentProof [storage.COMM_KEY_LENGTH]byte) (int64, error) {
+	commitmentProof [protocol.COMM_KEY_LENGTH]byte) (int64, error) {
 
 	var (
 		pos    [32]byte
@@ -88,7 +88,7 @@ func proofOfStake(diff uint8,
 
 	// allocate memory
 	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (localCommPubKey)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevProofs)*storage.COMM_KEY_LENGTH+storage.COMM_KEY_LENGTH+4+8)
+	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_KEY_LENGTH+protocol.COMM_KEY_LENGTH+4+8)
 
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 
@@ -96,11 +96,11 @@ func proofOfStake(diff uint8,
 	// ([PrevSeeds] ⋅ LocalSeed ⋅ CurrentBlockHeight ⋅ Seconds)
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], prevProof[:])
-		index += storage.COMM_KEY_LENGTH
+		copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], prevProof[:])
+		index += protocol.COMM_KEY_LENGTH
 	}
-	copy(hashArgs[index:index+storage.COMM_KEY_LENGTH], commitmentProof[:])    	// COMM_KEY_LENGTH bytes
-	copy(hashArgs[index+storage.COMM_KEY_LENGTH:index+36], heightBuf[:]) 		// 4 bytes
+	copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], commitmentProof[:])    	// COMM_KEY_LENGTH bytes
+	copy(hashArgs[index+protocol.COMM_KEY_LENGTH:index+36], heightBuf[:]) 		// 4 bytes
 
 	for range time.Tick(time.Second) {
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
@@ -153,7 +153,7 @@ func proofOfStake(diff uint8,
 	return timestamp, nil
 }
 
-func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][storage.COMM_KEY_LENGTH]byte) {
+func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][protocol.COMM_KEY_LENGTH]byte) {
 	b := storage.ReadClosedBlock(block.PrevHash)
 	cnt := 0
 	for n > 0 {

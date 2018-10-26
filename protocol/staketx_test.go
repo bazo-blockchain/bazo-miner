@@ -15,7 +15,7 @@ func TestStakeTxSerialization(t *testing.T) {
 		fee := rand.Uint64()%10 + 1
 		isStaking := rand.Intn(2) != 0
 
-		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accAHash, &PrivKeyA, &CommKeyA)
+		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accAHash, &PrivKeyA, &CommitmentKeyA)
 		data := tx.Encode()
 		var decodedTx *StakeTx
 		decodedTx = decodedTx.Decode(data)
@@ -24,7 +24,7 @@ func TestStakeTxSerialization(t *testing.T) {
 		//decodedTx.Fee = fee
 		//decodedTx.Account = accAHash
 		//decodedTx.IsStaking = false
-		//decodedTx.HashedSeed = hashedSeed
+		//decodedTx.CommitmentKey = commitmentKey
 
 		if !reflect.DeepEqual(tx.Hash(), decodedTx.Hash()) {
 			t.Errorf("StakeTx Serialization failed (%v) vs. (%v)\n", tx, decodedTx)
