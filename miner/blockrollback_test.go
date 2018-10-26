@@ -12,7 +12,7 @@ import (
 func TestValidateBlockRollback(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
 
 	//Make state snapshot
 	accsBefore := make(map[[64]byte]protocol.Account)
@@ -71,7 +71,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	var paramb2 []Parameters
 	var paramb3 []Parameters
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
@@ -85,7 +85,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	paramb = make([]Parameters, len(parameterSlice))
 	copy(paramb, parameterSlice)
 
-	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b2 := newBlock(b.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
@@ -99,7 +99,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	paramb2 = make([]Parameters, len(parameterSlice))
 	copy(paramb2, parameterSlice)
 
-	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
+	b3 := newBlock(b2.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
 	if err := validate(b3, false); err != nil {
@@ -113,7 +113,7 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	paramb3 = make([]Parameters, len(parameterSlice))
 	copy(paramb3, parameterSlice)
 
-	b4 := newBlock(b3.Hash, [32]byte{}, [32]byte{}, 4)
+	b4 := newBlock(b3.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
 	if err := validate(b4, false); err != nil {

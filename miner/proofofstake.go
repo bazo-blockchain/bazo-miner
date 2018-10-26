@@ -93,14 +93,16 @@ func proofOfStake(diff uint8,
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 
 	// all required parameters are concatenated in the following order:
-	// ([PrevSeeds] ⋅ LocalSeed ⋅ CurrentBlockHeight ⋅ Seconds)
+	// ([PrevProofs] ⋅ CommitmentProof ⋅ CurrentBlockHeight ⋅ Seconds)
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], prevProof[:])
+		copy(hashArgs[index:index + protocol.COMM_KEY_LENGTH], prevProof[:])
 		index += protocol.COMM_KEY_LENGTH
 	}
-	copy(hashArgs[index:index+protocol.COMM_KEY_LENGTH], commitmentProof[:])    	// COMM_KEY_LENGTH bytes
-	copy(hashArgs[index+protocol.COMM_KEY_LENGTH:index+36], heightBuf[:]) 		// 4 bytes
+	copy(hashArgs[index:index + protocol.COMM_KEY_LENGTH], commitmentProof[:])    // COMM_KEY_LENGTH bytes
+	index += protocol.COMM_KEY_LENGTH
+	copy(hashArgs[index:index + 4], heightBuf[:]) 		// 4 bytes
+	index += 4
 
 	for range time.Tick(time.Second) {
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
@@ -114,7 +116,8 @@ func proofOfStake(diff uint8,
 		//add the number of seconds that have passed since the Unix epoch (00:00:00 UTC, 1 January 1970)
 		timestamp = time.Now().Unix()
 		binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
-		copy(hashArgs[index+36:index+44], timestampBuf[:]) //8 bytes
+		copy(hashArgs[index:index + 8], timestampBuf[:]) //8 bytes
+		index += 8
 
 		//calculate the hash
 		pos = sha3.Sum256(hashArgs[:])

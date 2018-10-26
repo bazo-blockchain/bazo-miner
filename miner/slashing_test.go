@@ -13,7 +13,7 @@ func TestSlashingCondition(t *testing.T) {
 	myAcc, _ := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
 	initBalance := myAcc.Balance
 
-	forkBlock := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	forkBlock := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
 	if err := finalizeBlock(forkBlock); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", forkBlock, err)
 	}
@@ -22,7 +22,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	// genesis <- forkBlock <- b
-	b := newBlock(forkBlock.Hash, [32]byte{}, [32]byte{}, 2)
+	b := newBlock(forkBlock.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 2)
 	if err := finalizeBlock(b); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", b, err)
 	}
@@ -34,7 +34,7 @@ func TestSlashingCondition(t *testing.T) {
 	lastBlock = forkBlock
 
 	// genesis <- forkBlock <- b2
-	b2 := newBlock(forkBlock.Hash, [32]byte{}, [32]byte{}, 2)
+	b2 := newBlock(forkBlock.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 2)
 	if err := finalizeBlock(b2); err != nil {
 		t.Errorf("Block finalization for b2 (%v) failed: %v\n", b2, err)
 	}
@@ -52,7 +52,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	//third block contains the slashing proof
-	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
+	b3 := newBlock(b2.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 3)
 	if err := finalizeBlock(b3); err != nil {
 		t.Errorf("Block finalization for b3 (%v) failed: %v\n", b3, err)
 	}

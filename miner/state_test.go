@@ -23,7 +23,7 @@ func TestFundsTxStateChange(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -284,10 +284,8 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	accA.IsStaking = false
 	stakingA := accA.IsStaking
-	seed := protocol.CreateRandomSeed()
-	hashedSeed := protocol.SerializeHashContent(seed)
 
-	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, hashedSeed, accAHash, &PrivKeyAccA)
+	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, accAHash, &PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = true
 		stake = append(stake, stx)
@@ -298,7 +296,7 @@ func TestStakeTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v", accA.IsStaking, stakingA)
 	}
 
-	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, [32]byte{}, accAHash, &PrivKeyAccA)
+	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, accAHash, &PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = false
 		stake2 = append(stake2, stx2)

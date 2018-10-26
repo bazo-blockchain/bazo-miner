@@ -23,7 +23,7 @@ type StakeTx struct {
 	CommitmentKey [COMM_KEY_LENGTH]byte // 256 Byte, the modulus N of the RSA public key
 }
 
-func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, signKey *ecdsa.PrivateKey, commitmentKey *rsa.PrivateKey) (tx *StakeTx, err error) {
+func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, signKey *ecdsa.PrivateKey, commPubKey *rsa.PublicKey) (tx *StakeTx, err error) {
 
 	tx = new(StakeTx)
 
@@ -41,8 +41,7 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, si
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
-
-	copy(tx.CommitmentKey[:], commitmentKey.N.Bytes())
+	copy(tx.CommitmentKey[:], commPubKey.N.Bytes()[:])
 
 	return tx, nil
 }

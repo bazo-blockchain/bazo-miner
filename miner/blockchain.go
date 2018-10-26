@@ -98,7 +98,7 @@ func initRootKey() error {
 
 	var commPubKey [256]byte
 
-	copy(commPubKey[:], storage.INIT_COMM_PUB_KEY[:])
+	copy(commPubKey[:], storage.INIT_ROOT_COMM_PUB_KEY[:])
 
 	//Balance must be greater than the staking minimum.
 	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)

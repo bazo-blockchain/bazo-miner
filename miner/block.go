@@ -1,6 +1,8 @@
 package miner
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -58,12 +60,11 @@ func finalizeBlock(block *protocol.Block) error {
 	}
 
 	validatorAccHash := validatorAcc.Hash()
-
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
 	// Cryptographic Sortition for PoS in Bazo
 	// The commitment proof stores a signed message of the Height that this block was created at.
-	commitmentProof, err := protocol.SignMessageWithRSAKey(commPrivKey, string(block.Height))
+	commitmentProof, err := protocol.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(block.Height))
 	if err != nil {
 		return err
 	}
@@ -642,7 +643,12 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	//Second, check if the commitment proof of the proposed block can be verified with the public key
 	//Invalid if the commitment proof can not be verified with the public key of the proposer
 	commitmentPubKey := protocol.CreateRSAPubKeyFromModulus(acc.CommitmentKey)
-	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, string(block.Height), block.CommitmentProof)
+	t1 := base64.RawURLEncoding.EncodeToString(commitmentPubKey.N.Bytes())
+	t2 := base64.RawURLEncoding.EncodeToString(block.CommitmentProof[:])
+	hashed := sha256.Sum256([]byte(fmt.Sprint(block.Height)))
+	t3 := base64.RawURLEncoding.EncodeToString(hashed[:])
+	fmt.Println(t1, t2, t3)
+	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
 	}
@@ -663,7 +669,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 
 	//Check for minimum waiting time.
 	if block.Height-acc.StakingBlockHeight < uint32(activeParameters.Waiting_minimum) {
-		return nil, nil, nil, nil, errors.New("The miner must wait a minimum amount of blocks before start validating. Block Height:" + string(block.Height) + " - Height when started validating " + string(acc.StakingBlockHeight) + " MinWaitingTime: " + string(activeParameters.Waiting_minimum))
+		return nil, nil, nil, nil, errors.New("The miner must wait a minimum amount of blocks before start validating. Block Height:" + fmt.Sprint(block.Height) + " - Height when started validating " + string(acc.StakingBlockHeight) + " MinWaitingTime: " + string(activeParameters.Waiting_minimum))
 	}
 
 	//Check if block contains a proof for two conflicting block hashes, else no proof provided.

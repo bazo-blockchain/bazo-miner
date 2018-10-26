@@ -86,7 +86,6 @@ func getState() (state string) {
 
 func initState() (initialBlock *protocol.Block, err error) {
 	decoded, err := base64.RawURLEncoding.DecodeString(storage.GENESIS_COMM_PROOF)
-
 	var commitmentProof [protocol.COMM_KEY_LENGTH]byte
 	copy(commitmentProof[:], decoded)
 
