@@ -7,6 +7,7 @@ import (
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"encoding/base64"
 )
 
 //Separate function to reuse mechanism in client implementation
@@ -84,8 +85,10 @@ func getState() (state string) {
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
-	var commitment [32]byte
-	copy(seed[:], storage.GENESIS_SEED)
+	decoded, err := base64.RawURLEncoding.DecodeString(storage.GENESIS_COMM_PROOF)
+
+	var commitmentProof [storage.COMM_KEY_LENGTH]byte
+	copy(commitmentProof[:], decoded)
 
 	allClosedBlocks := storage.ReadAllClosedBlocks()
 
@@ -96,7 +99,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
+		initialBlock = newBlock([32]byte{}, commitmentProof, 0) // TODO: @rmnblm test this!
 
 		//Append genesis block to the map and save in storage
 		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
