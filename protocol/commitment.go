@@ -1,4 +1,4 @@
-package storage
+package protocol
 
 import (
 	"bufio"
@@ -39,15 +39,36 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 
 	scanner := bufio.NewScanner(filehandle)
 
-	modulus, err := fromBase10(nextLine(scanner), &err)
-	privExponent, err := fromBase10(nextLine(scanner), &err)
-	primes := make([]*big.Int, COMM_NOF_PRIMES)
+	strModulus := nextLine(scanner)
+	strPrivExponent := nextLine(scanner)
+	strPrimes := make([]string, COMM_NOF_PRIMES)
 	for i := 0; i < COMM_NOF_PRIMES; i++ {
-		primes[i], err = fromBase10(nextLine(scanner), &err)
+		strPrimes[i] = nextLine(scanner)
 	}
 
 	if scanErr := scanner.Err(); scanErr != nil || err != nil {
 		return privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
+	}
+
+	return CreateRSAPrivKeyFromBase10(strModulus, strPrivExponent, strPrimes)
+}
+
+func CreateRSAPubKeyFromModulus(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
+	modulus2 := make([]byte, 0)
+	copy(modulus2[:], modulus[:])
+	n := new(big.Int).SetBytes(modulus2)
+	return &rsa.PublicKey{
+		N: n,
+		E: COMM_PUBLIC_EXPONENT,
+	}
+}
+
+func CreateRSAPrivKeyFromBase10(strModulus string, strPrivExponent string, strPrimes []string) (privKey rsa.PrivateKey, err error) {
+	modulus, err := fromBase10(strModulus, &err)
+	privExponent, err := fromBase10(strPrivExponent, &err)
+	primes := make([]*big.Int, COMM_NOF_PRIMES)
+	for i := 0; i < COMM_NOF_PRIMES; i++ {
+		primes[i], err = fromBase10(strPrimes[i], &err)
 	}
 
 	privKey = rsa.PrivateKey{
@@ -59,18 +80,7 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 		Primes: primes,
 	}
 	privKey.Precompute()
-
-	return privKey, nil
-}
-
-func CreateRSAPubKeyFromModulus(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
-	modulus2 := make([]byte, 0)
-	copy(modulus2[:], modulus[:])
-	n := new(big.Int).SetBytes(modulus2)
-	return &rsa.PublicKey{
-		N: n,
-		E: COMM_PUBLIC_EXPONENT,
-	}
+	return
 }
 
 func SignMessageWithRSAKey(privKey *rsa.PrivateKey, msg string) (fixedSig [COMM_KEY_LENGTH]byte, err error) {
