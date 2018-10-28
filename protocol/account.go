@@ -16,7 +16,7 @@ type Account struct {
 	Balance            uint64      						// 8 Byte
 	TxCnt              uint32      						// 4 Byte
 	IsStaking          bool        						// 1 Byte
-	CommitmentKey      [COMM_KEY_LENGTH]byte   	// represents the modulus N of the RSA public key
+	CommitmentKey      [COMM_KEY_LENGTH]byte   			// represents the modulus N of the RSA public key
 	StakingBlockHeight uint32      						// 4 Byte
 	Contract           []byte      						// Arbitrary length
 	ContractVariables  []ByteArray 						// Arbitrary length

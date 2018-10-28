@@ -54,9 +54,7 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 }
 
 func CreateRSAPubKeyFromModulus(modulus [COMM_KEY_LENGTH]byte) (*rsa.PublicKey) {
-	modulus2 := make([]byte, 0)
-	copy(modulus2[:], modulus[:])
-	n := new(big.Int).SetBytes(modulus2)
+	n := new(big.Int).SetBytes(modulus[:])
 	return &rsa.PublicKey{
 		N: n,
 		E: COMM_PUBLIC_EXPONENT,

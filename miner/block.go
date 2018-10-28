@@ -1,8 +1,6 @@
 package miner
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -643,11 +641,6 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	//Second, check if the commitment proof of the proposed block can be verified with the public key
 	//Invalid if the commitment proof can not be verified with the public key of the proposer
 	commitmentPubKey := protocol.CreateRSAPubKeyFromModulus(acc.CommitmentKey)
-	t1 := base64.RawURLEncoding.EncodeToString(commitmentPubKey.N.Bytes())
-	t2 := base64.RawURLEncoding.EncodeToString(block.CommitmentProof[:])
-	hashed := sha256.Sum256([]byte(fmt.Sprint(block.Height)))
-	t3 := base64.RawURLEncoding.EncodeToString(hashed[:])
-	fmt.Println(t1, t2, t3)
 	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
