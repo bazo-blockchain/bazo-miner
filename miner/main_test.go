@@ -256,5 +256,7 @@ func TestMain(m *testing.M) {
 	//Teardown
 	storage.TearDown()
 	os.Remove(TestDBFileName)
+	os.Remove(TestKeyFileName)
+	os.Remove(TestSeedFileName)
 	os.Exit(retCode)
 }
