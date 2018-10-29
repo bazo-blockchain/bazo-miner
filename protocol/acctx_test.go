@@ -65,6 +65,28 @@ func TestAccTxCreation(t *testing.T) {
 	}
 }
 
+func TestAccTxHash(t *testing.T) {
+	header := byte(0)
+	fee := uint64(1)
+	tx, _, _ := ConstrAccTx(header, fee, accA.Address, RootPrivKey, nil, nil)
+
+	hash1 := tx.Hash()
+
+	if !reflect.DeepEqual(hash1, tx.Hash()) {
+		t.Errorf("AccTx hashing failed!")
+	}
+
+	header = byte(1)
+	fee = uint64(2)
+	tx, _, _ = ConstrAccTx(header, fee, [64]byte{}, RootPrivKey, nil, nil)
+
+	hash2 := tx.Hash()
+
+	if !reflect.DeepEqual(hash2, tx.Hash()) {
+		t.Errorf("AccTx hashing failed!")
+	}
+}
+
 func TestAccTxSerialization(t *testing.T) {
 	header := byte(0)
 	fee := uint64(1)
