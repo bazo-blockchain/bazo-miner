@@ -42,7 +42,7 @@ func NewAccount(address [64]byte,
 	return newAcc
 }
 
-func (acc *Account) Hash() (hash [32]byte) {
+func (acc *Account) Hash() [32]byte {
 	if acc == nil {
 		return [32]byte{}
 	}
@@ -50,12 +50,12 @@ func (acc *Account) Hash() (hash [32]byte) {
 	return SerializeHashContent(acc.Address)
 }
 
-func (acc *Account) Encode() (encodedAcc []byte) {
+func (acc *Account) Encode() []byte {
 	if acc == nil {
 		return nil
 	}
 
-	encodeData := Account{
+	encoded := Account{
 		Address:            acc.Address,
 		Issuer:             acc.Issuer,
 		Balance:            acc.Balance,
@@ -68,13 +68,13 @@ func (acc *Account) Encode() (encodedAcc []byte) {
 	}
 
 	buffer := new(bytes.Buffer)
-	gob.NewEncoder(buffer).Encode(encodeData)
+	gob.NewEncoder(buffer).Encode(encoded)
 	return buffer.Bytes()
 }
 
-func (*Account) Decode(encodedAcc []byte) (acc *Account) {
+func (*Account) Decode(encoded []byte) (acc *Account) {
 	var decoded Account
-	buffer := bytes.NewBuffer(encodedAcc)
+	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
 	decoder.Decode(&decoded)
 	return &decoded
