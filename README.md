@@ -14,11 +14,13 @@ Before the bazo-miner can be started, two public-private key-pairs are required.
 go get github.com/bazo-blockchain/bazo-keypairgen
 ```
 
-2. Build the application.
+2. Navigate to the bazo-keypairgen directory and build the application.
 ```
-$GOPATH/src/github.com/bazo-blockchain/bazo-keypairgen
+cd ~/go/src/github.com/bazo-blockchain/bazo-keypairgen
 go build
 ```
+
+Note: Replace `~/go` with your `$GOPATH`.
 
 3. Run the application to generate the _validator_ public-private keypair. The validator is the keyﬁle's name containing the validator's public key.
 ```
@@ -38,11 +40,6 @@ go get github.com/bazo-blockchain/bazo-miner
 ```
 
 2. Copy both previously generated files `validator.txt` and `multisig.txt` into the root folder of the bazo-miner folder.
-```
-$GOPATH/src/github.com/bazo-blockchain/bazo-keypairgen
-cp validator.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/validator.txt
-cp multisig.txt $GOPATH/src/github.com/bazo-blockchain/bazo-miner/multisig.txt
-```
 
 3. Open the storage configuration file `storage.configs.go` in an editor of your choice.
 ```
@@ -53,7 +50,7 @@ Replace the value of `INITROOTPUBKEY1` with the first line of `validator.txt`. R
 
 4. Build the application.
 ```
-$GOPATH/src/github.com/bazo-blockchain/bazo-miner
+cd ~/go/src/github.com/bazo-blockchain/bazo-miner
 go build
 ```
 
