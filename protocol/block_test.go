@@ -114,15 +114,15 @@ func TestBlockHeaderSerialization(t *testing.T) {
 	}
 
 	if blockHeader.BloomFilter.Test(v1[:]) == false {
-		t.Error("Block encoding/decoding failed!")
+		t.Error("Bloomfilter test failed!")
 	}
 
 	if blockHeader.BloomFilter.Test(v2[:]) == false {
-		t.Error("Block encoding/decoding failed!")
+		t.Error("Bloomfilter test failed!")
 	}
 
 	if blockHeader.BloomFilter.Test(v3[:]) == false {
-		t.Error("Block encoding/decoding failed!")
+		t.Error("Bloomfilter test failed!")
 	}
 }
 
