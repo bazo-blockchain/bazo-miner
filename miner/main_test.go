@@ -173,7 +173,7 @@ func addRootAccounts() {
 	_, _ = file.WriteString(PubRoot2 + "\n")
 	_, _ = file.WriteString(PrivRoot + "\n")
 
-	CommPrivKeyRoot, _ := protocol.CreateRSAPrivKeyFromBase10(CommPubRoot, CommPrivRoot, []string{CommPrimRoot1, CommPrimRoot2})
+	CommPrivKeyRoot, _ = protocol.CreateRSAPrivKeyFromBase10(CommPubRoot, CommPrivRoot, []string{CommPrimRoot1, CommPrimRoot2})
 	copy(rootAcc.CommitmentKey[:], CommPrivKeyRoot.PublicKey.N.Bytes()[:])
 
 	rootAcc.Balance = activeParameters.Staking_minimum
