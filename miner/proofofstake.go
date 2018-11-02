@@ -19,26 +19,31 @@ func validateProofOfStake(diff uint8,
 	commitmentProof [protocol.COMM_PROOF_LENGTH]byte,
 	timestamp int64) bool {
 
-	var hashArgs []byte
-	var heightBuf [4]byte
-	var timestampBuf [8]byte
-
-	binary.BigEndian.PutUint32(heightBuf[:], height)
-	binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
+	var (
+		heightBuf    [4]byte
+		timestampBuf [8]byte
+		hashArgs []byte
+	)
 
 	// allocate memory
 	// n * COMM_PROOF_LENGTH bytes (prevProofs) + COMM_PROOF_LENGTH bytes (commitmentProof)+ 4 bytes (height) + 8 bytes (count)
 	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_PROOF_LENGTH+protocol.COMM_PROOF_LENGTH+4+8)
 
+	binary.BigEndian.PutUint32(heightBuf[:], height)
+	binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
+
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index+protocol.COMM_PROOF_LENGTH], prevProof[:])
+		copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], prevProof[:])
 		index += protocol.COMM_PROOF_LENGTH
 	}
 
-	copy(hashArgs[index:index+protocol.COMM_PROOF_LENGTH], commitmentProof[:])
-	copy(hashArgs[index+32:index+36], heightBuf[:])
-	copy(hashArgs[index+36:index+44], timestampBuf[:])
+	copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], commitmentProof[:]) // COMM_KEY_LENGTH bytes
+	index += protocol.COMM_PROOF_LENGTH
+	copy(hashArgs[index:index + 4], heightBuf[:]) 		// 4 bytes
+	index += 4
+
+	copy(hashArgs[index:index+8], timestampBuf[:])
 
 	//calculate the hash
 	pos := sha3.Sum256(hashArgs[:])
@@ -99,6 +104,7 @@ func proofOfStake(diff uint8,
 		copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], prevProof[:])
 		index += protocol.COMM_PROOF_LENGTH
 	}
+
 	copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], commitmentProof[:]) // COMM_KEY_LENGTH bytes
 	index += protocol.COMM_PROOF_LENGTH
 	copy(hashArgs[index:index + 4], heightBuf[:]) 		// 4 bytes
