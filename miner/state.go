@@ -93,7 +93,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 0)
+		initialBlock = newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 0)
 
 		commitmentProof, err := protocol.SignMessageWithRSAKey(rootCommPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
@@ -149,7 +149,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header != 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [protocol.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
 			newAccHash := newAcc.Hash()
 
 			acc, _ := storage.GetAccount(newAccHash)

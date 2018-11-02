@@ -51,7 +51,7 @@ func TestPrepareAndSortTxs(t *testing.T) {
 		}
 	}
 
-	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
 	prepareBlock(b)
 	finalizeBlock(b)
 

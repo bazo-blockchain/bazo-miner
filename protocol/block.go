@@ -11,7 +11,7 @@ import (
 const (
 	HASH_LEN                = 32
 	HEIGHT_LEN				= 4
-	MIN_BLOCKSIZE           = 254 + COMM_ENCODED_KEY_LENGTH
+	MIN_BLOCKSIZE           = 254 + COMM_PROOF_LENGTH
 	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
@@ -35,7 +35,7 @@ type Block struct {
 	NrFundsTx             uint16
 	NrStakeTx             uint16
 	SlashedAddress        [32]byte
-	CommitmentProof       [COMM_ENCODED_KEY_LENGTH]byte
+	CommitmentProof       [COMM_PROOF_LENGTH]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
 	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
@@ -56,7 +56,7 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		timestamp             int64
 		merkleRoot            [32]byte
 		beneficiary           [32]byte
-		commitmentProof       [COMM_ENCODED_KEY_LENGTH]byte
+		commitmentProof       [COMM_PROOF_LENGTH]byte
 		slashedAddress        [32]byte
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
@@ -163,8 +163,8 @@ func (b *Block) Encode() (encodedBlock []byte) {
 
 	copy(encodedBlock[index:index+HEIGHT_LEN], height[:])
 	index += HEIGHT_LEN
-	copy(encodedBlock[index:index+COMM_ENCODED_KEY_LENGTH], b.CommitmentProof[:])
-	index += COMM_ENCODED_KEY_LENGTH
+	copy(encodedBlock[index:index+COMM_PROOF_LENGTH], b.CommitmentProof[:])
+	index += COMM_PROOF_LENGTH
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash1[:])
 	index += HASH_LEN
 	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash2[:])
@@ -277,8 +277,8 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 
 	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+HEIGHT_LEN])
 	index += HEIGHT_LEN
-	copy(b.CommitmentProof[:], encodedBlock[index:index+COMM_ENCODED_KEY_LENGTH])
-	index += COMM_ENCODED_KEY_LENGTH
+	copy(b.CommitmentProof[:], encodedBlock[index:index+COMM_PROOF_LENGTH])
+	index += COMM_PROOF_LENGTH
 	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+HASH_LEN])
 	index += HASH_LEN
 	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+HASH_LEN])

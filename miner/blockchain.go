@@ -61,14 +61,14 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.Pri
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
-	currentBlock := newBlock(initialBlock.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, initialBlock.Height+1)
+	currentBlock := newBlock(initialBlock.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
 		if err != nil {
 			logger.Printf("%v\n", err)
 		} else {
-			logger.Println("Block mined")
+			logger.Printf("Block mined (%x)\n", currentBlock.Hash[0:8])
 		}
 
 		if err == nil {
@@ -86,7 +86,7 @@ func mining(initialBlock *protocol.Block) {
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
 		//when we finish the block.
 		blockValidation.Lock()
-		nextBlock := newBlock(lastBlock.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, lastBlock.Height+1)
+		nextBlock := newBlock(lastBlock.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
@@ -108,24 +108,14 @@ func initRootKey() error {
 		return err
 	}
 
-	//Balance must be greater than the staking minimum.
-	var commPubKey [protocol.COMM_ENCODED_KEY_LENGTH]byte
+	rootCommPrivKey = &rootComm
+
+	var commPubKey [protocol.COMM_KEY_LENGTH]byte
 	copy(commPubKey[:], rootComm.N.Bytes())
 
 	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 
-	rootCommPrivKey = &rootComm
-
-	commitmentProof, err := protocol.SignMessageWithRSAKey(rootCommPrivKey, "1")
-	//pubKey, err := protocol.CreateRSAPubKeyFromBytes(rootAcc.CommitmentKey)
-
-	if err != nil {
-		return err
-	}
-
-	err = protocol.VerifyMessageWithRSAKey(&rootCommPrivKey.PublicKey, "1", commitmentProof)
-
-	return err
+	return nil
 }

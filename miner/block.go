@@ -24,7 +24,7 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_ENCODED_KEY_LENGTH]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_PROOF_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
@@ -89,7 +89,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
 
-	copy(block.CommitmentProof[0:protocol.COMM_ENCODED_KEY_LENGTH], commitmentProof[:])
+	copy(block.CommitmentProof[0:protocol.COMM_PROOF_LENGTH], commitmentProof[:])
 
 	return nil
 }

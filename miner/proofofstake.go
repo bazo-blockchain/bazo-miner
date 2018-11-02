@@ -13,10 +13,10 @@ import (
 
 //Tests whether the first diff bits are zero
 func validateProofOfStake(diff uint8,
-	prevProofs [][protocol.COMM_ENCODED_KEY_LENGTH]byte,
+	prevProofs [][protocol.COMM_PROOF_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	commitmentProof [protocol.COMM_ENCODED_KEY_LENGTH]byte,
+	commitmentProof [protocol.COMM_PROOF_LENGTH]byte,
 	timestamp int64) bool {
 
 	var hashArgs []byte
@@ -27,16 +27,16 @@ func validateProofOfStake(diff uint8,
 	binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
 
 	// allocate memory
-	// n * COMM_ENCODED_KEY_LENGTH bytes (prevProofs) + COMM_ENCODED_KEY_LENGTH bytes (commitmentProof)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_ENCODED_KEY_LENGTH+protocol.COMM_ENCODED_KEY_LENGTH+4+8)
+	// n * COMM_PROOF_LENGTH bytes (prevProofs) + COMM_PROOF_LENGTH bytes (commitmentProof)+ 4 bytes (height) + 8 bytes (count)
+	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_PROOF_LENGTH+protocol.COMM_PROOF_LENGTH+4+8)
 
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index+protocol.COMM_ENCODED_KEY_LENGTH], prevProof[:])
-		index += protocol.COMM_ENCODED_KEY_LENGTH
+		copy(hashArgs[index:index+protocol.COMM_PROOF_LENGTH], prevProof[:])
+		index += protocol.COMM_PROOF_LENGTH
 	}
 
-	copy(hashArgs[index:index+protocol.COMM_ENCODED_KEY_LENGTH], commitmentProof[:])
+	copy(hashArgs[index:index+protocol.COMM_PROOF_LENGTH], commitmentProof[:])
 	copy(hashArgs[index+32:index+36], heightBuf[:])
 	copy(hashArgs[index+36:index+44], timestampBuf[:])
 
@@ -68,10 +68,10 @@ func validateProofOfStake(diff uint8,
 //PoS calculation because another block has been validated meanwhile
 func proofOfStake(diff uint8,
 	prevHash [32]byte,
-	prevProofs [][protocol.COMM_ENCODED_KEY_LENGTH]byte,
+	prevProofs [][protocol.COMM_PROOF_LENGTH]byte,
 	height uint32,
 	balance uint64,
-	commitmentProof [protocol.COMM_ENCODED_KEY_LENGTH]byte) (int64, error) {
+	commitmentProof [protocol.COMM_PROOF_LENGTH]byte) (int64, error) {
 
 	var (
 		pos    [32]byte
@@ -87,8 +87,8 @@ func proofOfStake(diff uint8,
 	)
 
 	// allocate memory
-	// n * COMM_ENCODED_KEY_LENGTH bytes (prevProofs) + COMM_ENCODED_KEY_LENGTH bytes (localCommPubKey)+ 4 bytes (height) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_ENCODED_KEY_LENGTH+protocol.COMM_ENCODED_KEY_LENGTH+4+8)
+	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (localCommPubKey)+ 4 bytes (height) + 8 bytes (count)
+	hashArgs = make([]byte, len(prevProofs)*protocol.COMM_PROOF_LENGTH+protocol.COMM_PROOF_LENGTH+4+8)
 
 	binary.BigEndian.PutUint32(heightBuf[:], height)
 
@@ -96,11 +96,11 @@ func proofOfStake(diff uint8,
 	// ([PrevProofs] ⋅ CommitmentProof ⋅ CurrentBlockHeight ⋅ Seconds)
 	index := 0
 	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index + protocol.COMM_ENCODED_KEY_LENGTH], prevProof[:])
-		index += protocol.COMM_ENCODED_KEY_LENGTH
+		copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], prevProof[:])
+		index += protocol.COMM_PROOF_LENGTH
 	}
-	copy(hashArgs[index:index + protocol.COMM_ENCODED_KEY_LENGTH], commitmentProof[:]) // COMM_ENCODED_KEY_LENGTH bytes
-	index += protocol.COMM_ENCODED_KEY_LENGTH
+	copy(hashArgs[index:index + protocol.COMM_PROOF_LENGTH], commitmentProof[:]) // COMM_KEY_LENGTH bytes
+	index += protocol.COMM_PROOF_LENGTH
 	copy(hashArgs[index:index + 4], heightBuf[:]) 		// 4 bytes
 	index += 4
 
@@ -158,7 +158,7 @@ func proofOfStake(diff uint8,
 	return timestamp, nil
 }
 
-func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][protocol.COMM_ENCODED_KEY_LENGTH]byte) {
+func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][protocol.COMM_PROOF_LENGTH]byte) {
 	b := storage.ReadClosedBlock(block.PrevHash)
 	cnt := 0
 	for n > 0 {

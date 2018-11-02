@@ -16,7 +16,7 @@ func TestProofOfStake(t *testing.T) {
 
 	balance := uint64(randVar.Int() % 1000)
 
-	var prevProofs [][protocol.COMM_ENCODED_KEY_LENGTH]byte
+	var prevProofs [][protocol.COMM_PROOF_LENGTH]byte
 	prevProof1, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "0")
 	prevProofs = append(prevProofs, prevProof1)
 	prevProof2, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "1")
@@ -40,12 +40,12 @@ func TestProofOfStake(t *testing.T) {
 func TestGetLatestProofs(t *testing.T) {
 	cleanAndPrepare()
 
-	var proofs [][protocol.COMM_ENCODED_KEY_LENGTH]byte
+	var proofs [][protocol.COMM_PROOF_LENGTH]byte
 	genesisCommitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyRoot, "0")
-	proofs = append([][protocol.COMM_ENCODED_KEY_LENGTH]byte{genesisCommitmentProof}, proofs...)
+	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
 	//Initially we expect only the genesis commitment proof
 
-	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
 
 	prevProofs := GetLatestProofs(1, b)
 
@@ -57,21 +57,21 @@ func TestGetLatestProofs(t *testing.T) {
 	}
 
 	//Two new blocks are added with random commitment proofs
-	b1 := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
+	b1 := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
 	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
-	proofs = append([][protocol.COMM_ENCODED_KEY_LENGTH]byte{b1.CommitmentProof}, proofs...)
+	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
 	validate(b1, false)
 
-	b2 := newBlock(b1.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, b1.Height+1)
+	b2 := newBlock(b1.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
 	validate(b2, false)
-	proofs = append([][protocol.COMM_ENCODED_KEY_LENGTH]byte{b2.CommitmentProof}, proofs...)
+	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
 
-	b3 := newBlock(b2.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, b2.Height+1)
+	b3 := newBlock(b2.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
 
 	prevProofs = GetLatestProofs(3, b3)
 

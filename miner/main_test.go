@@ -5,7 +5,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -130,7 +129,7 @@ func addTestingAccounts() {
 	hashValidator := protocol.SerializeHashContent(validatorAcc.Address)
 
 	//Create and store an initial commitment key for the validator account.
-	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, protocol.COMM_NOF_PRIMES, protocol.COMM_KEY_BITS_SIZE)
+	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, protocol.COMM_NOF_PRIMES, protocol.COMM_KEY_BITS)
 	copy(validatorAcc.CommitmentKey[:], commPrivKeyValidator.PublicKey.N.Bytes()[:])
 
 	validatorAcc.Balance = activeParameters.Staking_minimum
@@ -214,9 +213,8 @@ func cleanAndPrepare() {
 
 	slashingDict = make(map[[32]byte]SlashingProof)
 
-	genesisBlock = newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 0)
-	decoded, _ := base64.RawURLEncoding.DecodeString(storage.GENESIS_COMM_PROOF)
-	copy(genesisBlock.CommitmentProof[:], decoded)
+	genesisCommitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyRoot, string(genesisBlock.Height))
+	genesisBlock = newBlock([32]byte{}, genesisCommitmentProof, 0)
 
 	collectStatistics(genesisBlock)
 	if err := storage.WriteClosedBlock(genesisBlock); err != nil {
