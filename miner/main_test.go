@@ -221,7 +221,8 @@ func cleanAndPrepare() {
 	addTestingAccounts()
 	addRootAccounts()
 
-	genesisBlock = newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 0)
+	genesisCommitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyRoot, "0")
+	genesisBlock = newBlock([32]byte{}, genesisCommitmentProof, 0)
 
 	collectStatistics(genesisBlock)
 	if err := storage.WriteClosedBlock(genesisBlock); err != nil {
