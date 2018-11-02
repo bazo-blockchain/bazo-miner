@@ -23,7 +23,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -193,7 +193,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	accABal := accA.Balance
 	accBBal := accB.Balance
 	//Should throw an error and result in a rollback, because of acc balance overflow
-	tmpBlock := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
+	tmpBlock := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
 	tmpBlock.Beneficiary = minerHash
 	data := blockData{nil, funds2, nil, nil, tmpBlock}
 	if err := validateState(data); err == nil ||

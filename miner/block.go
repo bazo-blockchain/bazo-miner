@@ -24,7 +24,7 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_KEY_LENGTH]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_ENCODED_KEY_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
@@ -89,7 +89,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
 
-	copy(block.CommitmentProof[0:protocol.COMM_KEY_LENGTH], commitmentProof[:])
+	copy(block.CommitmentProof[0:protocol.COMM_ENCODED_KEY_LENGTH], commitmentProof[:])
 
 	return nil
 }
@@ -640,7 +640,11 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
 	//Second, check if the commitment proof of the proposed block can be verified with the public key
 	//Invalid if the commitment proof can not be verified with the public key of the proposer
-	commitmentPubKey := protocol.CreateRSAPubKeyFromModulus(acc.CommitmentKey)
+	commitmentPubKey, err := protocol.CreateRSAPubKeyFromBytes(acc.CommitmentKey)
+	if err != nil {
+		return nil, nil, nil, nil, errors.New("Invalid commitment key in account.")
+	}
+
 	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")

@@ -82,7 +82,7 @@ func addTestingAccounts() {
 		privAccA,
 	}
 
-	CommPrivKeyAccA, _ = protocol.CreateRSAPrivKeyFromBase10(CommPubA, CommPrivA, []string{CommPrimA1, CommPrimA2})
+	CommPrivKeyAccA, _ = protocol.CreateRSAPrivKeyFromBase64(CommPubA, CommPrivA, []string{CommPrimA1, CommPrimA2})
 
 	copy(accA.Address[0:32], PrivKeyAccA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyAccA.PublicKey.Y.Bytes())
@@ -102,7 +102,7 @@ func addTestingAccounts() {
 		privAccB,
 	}
 
-	CommPrivKeyAccB, _ = protocol.CreateRSAPrivKeyFromBase10(CommPubB, CommPrivB, []string{CommPrimB1, CommPrimB2})
+	CommPrivKeyAccB, _ = protocol.CreateRSAPrivKeyFromBase64(CommPubB, CommPrivB, []string{CommPrimB1, CommPrimB2})
 
 	copy(accB.Address[0:32], PrivKeyAccB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
@@ -173,7 +173,7 @@ func addRootAccounts() {
 	_, _ = file.WriteString(PubRoot2 + "\n")
 	_, _ = file.WriteString(PrivRoot + "\n")
 
-	CommPrivKeyRoot, _ = protocol.CreateRSAPrivKeyFromBase10(CommPubRoot, CommPrivRoot, []string{CommPrimRoot1, CommPrimRoot2})
+	CommPrivKeyRoot, _ = protocol.CreateRSAPrivKeyFromBase64(CommPubRoot, CommPrivRoot, []string{CommPrimRoot1, CommPrimRoot2})
 	copy(rootAcc.CommitmentKey[:], CommPrivKeyRoot.PublicKey.N.Bytes()[:])
 
 	rootAcc.Balance = activeParameters.Staking_minimum
@@ -214,7 +214,7 @@ func cleanAndPrepare() {
 
 	slashingDict = make(map[[32]byte]SlashingProof)
 
-	genesisBlock = newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 0)
+	genesisBlock = newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 0)
 	decoded, _ := base64.RawURLEncoding.DecodeString(storage.GENESIS_COMM_PROOF)
 	copy(genesisBlock.CommitmentProof[:], decoded)
 

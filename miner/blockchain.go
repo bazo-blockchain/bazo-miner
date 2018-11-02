@@ -20,6 +20,7 @@ var (
 	validatorAccAddress [64]byte
 	multisigPubKey      *ecdsa.PublicKey
 	commPrivKey			*rsa.PrivateKey
+	rootCommPrivKey		*rsa.PrivateKey
 )
 
 //Miner entry point
@@ -60,7 +61,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.Pri
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
-	currentBlock := newBlock(initialBlock.Hash, [protocol.COMM_KEY_LENGTH]byte{}, initialBlock.Height+1)
+	currentBlock := newBlock(initialBlock.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
@@ -85,7 +86,7 @@ func mining(initialBlock *protocol.Block) {
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
 		//when we finish the block.
 		blockValidation.Lock()
-		nextBlock := newBlock(lastBlock.Hash, [protocol.COMM_KEY_LENGTH]byte{}, lastBlock.Height+1)
+		nextBlock := newBlock(lastBlock.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, lastBlock.Height+1)
 		currentBlock = nextBlock
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
@@ -96,14 +97,35 @@ func mining(initialBlock *protocol.Block) {
 func initRootKey() error {
 	address, addressHash := storage.GetInitRootPubKey()
 
-	var commPubKey [256]byte
+	rootComm, err := protocol.CreateRSAPrivKeyFromBase64(
+		storage.INIT_ROOT_COMM_PUB_KEY,
+		storage.INIT_ROOT_COMM_PRIV_KEY, []string {
+			storage.INIT_ROOT_COMM_PRIME1,
+			storage.INIT_ROOT_COMM_PRIME2,
+		})
 
-	copy(commPubKey[:], storage.INIT_ROOT_COMM_PUB_KEY[:])
+	if err != nil {
+		return err
+	}
 
 	//Balance must be greater than the staking minimum.
+	var commPubKey [protocol.COMM_ENCODED_KEY_LENGTH]byte
+	copy(commPubKey[:], rootComm.N.Bytes())
+
 	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
 
-	return nil
+	rootCommPrivKey = &rootComm
+
+	commitmentProof, err := protocol.SignMessageWithRSAKey(rootCommPrivKey, "1")
+	//pubKey, err := protocol.CreateRSAPubKeyFromBytes(rootAcc.CommitmentKey)
+
+	if err != nil {
+		return err
+	}
+
+	err = protocol.VerifyMessageWithRSAKey(&rootCommPrivKey.PublicKey, "1", commitmentProof)
+
+	return err
 }

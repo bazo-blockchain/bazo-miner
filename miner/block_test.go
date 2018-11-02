@@ -17,7 +17,7 @@ import (
 func TestBlock(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
 	hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice := createBlockWithTxs(b)
 	err := finalizeBlock(b)
 	if err != nil {
@@ -60,7 +60,7 @@ func TestBlock(t *testing.T) {
 func TestBlockTxDuplicates(t *testing.T) {
 
 	cleanAndPrepare()
-	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
 	createBlockWithTxs(b)
 
 	if err := finalizeBlock(b); err != nil {
@@ -99,28 +99,28 @@ func TestBlockTxDuplicates(t *testing.T) {
 func TestMultipleBlocks(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [protocol.COMM_KEY_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b2 := newBlock(b.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 2)
+	b2 := newBlock(b.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	b3 := newBlock(b2.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 3)
+	b3 := newBlock(b2.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
 	if err := validate(b3, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	b4 := newBlock(b3.Hash, [protocol.COMM_KEY_LENGTH]byte{}, 4)
+	b4 := newBlock(b3.Hash, [protocol.COMM_ENCODED_KEY_LENGTH]byte{}, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
 	if err := validate(b4, false); err != nil {

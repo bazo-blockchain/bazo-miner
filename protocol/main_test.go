@@ -72,7 +72,7 @@ func addTestingAccounts() {
 		priva,
 	}
 
-	CommitmentKeyA, _ = CreateRSAPrivKeyFromBase10(CommPubA, CommPrivA, []string{CommPrim1A, CommPrim2A})
+	CommitmentKeyA, _ = CreateRSAPrivKeyFromBase64(CommPubA, CommPrivA, []string{CommPrim1A, CommPrim2A})
 
 	pubb1, _ := new(big.Int).SetString(PubB1, 16)
 	pubb2, _ := new(big.Int).SetString(PubB2, 16)
@@ -87,7 +87,7 @@ func addTestingAccounts() {
 		privb,
 	}
 
-	CommitmentKeyB, _ = CreateRSAPrivKeyFromBase10(CommPubB, CommPrivB, []string{CommPrim1B, CommPrim2B})
+	CommitmentKeyB, _ = CreateRSAPrivKeyFromBase64(CommPubB, CommPrivB, []string{CommPrim1B, CommPrim2B})
 
 	copy(accA.Address[0:32], PrivKeyA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyA.PublicKey.Y.Bytes())
