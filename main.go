@@ -4,45 +4,91 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/urfave/cli"
 	"os"
 )
 
 func main() {
+
 	logger := storage.InitLogger()
 
-	if len(os.Args) != 7 {
-		logger.Println("Usage: bazo-miner <dbname> <bootstrap ip:port> <this ip:port> <validatorfile> <multisigfile> <commitmentFile>")
-		return
+	app := cli.NewApp()
+
+	// Global app config
+	app.Name = "bazo-miner"
+	app.Usage = "the command line interface for running a full Bazo blockchain node implemented in Go."
+	app.Version = "1.0.0"
+	app.EnableBashCompletion = true
+
+	app.Flags = []cli.Flag {
+		cli.StringFlag {
+			Name: 	"database",
+			Usage: 	"Load database of the disk-based key/value store from `FILE`",
+			Value:	"keystore/store.db",
+		},
+		cli.StringFlag {
+			Name: 	"address",
+			Usage: 	"Start node at `IP:PORT`",
+			Value: 	"localhost:8000",
+		},
+		cli.StringFlag {
+			Name: 	"bootstrap",
+			Usage: 	"Connect to bootstrap node at `IP:PORT`",
+			Value: 	"localhost:8000",
+		},
+		cli.StringFlag {
+			Name: 	"key",
+			Usage: 	"Load validator's public key from `FILE`",
+			Value: 	"keystore/validator.txt",
+		},
+		cli.StringFlag {
+			Name: 	"multisig",
+			Usage: 	"Load multi-signature server’s public key from `FILE`",
+			Value: 	"keystore/multisig.txt",
+		},
+		cli.StringFlag {
+			Name: 	"commitment",
+			Usage: 	"Load RSA public-private key from `FILE`",
+			Value: 	"keystore/commitment.txt",
+		},
 	}
 
-	dbname := os.Args[1]
-	bootstrapIpport := os.Args[2]
-	thisIpport := os.Args[3]
-	validatorFileName := os.Args[4]
-	multisigFileName := os.Args[5]
-	commFileName := os.Args[6]
+	app.Action = func(c *cli.Context) error {
+		dbname := c.String("database")
+		thisIpport := c.String("address")
+		bootstrapIpport := c.String("bootstrap")
+		validatorFileName := c.String("key")
+		multisigFileName := c.String("multisig")
+		commFileName := c.String("commitment")
 
-	storage.Init(dbname, bootstrapIpport)
-	p2p.Init(thisIpport)
+		storage.Init(dbname, bootstrapIpport)
+		p2p.Init(thisIpport)
 
-	validatorPubKey, _, err := storage.ExtractECDSAKeyFromFile(validatorFileName)
+		validatorPrivKey, err := crypto.ExtractECDSAKeyFromFile(validatorFileName)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		multisigPrivKey, err := crypto.ExtractECDSAKeyFromFile(multisigFileName)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		commPrivKey, err := crypto.ExtractRSAKeyFromFile(commFileName)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		miner.Init(&validatorPrivKey.PublicKey, &multisigPrivKey.PublicKey, &commPrivKey)
+		return nil
+	}
+
+	err := app.Run(os.Args)
 	if err != nil {
-		logger.Printf("%v\n", err)
-		return
+		logger.Fatal(err)
 	}
-
-	multisigPubKey, _, err := storage.ExtractECDSAKeyFromFile(multisigFileName)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return
-	}
-
-	commPrivKey, err := protocol.ExtractRSAKeyFromFile(commFileName)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return
-	}
-
-	miner.Init(&validatorPubKey, &multisigPubKey, &commPrivKey)
 }
