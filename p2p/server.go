@@ -177,6 +177,6 @@ func peerConn(p *peer) {
 			return
 		}
 
-		processIncomingMsg(p, header, payload)
+		go processIncomingMsg(p, header, payload)
 	}
 }
