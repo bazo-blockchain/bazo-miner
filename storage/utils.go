@@ -2,15 +2,12 @@ package storage
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"golang.org/x/crypto/sha3"
 	"log"
 	"math/big"
 	"os"
@@ -21,13 +18,7 @@ func InitLogger() *log.Logger {
 	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-//Serializes the input in big endian and returns the sha3 hash function applied on ths input
-func SerializeHashContent(data interface{}) (hash [32]byte) {
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, data)
 
-	return sha3.Sum256(buf.Bytes())
-}
 
 //Needed by miner and p2p package
 func GetAccount(hash [32]byte) (acc *protocol.Account, err error) {
