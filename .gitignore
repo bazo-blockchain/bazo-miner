@@ -26,5 +26,6 @@
 
 # Put commitment key, miner databases and other stuff that should not be visible
 # to others into the folder tmp.
+keystore/
 tmp/
 bazo-miner

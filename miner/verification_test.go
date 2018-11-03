@@ -12,8 +12,8 @@ func TestFundsTxVerification(t *testing.T) {
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
 	loopMax := int(randVar.Uint64() % 1000)
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
+	accBHash := crypto.SerializeHashContent(accB.Address)
 	for i := 0; i < loopMax; i++ {
 		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100000+1, randVar.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, nil)
 		if verifyFundsTx(tx) == false {

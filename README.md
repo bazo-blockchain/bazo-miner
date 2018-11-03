@@ -1,4 +1,6 @@
 # bazo-miner
+`bazo-miner` is the the command line interface for running a full Bazo blockchain node implemented in Go.
+
 [![Build Status](https://travis-ci.org/bazo-blockchain/bazo-miner.svg?branch=master)](https://travis-ci.org/bazo-blockchain/bazo-miner)
 
 ## Setup Instructions

@@ -16,8 +16,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	//fill the open storage with fundstx
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	for cnt := 0; cnt < testsize; cnt++ {
-		accAHash := protocol.SerializeHashContent(accA.Address)
-		accBHash := protocol.SerializeHashContent(accB.Address)
+		accAHash := crypto.SerializeHashContent(accA.Address)
+		accBHash := crypto.SerializeHashContent(accB.Address)
 		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, nil)
 		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accBHash, accAHash, &PrivKeyAccB, &PrivKeyMultiSig, nil)
 
@@ -51,7 +51,7 @@ func TestPrepareAndSortTxs(t *testing.T) {
 		}
 	}
 
-	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	prepareBlock(b)
 	finalizeBlock(b)
 

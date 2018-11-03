@@ -20,7 +20,7 @@ func TestSerializeHashContent(t *testing.T) {
 }
 
 func TestGetAccount(t *testing.T) {
-	accAHash := protocol.SerializeHashContent(accA.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
 
 	acc, err := GetAccount(accAHash)
 
@@ -41,7 +41,7 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestGetRootAccount(t *testing.T) {
-	rootHash := protocol.SerializeHashContent(rootAcc.Address)
+	rootHash := crypto.SerializeHashContent(rootAcc.Address)
 
 	root, err := GetRootAccount(rootHash)
 

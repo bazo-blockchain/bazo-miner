@@ -16,14 +16,14 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
+	accBHash := crypto.SerializeHashContent(accB.Address)
+	minerAccHash := crypto.SerializeHashContent(validatorAcc.Address)
 
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -79,8 +79,8 @@ func TestAccountOverflow(t *testing.T) {
 	cleanAndPrepare()
 
 	var accSlice []*protocol.FundsTx
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
+	accBHash := crypto.SerializeHashContent(accB.Address)
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
@@ -119,7 +119,7 @@ func TestAccTxStateChange(t *testing.T) {
 	accStateChange(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
+		accHash := crypto.SerializeHashContent(acc.PubKey)
 		acc := storage.State[accHash]
 		//make sure the previously created acc is in the state
 		if acc == nil {
@@ -136,7 +136,7 @@ func TestAccTxStateChange(t *testing.T) {
 
 	accStateChange(singleSlice)
 
-	if !storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
+	if !storage.IsRootKey(crypto.SerializeHashContent(pubKeyTmp)) {
 		t.Errorf("AccTx Header bit 1 not working.")
 	}
 
@@ -146,7 +146,7 @@ func TestAccTxStateChange(t *testing.T) {
 	singleSlice[0] = &newTx
 	accStateChange(singleSlice)
 
-	if storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
+	if storage.IsRootKey(crypto.SerializeHashContent(pubKeyTmp)) {
 		t.Errorf("AccTx Header bit 2 not working.")
 	}
 }
@@ -277,9 +277,9 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
 
-	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false

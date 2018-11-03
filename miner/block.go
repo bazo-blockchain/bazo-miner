@@ -11,6 +11,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"github.com/bazo-blockchain/bazo-miner/vm"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -24,7 +25,7 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, commitmentProof [protocol.COMM_PROOF_LENGTH]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [crypto.COMM_PROOF_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
@@ -52,7 +53,7 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	validatorAcc, err := storage.GetAccount(crypto.SerializeHashContent(validatorAccAddress))
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func finalizeBlock(block *protocol.Block) error {
 
 	// Cryptographic Sortition for PoS in Bazo
 	// The commitment proof stores a signed message of the Height that this block was created at.
-	commitmentProof, err := protocol.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(block.Height))
+	commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(block.Height))
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
 
-	copy(block.CommitmentProof[0:protocol.COMM_PROOF_LENGTH], commitmentProof[:])
+	copy(block.CommitmentProof[0:crypto.COMM_PROOF_LENGTH], commitmentProof[:])
 
 	return nil
 }
@@ -170,7 +171,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.From]; !exists {
 		if acc := storage.State[tx.From]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
+			hash := crypto.SerializeHashContent(acc.Address)
 			if hash == tx.From {
 				newAcc := protocol.Account{}
 				newAcc = *acc
@@ -184,7 +185,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Vice versa for receiver account.
 	if _, exists := b.StateCopy[tx.To]; !exists {
 		if acc := storage.State[tx.To]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
+			hash := crypto.SerializeHashContent(acc.Address)
 			if hash == tx.To {
 				newAcc := protocol.Account{}
 				newAcc = *acc
@@ -255,7 +256,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.Account]; !exists {
 		if acc := storage.State[tx.Account]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
+			hash := crypto.SerializeHashContent(acc.Address)
 			if hash == tx.Account {
 				newAcc := protocol.Account{}
 				newAcc = *acc
@@ -640,12 +641,12 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
 	//Second, check if the commitment proof of the proposed block can be verified with the public key
 	//Invalid if the commitment proof can not be verified with the public key of the proposer
-	commitmentPubKey, err := protocol.CreateRSAPubKeyFromBytes(acc.CommitmentKey)
+	commitmentPubKey, err := crypto.CreateRSAPubKeyFromBytes(acc.CommitmentKey)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("Invalid commitment key in account.")
 	}
 
-	err = protocol.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
+	err = crypto.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
 	if err != nil {
 		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
 	}

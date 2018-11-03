@@ -16,14 +16,14 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
+	accBHash := crypto.SerializeHashContent(accB.Address)
+	minerAccHash := crypto.SerializeHashContent(validatorAcc.Address)
 
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -103,7 +103,7 @@ func TestAccStateChangeRollback(t *testing.T) {
 	accStateChange(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
+		accHash := crypto.SerializeHashContent(acc.PubKey)
 		acc := storage.State[accHash]
 		if acc == nil {
 			t.Errorf("Account State failed to update for the following account: %v\n", acc)
@@ -113,7 +113,7 @@ func TestAccStateChangeRollback(t *testing.T) {
 	accStateChangeRollback(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
+		accHash := crypto.SerializeHashContent(acc.PubKey)
 		acc := storage.State[accHash]
 		if acc != nil {
 			t.Errorf("Account State failed to rollback the following account: %v\n", acc)
@@ -156,9 +156,9 @@ func TestCollectTxFeesRollback(t *testing.T) {
 
 	var funds, funds2 []*protocol.FundsTx
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerHash := protocol.SerializeHashContent(validatorAcc.Address)
+	accAHash := crypto.SerializeHashContent(accA.Address)
+	accBHash := crypto.SerializeHashContent(accB.Address)
+	minerHash := crypto.SerializeHashContent(validatorAcc.Address)
 
 	minerBal := validatorAcc.Balance
 	//Rollback everything
@@ -193,7 +193,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	accABal := accA.Balance
 	accBBal := accB.Balance
 	//Should throw an error and result in a rollback, because of acc balance overflow
-	tmpBlock := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	tmpBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	tmpBlock.Beneficiary = minerHash
 	data := blockData{nil, funds2, nil, nil, tmpBlock}
 	if err := validateState(data); err == nil ||

@@ -86,7 +86,7 @@ func addTestingAccounts() {
 	copy(accA.Address[0:32], PrivKeyAccA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyAccA.PublicKey.Y.Bytes())
 	copy(accA.CommitmentKey[:], CommPrivKeyAccA.PublicKey.N.Bytes())
-	hashAccA := protocol.SerializeHashContent(accA.Address)
+	hashAccA := crypto.SerializeHashContent(accA.Address)
 
 	pubAccB1, _ := new(big.Int).SetString(PubB1, 16)
 	pubAccB2, _ := new(big.Int).SetString(PubB2, 16)
@@ -106,7 +106,7 @@ func addTestingAccounts() {
 	copy(accB.Address[0:32], PrivKeyAccB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
 	copy(accB.CommitmentKey[:], CommPrivKeyAccB.PublicKey.N.Bytes())
-	hashAccB := protocol.SerializeHashContent(accB.Address)
+	hashAccB := crypto.SerializeHashContent(accB.Address)
 
 	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
 	pubKeyMultiSig, _ := storage.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
@@ -117,7 +117,7 @@ func addTestingAccounts() {
 
 	copy(multiSigAcc.Address[0:32], PrivKeyMultiSig.PublicKey.X.Bytes())
 	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
-	hashMultiSig := protocol.SerializeHashContent(multiSigAcc.Address)
+	hashMultiSig := crypto.SerializeHashContent(multiSigAcc.Address)
 
 	//Set the global variable in blockchain.go
 	multisigPubKey = &pubKeyMultiSig
@@ -126,10 +126,10 @@ func addTestingAccounts() {
 
 	copy(validatorAcc.Address[:32], privKeyValidator.X.Bytes())
 	copy(validatorAcc.Address[32:64], privKeyValidator.Y.Bytes())
-	hashValidator := protocol.SerializeHashContent(validatorAcc.Address)
+	hashValidator := crypto.SerializeHashContent(validatorAcc.Address)
 
 	//Create and store an initial commitment key for the validator account.
-	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, protocol.COMM_NOF_PRIMES, protocol.COMM_KEY_BITS)
+	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, crypto.COMM_NOF_PRIMES, crypto.COMM_KEY_BITS)
 	copy(validatorAcc.CommitmentKey[:], commPrivKeyValidator.PublicKey.N.Bytes()[:])
 
 	validatorAcc.Balance = activeParameters.Staking_minimum
@@ -164,7 +164,7 @@ func addRootAccounts() {
 
 	copy(rootAcc.Address[:32], PrivKeyRoot.X.Bytes())
 	copy(rootAcc.Address[32:64], PrivKeyRoot.Y.Bytes())
-	hashRoot := protocol.SerializeHashContent(rootAcc.Address)
+	hashRoot := crypto.SerializeHashContent(rootAcc.Address)
 
 	//Create root file
 	file, _ := os.Create(TestKeyFileName)
