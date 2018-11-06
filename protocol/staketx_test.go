@@ -15,7 +15,7 @@ func TestStakeTxSerialization(t *testing.T) {
 		fee := rand.Uint64()%10 + 1
 		isStaking := rand.Intn(2) != 0
 
-		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accAHash, &PrivKeyA, &CommitmentKeyA.PublicKey)
+		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accAHash, PrivKeyA, &CommitmentKeyA.PublicKey)
 		data := tx.Encode()
 		var decodedTx *StakeTx
 		decodedTx = decodedTx.Decode(data)

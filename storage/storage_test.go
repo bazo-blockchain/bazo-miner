@@ -14,8 +14,8 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := crypto.SerializeHashContent(accA.Address)
-	accBHash := crypto.SerializeHashContent(accB.Address)
+	accAHash := protocol.SerializeHashContent(accA.Address)
+	accBHash := protocol.SerializeHashContent(accB.Address)
 
 	var hashFundsSlice []*protocol.FundsTx
 	var hashAccSlice []*protocol.AccTx

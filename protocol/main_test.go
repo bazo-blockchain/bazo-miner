@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -38,10 +39,10 @@ const (
 
 var (
 	accA, accB, minerAcc 			*Account
-	PrivKeyA, PrivKeyB   			ecdsa.PrivateKey
-	PubKeyA, PubKeyB     			ecdsa.PublicKey
-	RootPrivKey          			ecdsa.PrivateKey
-	CommitmentKeyA, CommitmentKeyB 	rsa.PrivateKey
+	PrivKeyA, PrivKeyB   			*ecdsa.PrivateKey
+	PubKeyA, PubKeyB     			*ecdsa.PublicKey
+	RootPrivKey          			*ecdsa.PrivateKey
+	CommitmentKeyA, CommitmentKeyB 	*rsa.PrivateKey
 	MinerHash            			[32]byte
 	MinerPrivKey         			*ecdsa.PrivateKey
 )
@@ -62,32 +63,32 @@ func addTestingAccounts() {
 	puba1, _ := new(big.Int).SetString(PubA1, 16)
 	puba2, _ := new(big.Int).SetString(PubA2, 16)
 	priva, _ := new(big.Int).SetString(PrivA, 16)
-	PubKeyA = ecdsa.PublicKey{
+	PubKeyA = &ecdsa.PublicKey{
 		elliptic.P256(),
 		puba1,
 		puba2,
 	}
-	PrivKeyA = ecdsa.PrivateKey{
-		PubKeyA,
+	PrivKeyA = &ecdsa.PrivateKey{
+		*PubKeyA,
 		priva,
 	}
 
-	CommitmentKeyA, _ = CreateRSAPrivKeyFromBase64(CommPubA, CommPrivA, []string{CommPrim1A, CommPrim2A})
+	CommitmentKeyA, _ = crypto.CreateRSAPrivKeyFromBase64(CommPubA, CommPrivA, []string{CommPrim1A, CommPrim2A})
 
 	pubb1, _ := new(big.Int).SetString(PubB1, 16)
 	pubb2, _ := new(big.Int).SetString(PubB2, 16)
 	privb, _ := new(big.Int).SetString(PrivB, 16)
-	PubKeyB = ecdsa.PublicKey{
+	PubKeyB = &ecdsa.PublicKey{
 		elliptic.P256(),
 		pubb1,
 		pubb2,
 	}
-	PrivKeyB = ecdsa.PrivateKey{
-		PubKeyB,
+	PrivKeyB = &ecdsa.PrivateKey{
+		*PubKeyB,
 		privb,
 	}
 
-	CommitmentKeyB, _ = CreateRSAPrivKeyFromBase64(CommPubB, CommPrivB, []string{CommPrim1B, CommPrim2B})
+	CommitmentKeyB, _ = crypto.CreateRSAPrivKeyFromBase64(CommPubB, CommPrivB, []string{CommPrim1B, CommPrim2B})
 
 	copy(accA.Address[0:32], PrivKeyA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyA.PublicKey.Y.Bytes())
@@ -123,13 +124,13 @@ func addRootAccounts() {
 	pub1, _ := new(big.Int).SetString(RootPub1, 16)
 	pub2, _ := new(big.Int).SetString(RootPub2, 16)
 	priv, _ := new(big.Int).SetString(RootPriv, 16)
-	PubKeyA = ecdsa.PublicKey{
+	PubKeyA = &ecdsa.PublicKey{
 		elliptic.P256(),
 		pub1,
 		pub2,
 	}
-	RootPrivKey = ecdsa.PrivateKey{
-		PubKeyA,
+	RootPrivKey = &ecdsa.PrivateKey{
+		*PubKeyA,
 		priv,
 	}
 

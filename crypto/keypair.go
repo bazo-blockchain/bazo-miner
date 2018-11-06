@@ -2,14 +2,11 @@ package crypto
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/sha3"
 	"log"
 	"math/big"
 	"os"
@@ -59,18 +56,21 @@ func ExtractECDSAKeyFromFile(filename string) (privKey *ecdsa.PrivateKey, err er
 		}
 	}
 
+	return privKey, VerifyECDSAKey(privKey)
+}
+
+func VerifyECDSAKey(privKey *ecdsa.PrivateKey) error {
 	//Make sure the key being used is a valid one, that can sign and verify hashes/transactions
 	hashed := []byte("testing")
 	r, s, err := ecdsa.Sign(rand.Reader, privKey, hashed)
 	if err != nil {
-		return privKey, errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
+		return errors.New("the ecdsa key you provided is invalid and cannot sign hashes")
 	}
 
-	if !ecdsa.Verify(&pubKey, hashed, r, s) {
-		return privKey, errors.New("the ecdsa key you provided is invalid and cannot verify hashes")
+	if !ecdsa.Verify(&privKey.PublicKey, hashed, r, s) {
+		return errors.New("the ecdsa key you provided is invalid and cannot verify hashes")
 	}
-
-	return privKey, nil
+	return nil
 }
 
 func ReadFile(filename string) (lines []string) {
@@ -144,11 +144,4 @@ func CreateECDSAKeyFile(filename string) (err error) {
 	}
 
 	return nil
-}
-
-//Serializes the input in big endian and returns the sha3 hash function applied on ths input
-func SerializeHashContent(data interface{}) (hash [32]byte) {
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, data)
-	return sha3.Sum256(buf.Bytes())
 }

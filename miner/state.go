@@ -169,7 +169,7 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 				storage.RootKeys[newAccHash] = &newAcc
 			}
 		} else if tx.Header == 2 {
-			accHash := crypto.SerializeHashContent(tx.PubKey)
+			accHash := protocol.SerializeHashContent(tx.PubKey)
 			_, err := storage.GetAccount(accHash)
 			if err != nil {
 				return err

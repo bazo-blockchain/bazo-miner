@@ -2,7 +2,7 @@ package miner
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -17,19 +17,19 @@ func TestProofOfStake(t *testing.T) {
 	balance := uint64(randVar.Int() % 1000)
 
 	var prevProofs [][crypto.COMM_PROOF_LENGTH]byte
-	prevProof1, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "0")
+	prevProof1, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "0")
 	prevProofs = append(prevProofs, prevProof1)
-	prevProof2, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "1")
+	prevProof2, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "1")
 	prevProofs = append(prevProofs, prevProof2)
-	prevProof3, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "2")
+	prevProof3, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "2")
 	prevProofs = append(prevProofs, prevProof3)
-	prevProof4, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "3")
+	prevProof4, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "3")
 	prevProofs = append(prevProofs, prevProof4)
 
 	var height uint32 = 4
 	diff := 10
 
-	commitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, fmt.Sprint(height))
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, fmt.Sprint(height))
 	timestamp, _ := proofOfStake(uint8(diff), lastBlock.Hash, prevProofs, height, balance, commitmentProof)
 
 	if !validateProofOfStake(uint8(diff), prevProofs, height, balance, commitmentProof, timestamp) {
@@ -41,7 +41,7 @@ func TestGetLatestProofs(t *testing.T) {
 	cleanAndPrepare()
 
 	var proofs [][crypto.COMM_PROOF_LENGTH]byte
-	genesisCommitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyRoot, "0")
+	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
 	//Initially we expect only the genesis commitment proof
 

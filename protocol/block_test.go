@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -24,7 +25,7 @@ func TestBlockSerialization(t *testing.T) {
 	b.NrStakeTx = uint16(rand.Uint32())
 	b.SlashedAddress = [32]byte{0, 1, 2, 3, 4}
 	b.Height = uint32(rand.Uint32())
-	b.CommitmentProof = [COMM_PROOF_LENGTH]byte{0, 1, 2, 3, 4}
+	b.CommitmentProof = [crypto.COMM_PROOF_LENGTH]byte{0, 1, 2, 3, 4}
 	b.ConflictingBlockHash1 = [32]byte{0, 1, 2, 3, 4}
 	b.ConflictingBlockHash2 = [32]byte{0, 1, 2, 3, 4}
 

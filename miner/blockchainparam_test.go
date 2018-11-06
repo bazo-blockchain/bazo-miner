@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"testing"
 )
@@ -74,8 +75,8 @@ func TestTimestamps(t *testing.T) {
 		b := newBlock(prevHash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 
 		if cnt == 8 {
-			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, &PrivKeyRoot)
-			tx2, err2 := protocol.ConstrConfigTx(0, protocol.BLOCK_INTERVAL_ID, 60, 2, 0, &PrivKeyRoot)
+			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, PrivKeyRoot)
+			tx2, err2 := protocol.ConstrConfigTx(0, protocol.BLOCK_INTERVAL_ID, 60, 2, 0, PrivKeyRoot)
 			if err != nil || err2 != nil {
 				t.Errorf("Creating config txs failed: %v, %v\n", err, err2)
 			}

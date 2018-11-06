@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
@@ -9,7 +8,7 @@ import (
 func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			accHash := crypto.SerializeHashContent(tx.PubKey)
+			accHash := protocol.SerializeHashContent(tx.PubKey)
 
 			acc, err := storage.GetAccount(accHash)
 			if err != nil {

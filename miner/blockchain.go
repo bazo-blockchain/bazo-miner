@@ -109,7 +109,7 @@ func initRootKey() error {
 		return err
 	}
 
-	rootCommPrivKey = &rootComm
+	rootCommPrivKey = rootComm
 
 	var commPubKey [crypto.COMM_KEY_LENGTH]byte
 	copy(commPubKey[:], rootComm.N.Bytes())

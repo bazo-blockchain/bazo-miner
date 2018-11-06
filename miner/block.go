@@ -53,7 +53,7 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc, err := storage.GetAccount(crypto.SerializeHashContent(validatorAccAddress))
+	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.From]; !exists {
 		if acc := storage.State[tx.From]; acc != nil {
-			hash := crypto.SerializeHashContent(acc.Address)
+			hash := protocol.SerializeHashContent(acc.Address)
 			if hash == tx.From {
 				newAcc := protocol.Account{}
 				newAcc = *acc
@@ -185,7 +185,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Vice versa for receiver account.
 	if _, exists := b.StateCopy[tx.To]; !exists {
 		if acc := storage.State[tx.To]; acc != nil {
-			hash := crypto.SerializeHashContent(acc.Address)
+			hash := protocol.SerializeHashContent(acc.Address)
 			if hash == tx.To {
 				newAcc := protocol.Account{}
 				newAcc = *acc
@@ -256,7 +256,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.Account]; !exists {
 		if acc := storage.State[tx.Account]; acc != nil {
-			hash := crypto.SerializeHashContent(acc.Address)
+			hash := protocol.SerializeHashContent(acc.Address)
 			if hash == tx.Account {
 				newAcc := protocol.Account{}
 				newAcc = *acc

@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"reflect"
@@ -10,7 +11,7 @@ import (
 func TestSlashingCondition(t *testing.T) {
 	cleanAndPrepare()
 
-	myAcc, _ := storage.GetAccount(crypto.SerializeHashContent(validatorAccAddress))
+	myAcc, _ := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
 	initBalance := myAcc.Balance
 
 	forkBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)

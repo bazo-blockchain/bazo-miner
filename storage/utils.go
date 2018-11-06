@@ -35,7 +35,7 @@ func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
 	pubKey, _ := crypto.GetPubKeyFromString(INIT_ROOT_PUB_KEY1, INIT_ROOT_PUB_KEY2)
 	address = crypto.GetAddressFromPubKey(&pubKey)
 
-	return address, crypto.SerializeHashContent(address)
+	return address, protocol.SerializeHashContent(address)
 }
 
 func IsRootKey(hash [32]byte) bool {
@@ -64,7 +64,7 @@ func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][32]byte) {
 
 		accTx = tx.(*protocol.AccTx)
 		accTxPubKeys = append(accTxPubKeys, accTx.Issuer)
-		accTxPubKeys = append(accTxPubKeys, crypto.SerializeHashContent(accTx.PubKey))
+		accTxPubKeys = append(accTxPubKeys, protocol.SerializeHashContent(accTx.PubKey))
 	}
 
 	return accTxPubKeys

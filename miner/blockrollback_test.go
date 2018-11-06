@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"reflect"
 	"testing"
 

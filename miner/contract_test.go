@@ -2,6 +2,7 @@ package miner
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -260,7 +261,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
-	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, &PrivKeyRoot, contract, contractVariables)
+	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return tx.Issuer
@@ -274,10 +275,10 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 	for hash := range storage.State {
 		acc, _ := storage.GetAccount(hash)
 		if acc.Contract != nil {
-			accAHash := crypto.SerializeHashContent(accA.Address)
+			accAHash := protocol.SerializeHashContent(accA.Address)
 			accBHash := acc.Hash()
 
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, PrivKeyAccA, PrivKeyMultiSig, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {
@@ -293,7 +294,7 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 	accA, _ := storage.GetAccount(from)
 	accB, _ := storage.GetAccount(to)
 
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), PrivKeyAccA, PrivKeyMultiSig, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {

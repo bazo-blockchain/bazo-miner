@@ -3,7 +3,6 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/big"
 	"reflect"
 
@@ -56,8 +55,8 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return false
 	}
 
-	accFromHash := crypto.SerializeHashContent(accFrom.Address)
-	accToHash := crypto.SerializeHashContent(accTo.Address)
+	accFromHash := protocol.SerializeHashContent(accFrom.Address)
+	accToHash := protocol.SerializeHashContent(accTo.Address)
 
 	pubKey1Sig1.SetBytes(accFrom.Address[:32])
 	pubKey2Sig1.SetBytes(accFrom.Address[32:])
@@ -164,7 +163,7 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 		return false
 	}
 
-	accFromHash := crypto.SerializeHashContent(accFrom.Address)
+	accFromHash := protocol.SerializeHashContent(accFrom.Address)
 
 	pub1.SetBytes(accFrom.Address[:32])
 	pub2.SetBytes(accFrom.Address[32:])

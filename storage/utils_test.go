@@ -12,15 +12,16 @@ func TestSerializeHashContent(t *testing.T) {
 	pubKeyInt, _ := new(big.Int).SetString(PubA1+PubA2, 16)
 	copy(data, pubKeyInt.Bytes())
 
-	hash := SerializeHashContent(data)
+	hash := protocol.SerializeHashContent(data)
+	base16String := fmt.Sprintf("%x", hash)
 
-	if fmt.Sprintf("%x", hash) != "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a" {
-		t.Errorf("Error serializing: %x != %v\n", hash, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
+	if base16String != "075783ca932e234acfabbe9d989c35b59c87495a77745bf79e6b704549af2cfa" {
+		t.Errorf("Error serializing: %x != %v\n", hash, "075783ca932e234acfabbe9d989c35b59c87495a77745bf79e6b704549af2cfa")
 	}
 }
 
 func TestGetAccount(t *testing.T) {
-	accAHash := crypto.SerializeHashContent(accA.Address)
+	accAHash := protocol.SerializeHashContent(accA.Address)
 
 	acc, err := GetAccount(accAHash)
 
@@ -41,7 +42,7 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestGetRootAccount(t *testing.T) {
-	rootHash := crypto.SerializeHashContent(rootAcc.Address)
+	rootHash := protocol.SerializeHashContent(rootAcc.Address)
 
 	root, err := GetRootAccount(rootHash)
 
