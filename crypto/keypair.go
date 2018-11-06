@@ -28,22 +28,41 @@ func ExtractECDSAKeyFromFile(filename string) (privKey *ecdsa.PrivateKey, err er
 	defer filehandle.Close()
 
 	reader := bufio.NewReader(filehandle)
+	privKey, err = readECDSAPrivateKey(reader)
 
-	//Public Key
-	pub1, err := reader.ReadString('\n')
-	pub2, err := reader.ReadString('\n')
-	//Private Key
+	if err != nil {
+		return privKey, errors.New(fmt.Sprintf("%v", err))
+	}
+
+	return privKey, VerifyECDSAKey(privKey)
+}
+
+func ExtractECDSAPublicKeyFromFile(filename string) (pubKey *ecdsa.PublicKey, err error) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		err = CreateECDSAKeyFile(filename)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	filehandle, err := os.Open(filename)
+	if err != nil {
+		return pubKey, errors.New(fmt.Sprintf("%v", err))
+	}
+	defer filehandle.Close()
+
+	reader := bufio.NewReader(filehandle)
+
+	return readECDSAPublicKey(reader)
+}
+
+func readECDSAPrivateKey(reader *bufio.Reader) (privKey *ecdsa.PrivateKey, err error) {
+	pubKey, err := readECDSAPublicKey(reader)
 	priv, err2 := reader.ReadString('\n')
 	if err != nil || err2 != nil {
 		return privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
-	pubKey, err := GetPubKeyFromString(strings.Split(pub1, "\n")[0], strings.Split(pub2, "\n")[0])
-	if err != nil {
-		return privKey, errors.New(fmt.Sprintf("%v", err))
-	}
-
-	//File consists of public & private key
 	if err2 == nil {
 		privInt, b := new(big.Int).SetString(strings.Split(priv, "\n")[0], 16)
 		if !b {
@@ -51,12 +70,24 @@ func ExtractECDSAKeyFromFile(filename string) (privKey *ecdsa.PrivateKey, err er
 		}
 
 		privKey = &ecdsa.PrivateKey{
-			pubKey,
+			*pubKey,
 			privInt,
 		}
 	}
 
-	return privKey, VerifyECDSAKey(privKey)
+	return privKey, nil
+}
+
+func readECDSAPublicKey(reader *bufio.Reader) (pubKey *ecdsa.PublicKey, err error) {
+	//Public Key
+	pub1, err := reader.ReadString('\n')
+	pub2, err := reader.ReadString('\n')
+
+	if err != nil {
+		return pubKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
+	}
+
+	return GetPubKeyFromString(strings.Split(pub1, "\n")[0], strings.Split(pub2, "\n")[0])
 }
 
 func VerifyECDSAKey(privKey *ecdsa.PrivateKey) error {
@@ -100,14 +131,14 @@ func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
 	return address
 }
 
-func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey, err error) {
+func GetPubKeyFromString(pub1, pub2 string) (pubKey *ecdsa.PublicKey, err error) {
 	pub1Int, b := new(big.Int).SetString(pub1, 16)
 	pub2Int, b := new(big.Int).SetString(pub2, 16)
 	if !b {
 		return pubKey, errors.New("failed to convert the key strings to big.Int")
 	}
 
-	pubKey = ecdsa.PublicKey{
+	pubKey = &ecdsa.PublicKey{
 		elliptic.P256(),
 		pub1Int,
 		pub2Int,

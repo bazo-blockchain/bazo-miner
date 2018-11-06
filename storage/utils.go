@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"log"
 	"os"
@@ -29,13 +28,6 @@ func GetRootAccount(hash [32]byte) (acc *protocol.Account, err error) {
 	}
 
 	return nil, err
-}
-
-func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
-	pubKey, _ := crypto.GetPubKeyFromString(INIT_ROOT_PUB_KEY1, INIT_ROOT_PUB_KEY2)
-	address = crypto.GetAddressFromPubKey(&pubKey)
-
-	return address, protocol.SerializeHashContent(address)
 }
 
 func IsRootKey(hash [32]byte) bool {

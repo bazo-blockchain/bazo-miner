@@ -112,7 +112,7 @@ func addTestingAccounts() {
 	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
 	pubKeyMultiSig, _ := crypto.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
 	PrivKeyMultiSig = &ecdsa.PrivateKey{
-		pubKeyMultiSig,
+		*pubKeyMultiSig,
 		privMultiSig,
 	}
 
@@ -121,7 +121,7 @@ func addTestingAccounts() {
 	hashMultiSig := protocol.SerializeHashContent(multiSigAcc.Address)
 
 	//Set the global variable in blockchain.go
-	multisigPubKey = &pubKeyMultiSig
+	multisigPubKey = pubKeyMultiSig
 
 	privKeyValidator, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 

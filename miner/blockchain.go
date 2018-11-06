@@ -12,25 +12,25 @@ import (
 )
 
 var (
-	logger              *log.Logger
-	blockValidation     = &sync.Mutex{}
-	parameterSlice      []Parameters
-	activeParameters    *Parameters
-	uptodate            bool
-	slashingDict        = make(map[[32]byte]SlashingProof)
-	validatorAccAddress [64]byte
-	multisigPubKey      *ecdsa.PublicKey
-	commPrivKey			*rsa.PrivateKey
-	rootCommPrivKey		*rsa.PrivateKey
+	logger              			*log.Logger
+	blockValidation     			= &sync.Mutex{}
+	parameterSlice      			[]Parameters
+	activeParameters    			*Parameters
+	uptodate            			bool
+	slashingDict        			= make(map[[32]byte]SlashingProof)
+	validatorAccAddress 			[64]byte
+	multisigPubKey      			*ecdsa.PublicKey
+	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
 )
 
 //Miner entry point
-func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.PrivateKey) {
+func Init(validatorKey, multisigKey, rootKey *ecdsa.PublicKey, commitmentKey, rootCommitmentKey *rsa.PrivateKey) {
 	var err error
 
-	validatorAccAddress = crypto.GetAddressFromPubKey(validatorPubKey)
-	multisigPubKey = multisig
-	commPrivKey = commitmentPrivKey
+	validatorAccAddress = crypto.GetAddressFromPubKey(validatorKey)
+	multisigPubKey = multisigKey
+	commPrivKey = commitmentKey
+	rootCommPrivKey = rootCommitmentKey
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -39,7 +39,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, commitmentPrivKey *rsa.Pri
 	activeParameters = &parameterSlice[0]
 
 	//Initialize root key.
-	initRootKey()
+	initRootKey(rootKey)
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
 	}
@@ -95,24 +95,12 @@ func mining(initialBlock *protocol.Block) {
 }
 
 //At least one root key needs to be set which is allowed to create new accounts.
-func initRootKey() error {
-	address, addressHash := storage.GetInitRootPubKey()
-
-	rootComm, err := crypto.CreateRSAPrivKeyFromBase64(
-		storage.INIT_ROOT_COMM_PUB_KEY,
-		storage.INIT_ROOT_COMM_PRIV_KEY, []string {
-			storage.INIT_ROOT_COMM_PRIME1,
-			storage.INIT_ROOT_COMM_PRIME2,
-		})
-
-	if err != nil {
-		return err
-	}
-
-	rootCommPrivKey = rootComm
+func initRootKey(rootKey *ecdsa.PublicKey) error {
+	address := crypto.GetAddressFromPubKey(rootKey)
+	addressHash := protocol.SerializeHashContent(address)
 
 	var commPubKey [crypto.COMM_KEY_LENGTH]byte
-	copy(commPubKey[:], rootComm.N.Bytes())
+	copy(commPubKey[:], rootCommPrivKey.N.Bytes())
 
 	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
 	storage.State[addressHash] = &rootAcc
