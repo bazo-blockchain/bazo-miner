@@ -77,7 +77,8 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		tx.To = accToHash
 		validSig1 = true
 	} else {
-		//	TODO error logging
+		logger.Printf("Sig1 invalid. FromHash: %v\nToHash: %v\n", accFromHash, accToHash)
+		return false
 	}
 
 	r.SetBytes(tx.Sig2[:32])
@@ -86,7 +87,8 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	if ecdsa.Verify(multisigPubKey, txHash[:], r, s) {
 		validSig2 = true
 	} else {
-		//	TODO error logging
+		logger.Printf("Sig2 invalid. FromHash: %v\nToHash: %v\n", accFromHash, accToHash)
+		return false
 	}
 
 	return validSig1 && validSig2
@@ -151,9 +153,6 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 		return false
 	}
 
-	pub1, pub2 := new(big.Int), new(big.Int)
-	r, s := new(big.Int), new(big.Int)
-
 	//Check if account is present in the actual state
 	accFrom := storage.State[tx.Account]
 
@@ -164,6 +163,9 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 	}
 
 	accFromHash := protocol.SerializeHashContent(accFrom.Address)
+
+	pub1, pub2 := new(big.Int), new(big.Int)
+	r, s := new(big.Int), new(big.Int)
 
 	pub1.SetBytes(accFrom.Address[:32])
 	pub2.SetBytes(accFrom.Address[32:])

@@ -33,6 +33,8 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, si
 	tx.IsStaking = isStaking
 	tx.Account = account
 
+	copy(tx.CommitmentKey[:], commPubKey.N.Bytes())
+
 	txHash := tx.Hash()
 
 	r, s, err := ecdsa.Sign(rand.Reader, signKey, txHash[:])
@@ -42,7 +44,6 @@ func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, si
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
-	copy(tx.CommitmentKey[:], commPubKey.N.Bytes()[:])
 
 	return tx, nil
 }
