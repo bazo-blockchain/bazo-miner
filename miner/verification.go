@@ -177,12 +177,7 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
 
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) {
-		tx.Account = accFromHash
-		return true
-	}
-
-	return false
+	return ecdsa.Verify(&pubKey, txHash[:], r, s)
 }
 
 //Returns true if id is in the list of possible ids and rational value for payload parameter.
