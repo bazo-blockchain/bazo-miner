@@ -177,7 +177,7 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
 
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) == true {
+	if ecdsa.Verify(&pubKey, txHash[:], r, s) {
 		tx.Account = accFromHash
 		return true
 	}
