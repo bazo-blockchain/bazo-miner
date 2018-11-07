@@ -140,7 +140,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			logger.Printf("Adding stateTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			return err
 		}
 	default:
