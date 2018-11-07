@@ -41,6 +41,11 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				rootCommitmentFileName: c.String("rcommitment"),
 			}
 			fmt.Println(args.String())
+
+			if c.Bool("confirm") {
+				fmt.Scanf("\n")
+			}
+
 			return Start(args, logger)
 		},
 		Flags:	[]cli.Flag {
@@ -83,6 +88,10 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				Name: 	"rcommitment",
 				Usage: 	"Load root's RSA public-private key from `FILE`",
 				Value: 	"commitment.txt",
+			},
+			cli.BoolFlag {
+				Name: 	"confirm",
+				Usage: 	"User must confirm start parameters before running",
 			},
 		},
 	}
