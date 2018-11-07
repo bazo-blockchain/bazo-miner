@@ -77,7 +77,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		tx.To = accToHash
 		validSig1 = true
 	} else {
-		logger.Printf("Sig1 invalid. FromHash: %v\nToHash: %v\n", accFromHash, accToHash)
+		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
 		return false
 	}
 
@@ -87,7 +87,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	if ecdsa.Verify(multisigPubKey, txHash[:], r, s) {
 		validSig2 = true
 	} else {
-		logger.Printf("Sig2 invalid. FromHash: %v\nToHash: %v\n", accFromHash, accToHash)
+		logger.Printf("Sig2 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
 		return false
 	}
 
