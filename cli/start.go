@@ -39,6 +39,9 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 
 				rootKeyFileName:		c.String("rkey"),
 				rootCommitmentFileName: c.String("rcommitment"),
+			err := args.ValidateInput()
+			if err != nil {
+				return err
 			}
 			fmt.Println(args.String())
 
@@ -134,6 +137,42 @@ func Start(args *startArgs, logger *log.Logger) error {
 	}
 
 	miner.Init(validatorPubKey, multisigPubKey, rootPubKey, commPrivKey, rootCommPrivKey)
+	return nil
+}
+
+func (args startArgs) ValidateInput() error {
+	if len(args.dbname) == 0 {
+		return errors.New("argument missing: dbname")
+	}
+
+	if len(args.myNodeAddress) == 0 {
+		return errors.New("argument missing: myNodeAddress")
+	}
+
+	if len(args.bootstrapNodeAddress) == 0 {
+		return errors.New("argument missing: bootstrapNodeAddress")
+	}
+
+	if len(args.keyFileName) == 0 {
+		return errors.New("argument missing: keyFileName")
+	}
+
+	if len(args.multisigFileName) == 0 {
+		return errors.New("argument missing: multisigFileName")
+	}
+
+	if len(args.commitmentFileName) == 0 {
+		return errors.New("argument missing: commitmentFileName")
+	}
+
+	if len(args.rootKeyFileName) == 0 {
+		return errors.New("argument missing: rootKeyFileName")
+	}
+
+	if len(args.rootCommitmentFileName) == 0 {
+		return errors.New("argument missing: rootCommitmentFileName")
+	}
+
 	return nil
 }
 
