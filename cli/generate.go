@@ -24,7 +24,7 @@ func AddGenerateCommand(app *cli.App) {
 		Flags:	[]cli.Flag {
 			cli.StringFlag {
 				Name: 	"filename",
-				Usage: 	"The key's `FILE` name",
+				Usage: 	"the key's `FILE` name",
 			},
 		},
 	}
