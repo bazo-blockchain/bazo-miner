@@ -6,20 +6,18 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"log"
 )
 
 type startArgs struct {
 	dbname 					string
-
 	myNodeAddress			string
 	bootstrapNodeAddress	string
-
 	keyFileName				string
 	multisigFileName		string
 	commitmentFileName		string
-
 	rootKeyFileName			string
 	rootCommitmentFileName	string
 }
@@ -36,13 +34,15 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				keyFileName: 			c.String("key"),
 				multisigFileName: 		c.String("multisig"),
 				commitmentFileName:		c.String("commitment"),
+				rootKeyFileName:		c.String("rootkey"),
+				rootCommitmentFileName: c.String("rootcommitment"),
+			}
 
-				rootKeyFileName:		c.String("rkey"),
-				rootCommitmentFileName: c.String("rcommitment"),
 			err := args.ValidateInput()
 			if err != nil {
 				return err
 			}
+
 			fmt.Println(args.String())
 
 			if c.Bool("confirm") {
@@ -59,42 +59,42 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 			},
 			cli.StringFlag {
 				Name: 	"address, a",
-				Usage: 	"Start node at `IP:PORT`",
+				Usage: 	"start node at `IP:PORT`",
 				Value: 	"localhost:8000",
 			},
 			cli.StringFlag {
 				Name: 	"bootstrap, b",
-				Usage: 	"Connect to bootstrap node at `IP:PORT`",
+				Usage: 	"connect to bootstrap node at `IP:PORT`",
 				Value: 	"localhost:8000",
 			},
 			cli.StringFlag {
 				Name: 	"key, k",
-				Usage: 	"Load validator's public key from `FILE`",
+				Usage: 	"load validator's public key from `FILE`",
 				Value: 	"key.txt",
 			},
 			cli.StringFlag {
 				Name: 	"multisig, m",
-				Usage: 	"Load multi-signature server’s public key from `FILE`",
+				Usage: 	"load multi-signature server’s public key from `FILE`",
 				Value: 	"multisig.txt",
 			},
 			cli.StringFlag {
 				Name: 	"commitment, c",
-				Usage: 	"Load validator's RSA public-private key from `FILE`",
+				Usage: 	"load validator's RSA public-private key from `FILE`",
 				Value: 	"commitment.txt",
 			},
 			cli.StringFlag {
-				Name: 	"rkey",
-				Usage: 	"Load root's public key from `FILE`",
+				Name: 	"rootkey",
+				Usage: 	"load root's public key from `FILE`",
 				Value: 	"key.txt",
 			},
 			cli.StringFlag {
-				Name: 	"rcommitment",
-				Usage: 	"Load root's RSA public-private key from `FILE`",
+				Name: 	"rootcommitment",
+				Usage: 	"load root's RSA public-private key from `FILE`",
 				Value: 	"commitment.txt",
 			},
 			cli.BoolFlag {
 				Name: 	"confirm",
-				Usage: 	"User must confirm start parameters before running",
+				Usage: 	"user must press enter before starting the miner",
 			},
 		},
 	}
