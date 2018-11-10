@@ -16,10 +16,10 @@ type startArgs struct {
 	myNodeAddress			string
 	bootstrapNodeAddress	string
 	keyFileName				string
-	multisigFileName		string
-	commitmentFileName		string
-	rootKeyFileName			string
-	rootCommitmentFileName	string
+	multisigFile			string
+	commitmentFile			string
+	rootKeyFile				string
+	rootCommitmentFile		string
 }
 
 func AddStartCommand(app *cli.App, logger *log.Logger) {
@@ -32,10 +32,10 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				myNodeAddress: 			c.String("address"),
 				bootstrapNodeAddress: 	c.String("bootstrap"),
 				keyFileName: 			c.String("key"),
-				multisigFileName: 		c.String("multisig"),
-				commitmentFileName:		c.String("commitment"),
-				rootKeyFileName:		c.String("rootkey"),
-				rootCommitmentFileName: c.String("rootcommitment"),
+				multisigFile: 			c.String("multisig"),
+				commitmentFile:			c.String("commitment"),
+				rootKeyFile:			c.String("rootkey"),
+				rootCommitmentFile: 	c.String("rootcommitment"),
 			}
 
 			err := args.ValidateInput()
@@ -112,25 +112,25 @@ func Start(args *startArgs, logger *log.Logger) error {
 		return err
 	}
 
-	multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.multisigFileName)
+	multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.multisigFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
 	}
 
-	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.commitmentFileName)
+	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.commitmentFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
 	}
 
-	rootPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.rootKeyFileName)
+	rootPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.rootKeyFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
 	}
 
-	rootCommPrivKey, err := crypto.ExtractRSAKeyFromFile(args.rootCommitmentFileName)
+	rootCommPrivKey, err := crypto.ExtractRSAKeyFromFile(args.rootCommitmentFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
@@ -153,24 +153,24 @@ func (args startArgs) ValidateInput() error {
 		return errors.New("argument missing: bootstrapNodeAddress")
 	}
 
-	if len(args.keyFileName) == 0 {
-		return errors.New("argument missing: keyFileName")
+	if len(args.keyFile) == 0 {
+		return errors.New("argument missing: keyFile")
 	}
 
-	if len(args.multisigFileName) == 0 {
-		return errors.New("argument missing: multisigFileName")
+	if len(args.multisigFile) == 0 {
+		return errors.New("argument missing: multisigFile")
 	}
 
-	if len(args.commitmentFileName) == 0 {
-		return errors.New("argument missing: commitmentFileName")
+	if len(args.commitmentFile) == 0 {
+		return errors.New("argument missing: commitmentFile")
 	}
 
-	if len(args.rootKeyFileName) == 0 {
-		return errors.New("argument missing: rootKeyFileName")
+	if len(args.rootKeyFile) == 0 {
+		return errors.New("argument missing: rootKeyFile")
 	}
 
-	if len(args.rootCommitmentFileName) == 0 {
-		return errors.New("argument missing: rootCommitmentFileName")
+	if len(args.rootCommitmentFile) == 0 {
+		return errors.New("argument missing: rootCommitmentFile")
 	}
 
 	return nil
@@ -190,8 +190,8 @@ func (args startArgs) String() string {
 		args.myNodeAddress,
 		args.bootstrapNodeAddress,
 		args.keyFileName,
-		args.multisigFileName,
-		args.commitmentFileName,
-		args.rootKeyFileName,
-		args.rootCommitmentFileName)
+		args.multisigFile,
+		args.commitmentFile,
+		args.rootKeyFile,
+		args.rootCommitmentFile)
 }
