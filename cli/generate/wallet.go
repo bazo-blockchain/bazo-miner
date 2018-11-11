@@ -1,4 +1,4 @@
-package cli
+package generate
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"github.com/urfave/cli"
 )
 
-func AddGenerateCommand(app *cli.App) {
-	command := cli.Command {
-		Name:	"generate",
-		Usage:	"generate a new pair of keys",
+func GetGenerateWalletCommand() cli.Command {
+	return cli.Command {
+		Name:	"generate-wallet",
+		Usage:	"generate a new pair of wallet keys",
 		Action:	func(c *cli.Context) error {
-			filename := c.String("filename")
+			filename := c.String("file")
 			privKey, err := crypto.ExtractECDSAKeyFromFile(filename)
 
-			fmt.Printf("Keyfile generated successfully.\n")
+			fmt.Printf("Wallet generated successfully.\n")
 			fmt.Printf("PubKeyX: %x\n", privKey.PublicKey.X)
 			fmt.Printf("PubKeyY: %x\n", privKey.PublicKey.Y)
 			fmt.Printf("PrivKey: %x\n", privKey.D)
@@ -23,11 +23,9 @@ func AddGenerateCommand(app *cli.App) {
 		},
 		Flags:	[]cli.Flag {
 			cli.StringFlag {
-				Name: 	"filename",
-				Usage: 	"the key's `FILE` name",
+				Name: 	"file",
+				Usage: 	"the new key's `FILE` name",
 			},
 		},
 	}
-
-	app.Commands = append(app.Commands, command)
 }

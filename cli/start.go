@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/miner"
@@ -15,15 +16,15 @@ type startArgs struct {
 	dbname 					string
 	myNodeAddress			string
 	bootstrapNodeAddress	string
-	keyFileName				string
+	walletFile				string
 	multisigFile			string
 	commitmentFile			string
 	rootKeyFile				string
 	rootCommitmentFile		string
 }
 
-func AddStartCommand(app *cli.App, logger *log.Logger) {
-	command := cli.Command		{
+func GetStartCommand(logger *log.Logger) cli.Command {
+	return cli.Command {
 		Name:	"start",
 		Usage:	"start the miner",
 		Action:	func(c *cli.Context) error {
@@ -31,11 +32,15 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				dbname: 				c.String("database"),
 				myNodeAddress: 			c.String("address"),
 				bootstrapNodeAddress: 	c.String("bootstrap"),
-				keyFileName: 			c.String("key"),
+				walletFile: 			c.String("wallet"),
 				multisigFile: 			c.String("multisig"),
 				commitmentFile:			c.String("commitment"),
-				rootKeyFile:			c.String("rootkey"),
+				rootKeyFile:			c.String("rootwallet"),
 				rootCommitmentFile: 	c.String("rootcommitment"),
+			}
+
+			if !c.IsSet("bootstrap") {
+				args.bootstrapNodeAddress = args.myNodeAddress
 			}
 
 			err := args.ValidateInput()
@@ -54,7 +59,7 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 		Flags:	[]cli.Flag {
 			cli.StringFlag {
 				Name: 	"database, d",
-				Usage: 	"Load database of the disk-based key/value store from `FILE`",
+				Usage: 	"load database of the disk-based key/value store from `FILE`",
 				Value:	"store.db",
 			},
 			cli.StringFlag {
@@ -68,14 +73,13 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				Value: 	"localhost:8000",
 			},
 			cli.StringFlag {
-				Name: 	"key, k",
+				Name: 	"wallet, w",
 				Usage: 	"load validator's public key from `FILE`",
-				Value: 	"key.txt",
+				Value: 	"wallet.txt",
 			},
 			cli.StringFlag {
 				Name: 	"multisig, m",
 				Usage: 	"load multi-signature server’s public key from `FILE`",
-				Value: 	"multisig.txt",
 			},
 			cli.StringFlag {
 				Name: 	"commitment, c",
@@ -83,14 +87,14 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 				Value: 	"commitment.txt",
 			},
 			cli.StringFlag {
-				Name: 	"rootkey",
+				Name: 	"rootwallet",
 				Usage: 	"load root's public key from `FILE`",
-				Value: 	"key.txt",
+				Value: 	"rootwallet.txt",
 			},
 			cli.StringFlag {
 				Name: 	"rootcommitment",
 				Usage: 	"load root's RSA public-private key from `FILE`",
-				Value: 	"commitment.txt",
+				Value: 	"rootcommitment.txt",
 			},
 			cli.BoolFlag {
 				Name: 	"confirm",
@@ -98,33 +102,36 @@ func AddStartCommand(app *cli.App, logger *log.Logger) {
 			},
 		},
 	}
-
-	app.Commands = append(app.Commands, command)
 }
 
 func Start(args *startArgs, logger *log.Logger) error {
 	storage.Init(args.dbname, args.bootstrapNodeAddress)
 	p2p.Init(args.myNodeAddress)
 
-	validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.keyFileName)
+	validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.walletFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
 	}
 
-	multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.multisigFile)
+	rootPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.rootKeyFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
+	}
+
+	var multisigPubKey *ecdsa.PublicKey
+	if len(args.multisigFile) > 0 {
+		multisigPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.multisigFile)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+	} else {
+		multisigPubKey = &rootPrivKey.PublicKey
 	}
 
 	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.commitmentFile)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return err
-	}
-
-	rootPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.rootKeyFile)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
@@ -136,7 +143,7 @@ func Start(args *startArgs, logger *log.Logger) error {
 		return err
 	}
 
-	miner.Init(validatorPubKey, multisigPubKey, rootPubKey, commPrivKey, rootCommPrivKey)
+	miner.Init(validatorPubKey, multisigPubKey, &rootPrivKey.PublicKey, commPrivKey, rootCommPrivKey)
 	return nil
 }
 
@@ -153,12 +160,8 @@ func (args startArgs) ValidateInput() error {
 		return errors.New("argument missing: bootstrapNodeAddress")
 	}
 
-	if len(args.keyFile) == 0 {
+	if len(args.walletFile) == 0 {
 		return errors.New("argument missing: keyFile")
-	}
-
-	if len(args.multisigFile) == 0 {
-		return errors.New("argument missing: multisigFile")
 	}
 
 	if len(args.commitmentFile) == 0 {
@@ -181,15 +184,15 @@ func (args startArgs) String() string {
 			"- Database Name:\t\t %v\n" +
 			"- My Address:\t\t\t %v\n" +
 			"- Bootstrap Address:\t\t %v\n" +
-			"- Key Filename:\t\t\t %v\n" +
-			"- Multisig Filename:\t\t %v\n" +
-			"- Commitment Filename:\t\t %v\n" +
-			"- Root Key Filename:\t\t %v\n" +
-			"- Root Commitment Filename:\t %v\n",
+			"- Wallet File:\t\t\t %v\n" +
+			"- Multisig File:\t\t %v\n" +
+			"- Commitment File:\t\t %v\n" +
+			"- Root Wallet File:\t\t %v\n" +
+			"- Root Commitment File:\t %v\n",
 		args.dbname,
 		args.myNodeAddress,
 		args.bootstrapNodeAddress,
-		args.keyFileName,
+		args.walletFile,
 		args.multisigFile,
 		args.commitmentFile,
 		args.rootKeyFile,

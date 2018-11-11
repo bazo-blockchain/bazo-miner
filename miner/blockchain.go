@@ -24,13 +24,13 @@ var (
 )
 
 //Miner entry point
-func Init(validatorKey, multisigKey, rootKey *ecdsa.PublicKey, commitmentKey, rootCommitmentKey *rsa.PrivateKey) {
+func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validatorCommitment, rootCommitment *rsa.PrivateKey) {
 	var err error
 
-	validatorAccAddress = crypto.GetAddressFromPubKey(validatorKey)
-	multisigPubKey = multisigKey
-	commPrivKey = commitmentKey
-	rootCommPrivKey = rootCommitmentKey
+	validatorAccAddress = crypto.GetAddressFromPubKey(validatorWallet)
+	multisigPubKey = multisigWallet
+	commPrivKey = validatorCommitment
+	rootCommPrivKey = rootCommitment
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -39,7 +39,7 @@ func Init(validatorKey, multisigKey, rootKey *ecdsa.PublicKey, commitmentKey, ro
 	activeParameters = &parameterSlice[0]
 
 	//Initialize root key.
-	initRootKey(rootKey)
+	initRootKey(rootWallet)
 	if err != nil {
 		logger.Printf("Could not create a root account.\n")
 	}
