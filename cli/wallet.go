@@ -1,4 +1,4 @@
-package generate
+package cli
 
 import (
 	"fmt"

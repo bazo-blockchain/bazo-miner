@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/bazo-blockchain/bazo-miner/cli"
-	"github.com/bazo-blockchain/bazo-miner/cli/generate"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	cli2 "github.com/urfave/cli"
 	"os"
@@ -19,8 +18,8 @@ func main() {
 	app.EnableBashCompletion = true
 	app.Commands = []cli2.Command {
 		cli.GetStartCommand(logger),
-		generate.GetGenerateWalletCommand(),
-		generate.GetGenerateCommitmentCommand(),
+		cli.GetGenerateWalletCommand(),
+		cli.GetGenerateCommitmentCommand(),
 	}
 
 	err := app.Run(os.Args)
