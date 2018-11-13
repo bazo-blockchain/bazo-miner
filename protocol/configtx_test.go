@@ -12,7 +12,7 @@ func TestConfigTxSerialization(t *testing.T) {
 
 	loopMax := int(rand.Uint32() % 10000)
 	for i := 0; i < loopMax; i++ {
-		tx, err := ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%256), rand.Uint64(), rand.Uint64(), uint8(i), &RootPrivKey)
+		tx, err := ConstrConfigTx(uint8(rand.Uint32()%256), uint8(rand.Uint32()%256), rand.Uint64(), rand.Uint64(), uint8(i), RootPrivKey)
 		data := tx.Encode()
 		var decodedTx *ConfigTx
 		decodedTx = decodedTx.Decode(data)

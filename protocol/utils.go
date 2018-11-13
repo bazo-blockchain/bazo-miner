@@ -16,7 +16,6 @@ import (
 func SerializeHashContent(data interface{}) (hash [32]byte) {
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(data)
-
 	return sha3.Sum256(buffer.Bytes())
 }
 

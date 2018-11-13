@@ -2,7 +2,7 @@ package miner
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -16,20 +16,20 @@ func TestProofOfStake(t *testing.T) {
 
 	balance := uint64(randVar.Int() % 1000)
 
-	var prevProofs [][protocol.COMM_PROOF_LENGTH]byte
-	prevProof1, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "0")
+	var prevProofs [][crypto.COMM_PROOF_LENGTH]byte
+	prevProof1, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "0")
 	prevProofs = append(prevProofs, prevProof1)
-	prevProof2, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "1")
+	prevProof2, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "1")
 	prevProofs = append(prevProofs, prevProof2)
-	prevProof3, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "2")
+	prevProof3, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "2")
 	prevProofs = append(prevProofs, prevProof3)
-	prevProof4, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, "3")
+	prevProof4, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "3")
 	prevProofs = append(prevProofs, prevProof4)
 
 	var height uint32 = 4
 	diff := 10
 
-	commitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyAccA, fmt.Sprint(height))
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, fmt.Sprint(height))
 	timestamp, _ := proofOfStake(uint8(diff), lastBlock.Hash, prevProofs, height, balance, commitmentProof)
 
 	if !validateProofOfStake(uint8(diff), prevProofs, height, balance, commitmentProof, timestamp) {
@@ -40,12 +40,12 @@ func TestProofOfStake(t *testing.T) {
 func TestGetLatestProofs(t *testing.T) {
 	cleanAndPrepare()
 
-	var proofs [][protocol.COMM_PROOF_LENGTH]byte
-	genesisCommitmentProof, _ := protocol.SignMessageWithRSAKey(&CommPrivKeyRoot, "0")
-	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
+	var proofs [][crypto.COMM_PROOF_LENGTH]byte
+	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
 	//Initially we expect only the genesis commitment proof
 
-	b := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 
 	prevProofs := GetLatestProofs(1, b)
 
@@ -57,21 +57,21 @@ func TestGetLatestProofs(t *testing.T) {
 	}
 
 	//Two new blocks are added with random commitment proofs
-	b1 := newBlock([32]byte{}, [protocol.COMM_PROOF_LENGTH]byte{}, 1)
+	b1 := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
-	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
 	validate(b1, false)
 
-	b2 := newBlock(b1.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
+	b2 := newBlock(b1.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
 	validate(b2, false)
-	proofs = append([][protocol.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
 
-	b3 := newBlock(b2.Hash, [protocol.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
+	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
 
 	prevProofs = GetLatestProofs(3, b3)
 

@@ -1,4 +1,4 @@
-package protocol
+package crypto
 
 import (
 	"bufio"
@@ -23,9 +23,9 @@ const (
 	COMM_NOF_PRIMES      = 2
 )
 
-func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		err = createRSAKeyFile(filename)
+func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error) {
+	if _, err = os.Stat(filename); os.IsNotExist(err) {
+		err = CreateRSAKeyFile(filename)
 		if err != nil {
 			return privKey, err
 		}
@@ -50,7 +50,26 @@ func ExtractRSAKeyFromFile(filename string) (privKey rsa.PrivateKey, err error) 
 		return privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
-	return CreateRSAPrivKeyFromBase64(strModulus, strPrivExponent, strPrimes)
+	privKey, err = CreateRSAPrivKeyFromBase64(strModulus, strPrivExponent, strPrimes)
+	if err != nil {
+		return privKey, err
+	}
+
+	return privKey, VerifyRSAKey(privKey)
+}
+
+func VerifyRSAKey(privKey *rsa.PrivateKey) error {
+	message := "Test"
+	cipher, err := SignMessageWithRSAKey(privKey, message)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not sign message. Failed with error: %v", err))
+	}
+
+	err = VerifyMessageWithRSAKey(&privKey.PublicKey, message, cipher)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not verify message. Failed with error: %v", err))
+	}
+	return nil
 }
 
 func CreateRSAPubKeyFromBytes(bytModulus [COMM_KEY_LENGTH]byte) (pubKey *rsa.PublicKey, err error) {
@@ -61,7 +80,7 @@ func CreateRSAPubKeyFromBytes(bytModulus [COMM_KEY_LENGTH]byte) (pubKey *rsa.Pub
 	return
 }
 
-func CreateRSAPrivKeyFromBase64(strModulus string, strPrivExponent string, strPrimes []string) (privKey rsa.PrivateKey, err error) {
+func CreateRSAPrivKeyFromBase64(strModulus string, strPrivExponent string, strPrimes []string) (privKey *rsa.PrivateKey, err error) {
 	modulus, err := fromBase64(strModulus, &err)
 	privExponent, err := fromBase64(strPrivExponent, &err)
 	primes := make([]*big.Int, COMM_NOF_PRIMES)
@@ -69,7 +88,7 @@ func CreateRSAPrivKeyFromBase64(strModulus string, strPrivExponent string, strPr
 		primes[i], err = fromBase64(strPrimes[i], &err)
 	}
 
-	privKey = rsa.PrivateKey{
+	privKey = &rsa.PrivateKey{
 		PublicKey: rsa.PublicKey{
 			N: modulus,
 			E: COMM_PUBLIC_EXPONENT,
@@ -118,7 +137,7 @@ func nextLine(scanner *bufio.Scanner) string {
 // 1 	Public Modulus N
 // 2 	Private Exponent D
 // 3+	Private Primes (depending on COMM_NOF_PRIMES)
-func createRSAKeyFile(filename string) (err error) {
+func CreateRSAKeyFile(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -130,11 +149,11 @@ func createRSAKeyFile(filename string) (err error) {
 	}
 
 	_, err = file.WriteString(stringifyRSAKey(key))
-	return
+	return err
 }
 
-func stringifyRSAKey(key *rsa.PrivateKey) (keyString string) {
-	keyString =
+func stringifyRSAKey(key *rsa.PrivateKey) string {
+	keyString :=
 		base64.StdEncoding.EncodeToString(key.N.Bytes()) +
 		"\n" +
 		base64.StdEncoding.EncodeToString(key.D.Bytes())
@@ -143,5 +162,5 @@ func stringifyRSAKey(key *rsa.PrivateKey) (keyString string) {
 		keyString += "\n" + base64.StdEncoding.EncodeToString(prime.Bytes())
 	}
 
-	return
+	return keyString
 }
