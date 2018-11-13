@@ -71,7 +71,7 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 		tx := txSlice[cnt]
 
 		accSender, _ := storage.GetAccount(tx.Account)
-		//Rolling back hashedSeed & stakingBlockHeight not needed
+		//Rolling back stakingBlockHeight not needed
 		accSender.IsStaking = !accSender.IsStaking
 	}
 }

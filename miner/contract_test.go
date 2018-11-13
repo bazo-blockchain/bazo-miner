@@ -2,6 +2,7 @@ package miner
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -15,7 +16,7 @@ import (
 func TestMultipleBlocksWithContractTx(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35,         // CALLDATA
 		0, 1, 0, 5, // PUSH 5
@@ -28,7 +29,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b2 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		1, 0, 15,
 	}
@@ -44,7 +45,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35,    // CALLDATA
 		29, 0, // SLOAD
@@ -58,7 +59,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b2 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		1, 0, 15,
 	}
@@ -81,7 +82,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35,    // CALLDATA
 		29, 0, // SLOAD
@@ -95,7 +96,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b2 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b2 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		1, 0, 15,
 	}
@@ -105,7 +106,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, 3)
+	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 3)
 	transactionData = []byte{
 		1, 0, 15,
 	}
@@ -126,7 +127,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35, 0, 0, 1, 10, 22, 0, 10, 1, 50, 28, 0, 31, 33, 10, 22, 0, 21, 2, 24, 28, 0, 29, 0, 0, 4, 27, 0, 0, 24,
 	}
@@ -136,7 +137,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		0, 100, // Amount
 		0, 1,
@@ -152,7 +153,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 50, 28, 1, 28, 0, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 1, 28, 0, 1, 29, 2, 37, 22, 0, 46, 2, 28, 1, 28, 0, 29, 2, 38, 27, 2, 50, 28, 1, 29, 2, 39, 28, 0, 4, 28, 1, 29, 2, 40, 27, 2, 50,
 	}
@@ -174,7 +175,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		1, 0, 100, // Amount
 		1, receiver[0], receiver[1], // receiver address
@@ -207,7 +208,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	contract := []byte{
 		35, 1, 0, 0, 1, 10, 22, 0, 11, 3, 50, 28, 1, 28, 0, 29, 1, 33, 10, 22, 0, 24, 2, 24, 28, 1, 28, 0, 1, 29, 2, 37, 22, 0, 46, 2, 28, 1, 28, 0, 29, 2, 38, 27, 2, 50, 28, 1, 29, 2, 39, 28, 0, 4, 28, 1, 29, 2, 40, 27, 2, 50,
 	}
@@ -229,7 +230,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b1 := newBlock(b.Hash, [32]byte{}, [32]byte{}, 2)
+	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	transactionData := []byte{
 		1, 0, 100, // Amount
 		1, receiver[0], receiver[1], // receiver address
@@ -260,7 +261,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
-	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, &PrivKeyRoot, contract, contractVariables)
+	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return tx.Issuer
@@ -277,7 +278,7 @@ func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []by
 			accAHash := protocol.SerializeHashContent(accA.Address)
 			accBHash := acc.Hash()
 
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, PrivKeyAccA, PrivKeyMultiSig, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {
@@ -293,7 +294,7 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 	accA, _ := storage.GetAccount(from)
 	accB, _ := storage.GetAccount(to)
 
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), &PrivKeyAccA, &PrivKeyMultiSig, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), PrivKeyAccA, PrivKeyMultiSig, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {

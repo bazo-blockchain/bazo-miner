@@ -11,6 +11,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"github.com/bazo-blockchain/bazo-miner/vm"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -24,11 +25,10 @@ type blockData struct {
 }
 
 //Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, seed [32]byte, hashedSeed [32]byte, height uint32) *protocol.Block {
+func newBlock(prevHash [32]byte, commitmentProof [crypto.COMM_PROOF_LENGTH]byte, height uint32) *protocol.Block {
 	block := new(protocol.Block)
 	block.PrevHash = prevHash
-	block.Seed = seed
-	block.HashedSeed = hashedSeed
+	block.CommitmentProof = commitmentProof
 	block.Height = height
 	block.StateCopy = make(map[[32]byte]*protocol.Account)
 
@@ -59,20 +59,19 @@ func finalizeBlock(block *protocol.Block) error {
 	}
 
 	validatorAccHash := validatorAcc.Hash()
-
 	copy(block.Beneficiary[:], validatorAccHash[:])
 
-	partialHash := block.HashBlock()
-
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
-
-	//Get the current hash of the seed that is stored in my account.
-	localSeed, err := storage.GetSeed(validatorAcc.HashedSeed, seedFile)
+	// Cryptographic Sortition for PoS in Bazo
+	// The commitment proof stores a signed message of the Height that this block was created at.
+	commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(block.Height))
 	if err != nil {
 		return err
 	}
 
-	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevSeeds, block.Height, validatorAcc.Balance, localSeed)
+	partialHash := block.HashBlock()
+	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
+
+	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
@@ -90,16 +89,8 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
-	copy(block.Seed[0:32], localSeed[:])
 
-	//Create a new seed, store it locally and add to the block.
-	newSeed := protocol.CreateRandomSeed()
-
-	//Create the hash of the seed.
-	newHashedSeed := protocol.SerializeHashContent(newSeed)
-
-	storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(newHashedSeed[:])), string(newSeed[:])})
-	copy(block.HashedSeed[0:32], newHashedSeed[:])
+	copy(block.CommitmentProof[0:crypto.COMM_PROOF_LENGTH], commitmentProof[:])
 
 	return nil
 }
@@ -149,7 +140,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			logger.Printf("Adding stateTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			return err
 		}
 	default:
@@ -292,7 +283,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//Update state copy.
 	accSender := b.StateCopy[tx.Account]
 	accSender.IsStaking = tx.IsStaking
-	accSender.HashedSeed = tx.HashedSeed
+	accSender.CommitmentKey = tx.CommitmentKey
 
 	//No further checks needed, static checks were already done with verify().
 	b.StakeTxData = append(b.StakeTxData, tx.Hash())
@@ -647,16 +638,24 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 		return nil, nil, nil, nil, errors.New("Validator is not part of the validator set.")
 	}
 
-	//Invalid if hashedSeed of the previous block is not the same as the hash of the seed of the current block.
-	if acc.HashedSeed != protocol.SerializeHashContent(block.Seed) {
-		return nil, nil, nil, nil, errors.New("The submitted seed does not match the previously submitted seed.")
+	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
+	//Second, check if the commitment proof of the proposed block can be verified with the public key
+	//Invalid if the commitment proof can not be verified with the public key of the proposer
+	commitmentPubKey, err := crypto.CreateRSAPubKeyFromBytes(acc.CommitmentKey)
+	if err != nil {
+		return nil, nil, nil, nil, errors.New("Invalid commitment key in account.")
+	}
+
+	err = crypto.VerifyMessageWithRSAKey(commitmentPubKey, fmt.Sprint(block.Height), block.CommitmentProof)
+	if err != nil {
+		return nil, nil, nil, nil, errors.New("The submitted commitment proof can not be verified.")
 	}
 
 	//Invalid if PoS calculation is not correct.
-	prevSeeds := GetLatestSeeds(activeParameters.num_included_prev_seeds, block)
+	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
 	//PoS validation
-	if !validateProofOfStake(getDifficulty(), prevSeeds, block.Height, acc.Balance, block.Seed, block.Timestamp) {
+	if !validateProofOfStake(getDifficulty(), prevProofs, block.Height, acc.Balance, block.CommitmentProof, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
 	}
 
@@ -668,7 +667,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 
 	//Check for minimum waiting time.
 	if block.Height-acc.StakingBlockHeight < uint32(activeParameters.Waiting_minimum) {
-		return nil, nil, nil, nil, errors.New("The miner must wait a minimum amount of blocks before start validating. Block Height:" + string(block.Height) + " - Height when started validating " + string(acc.StakingBlockHeight) + " MinWaitingTime: " + string(activeParameters.Waiting_minimum))
+		return nil, nil, nil, nil, errors.New("The miner must wait a minimum amount of blocks before start validating. Block Height:" + fmt.Sprint(block.Height) + " - Height when started validating " + string(acc.StakingBlockHeight) + " MinWaitingTime: " + string(activeParameters.Waiting_minimum))
 	}
 
 	//Check if block contains a proof for two conflicting block hashes, else no proof provided.

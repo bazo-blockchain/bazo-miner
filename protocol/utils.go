@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"math"
-	"math/rand"
 	"time"
 
 	rand1 "crypto/rand"
@@ -17,7 +16,6 @@ import (
 func SerializeHashContent(data interface{}) (hash [32]byte) {
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(data)
-
 	return sha3.Sum256(buffer.Bytes())
 }
 
@@ -55,16 +53,6 @@ func calculateBloomFilterParams(n float64, p float64) (uint, uint) {
 	k := uint(kFloat)
 
 	return m, k
-}
-
-func CreateRandomSeed() [32]byte {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	var seed [32]byte
-	for i := range seed {
-		seed[i] = chars[r.Intn(len(chars))]
-	}
-	return seed
 }
 
 func RandomBytes() []byte {

@@ -3,6 +3,7 @@ package miner
 import (
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"strconv"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -84,9 +85,6 @@ func getState() (state string) {
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
-	var seed [32]byte
-	copy(seed[:], storage.GENESIS_SEED)
-
 	allClosedBlocks := storage.ReadAllClosedBlocks()
 
 	//Switch array order to validate genesis block first
@@ -96,7 +94,13 @@ func initState() (initialBlock *protocol.Block, err error) {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
+		initialBlock = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
+
+		commitmentProof, err := crypto.SignMessageWithRSAKey(rootCommPrivKey, fmt.Sprint(initialBlock.Height))
+		if err != nil {
+			return nil, err
+		}
+		copy(initialBlock.CommitmentProof[:], commitmentProof[:])
 
 		//Append genesis block to the map and save in storage
 		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
@@ -146,7 +150,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header != 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [32]byte{}, tx.Contract, tx.ContractVariables)
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
 			newAccHash := newAcc.Hash()
 
 			acc, _ := storage.GetAccount(newAccHash)
@@ -286,7 +290,7 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 
 		//We're manipulating pointer, no need to write back
 		accSender.IsStaking = tx.IsStaking
-		accSender.HashedSeed = tx.HashedSeed
+		accSender.CommitmentKey = tx.CommitmentKey
 		accSender.StakingBlockHeight = height
 	}
 

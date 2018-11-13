@@ -2,8 +2,7 @@ package miner
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -17,91 +16,89 @@ func TestProofOfStake(t *testing.T) {
 
 	balance := uint64(randVar.Int() % 1000)
 
-	var prevSeeds [][32]byte
-	prevSeed1 := protocol.CreateRandomSeed()
-	prevSeeds = append(prevSeeds, prevSeed1)
-	prevSeed2 := protocol.CreateRandomSeed()
-	prevSeeds = append(prevSeeds, prevSeed2)
-	prevSeed3 := protocol.CreateRandomSeed()
-	prevSeeds = append(prevSeeds, prevSeed3)
-	prevSeed4 := protocol.CreateRandomSeed()
-	prevSeeds = append(prevSeeds, prevSeed4)
+	var prevProofs [][crypto.COMM_PROOF_LENGTH]byte
+	prevProof1, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "0")
+	prevProofs = append(prevProofs, prevProof1)
+	prevProof2, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "1")
+	prevProofs = append(prevProofs, prevProof2)
+	prevProof3, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "2")
+	prevProofs = append(prevProofs, prevProof3)
+	prevProof4, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, "3")
+	prevProofs = append(prevProofs, prevProof4)
 
-	seed := protocol.CreateRandomSeed()
-	height := uint32(randVar.Int())
-
+	var height uint32 = 4
 	diff := 10
 
-	timestamp, _ := proofOfStake(uint8(diff), lastBlock.Hash, prevSeeds, height, balance, seed)
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyAccA, fmt.Sprint(height))
+	timestamp, _ := proofOfStake(uint8(diff), lastBlock.Hash, prevProofs, height, balance, commitmentProof)
 
-	if !validateProofOfStake(uint8(diff), prevSeeds, height, balance, seed, timestamp) {
+	if !validateProofOfStake(uint8(diff), prevProofs, height, balance, commitmentProof, timestamp) {
 		fmt.Printf("Invalid PoS calculation\n")
 	}
 }
 
-func TestGetLatestSeeds(t *testing.T) {
+func TestGetLatestProofs(t *testing.T) {
 	cleanAndPrepare()
 
-	var seeds [][32]byte
-	var genesisSeedSlice [32]byte
-	copy(genesisSeedSlice[:], storage.GENESIS_SEED)
-	seeds = Prepend(seeds, genesisSeedSlice)
-	//Initially we expect only the genesis seed
+	var proofs [][crypto.COMM_PROOF_LENGTH]byte
+	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
+	//Initially we expect only the genesis commitment proof
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 
-	prevSeeds := GetLatestSeeds(1, b)
+	prevProofs := GetLatestProofs(1, b)
 
-	if !reflect.DeepEqual(prevSeeds[0], genesisSeedSlice) {
-		t.Error("Could not retrieve the genesis seed.", prevSeeds[0], genesisSeedSlice)
+	if !reflect.DeepEqual(prevProofs[0], genesisCommitmentProof) {
+		t.Error("Could not retrieve the genesis commitment proof.", prevProofs[0], genesisCommitmentProof)
 	}
-	if !reflect.DeepEqual(1, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (all seeds).", 1, len(prevSeeds))
+	if !reflect.DeepEqual(1, len(prevProofs)) {
+		t.Error("Could not retrieve the correct amount of previous proofs (all proofs).", 1, len(prevProofs))
 	}
 
-	//Two new blocks are added with random seeds
-	b1 := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	//Two new blocks are added with random commitment proofs
+	b1 := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
-	seeds = Prepend(seeds, b1.Seed)
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
 	validate(b1, false)
 
-	b2 := newBlock(b1.Hash, [32]byte{}, [32]byte{}, b1.Height+1)
+	b2 := newBlock(b1.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
 	validate(b2, false)
-	seeds = Prepend(seeds, b2.Seed)
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
 
-	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
+	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
 
-	prevSeeds = GetLatestSeeds(3, b3)
+	prevProofs = GetLatestProofs(3, b3)
 
-	//Two new blocks are added with random seeds
-	if !reflect.DeepEqual(prevSeeds, seeds) {
-		t.Errorf("Could not retrieve previous seeds correctly (all seeds).\n%v\n%v", prevSeeds, seeds)
+	//Two new blocks are added with random commitment proofs
+	if !reflect.DeepEqual(prevProofs, proofs) {
+		t.Errorf("Could not retrieve previous proofs correctly (all proofs).\n%v\n%v", prevProofs, proofs)
 	}
-	if !reflect.DeepEqual(3, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (all seeds).", 3, len(prevSeeds))
-	}
-
-	prevSeeds = GetLatestSeeds(2, b3)
-
-	if !reflect.DeepEqual(prevSeeds, seeds[0:2]) {
-		t.Error("Could not retrieve previous seeds correctly (n < block height).", prevSeeds, seeds[0:2])
-	}
-	if !reflect.DeepEqual(2, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds  (n < block height).", 2, len(prevSeeds))
+	if !reflect.DeepEqual(3, len(prevProofs)) {
+		t.Error("Could not retrieve the correct amount of previous proofs (all proofs).", 3, len(prevProofs))
 	}
 
-	//5 seeds are expected since only 5 blocks are in the blockchain
-	prevSeeds = GetLatestSeeds(5, b3)
+	prevProofs = GetLatestProofs(2, b3)
 
-	if !reflect.DeepEqual(prevSeeds, seeds[0:3]) {
-		t.Errorf("Could not retrieve previous seeds correctly (all seeds).\n%x\n%x", prevSeeds, seeds[0:3])
+	if !reflect.DeepEqual(prevProofs, proofs[0:2]) {
+		t.Error("Could not retrieve previous proofs correctly (n < block height).", prevProofs, proofs[0:2])
 	}
-	if !reflect.DeepEqual(3, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (n > block height).", 3, len(prevSeeds))
+	if !reflect.DeepEqual(2, len(prevProofs)) {
+		t.Error("Could not retrieve the correct amount of previous proofs  (n < block height).", 2, len(prevProofs))
+	}
+
+	//5 proofs are expected since only 5 blocks are in the blockchain
+	prevProofs = GetLatestProofs(5, b3)
+
+	if !reflect.DeepEqual(prevProofs, proofs[0:3]) {
+		t.Errorf("Could not retrieve previous proofs correctly (all proofs).\n%x\n%x", prevProofs, proofs[0:3])
+	}
+	if !reflect.DeepEqual(3, len(prevProofs)) {
+		t.Error("Could not retrieve the correct amount of previous proofs (n > block height).", 3, len(prevProofs))
 	}
 }
