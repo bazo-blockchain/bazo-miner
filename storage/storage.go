@@ -103,6 +103,13 @@ func Init(dbname string, bootstrapIpport string) {
 		}
 		return nil
 	})
+	db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucket([]byte("accounts"))
+		if err != nil {
+			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
+		}
+		return nil
+	})
 }
 
 func TearDown() {

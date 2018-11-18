@@ -134,3 +134,18 @@ func ReadClosedTx(hash [32]byte) (transaction protocol.Transaction) {
 	}
 	return nil
 }
+
+func ReadAccounts() (accounts []*protocol.Account) {
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("accounts"))
+		b.ForEach(func(k, v []byte) error {
+			var acc *protocol.Account
+			acc = acc.Decode(v)
+			accounts = append(accounts, acc)
+			return nil
+		})
+		return nil
+	})
+
+	return accounts
+}

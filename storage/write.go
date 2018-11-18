@@ -67,3 +67,14 @@ func WriteClosedTx(transaction protocol.Transaction) (err error) {
 
 	return err
 }
+
+func WriteAccount(account *protocol.Account) (err error) {
+	hash := account.Hash()
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("accounts"))
+		err := b.Put(hash[:], account.Encode())
+		return err
+	})
+
+	return err
+}
