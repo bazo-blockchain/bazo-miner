@@ -79,7 +79,7 @@ func CheckAndChangeParameters(parameters *Parameters, configTxSlice *[]*protocol
 //For logging purposes
 func getState() (state string) {
 	for _, acc := range storage.State {
-		state += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Hash()), acc)
+		state += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Address), acc)
 	}
 	return state
 }
@@ -151,32 +151,29 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
 		if tx.Header != 2 {
 			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
-			newAccHash := newAcc.Hash()
-
-			acc, _ := storage.GetAccount(newAccHash)
+			acc, _ := storage.GetAccount(tx.PubKey)
 			if acc != nil {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
 				return errors.New("Address already exists in the state.")
 			}
 
 			//If acc does not exist, write to state
-			storage.State[newAccHash] = &newAcc
+			storage.State[tx.PubKey] = &newAcc
 
 			if tx.Header == 1 {
 				//First bit set, given account will be a new root account
 				//It might be cleaner to move this to the storage package (e.g., storage.Delete(...))
 				//leave it here for now (not fully convinced yet)
-				storage.RootKeys[newAccHash] = &newAcc
+				storage.RootKeys[tx.PubKey] = &newAcc
 			}
 		} else if tx.Header == 2 {
-			accHash := protocol.SerializeHashContent(tx.PubKey)
-			_, err := storage.GetAccount(accHash)
+			_, err := storage.GetAccount(tx.PubKey)
 			if err != nil {
 				return err
 			}
 
 			//Second bit set, delete account from root account
-			delete(storage.RootKeys, accHash)
+			delete(storage.RootKeys, tx.PubKey)
 		}
 	}
 
@@ -297,13 +294,13 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 	return nil
 }
 
-func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerHash [32]byte) (err error) {
+func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerAddress [64]byte) (err error) {
 	var tmpAccTx []*protocol.AccTx
 	var tmpFundsTx []*protocol.FundsTx
 	var tmpConfigTx []*protocol.ConfigTx
 	var tmpStakeTx []*protocol.StakeTx
 
-	minerAcc, err := storage.GetAccount(minerHash)
+	minerAcc, err := storage.GetAccount(minerAddress)
 	if err != nil {
 		return err
 	}
@@ -317,7 +314,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -337,7 +334,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -353,7 +350,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -371,7 +368,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerHash)
+			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -383,9 +380,9 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 	return nil
 }
 
-func collectBlockReward(reward uint64, minerHash [32]byte) (err error) {
+func collectBlockReward(reward uint64, minerAddress [64]byte) (err error) {
 	var miner *protocol.Account
-	miner, err = storage.GetAccount(minerHash)
+	miner, err = storage.GetAccount(minerAddress)
 
 	if miner.Balance+reward > MAX_MONEY {
 		err = errors.New("Block reward would lead to balance overflow at the miner account.")
@@ -402,7 +399,7 @@ func collectBlockReward(reward uint64, minerHash [32]byte) (err error) {
 
 func collectSlashReward(reward uint64, block *protocol.Block) (err error) {
 	//Check if proof is provided. If proof was incorrect, prevalidation would already have failed.
-	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+	if block.SlashedAddress != [64]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
 		var minerAcc, slashedAcc *protocol.Account
 		minerAcc, err = storage.GetAccount(block.Beneficiary)
 		slashedAcc, err = storage.GetAccount(block.SlashedAddress)

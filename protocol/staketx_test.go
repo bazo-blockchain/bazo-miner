@@ -9,13 +9,12 @@ import (
 
 func TestStakeTxSerialization(t *testing.T) {
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
-	accAHash := SerializeHashContent(accA.Address)
 	loopMax := int(rand.Uint32() % 10000)
 	for i := 0; i < loopMax; i++ {
 		fee := rand.Uint64()%10 + 1
 		isStaking := rand.Intn(2) != 0
 
-		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accAHash, PrivKeyA, &CommitmentKeyA.PublicKey)
+		tx, _ := ConstrStakeTx(0x01, fee, isStaking, accA.Address, PrivKeyA, &CommitmentKeyA.PublicKey)
 		data := tx.Encode()
 		var decodedTx *StakeTx
 		decodedTx = decodedTx.Decode(data)

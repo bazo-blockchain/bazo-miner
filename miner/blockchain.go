@@ -17,7 +17,7 @@ var (
 	parameterSlice      			[]Parameters
 	activeParameters    			*Parameters
 	uptodate            			bool
-	slashingDict        			= make(map[[32]byte]SlashingProof)
+	slashingDict        			= make(map[[64]byte]SlashingProof)
 	validatorAccAddress 			[64]byte
 	multisigPubKey      			*ecdsa.PublicKey
 	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
@@ -97,14 +97,13 @@ func mining(initialBlock *protocol.Block) {
 //At least one root key needs to be set which is allowed to create new accounts.
 func initRootKey(rootKey *ecdsa.PublicKey) error {
 	address := crypto.GetAddressFromPubKey(rootKey)
-	addressHash := protocol.SerializeHashContent(address)
 
 	var commPubKey [crypto.COMM_KEY_LENGTH]byte
 	copy(commPubKey[:], rootCommPrivKey.N.Bytes())
 
-	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
-	storage.State[addressHash] = &rootAcc
-	storage.RootKeys[addressHash] = &rootAcc
+	rootAcc := protocol.NewAccount(address, [64]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
+	storage.State[address] = &rootAcc
+	storage.RootKeys[address] = &rootAcc
 
 	return nil
 }

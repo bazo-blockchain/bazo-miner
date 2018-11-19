@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	STAKETX_SIZE = 106 + crypto.COMM_KEY_LENGTH
+	STAKETX_SIZE = 138 + crypto.COMM_KEY_LENGTH
 )
 
 //when we broadcast transactions we need a way to distinguish with a type
@@ -19,12 +19,12 @@ type StakeTx struct {
 	Header        byte                  // 1 Byte
 	Fee           uint64                // 8 Byte
 	IsStaking     bool                  // 1 Byte
-	Account       [32]byte              // 32 Byte
+	Account       [64]byte              // 64 Byte
 	Sig           [64]byte              // 64 Byte
 	CommitmentKey [crypto.COMM_KEY_LENGTH]byte // the modulus N of the RSA public key
 }
 
-func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [32]byte, signKey *ecdsa.PrivateKey, commPubKey *rsa.PublicKey) (tx *StakeTx, err error) {
+func ConstrStakeTx(header byte, fee uint64, isStaking bool, account [64]byte, signKey *ecdsa.PrivateKey, commPubKey *rsa.PublicKey) (tx *StakeTx, err error) {
 
 	tx = new(StakeTx)
 
@@ -58,7 +58,7 @@ func (tx *StakeTx) Hash() (hash [32]byte) {
 		Header     byte
 		Fee        uint64
 		IsStaking  bool
-		Account    [32]byte
+		Account    [64]byte
 		CommKey    [crypto.COMM_KEY_LENGTH]byte
 	}{
 		tx.Header,
@@ -94,9 +94,9 @@ func (tx *StakeTx) Encode() (encodedTx []byte) {
 	encodedTx[0] = tx.Header
 	copy(encodedTx[1:9], fee[:])
 	encodedTx[9] = isStaking
-	copy(encodedTx[10:42], tx.Account[:])
-	copy(encodedTx[42:106], tx.Sig[:])
-	copy(encodedTx[106:106+crypto.COMM_KEY_LENGTH], tx.CommitmentKey[:])
+	copy(encodedTx[10:74], tx.Account[:])
+	copy(encodedTx[74:138], tx.Sig[:])
+	copy(encodedTx[138:138+crypto.COMM_KEY_LENGTH], tx.CommitmentKey[:])
 
 	return encodedTx
 }
@@ -113,9 +113,9 @@ func (*StakeTx) Decode(encodedTx []byte) (tx *StakeTx) {
 	tx.Header = encodedTx[0]
 	tx.Fee = binary.BigEndian.Uint64(encodedTx[1:9])
 	isStakingAsByte = encodedTx[9]
-	copy(tx.Account[:], encodedTx[10:42])
-	copy(tx.Sig[:], encodedTx[42:106])
-	copy(tx.CommitmentKey[:], encodedTx[106:106+crypto.COMM_KEY_LENGTH])
+	copy(tx.Account[:], encodedTx[10:74])
+	copy(tx.Sig[:], encodedTx[74:138])
+	copy(tx.CommitmentKey[:], encodedTx[138:138+crypto.COMM_KEY_LENGTH])
 
 	if isStakingAsByte == 0 {
 		tx.IsStaking = false

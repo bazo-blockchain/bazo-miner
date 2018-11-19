@@ -181,13 +181,14 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		1, receiver[0], receiver[1], // receiver address
 		1, 0, 1, // function Hash
 	}
-	hash := createBlockWithSingleContractCallTx(b1, transactionData)
+
+	contractAddress := createBlockWithSingleContractCallTx(b1, transactionData)
 	finalizeBlock(b1)
 	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(hash)
+	acc, _ := storage.GetAccount(contractAddress)
 	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
@@ -260,41 +261,38 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	}
 }
 
-func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [32]byte {
+func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [64]byte {
 	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return tx.Issuer
 	} else {
 		fmt.Print(err)
-		return [32]byte{}
+		return [64]byte{}
 	}
 }
 
-func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) [32]byte {
-	for hash := range storage.State {
-		acc, _ := storage.GetAccount(hash)
+func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) [64]byte {
+	for address := range storage.State {
+		acc, _ := storage.GetAccount(address)
 		if acc.Contract != nil {
-			accAHash := protocol.SerializeHashContent(accA.Address)
-			accBHash := acc.Hash()
-
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accAHash, accBHash, PrivKeyAccA, PrivKeyMultiSig, transactionData)
+			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, acc.Address, PrivKeyAccA, PrivKeyMultiSig, transactionData)
 			if err := addTx(b, tx); err == nil {
 				storage.WriteOpenTx(tx)
 			} else {
 				fmt.Print(err)
 			}
-			return accBHash
+			return acc.Address
 		}
 	}
-	return [32]byte{}
+	return [64]byte{}
 }
 
-func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionData []byte, from [32]byte, to [32]byte) {
+func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionData []byte, from [64]byte, to [64]byte) {
 	accA, _ := storage.GetAccount(from)
 	accB, _ := storage.GetAccount(to)
 
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Hash(), accB.Hash(), PrivKeyAccA, PrivKeyMultiSig, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Address, accB.Address, PrivKeyAccA, PrivKeyMultiSig, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {
@@ -304,8 +302,8 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 
 func getAccountsWithContracts() []protocol.Account {
 	var accounts []protocol.Account
-	for hash := range storage.State {
-		acc, _ := storage.GetAccount(hash)
+	for address := range storage.State {
+		acc, _ := storage.GetAccount(address)
 		if acc.Contract != nil {
 			accounts = append(accounts, *acc)
 		}

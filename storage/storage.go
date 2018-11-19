@@ -12,11 +12,11 @@ import (
 var (
 	db                 *bolt.DB
 	logger             *log.Logger
-	State              = make(map[[32]byte]*protocol.Account)
-	RootKeys           = make(map[[32]byte]*protocol.Account)
+	State              = make(map[[64]byte]*protocol.Account)
+	RootKeys           = make(map[[64]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
-	Bootstrap_Server   string
+	BootstrapServer    string
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 
 //Entry function for the storage package
 func Init(dbname string, bootstrapIpport string) {
-	Bootstrap_Server = bootstrapIpport
+	BootstrapServer = bootstrapIpport
 	logger = InitLogger()
 
 	var err error

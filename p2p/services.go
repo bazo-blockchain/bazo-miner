@@ -48,8 +48,8 @@ func checkHealthService() {
 	for {
 		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 
-		if Ipport != storage.Bootstrap_Server && !peers.contains(storage.Bootstrap_Server, PEERTYPE_MINER) {
-			p, err := initiateNewMinerConnection(storage.Bootstrap_Server)
+		if Ipport != storage.BootstrapServer && !peers.contains(storage.BootstrapServer, PEERTYPE_MINER) {
+			p, err := initiateNewMinerConnection(storage.BootstrapServer)
 			if p == nil || err != nil {
 				logger.Printf("%v\n", err)
 			} else {

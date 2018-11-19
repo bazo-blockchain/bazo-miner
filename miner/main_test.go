@@ -87,7 +87,6 @@ func addTestingAccounts() {
 	copy(accA.Address[0:32], PrivKeyAccA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyAccA.PublicKey.Y.Bytes())
 	copy(accA.CommitmentKey[:], CommPrivKeyAccA.PublicKey.N.Bytes())
-	hashAccA := protocol.SerializeHashContent(accA.Address)
 
 	pubAccB1, _ := new(big.Int).SetString(PubB1, 16)
 	pubAccB2, _ := new(big.Int).SetString(PubB2, 16)
@@ -107,7 +106,6 @@ func addTestingAccounts() {
 	copy(accB.Address[0:32], PrivKeyAccB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
 	copy(accB.CommitmentKey[:], CommPrivKeyAccB.PublicKey.N.Bytes())
-	hashAccB := protocol.SerializeHashContent(accB.Address)
 
 	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
 	pubKeyMultiSig, _ := crypto.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
@@ -118,7 +116,6 @@ func addTestingAccounts() {
 
 	copy(multiSigAcc.Address[0:32], PrivKeyMultiSig.PublicKey.X.Bytes())
 	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
-	hashMultiSig := protocol.SerializeHashContent(multiSigAcc.Address)
 
 	//Set the global variable in blockchain.go
 	multisigPubKey = pubKeyMultiSig
@@ -127,7 +124,6 @@ func addTestingAccounts() {
 
 	copy(validatorAcc.Address[:32], privKeyValidator.X.Bytes())
 	copy(validatorAcc.Address[32:64], privKeyValidator.Y.Bytes())
-	hashValidator := protocol.SerializeHashContent(validatorAcc.Address)
 
 	//Create and store an initial commitment key for the validator account.
 	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, crypto.COMM_NOF_PRIMES, crypto.COMM_KEY_BITS)
@@ -140,10 +136,10 @@ func addTestingAccounts() {
 	validatorAccAddress = validatorAcc.Address
 	commPrivKey = commPrivKeyValidator
 
-	storage.State[hashAccA] = accA
-	storage.State[hashAccB] = accB
-	storage.State[hashMultiSig] = multiSigAcc
-	storage.State[hashValidator] = validatorAcc
+	storage.State[accA.Address] = accA
+	storage.State[accB.Address] = accB
+	storage.State[multiSigAcc.Address] = multiSigAcc
+	storage.State[validatorAcc.Address] = validatorAcc
 }
 
 //Create some root accounts that are used by the tests
@@ -165,7 +161,6 @@ func addRootAccounts() {
 
 	copy(rootAcc.Address[:32], PrivKeyRoot.X.Bytes())
 	copy(rootAcc.Address[32:64], PrivKeyRoot.Y.Bytes())
-	hashRoot := protocol.SerializeHashContent(rootAcc.Address)
 
 	//Create root file
 	file, _ := os.Create(TestKeyFileName)
@@ -179,8 +174,8 @@ func addRootAccounts() {
 	rootAcc.Balance = activeParameters.Staking_minimum
 	rootAcc.IsStaking = true
 
-	storage.State[hashRoot] = rootAcc
-	storage.RootKeys[hashRoot] = rootAcc
+	storage.State[rootAcc.Address] = rootAcc
+	storage.RootKeys[rootAcc.Address] = rootAcc
 }
 
 //The state changes (accounts, funds, system parameters etc.) need to be reverted before any new test starts
@@ -188,8 +183,8 @@ func addRootAccounts() {
 func cleanAndPrepare() {
 	storage.DeleteAll()
 
-	tmpState := make(map[[32]byte]*protocol.Account)
-	tmpRootKeys := make(map[[32]byte]*protocol.Account)
+	tmpState := make(map[[64]byte]*protocol.Account)
+	tmpRootKeys := make(map[[64]byte]*protocol.Account)
 
 	storage.State = tmpState
 	storage.RootKeys = tmpRootKeys
@@ -207,12 +202,12 @@ func cleanAndPrepare() {
 	var tmpSlice []Parameters
 	tmpSlice = append(tmpSlice, NewDefaultParameters())
 
-	slashingDict = make(map[[32]byte]SlashingProof)
+	slashingDict = make(map[[64]byte]SlashingProof)
 
 	parameterSlice = tmpSlice
 	activeParameters = &tmpSlice[0]
 
-	slashingDict = make(map[[32]byte]SlashingProof)
+	slashingDict = make(map[[64]byte]SlashingProof)
 
 	//Override some params to ensure tests work correctly.
 	activeParameters.num_included_prev_proofs = 0

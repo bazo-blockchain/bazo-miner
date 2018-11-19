@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	HASH_LEN                = 32
-	HEIGHT_LEN				= 4
-	MIN_BLOCKSIZE           = 254 + crypto.COMM_PROOF_LENGTH
-	MIN_BLOCKHEADER_SIZE    = 104
+	TXHASH_LEN              = 32
+	HEIGHT_LEN              = 4
+	MIN_BLOCKHEADER_SIZE    = 136
+	MIN_BLOCKSIZE           = 184 + MIN_BLOCKHEADER_SIZE + crypto.COMM_PROOF_LENGTH
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -26,7 +26,7 @@ type Block struct {
 	NrElementsBF uint16
 	BloomFilter  *bloom.BloomFilter
 	Height       uint32
-	Beneficiary  [32]byte
+	Beneficiary  [64]byte
 
 	//Body
 	Nonce                 [8]byte
@@ -35,11 +35,11 @@ type Block struct {
 	NrAccTx               uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
-	SlashedAddress        [32]byte
+	SlashedAddress        [64]byte
 	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
-	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
+	StateCopy             map[[64]byte]*Account //won't be serialized, just keeping track of local state changes
 
 	AccTxData    [][32]byte
 	FundsTxData  [][32]byte
@@ -56,9 +56,9 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		prevHash              [32]byte
 		timestamp             int64
 		merkleRoot            [32]byte
-		beneficiary           [32]byte
+		beneficiary           [64]byte
 		commitmentProof       [crypto.COMM_PROOF_LENGTH]byte
-		slashedAddress        [32]byte
+		slashedAddress        [64]byte
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
 	}{
@@ -76,7 +76,7 @@ func (b *Block) HashBlock() (hash [32]byte) {
 	return sha3.Sum256(buf.Bytes())
 }
 
-func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
+func (b *Block) InitBloomFilter(txPubKeys [][64]byte) {
 	b.NrElementsBF = uint16(len(txPubKeys))
 
 	m, k := calculateBloomFilterParams(float64(len(txPubKeys)), BLOOM_FILTER_ERROR_RATE)
@@ -91,10 +91,10 @@ func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
 func (b *Block) GetSize() uint64 {
 	size :=
 		MIN_BLOCKSIZE +
-			int(b.NrAccTx)*HASH_LEN +
-			int(b.NrFundsTx)*HASH_LEN +
-			int(b.NrConfigTx)*HASH_LEN +
-			int(b.NrStakeTx)*HASH_LEN
+			int(b.NrAccTx)*TXHASH_LEN +
+			int(b.NrFundsTx)*TXHASH_LEN +
+			int(b.NrConfigTx)*TXHASH_LEN +
+			int(b.NrStakeTx)*TXHASH_LEN
 
 	if b.BloomFilter != nil {
 		encodedBF, _ := b.BloomFilter.GobEncode()
@@ -141,15 +141,15 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	copy(encodedBlock[65:73], b.Nonce[:])
 	copy(encodedBlock[73:81], timeStamp[:])
 	copy(encodedBlock[81:113], b.MerkleRoot[:])
-	copy(encodedBlock[113:145], b.Beneficiary[:])
-	copy(encodedBlock[145:147], nrFundsTx[:])
-	copy(encodedBlock[147:149], nrAccTx[:])
-	encodedBlock[149] = byte(b.NrConfigTx)
-	copy(encodedBlock[150:152], nrStakeTx[:])
-	copy(encodedBlock[152:184], b.SlashedAddress[:])
-	copy(encodedBlock[184:186], nrElementsBF[:])
+	copy(encodedBlock[113:177], b.Beneficiary[:])
+	copy(encodedBlock[177:179], nrFundsTx[:])
+	copy(encodedBlock[179:181], nrAccTx[:])
+	encodedBlock[181] = byte(b.NrConfigTx)
+	copy(encodedBlock[182:184], nrStakeTx[:])
+	copy(encodedBlock[184:248], b.SlashedAddress[:])
+	copy(encodedBlock[248:250], nrElementsBF[:])
 
-	index := 186
+	index := 250
 
 	if b.BloomFilter != nil {
 		//Encode BloomFilter
@@ -166,30 +166,30 @@ func (b *Block) Encode() (encodedBlock []byte) {
 	index += HEIGHT_LEN
 	copy(encodedBlock[index:index+crypto.COMM_PROOF_LENGTH], b.CommitmentProof[:])
 	index += crypto.COMM_PROOF_LENGTH
-	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash1[:])
-	index += HASH_LEN
-	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash2[:])
-	index += HASH_LEN
+	copy(encodedBlock[index:index+TXHASH_LEN], b.ConflictingBlockHash1[:])
+	index += TXHASH_LEN
+	copy(encodedBlock[index:index+TXHASH_LEN], b.ConflictingBlockHash2[:])
+	index += TXHASH_LEN
 
 	//Serialize all tx hashes
 	for _, txHash := range b.FundsTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
+		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
+		index += TXHASH_LEN
 	}
 
 	for _, txHash := range b.AccTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
+		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
+		index += TXHASH_LEN
 	}
 
 	for _, txHash := range b.ConfigTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
+		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
+		index += TXHASH_LEN
 	}
 
 	for _, txHash := range b.StakeTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
+		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
+		index += TXHASH_LEN
 	}
 
 	return encodedBlock
@@ -216,7 +216,7 @@ func (b *Block) EncodeHeader() (encodedHeader []byte) {
 	encodedHeader[65] = byte(b.NrConfigTx)
 	copy(encodedHeader[66:68], nrElementsBF[:])
 	copy(encodedHeader[68:72], height[:])
-	copy(encodedHeader[72:104], b.Beneficiary[:])
+	copy(encodedHeader[72:136], b.Beneficiary[:])
 
 	index := MIN_BLOCKHEADER_SIZE
 
@@ -250,15 +250,15 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	copy(b.Nonce[:], encodedBlock[65:73])
 	b.Timestamp = timeStamp
 	copy(b.MerkleRoot[:], encodedBlock[81:113])
-	copy(b.Beneficiary[:], encodedBlock[113:145])
-	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[145:147])
-	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[147:149])
-	b.NrConfigTx = uint8(encodedBlock[149])
-	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
-	copy(b.SlashedAddress[:], encodedBlock[152:184])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[184:186])
+	copy(b.Beneficiary[:], encodedBlock[113:177])
+	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[177:179])
+	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[179:181])
+	b.NrConfigTx = uint8(encodedBlock[181])
+	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[182:184])
+	copy(b.SlashedAddress[:], encodedBlock[184:248])
+	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[248:250])
 
-	index := 186
+	index := 250
 
 	if b.NrElementsBF > 0 {
 		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
@@ -280,38 +280,38 @@ func (*Block) Decode(encodedBlock []byte) (b *Block) {
 	index += HEIGHT_LEN
 	copy(b.CommitmentProof[:], encodedBlock[index:index+crypto.COMM_PROOF_LENGTH])
 	index += crypto.COMM_PROOF_LENGTH
-	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
+	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+TXHASH_LEN])
+	index += TXHASH_LEN
+	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+TXHASH_LEN])
+	index += TXHASH_LEN
 
 	//Deserialize all tx hashes
 	var hash [32]byte
 	for cnt := 0; cnt < int(b.NrFundsTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
+		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
 		b.FundsTxData = append(b.FundsTxData, hash)
-		index += HASH_LEN
+		index += TXHASH_LEN
 	}
 
 	for cnt := 0; cnt < int(b.NrAccTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
+		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
 		b.AccTxData = append(b.AccTxData, hash)
-		index += HASH_LEN
+		index += TXHASH_LEN
 	}
 
 	for cnt := 0; cnt < int(b.NrConfigTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
+		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
 		b.ConfigTxData = append(b.ConfigTxData, hash)
-		index += HASH_LEN
+		index += TXHASH_LEN
 	}
 
 	for cnt := 0; cnt < int(b.NrStakeTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
+		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
 		b.StakeTxData = append(b.StakeTxData, hash)
-		index += HASH_LEN
+		index += TXHASH_LEN
 	}
 
-	b.StateCopy = make(map[[32]byte]*Account)
+	b.StateCopy = make(map[[64]byte]*Account)
 
 	return b
 }
@@ -330,7 +330,7 @@ func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
 	b.NrConfigTx = uint8(encodedHeader[65])
 	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
 	b.Height = binary.BigEndian.Uint32(encodedHeader[68:72])
-	copy(b.Beneficiary[:], encodedHeader[72:104])
+	copy(b.Beneficiary[:], encodedHeader[72:136])
 
 	index := MIN_BLOCKHEADER_SIZE
 

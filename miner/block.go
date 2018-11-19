@@ -30,7 +30,7 @@ func newBlock(prevHash [32]byte, commitmentProof [crypto.COMM_PROOF_LENGTH]byte,
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
 	block.Height = height
-	block.StateCopy = make(map[[32]byte]*protocol.Account)
+	block.StateCopy = make(map[[64]byte]*protocol.Account)
 
 	return block
 }
@@ -41,8 +41,8 @@ func finalizeBlock(block *protocol.Block) error {
 	//The slashingDict is updated when a new block is received and when a slashing proof is provided.
 	if len(slashingDict) != 0 {
 		//Get the first slashing proof.
-		for hash, slashingProof := range slashingDict {
-			block.SlashedAddress = hash
+		for address, slashingProof := range slashingDict {
+			block.SlashedAddress = address
 			block.ConflictingBlockHash1 = slashingProof.ConflictingBlockHash1
 			block.ConflictingBlockHash2 = slashingProof.ConflictingBlockHash2
 			//TODO @simibac Why do you break?
@@ -53,13 +53,12 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	validatorAcc, err := storage.GetAccount(validatorAccAddress)
 	if err != nil {
 		return err
 	}
 
-	validatorAccHash := validatorAcc.Hash()
-	copy(block.Beneficiary[:], validatorAccHash[:])
+	copy(block.Beneficiary[:], validatorAcc.Address[:])
 
 	// Cryptographic Sortition for PoS in Bazo
 	// The commitment proof stores a signed message of the Height that this block was created at.
@@ -151,11 +150,10 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 }
 
 func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
-	accHash := sha3.Sum256(tx.PubKey[:])
 	//According to the accTx specification, we only accept new accounts except if the removal bit is
 	//set in the header (2nd bit).
 	if tx.Header&0x02 != 0x02 {
-		if _, exists := storage.State[accHash]; exists {
+		if _, exists := storage.State[tx.PubKey]; exists {
 			return errors.New("Account already exists.")
 		}
 	}
@@ -171,8 +169,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.From]; !exists {
 		if acc := storage.State[tx.From]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.From {
+			if acc.Address == tx.From {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.From] = &newAcc
@@ -185,8 +182,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Vice versa for receiver account.
 	if _, exists := b.StateCopy[tx.To]; !exists {
 		if acc := storage.State[tx.To]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.To {
+			if acc.Address == tx.To {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.To] = &newAcc
@@ -256,8 +252,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.Account]; !exists {
 		if acc := storage.State[tx.Account]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.Account {
+			if acc.Address == tx.Account {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.Account] = &newAcc
@@ -671,7 +666,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check if block contains a proof for two conflicting block hashes, else no proof provided.
-	if block.SlashedAddress != [32]byte{} {
+	if block.SlashedAddress != [64]byte{} {
 		if _, err = slashingCheck(block.SlashedAddress, block.ConflictingBlockHash1, block.ConflictingBlockHash2); err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -802,7 +797,7 @@ func timestampCheck(timestamp int64) error {
 	return nil
 }
 
-func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
+func slashingCheck(slashedAddress [64]byte, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
 	prefix := "Invalid slashing proof: "
 
 	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {

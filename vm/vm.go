@@ -18,9 +18,9 @@ type Context interface {
 	GetContractVariable(index int) ([]byte, error)
 	SetContractVariable(index int, value []byte) error
 	GetAddress() [64]byte
-	GetIssuer() [32]byte
+	GetIssuer() [64]byte
 	GetBalance() uint64
-	GetSender() [32]byte
+	GetSender() [64]byte
 	GetAmount() uint64
 	GetTransactionData() []byte
 	GetFee() uint64
@@ -95,9 +95,9 @@ func (vm *VM) trace() {
 			}
 
 		case ADDR:
-			if len(vm.code)-vm.pc > 31 {
-				args = vm.code[vm.pc+1+counter : vm.pc+33+counter]
-				counter += 32
+			if len(vm.code)-vm.pc > 63 {
+				args = vm.code[vm.pc+1+counter : vm.pc+65+counter]
+				counter += 64
 				formattedArgs += fmt.Sprintf("%v (bazo address) ", args[:])
 			}
 
@@ -521,7 +521,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLEXT:
-			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 32) // Addresses are 32 bytes (var name: transactionAddress)
+			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 64) // Addresses are 64 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(opCode.Name, 4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
 			argsToLoad, errArg3 := vm.fetch(opCode.Name)                 // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 

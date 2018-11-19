@@ -64,17 +64,12 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	r.SetBytes(tx.Sig1[:32])
 	s.SetBytes(tx.Sig1[32:])
 
-	tx.From = accFromHash
-	tx.To = accToHash
-
 	txHash := tx.Hash()
 
 	var validSig1, validSig2 bool
 
 	pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
 	if ecdsa.Verify(&pubKey, txHash[:], r, s) && !reflect.DeepEqual(accFrom, accTo) {
-		tx.From = accFromHash
-		tx.To = accToHash
 		validSig1 = true
 	} else {
 		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
@@ -155,14 +150,12 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	//Check if account is present in the actual state
 	accFrom := storage.State[tx.Account]
-
-	//Account non existent
 	if accFrom == nil {
-		logger.Println("Account does not exist.")
-		return false
+		// TODO: Requires a Mutex?
+		newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [256]byte{}, nil, nil)
+		accFrom = &newAcc
+		storage.WriteAccount(accFrom)
 	}
-
-	accFromHash := protocol.SerializeHashContent(accFrom.Address)
 
 	pub1, pub2 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
@@ -173,7 +166,7 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
-	tx.Account = accFromHash
+	tx.Account = accFrom.Address
 
 	txHash := tx.Hash()
 

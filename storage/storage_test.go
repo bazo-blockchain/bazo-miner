@@ -14,9 +14,6 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-
 	var hashFundsSlice []*protocol.FundsTx
 	var hashAccSlice []*protocol.AccTx
 	var hashConfigSlice []*protocol.ConfigTx
@@ -25,7 +22,7 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	loopMax := testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accA.Address, accB.Address, &PrivKeyA, nil, nil)
 		WriteOpenTx(tx)
 		hashFundsSlice = append(hashFundsSlice, tx)
 	}

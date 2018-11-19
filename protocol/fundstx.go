@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	FUNDSTX_SIZE = 213
+	FUNDSTX_SIZE = 277
 )
 
 //when we broadcast transactions we need a way to distinguish with a type
@@ -19,14 +19,14 @@ type FundsTx struct {
 	Amount uint64
 	Fee    uint64
 	TxCnt  uint32
-	From   [32]byte
-	To     [32]byte
+	From   [64]byte
+	To     [64]byte
 	Sig1   [64]byte
 	Sig2   [64]byte
 	Data   []byte
 }
 
-func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
+func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header
@@ -71,8 +71,8 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 		Amount uint64
 		Fee    uint64
 		TxCnt  uint32
-		From   [32]byte
-		To     [32]byte
+		From   [64]byte
+		To     [64]byte
 		Data   []byte
 	}{
 		tx.Header,

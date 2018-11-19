@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	ACCTX_SIZE = 169
+	ACCTX_SIZE = 201
 )
 
 type AccTx struct {
 	Header            byte
-	Issuer            [32]byte
+	Issuer            [64]byte
 	Fee               uint64
 	PubKey            [64]byte
 	Sig               [64]byte
@@ -50,9 +50,7 @@ func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.P
 	rootPubKey1, rootPubKey2 := rootPrivKey.PublicKey.X.Bytes(), rootPrivKey.PublicKey.Y.Bytes()
 	copy(rootPublicKey[32-len(rootPubKey1):32], rootPubKey1)
 	copy(rootPublicKey[64-len(rootPubKey2):], rootPubKey2)
-
-	issuer := SerializeHashContent(rootPublicKey)
-	copy(tx.Issuer[:], issuer[:])
+	copy(tx.Issuer[:], rootPublicKey[:])
 
 	txHash := tx.Hash()
 
@@ -75,7 +73,7 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 
 	txHash := struct {
 		Header            byte
-		Issuer            [32]byte
+		Issuer            [64]byte
 		Fee               uint64
 		PubKey            [64]byte
 		Contract          []byte

@@ -8,20 +8,18 @@ import (
 func accStateChangeRollback(txSlice []*protocol.AccTx) {
 	for _, tx := range txSlice {
 		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			accHash := protocol.SerializeHashContent(tx.PubKey)
-
-			acc, err := storage.GetAccount(accHash)
+			acc, err := storage.GetAccount(tx.PubKey)
 			if err != nil {
 				logger.Fatal("CRITICAL: An account that should have been saved does not exist.")
 			}
 
-			delete(storage.State, accHash)
+			delete(storage.State, tx.PubKey)
 
 			switch tx.Header {
 			case 1:
-				delete(storage.RootKeys, accHash)
+				delete(storage.RootKeys, tx.PubKey)
 			case 2:
-				storage.RootKeys[accHash] = acc
+				storage.RootKeys[tx.PubKey] = acc
 			}
 		}
 	}
@@ -76,8 +74,8 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 	}
 }
 
-func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerHash [32]byte) {
-	minerAcc, _ := storage.GetAccount(minerHash)
+func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerAddress [64]byte) {
+	minerAcc, _ := storage.GetAccount(minerAddress)
 
 	//Subtract fees from sender (check if that is allowed has already been done in the block validation)
 	for _, tx := range accTx {
@@ -105,13 +103,13 @@ func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx,
 	}
 }
 
-func collectBlockRewardRollback(reward uint64, minerHash [32]byte) {
-	minerAcc, _ := storage.GetAccount(minerHash)
+func collectBlockRewardRollback(reward uint64, minerAddress [64]byte) {
+	minerAcc, _ := storage.GetAccount(minerAddress)
 	minerAcc.Balance -= reward
 }
 
 func collectSlashRewardRollback(reward uint64, block *protocol.Block) {
-	if block.SlashedAddress != [32]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
+	if block.SlashedAddress != [64]byte{} || block.ConflictingBlockHash1 != [32]byte{} || block.ConflictingBlockHash2 != [32]byte{} {
 		minerAcc, _ := storage.GetAccount(block.Beneficiary)
 		slashedAcc, _ := storage.GetAccount(block.SlashedAddress)
 

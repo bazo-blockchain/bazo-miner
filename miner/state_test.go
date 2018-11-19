@@ -17,10 +17,6 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
-
 	var testSize uint32
 	testSize = 1000
 
@@ -38,7 +34,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, PrivKeyAccA, nil, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -47,7 +43,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accAHash, PrivKeyAccB, nil, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -63,14 +59,14 @@ func TestFundsTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v or %v != %v\n", accA.Balance, balanceA, accB.Balance, balanceB)
 	}
 
-	collectTxFees(nil, funds, nil, nil, minerAccHash)
+	collectTxFees(nil, funds, nil, nil, validatorAcc.Address)
 	if feeA+feeB != validatorAcc.Balance-minerBal {
 		t.Error("Fee Collection failed!")
 	}
 
 	t.Log(activeParameters)
 	balBeforeRew := validatorAcc.Balance
-	collectBlockReward(activeParameters.Block_reward, minerAccHash)
+	collectBlockReward(activeParameters.Block_reward, validatorAcc.Address)
 	if validatorAcc.Balance != balBeforeRew+activeParameters.Block_reward {
 		t.Error("Block reward collection failed!")
 	}
@@ -80,12 +76,10 @@ func TestAccountOverflow(t *testing.T) {
 	cleanAndPrepare()
 
 	var accSlice []*protocol.FundsTx
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, PrivKeyAccB, PrivKeyMultiSig, nil)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, PrivKeyMultiSig, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -120,8 +114,7 @@ func TestAccTxStateChange(t *testing.T) {
 	accStateChange(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
-		acc := storage.State[accHash]
+		acc := storage.State[acc.PubKey]
 		//make sure the previously created acc is in the state
 		if acc == nil {
 			t.Errorf("Account State failed to update for the following account: %v\n", acc)
@@ -137,7 +130,7 @@ func TestAccTxStateChange(t *testing.T) {
 
 	accStateChange(singleSlice)
 
-	if !storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
+	if !storage.IsRootKey(pubKeyTmp) {
 		t.Errorf("AccTx Header bit 1 not working.")
 	}
 
@@ -147,7 +140,7 @@ func TestAccTxStateChange(t *testing.T) {
 	singleSlice[0] = &newTx
 	accStateChange(singleSlice)
 
-	if storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
+	if storage.IsRootKey(pubKeyTmp) {
 		t.Errorf("AccTx Header bit 2 not working.")
 	}
 }
@@ -278,15 +271,13 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-
 	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false
 	stakingA := accA.IsStaking
 
-	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, accAHash, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
+	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, accA.Address, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = true
 		stake = append(stake, stx)
@@ -297,7 +288,7 @@ func TestStakeTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v", accA.IsStaking, stakingA)
 	}
 
-	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, accAHash, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
+	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, accA.Address, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = false
 		stake2 = append(stake2, stx2)
