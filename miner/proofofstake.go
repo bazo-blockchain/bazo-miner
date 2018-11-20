@@ -166,16 +166,10 @@ func proofOfStake(diff uint8,
 }
 
 func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][crypto.COMM_PROOF_LENGTH]byte) {
-	b := storage.ReadClosedBlock(block.PrevHash)
-	cnt := 0
-	for n > 0 {
-		prevProofs = append(prevProofs, b.CommitmentProof)
+	for block.Height > 0 && n > 0 {
+		block = storage.ReadClosedBlock(block.PrevHash)
+		prevProofs = append(prevProofs, block.CommitmentProof)
 		n -= 1
-		cnt += 1
-		if b.Height == 0 {
-			return prevProofs
-		}
-		b = storage.ReadClosedBlock(b.PrevHash)
 	}
 	return prevProofs
 }

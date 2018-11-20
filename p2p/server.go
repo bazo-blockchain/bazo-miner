@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -42,10 +43,7 @@ func Init(ipport string) {
 	go forwardVerifiedTxsToMiner()
 	go peerService()
 
-	//Set localPort global, this will be the listening port for incoming connection
-	bootstrapPort := strings.Split(storage.BootstrapServer, ":")[1]
-	localPort := strings.Split(Ipport, ":")[1]
-	if localPort != bootstrapPort {
+	if !IsBootstrap() {
 		bootstrap()
 	}
 
@@ -180,6 +178,6 @@ func peerConn(p *peer) {
 			return
 		}
 
-		processIncomingMsg(p, header, payload)
+		go processIncomingMsg(p, header, payload)
 	}
 }

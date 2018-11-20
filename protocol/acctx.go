@@ -30,11 +30,10 @@ func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.P
 	tx.Contract = contract
 	tx.ContractVariables = contractVariables
 
-	var newAccAddressString string
-
 	if address != [64]byte{} {
 		copy(tx.PubKey[:], address[:])
 	} else {
+		var newAccAddressString string
 		//Check if string representation of account address is 128 long. Else there will be problems when doing REST calls.
 		for len(newAccAddressString) != 128 {
 			newAccAddress, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -65,8 +64,7 @@ func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.P
 	return tx, newAccAddress, nil
 }
 
-func (tx *AccTx) Hash() (hash [32]byte) {
-
+func (tx *AccTx) Hash() [32]byte {
 	if tx == nil {
 		return [32]byte{}
 	}
@@ -86,28 +84,31 @@ func (tx *AccTx) Hash() (hash [32]byte) {
 		tx.Contract,
 		tx.ContractVariables,
 	}
+
 	return SerializeHashContent(txHash)
 }
 
-func (tx *AccTx) Encode() (encodedTx []byte) {
-	// Encode
-	encodeData := AccTx{
-		tx.Header,
-		tx.Issuer,
-		tx.Fee,
-		tx.PubKey,
-		tx.Sig,
-		tx.Contract,
-		tx.ContractVariables,
+func (tx *AccTx) Encode() []byte {
+	if tx == nil {
+		return nil
 	}
+
+	encoded := AccTx{
+		Header: tx.Header,
+		Issuer: tx.Issuer,
+		Fee:    tx.Fee,
+		PubKey: tx.PubKey,
+		Sig:    tx.Sig,
+	}
+
 	buffer := new(bytes.Buffer)
-	gob.NewEncoder(buffer).Encode(encodeData)
+	gob.NewEncoder(buffer).Encode(encoded)
 	return buffer.Bytes()
 }
 
-func (*AccTx) Decode(encodedTx []byte) *AccTx {
+func (*AccTx) Decode(encoded []byte) (tx *AccTx) {
 	var decoded AccTx
-	buffer := bytes.NewBuffer(encodedTx)
+	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
 	decoder.Decode(&decoded)
 	return &decoded
@@ -120,12 +121,14 @@ func (tx *AccTx) Size() uint64 { return ACCTX_SIZE }
 func (tx AccTx) String() string {
 	return fmt.Sprintf(
 		"\n"+
+			"Header: %x\n"+
 			"Issuer: %x\n"+
 			"Fee: %v\n"+
 			"PubKey: %x\n"+
 			"Sig: %x\n"+
 			"Contract: %v\n"+
 			"ContractVariables: %v\n",
+		tx.Header,
 		tx.Issuer[0:8],
 		tx.Fee,
 		tx.PubKey[0:8],

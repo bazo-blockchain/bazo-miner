@@ -2,11 +2,11 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
+
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/willf/bloom"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -47,12 +47,23 @@ type Block struct {
 	StakeTxData  [][32]byte
 }
 
-//Just Hash() conflicts with struct field
-func (b *Block) HashBlock() (hash [32]byte) {
+func NewBlock(prevHash [32]byte, height uint32) *Block {
+	newBlock := Block{
+		PrevHash: prevHash,
+		Height:   height,
+	}
 
-	var buf bytes.Buffer
+	newBlock.StateCopy = make(map[[64]byte]*Account)
 
-	blockToHash := struct {
+	return &newBlock
+}
+
+func (block *Block) HashBlock() [32]byte {
+	if block == nil {
+		return [32]byte{}
+	}
+
+	blockHash := struct {
 		prevHash              [32]byte
 		timestamp             int64
 		merkleRoot            [32]byte
@@ -62,22 +73,20 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
 	}{
-		b.PrevHash,
-		b.Timestamp,
-		b.MerkleRoot,
-		b.Beneficiary,
-		b.CommitmentProof,
-		b.SlashedAddress,
-		b.ConflictingBlockHash1,
-		b.ConflictingBlockHash2,
+		block.PrevHash,
+		block.Timestamp,
+		block.MerkleRoot,
+		block.Beneficiary,
+		block.CommitmentProof,
+		block.SlashedAddress,
+		block.ConflictingBlockHash1,
+		block.ConflictingBlockHash2,
 	}
-
-	binary.Write(&buf, binary.BigEndian, blockToHash)
-	return sha3.Sum256(buf.Bytes())
+	return SerializeHashContent(blockHash)
 }
 
-func (b *Block) InitBloomFilter(txPubKeys [][64]byte) {
-	b.NrElementsBF = uint16(len(txPubKeys))
+func (block *Block) InitBloomFilter(txPubKeys [][64]byte) {
+	block.NrElementsBF = uint16(len(txPubKeys))
 
 	m, k := calculateBloomFilterParams(float64(len(txPubKeys)), BLOOM_FILTER_ERROR_RATE)
 	filter := bloom.New(m, k)
@@ -85,275 +94,95 @@ func (b *Block) InitBloomFilter(txPubKeys [][64]byte) {
 		filter.Add(txPubKey[:])
 	}
 
-	b.BloomFilter = filter
+	block.BloomFilter = filter
 }
 
-func (b *Block) GetSize() uint64 {
+func (block *Block) GetSize() uint64 {
 	size :=
 		MIN_BLOCKSIZE +
-			int(b.NrAccTx)*TXHASH_LEN +
-			int(b.NrFundsTx)*TXHASH_LEN +
-			int(b.NrConfigTx)*TXHASH_LEN +
-			int(b.NrStakeTx)*TXHASH_LEN
+			int(block.NrAccTx)*TXHASH_LEN +
+			int(block.NrFundsTx)*TXHASH_LEN +
+			int(block.NrConfigTx)*TXHASH_LEN +
+			int(block.NrStakeTx)*TXHASH_LEN
 
-	if b.BloomFilter != nil {
-		encodedBF, _ := b.BloomFilter.GobEncode()
+	if block.BloomFilter != nil {
+		encodedBF, _ := block.BloomFilter.GobEncode()
 		size += len(encodedBF)
 	}
 
 	return uint64(size)
 }
 
-func (b *Block) GetHeaderSize() uint64 {
-	size := MIN_BLOCKHEADER_SIZE
-
-	if b.BloomFilter != nil {
-		encodedBF, _ := b.BloomFilter.GobEncode()
-		size += len(encodedBF)
-	}
-
-	return uint64(size)
-}
-
-func (b *Block) Encode() (encodedBlock []byte) {
-	if b == nil {
+func (block *Block) Encode() []byte {
+	if block == nil {
 		return nil
 	}
 
-	//Making byte array of all non-byte data
-	var timeStamp [8]byte
-	var nrFundsTx, nrAccTx, nrStakeTx, nrElementsBF [2]byte
-	var height [4]byte
+	encoded := Block{
+		Header:                block.Header,
+		Hash:                  block.Hash,
+		PrevHash:              block.PrevHash,
+		Nonce:                 block.Nonce,
+		Timestamp:             block.Timestamp,
+		MerkleRoot:            block.MerkleRoot,
+		Beneficiary:           block.Beneficiary,
+		NrAccTx:               block.NrAccTx,
+		NrFundsTx:             block.NrFundsTx,
+		NrConfigTx:            block.NrConfigTx,
+		NrStakeTx:             block.NrStakeTx,
+		NrElementsBF:          block.NrElementsBF,
+		BloomFilter:           block.BloomFilter,
+		SlashedAddress:        block.SlashedAddress,
+		Height:                block.Height,
+		CommitmentProof:       block.CommitmentProof,
+		ConflictingBlockHash1: block.ConflictingBlockHash1,
+		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
-	binary.BigEndian.PutUint64(timeStamp[:], uint64(b.Timestamp))
-	binary.BigEndian.PutUint16(nrFundsTx[:], b.NrFundsTx)
-	binary.BigEndian.PutUint16(nrAccTx[:], b.NrAccTx)
-	binary.BigEndian.PutUint16(nrStakeTx[:], b.NrStakeTx)
-	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
-	binary.BigEndian.PutUint32(height[:], b.Height)
-
-	//Allocate memory
-	encodedBlock = make([]byte, b.GetSize())
-
-	encodedBlock[0] = b.Header
-	copy(encodedBlock[1:33], b.Hash[:])
-	copy(encodedBlock[33:65], b.PrevHash[:])
-	copy(encodedBlock[65:73], b.Nonce[:])
-	copy(encodedBlock[73:81], timeStamp[:])
-	copy(encodedBlock[81:113], b.MerkleRoot[:])
-	copy(encodedBlock[113:177], b.Beneficiary[:])
-	copy(encodedBlock[177:179], nrFundsTx[:])
-	copy(encodedBlock[179:181], nrAccTx[:])
-	encodedBlock[181] = byte(b.NrConfigTx)
-	copy(encodedBlock[182:184], nrStakeTx[:])
-	copy(encodedBlock[184:248], b.SlashedAddress[:])
-	copy(encodedBlock[248:250], nrElementsBF[:])
-
-	index := 250
-
-	if b.BloomFilter != nil {
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Serialize BloomFilter
-		copy(encodedBlock[index:index+encodedBFSize], encodedBF)
-		index += encodedBFSize
+		AccTxData:    block.AccTxData,
+		FundsTxData:  block.FundsTxData,
+		ConfigTxData: block.ConfigTxData,
+		StakeTxData:  block.StakeTxData,
 	}
 
-	copy(encodedBlock[index:index+HEIGHT_LEN], height[:])
-	index += HEIGHT_LEN
-	copy(encodedBlock[index:index+crypto.COMM_PROOF_LENGTH], b.CommitmentProof[:])
-	index += crypto.COMM_PROOF_LENGTH
-	copy(encodedBlock[index:index+TXHASH_LEN], b.ConflictingBlockHash1[:])
-	index += TXHASH_LEN
-	copy(encodedBlock[index:index+TXHASH_LEN], b.ConflictingBlockHash2[:])
-	index += TXHASH_LEN
-
-	//Serialize all tx hashes
-	for _, txHash := range b.FundsTxData {
-		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
-		index += TXHASH_LEN
-	}
-
-	for _, txHash := range b.AccTxData {
-		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
-		index += TXHASH_LEN
-	}
-
-	for _, txHash := range b.ConfigTxData {
-		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
-		index += TXHASH_LEN
-	}
-
-	for _, txHash := range b.StakeTxData {
-		copy(encodedBlock[index:index+TXHASH_LEN], txHash[:])
-		index += TXHASH_LEN
-	}
-
-	return encodedBlock
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encoded)
+	return buffer.Bytes()
 }
 
-func (b *Block) EncodeHeader() (encodedHeader []byte) {
-	if b == nil {
+func (block *Block) EncodeHeader() []byte {
+	if block == nil {
 		return nil
 	}
 
-	//Making byte array of all non-byte data
-	var nrElementsBF [2]byte
-	var height [HEIGHT_LEN]byte
-
-	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
-	binary.BigEndian.PutUint32(height[:], b.Height)
-
-	//Allocate memory
-	encodedHeader = make([]byte, b.GetHeaderSize())
-
-	encodedHeader[0] = b.Header
-	copy(encodedHeader[1:33], b.Hash[:])
-	copy(encodedHeader[33:65], b.PrevHash[:])
-	encodedHeader[65] = byte(b.NrConfigTx)
-	copy(encodedHeader[66:68], nrElementsBF[:])
-	copy(encodedHeader[68:72], height[:])
-	copy(encodedHeader[72:136], b.Beneficiary[:])
-
-	index := MIN_BLOCKHEADER_SIZE
-
-	if b.BloomFilter != nil {
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Serialize BloomFilter
-		copy(encodedHeader[index:index+encodedBFSize], encodedBF)
-		index += encodedBFSize
+	encoded := Block{
+		Header:       block.Header,
+		Hash:         block.Hash,
+		PrevHash:     block.PrevHash,
+		NrConfigTx:   block.NrConfigTx,
+		NrElementsBF: block.NrElementsBF,
+		BloomFilter:  block.BloomFilter,
+		Height:       block.Height,
+		Beneficiary:  block.Beneficiary,
 	}
 
-	return encodedHeader
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encoded)
+	return buffer.Bytes()
 }
 
-func (*Block) Decode(encodedBlock []byte) (b *Block) {
-	b = new(Block)
-
-	if len(encodedBlock) < MIN_BLOCKSIZE {
+func (block *Block) Decode(encoded []byte) (b *Block) {
+	if encoded == nil {
 		return nil
 	}
 
-	timeStampTmp := binary.BigEndian.Uint64(encodedBlock[73:81])
-	timeStamp := int64(timeStampTmp)
-
-	b.Header = encodedBlock[0]
-	copy(b.Hash[:], encodedBlock[1:33])
-	copy(b.PrevHash[:], encodedBlock[33:65])
-	copy(b.Nonce[:], encodedBlock[65:73])
-	b.Timestamp = timeStamp
-	copy(b.MerkleRoot[:], encodedBlock[81:113])
-	copy(b.Beneficiary[:], encodedBlock[113:177])
-	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[177:179])
-	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[179:181])
-	b.NrConfigTx = uint8(encodedBlock[181])
-	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[182:184])
-	copy(b.SlashedAddress[:], encodedBlock[184:248])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[248:250])
-
-	index := 250
-
-	if b.NrElementsBF > 0 {
-		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
-
-		//Initialize BloomFilter
-		b.BloomFilter = bloom.New(m, k)
-
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedBlock[index : index+encodedBFSize])
-		index += encodedBFSize
-	}
-
-	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+HEIGHT_LEN])
-	index += HEIGHT_LEN
-	copy(b.CommitmentProof[:], encodedBlock[index:index+crypto.COMM_PROOF_LENGTH])
-	index += crypto.COMM_PROOF_LENGTH
-	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+TXHASH_LEN])
-	index += TXHASH_LEN
-	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+TXHASH_LEN])
-	index += TXHASH_LEN
-
-	//Deserialize all tx hashes
-	var hash [32]byte
-	for cnt := 0; cnt < int(b.NrFundsTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
-		b.FundsTxData = append(b.FundsTxData, hash)
-		index += TXHASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrAccTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
-		b.AccTxData = append(b.AccTxData, hash)
-		index += TXHASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrConfigTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
-		b.ConfigTxData = append(b.ConfigTxData, hash)
-		index += TXHASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrStakeTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+TXHASH_LEN])
-		b.StakeTxData = append(b.StakeTxData, hash)
-		index += TXHASH_LEN
-	}
-
-	b.StateCopy = make(map[[64]byte]*Account)
-
-	return b
+	var decoded Block
+	buffer := bytes.NewBuffer(encoded)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
 }
 
-func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
-
-	b = new(Block)
-
-	if len(encodedHeader) < MIN_BLOCKHEADER_SIZE {
-		return nil
-	}
-
-	b.Header = encodedHeader[0]
-	copy(b.Hash[:], encodedHeader[1:33])
-	copy(b.PrevHash[:], encodedHeader[33:65])
-	b.NrConfigTx = uint8(encodedHeader[65])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
-	b.Height = binary.BigEndian.Uint32(encodedHeader[68:72])
-	copy(b.Beneficiary[:], encodedHeader[72:136])
-
-	index := MIN_BLOCKHEADER_SIZE
-
-	if b.NrElementsBF > 0 {
-		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
-
-		//Initialize BloomFilter
-		b.BloomFilter = bloom.New(m, k)
-
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedHeader[index : index+encodedBFSize])
-		index += encodedBFSize
-	}
-
-	return b
-}
-
-func (b Block) String() string {
+func (block Block) String() string {
 	return fmt.Sprintf("\nHash: %x\n"+
 		"Previous Hash: %x\n"+
 		"Nonce: %x\n"+
@@ -369,20 +198,20 @@ func (b Block) String() string {
 		"Slashed Address:%x\n"+
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
-		b.Hash[0:8],
-		b.PrevHash[0:8],
-		b.Nonce,
-		b.Timestamp,
-		b.MerkleRoot[0:8],
-		b.Beneficiary[0:8],
-		b.NrFundsTx,
-		b.NrAccTx,
-		b.NrConfigTx,
-		b.NrStakeTx,
-		b.Height,
-		b.CommitmentProof[0:8],
-		b.SlashedAddress[0:8],
-		b.ConflictingBlockHash1[0:8],
-		b.ConflictingBlockHash2[0:8],
+		block.Hash[0:8],
+		block.PrevHash[0:8],
+		block.Nonce,
+		block.Timestamp,
+		block.MerkleRoot[0:8],
+		block.Beneficiary[0:8],
+		block.NrFundsTx,
+		block.NrAccTx,
+		block.NrConfigTx,
+		block.NrStakeTx,
+		block.Height,
+		block.CommitmentProof[0:8],
+		block.SlashedAddress[0:8],
+		block.ConflictingBlockHash1[0:8],
+		block.ConflictingBlockHash2[0:8],
 	)
 }

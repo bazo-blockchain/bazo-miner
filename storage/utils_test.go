@@ -14,8 +14,8 @@ func TestSerializeHashContent(t *testing.T) {
 
 	hash := protocol.SerializeHashContent(data)
 
-  if fmt.Sprintf("%x", hash) != "075783ca932e234acfabbe9d989c35b59c87495a77745bf79e6b704549af2cfa" {
-		t.Errorf("Error serializing: %x != %v\n", hash, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
+  if fmt.Sprintf("%x", hash) != "ca4510738395af1429224dd785675309c344b2b549632e20275c69b15ed1d210" {
+		t.Errorf("Error serializing: %x != %v\n", hash, "ca4510738395af1429224dd785675309c344b2b549632e20275c69b15ed1d210")
 	}
 }
 

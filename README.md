@@ -76,19 +76,19 @@ In our case, we can use miner's A `WalletA.txt` (e.g. copy the file to the Bazo 
 Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we create a new account:
 
 ```bash
-bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
+./bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
 ```
 
 The minimum amount of coins required for staking is defined in the configuration of Bazo.
 Thus, miner B first needs Bazo coins to start mining and we must first send coins to miner B's account.
 
 ```bash
-bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 1000 --multisig WalletA.txt
+./bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 2000 --multisig WalletA.txt
 ```
 
 Then, miner B has to join the pool of validators (enable staking):
 ```bash
-bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
+./bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
 ```
 
 In addition to the created `NodeA` directory before (located in the Bazo miner directory), create a new directory `NodeB`, 
@@ -135,7 +135,7 @@ Options
 Example
 
 ```bash
-bazo-miner generate-wallet --file wallet.txt
+./bazo-miner generate-wallet --file wallet.txt
 ```
 
 
@@ -153,6 +153,6 @@ Options
 Example
 
 ```bash
-bazo-miner generate-commitment --file commitment.txt
+./bazo-miner generate-commitment --file commitment.txt
 ```
 
