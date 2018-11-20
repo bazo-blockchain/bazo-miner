@@ -52,7 +52,7 @@ func TestReadWriteDeleteTx(t *testing.T) {
 		if math.Mod(float64(cnt), 2.00) == 1 {
 			isStaking = true
 		}
-		tx, _ := protocol.ConstrStakeTx(0, uint64(cnt), isStaking, accAHash, &PrivKeyA, &CommitmentKeyA.PublicKey)
+		tx, _ := protocol.ConstrStakeTx(0, uint64(cnt), isStaking, accA.Address, &PrivKeyA, &CommitmentKeyA.PublicKey)
 		hashStakeSlice = append(hashStakeSlice, tx)
 		WriteOpenTx(tx)
 	}

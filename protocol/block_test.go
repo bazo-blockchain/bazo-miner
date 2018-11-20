@@ -96,12 +96,12 @@ func TestBlockHeaderSerialization(t *testing.T) {
 	blockHeader.NrConfigTx = uint8(randVar.Uint32())
 	blockHeader.NrElementsBF = uint16(randVar.Uint32())
 
-	var v1, v2, v3 [32]byte
+	var v1, v2, v3 [64]byte
 	rand.Read(v1[:])
 	rand.Read(v2[:])
 	rand.Read(v3[:])
 
-	blockHeader.InitBloomFilter([][32]byte{v1, v2, v3})
+	blockHeader.InitBloomFilter([][64]byte{v1, v2, v3})
 
 	blockHeader.Height = uint32(randVar.Uint32())
 	rand.Read(blockHeader.Beneficiary[:])

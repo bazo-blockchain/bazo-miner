@@ -23,7 +23,7 @@ func TestAccTxCreation(t *testing.T) {
 		t.Errorf("Public key does not match the given one: %x vs. %x\n", tx.PubKey, accA.Address)
 	}
 
-	if !reflect.DeepEqual(tx.Issuer, SerializeHashContent(getAddressFromPubKey(&RootPrivKey.PublicKey))) {
+	if !reflect.DeepEqual(tx.Issuer, getAddressFromPubKey(&RootPrivKey.PublicKey)) {
 		t.Errorf("Issuer does not match the given root key: %x vs. %x\n", tx.Issuer, RootPrivKey)
 	}
 
@@ -52,7 +52,7 @@ func TestAccTxCreation(t *testing.T) {
 		t.Errorf("Public key should not be empty.")
 	}
 
-	if !reflect.DeepEqual(tx.Issuer, SerializeHashContent(getAddressFromPubKey(&RootPrivKey.PublicKey))) {
+	if !reflect.DeepEqual(tx.Issuer, getAddressFromPubKey(&RootPrivKey.PublicKey)) {
 		t.Errorf("Issuer does not match the given root key: %x vs. %x\n", tx.Issuer, RootPrivKey)
 	}
 

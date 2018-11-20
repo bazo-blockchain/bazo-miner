@@ -154,7 +154,7 @@ func extractHeader(headerData []byte) *Header {
 
 func IsBootstrap() bool {
 	//Set thisPort global, this will be the listening port for incoming connection
-	bootstrapPort := strings.Split(storage.Bootstrap_Server, ":")[1]
+	bootstrapPort := strings.Split(storage.BootstrapServer, ":")[1]
 	thisPort := strings.Split(Ipport, ":")[1]
 	if thisPort == bootstrapPort {
 		return true
