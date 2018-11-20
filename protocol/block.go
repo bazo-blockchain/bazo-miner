@@ -84,8 +84,8 @@ func (block *Block) HashBlock() [32]byte {
 	return SerializeHashContent(blockHash)
 }
 
-func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
-	b.NrElementsBF = uint16(len(txPubKeys))
+func (block *Block) InitBloomFilter(txPubKeys [][32]byte) {
+	block.NrElementsBF = uint16(len(txPubKeys))
 
 	m, k := calculateBloomFilterParams(float64(len(txPubKeys)), BLOOM_FILTER_ERROR_RATE)
 	filter := bloom.New(m, k)
@@ -93,53 +93,53 @@ func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
 		filter.Add(txPubKey[:])
 	}
 
-	b.BloomFilter = filter
+	block.BloomFilter = filter
 }
 
-func (b *Block) GetSize() uint64 {
+func (block *Block) GetSize() uint64 {
 	size :=
 		MIN_BLOCKSIZE +
-			int(b.NrAccTx)*HASH_LEN +
-			int(b.NrFundsTx)*HASH_LEN +
-			int(b.NrConfigTx)*HASH_LEN +
-			int(b.NrStakeTx)*HASH_LEN
+			int(block.NrAccTx)*HASH_LEN +
+			int(block.NrFundsTx)*HASH_LEN +
+			int(block.NrConfigTx)*HASH_LEN +
+			int(block.NrStakeTx)*HASH_LEN
 
-	if b.BloomFilter != nil {
-		encodedBF, _ := b.BloomFilter.GobEncode()
+	if block.BloomFilter != nil {
+		encodedBF, _ := block.BloomFilter.GobEncode()
 		size += len(encodedBF)
 	}
 
 	return uint64(size)
 }
 
-func (b *Block) Encode() []byte {
-	if b == nil {
+func (block *Block) Encode() []byte {
+	if block == nil {
 		return nil
 	}
 
 	encoded := Block{
-		Header:                b.Header,
-		Hash:                  b.Hash,
-		PrevHash:              b.PrevHash,
-		Nonce:                 b.Nonce,
-		Timestamp:             b.Timestamp,
-		MerkleRoot:            b.MerkleRoot,
-		Beneficiary:           b.Beneficiary,
-		NrAccTx:               b.NrAccTx,
-		NrFundsTx:             b.NrFundsTx,
-		NrConfigTx:            b.NrConfigTx,
-		NrStakeTx:             b.NrStakeTx,
-		NrElementsBF:          b.NrElementsBF,
-		BloomFilter:           b.BloomFilter,
-		SlashedAddress:        b.SlashedAddress,
-		Height:                b.Height,
-		ConflictingBlockHash1: b.ConflictingBlockHash1,
-		ConflictingBlockHash2: b.ConflictingBlockHash2,
+		Header:                block.Header,
+		Hash:                  block.Hash,
+		PrevHash:              block.PrevHash,
+		Nonce:                 block.Nonce,
+		Timestamp:             block.Timestamp,
+		MerkleRoot:            block.MerkleRoot,
+		Beneficiary:           block.Beneficiary,
+		NrAccTx:               block.NrAccTx,
+		NrFundsTx:             block.NrFundsTx,
+		NrConfigTx:            block.NrConfigTx,
+		NrStakeTx:             block.NrStakeTx,
+		NrElementsBF:          block.NrElementsBF,
+		BloomFilter:           block.BloomFilter,
+		SlashedAddress:        block.SlashedAddress,
+		Height:                block.Height,
+		ConflictingBlockHash1: block.ConflictingBlockHash1,
+		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
-		AccTxData:    b.AccTxData,
-		FundsTxData:  b.FundsTxData,
-		ConfigTxData: b.ConfigTxData,
-		StakeTxData:  b.StakeTxData,
+		AccTxData:    block.AccTxData,
+		FundsTxData:  block.FundsTxData,
+		ConfigTxData: block.ConfigTxData,
+		StakeTxData:  block.StakeTxData,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -147,20 +147,20 @@ func (b *Block) Encode() []byte {
 	return buffer.Bytes()
 }
 
-func (b *Block) EncodeHeader() []byte {
-	if b == nil {
+func (block *Block) EncodeHeader() []byte {
+	if block == nil {
 		return nil
 	}
 
 	encoded := Block{
-		Header:       b.Header,
-		Hash:         b.Hash,
-		PrevHash:     b.PrevHash,
-		NrConfigTx:   b.NrConfigTx,
-		NrElementsBF: b.NrElementsBF,
-		BloomFilter:  b.BloomFilter,
-		Height:       b.Height,
-		Beneficiary:  b.Beneficiary,
+		Header:       block.Header,
+		Hash:         block.Hash,
+		PrevHash:     block.PrevHash,
+		NrConfigTx:   block.NrConfigTx,
+		NrElementsBF: block.NrElementsBF,
+		BloomFilter:  block.BloomFilter,
+		Height:       block.Height,
+		Beneficiary:  block.Beneficiary,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -176,7 +176,7 @@ func (*Block) Decode(encoded []byte) (b *Block) {
 	return &decoded
 }
 
-func (b Block) String() string {
+func (block Block) String() string {
 	return fmt.Sprintf("\nHash: %x\n"+
 		"Previous Hash: %x\n"+
 		"Nonce: %x\n"+
@@ -192,20 +192,20 @@ func (b Block) String() string {
 		"Slashed Address:%x\n"+
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
-		b.Hash[0:8],
-		b.PrevHash[0:8],
-		b.Nonce,
-		b.Timestamp,
-		b.MerkleRoot[0:8],
-		b.Beneficiary[0:8],
-		b.NrFundsTx,
-		b.NrAccTx,
-		b.NrConfigTx,
-		b.NrStakeTx,
-		b.Height,
-		b.CommitmentProof[0:8],
-		b.SlashedAddress[0:8],
-		b.ConflictingBlockHash1[0:8],
-		b.ConflictingBlockHash2[0:8],
+		block.Hash[0:8],
+		block.PrevHash[0:8],
+		block.Nonce,
+		block.Timestamp,
+		block.MerkleRoot[0:8],
+		block.Beneficiary[0:8],
+		block.NrFundsTx,
+		block.NrAccTx,
+		block.NrConfigTx,
+		block.NrStakeTx,
+		block.Height,
+		block.CommitmentProof[0:8],
+		block.SlashedAddress[0:8],
+		block.ConflictingBlockHash1[0:8],
+		block.ConflictingBlockHash2[0:8],
 	)
 }
