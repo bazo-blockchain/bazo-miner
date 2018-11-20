@@ -133,6 +133,7 @@ func (block *Block) Encode() []byte {
 		BloomFilter:           block.BloomFilter,
 		SlashedAddress:        block.SlashedAddress,
 		Height:                block.Height,
+		CommitmentProof:	   block.CommitmentProof,
 		ConflictingBlockHash1: block.ConflictingBlockHash1,
 		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
@@ -168,7 +169,11 @@ func (block *Block) EncodeHeader() []byte {
 	return buffer.Bytes()
 }
 
-func (*Block) Decode(encoded []byte) (b *Block) {
+func (block *Block) Decode(encoded []byte) (b *Block) {
+	if encoded == nil {
+		return nil
+	}
+
 	var decoded Block
 	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
