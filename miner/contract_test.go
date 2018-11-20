@@ -162,7 +162,8 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	receiver := []byte{0x00, 0x2b}
 	contractVariables[0] = receiver
 
-	var minter = accA.Address[:]
+	accAHash := protocol.SerializeHashContent(accA.Address)
+	var minter = accAHash[:]
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
@@ -217,7 +218,8 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	receiver := []byte{0x00, 0x2b}
 	contractVariables[0] = receiver
 
-	var minter = accA.Address[:]
+	accAHash := protocol.SerializeHashContent(accA.Address)
+	var minter = accAHash[:]
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
