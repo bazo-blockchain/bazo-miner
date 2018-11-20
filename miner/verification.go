@@ -47,12 +47,19 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 
 	//Check if accounts are present in the actual state
 	accFrom := storage.State[tx.From]
-	accTo := storage.State[tx.To]
+	if accFrom == nil {
+		// TODO: Requires a Mutex?
+		newAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [256]byte{}, nil, nil)
+		accFrom = &newAcc
+		storage.WriteAccount(accFrom)
+	}
 
-	//Accounts non existent
-	if accFrom == nil || accTo == nil {
-		logger.Printf("Account non existent. From: %v\nTo: %v\n", accFrom, accTo)
-		return false
+	accTo := storage.State[tx.To]
+	if accTo == nil {
+		// TODO: Requires a Mutex?
+		newAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [256]byte{}, nil, nil)
+		accTo = &newAcc
+		storage.WriteAccount(accTo)
 	}
 
 	accFromHash := protocol.SerializeHashContent(accFrom.Address)
