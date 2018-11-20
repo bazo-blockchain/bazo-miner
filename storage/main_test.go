@@ -55,9 +55,11 @@ func TestMain(m *testing.M) {
 	addRootAccounts()
 	//we don't want logging msgs when testing, designated messages
 	log.SetOutput(ioutil.Discard)
-	os.Exit(m.Run())
+	retCode := m.Run()
 
 	TearDown()
+	os.Remove(TestDBFileName)
+	os.Exit(retCode)
 }
 
 func addTestingAccounts() {
