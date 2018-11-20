@@ -1,8 +1,7 @@
 package protocol
 
 import (
-	"bytes"
-	"encoding/gob"
+	"fmt"
 	"math"
 	"time"
 
@@ -14,9 +13,7 @@ import (
 
 //Serializes the input and returns the sha3 hash function applied on ths input
 func SerializeHashContent(data interface{}) (hash [32]byte) {
-	buffer := new(bytes.Buffer)
-	gob.NewEncoder(buffer).Encode(data)
-	return sha3.Sum256(buffer.Bytes())
+	return sha3.Sum256([]byte(fmt.Sprintf("%v", data)))
 }
 
 func Encode(data [][]byte, sliceSize int) []byte {
