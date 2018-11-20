@@ -31,9 +31,6 @@ Options
 * `--address`: (default: localhost:8000) Specify starting address and port, in format `IP:PORT`
 * `--bootstrap`: (default: localhost:8000) Specify the address and port of the boostrapping node. Note that when this option is not specified, the miner connects to itself.
 * `--dataDir`: (default: bazodata) Data directory for the database (store.db) and keystore (wallet.key, commitment.key). Database and keys are generated if they do not exist yet.
-* `--multisig`: (optional) The file to load the multisig's private key from.
-* `--rootkey`: (default: key.txt) The file to load root's public key from this file. A new public private key is generated if it does not exist yet. Note that only the public key is required.
-* `--rootcommitment`: The file to load root's commitment key from. A new commitment key is generated if it does not exist yet.
 * `--confirm`: In order to review the miner startup options, the user must press Enter before the miner starts.
 
 Example
@@ -47,19 +44,27 @@ Miner A (Root)
 * Data Directory: `NodeA`
 * Address: `localhost:8000`
 * Bootstrap Address: `localhost:8000`
-* Root Wallet: `WalletA.txt`
-* Root Commitment: `CommitmentA.txt`
+* Database: `StoreA.db`
+* Wallet: `WalletA.key`
+* Commitment: `CommitmentA.key`
+* Root Wallet: `WalletA.key`
+* Root Commitment: `CommitmentA.key`
 
 
 Miner B
 * Data Directory: `NodeB`
 * Address: `localhost:8001`
 * Bootstrap Address: `localhost:8000`
+* Database: `StoreB.db`
+* Wallet: `WalletB.key`
+* Commitment: `CommitmentB.key`
+* Root Wallet: `WalletA.key` (can contain only the public key)
+* Root Commitment: `CommitmentA.key` (can contain only the public key)
 
 Commands
 
 ```bash
-bazo-miner start --dataDir NodeA --address localhost:8000 --bootstrap localhost:8000 --multisig WalletA.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+bazo-miner start --dataDir NodeA --address localhost:8000 --bootstrap localhost:8000
 ```
 
 We start miner A at address and port `localhost:8000` and connect to itself by setting the bootstrap address to the same address.
@@ -86,13 +91,32 @@ Then, miner B has to join the pool of validators (enable staking):
 bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
 ```
 
-Start miner B, using the generated `WalletB.txt` and `CommitmentB.txt` (e.g. copy the files to the Bazo miner directory):
+In addition to the created `NodeA` directory before (located in the Bazo miner directory), create a new directory `NodeB`, 
+copy the generated files `WalletB.txt` and `CommitmentB.txt`, as well as the root wallet (in our case `WalletA.key`) 
+and the root commitment (in our case `CommitmentA.key`) to the `NodeB` directory, resulting in the following directory structure:
+
+```
+:open_file_folder: bazo-miner
+-- :open_file_folder: NodeA
+---- :key: WalletA.key
+---- :key: CommitmentA.key
+---- :floppy_disk: StoreA.db
+---- :key: WalletA.key
+---- :key: CommitmentA.key
+-- :open_file_folder: NodeB
+---- :key: WalletB.key
+---- :key: CommitmentB.key
+---- :floppy_disk: StoreB.db
+---- :key: WalletA.key
+---- :key: CommitmentA.key
+-- bazo-miner (executable)
+``` 
+
+Then start the miner:
 
 ```bash
-bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000 --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000
 ```
-
-Note that both files specified for `--rootwallet` and `--rootcommitment` only require to contain the wallet and commitemt public key respectively.
 
 We start miner B at address and port `localhost:8001` and connect to miner A (which is the boostrap node).
 Wallet and commitment keys are automatically created.
