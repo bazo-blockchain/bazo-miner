@@ -23,7 +23,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 		4,  // ADD
 		50, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, nil)
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -33,7 +33,7 @@ func TestMultipleBlocksWithContractTx(t *testing.T) {
 	transactionData := []byte{
 		1, 0, 15,
 	}
-	createBlockWithSingleContractCallTx(b2, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b2, transactionData)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
@@ -53,7 +53,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		50, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -63,13 +63,13 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 	transactionData := []byte{
 		1, 0, 15,
 	}
-	hash := createBlockWithSingleContractCallTx(b2, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b2, transactionData)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(hash)
+	acc, _ := storage.GetAccount(contractAddress)
 	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 17}}
 	if !reflect.DeepEqual(contractVariables, expected) {
@@ -90,7 +90,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		27, 0, // SSTORE
 		50, // HALT
 	}
-	createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, []protocol.ByteArray{[]byte{0, 2}})
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -100,7 +100,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	transactionData := []byte{
 		1, 0, 15,
 	}
-	createBlockWithSingleContractCallTx(b2, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b2, transactionData)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
@@ -110,13 +110,13 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 	transactionData = []byte{
 		1, 0, 15,
 	}
-	hash := createBlockWithSingleContractCallTx(b3, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b3, transactionData)
 	finalizeBlock(b3)
 	if err := validate(b3, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(hash)
+	acc, _ := storage.GetAccount(contractAddress)
 	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 32}}
 	if !reflect.DeepEqual(contractVariables, expected) {
@@ -131,7 +131,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 	contract := []byte{
 		35, 0, 0, 1, 10, 22, 0, 10, 1, 50, 28, 0, 31, 33, 10, 22, 0, 21, 2, 24, 28, 0, 29, 0, 0, 4, 27, 0, 0, 24,
 	}
-	createBlockWithSingleContractDeployTx(b, contract, nil)
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, nil)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -142,7 +142,7 @@ func TestMultipleBlocksWithContextContractTx(t *testing.T) {
 		0, 100, // Amount
 		0, 1,
 	}
-	createBlockWithSingleContractCallTx(b1, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b1, transactionData)
 	finalizeBlock(b1)
 	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
@@ -162,14 +162,14 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	receiver := []byte{0x00, 0x2b}
 	contractVariables[0] = receiver
 
-	minter := []byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2}
+	var minter = accA.Address[:]
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
 	m.Append(receiver, []byte{0x00, 0x01})
 	contractVariables[2] = []byte(m)
 
-	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -182,7 +182,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		1, 0, 1, // function Hash
 	}
 
-	contractAddress := createBlockWithSingleContractCallTx(b1, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b1, transactionData)
 	finalizeBlock(b1)
 	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
@@ -218,14 +218,14 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	receiver := []byte{0x00, 0x2b}
 	contractVariables[0] = receiver
 
-	minter := []byte{0x6e, 0x60, 0x66, 0x30, 0x48, 0x5f, 0xa2, 0xf5, 0xc6, 0x5c, 0x2f, 0x67, 0x97, 0x96, 0xd9, 0x2a, 0xcc, 0x27, 0x19, 0x0d, 0x63, 0x3a, 0x2d, 0xd7, 0x07, 0x40, 0x2e, 0x47, 0x93, 0xf3, 0xf2, 0xa2}
+	var minter = accA.Address[:]
 	contractVariables[1] = minter
 
 	m := vm.NewMap()
 	//m.Append(receiver, []byte{0x00, 0x01})
 	contractVariables[2] = []byte(m)
 
-	createBlockWithSingleContractDeployTx(b, contract, contractVariables)
+	contractAddress := createBlockWithSingleContractDeployTx(b, contract, contractVariables)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
@@ -237,13 +237,13 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 		1, receiver[0], receiver[1], // receiver address
 		1, 0, 1, // function Hash
 	}
-	hash := createBlockWithSingleContractCallTx(b1, transactionData)
+	createBlockWithSingleContractCallTx(contractAddress, b1, transactionData)
 	finalizeBlock(b1)
 	if err := validate(b1, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(hash)
+	acc, _ := storage.GetAccount(contractAddress)
 	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
@@ -262,30 +262,23 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [64]byte {
-	tx, _, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
+	tx, contractPrivKey, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
-		return tx.Issuer
+		return crypto.GetAddressFromPubKey(&contractPrivKey.PublicKey)
 	} else {
 		fmt.Print(err)
 		return [64]byte{}
 	}
 }
 
-func createBlockWithSingleContractCallTx(b *protocol.Block, transactionData []byte) [64]byte {
-	for address := range storage.State {
-		acc, _ := storage.GetAccount(address)
-		if acc.Contract != nil {
-			tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, acc.Address, PrivKeyAccA, PrivKeyMultiSig, transactionData)
-			if err := addTx(b, tx); err == nil {
-				storage.WriteOpenTx(tx)
-			} else {
-				fmt.Print(err)
-			}
-			return acc.Address
-		}
+func createBlockWithSingleContractCallTx(contractAddress [64]byte, b *protocol.Block, transactionData []byte) {
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, contractAddress, PrivKeyAccA, PrivKeyMultiSig, transactionData)
+	if err := addTx(b, tx); err == nil {
+		storage.WriteOpenTx(tx)
+	} else {
+		fmt.Print(err)
 	}
-	return [64]byte{}
 }
 
 func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionData []byte, from [64]byte, to [64]byte) {
