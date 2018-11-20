@@ -65,7 +65,7 @@ Miner B
 Commands
 
 ```bash
-bazo-miner start --database StoreA.db --address localhost:8000 --bootstrap localhost:8000 --wallet WalletA.txt --commitment CommitmentA.txt --multisig WalletA.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+./bazo-miner start --database StoreA.db --address localhost:8000 --bootstrap localhost:8000 --wallet WalletA.txt --commitment CommitmentA.txt --multisig WalletA.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
 ```
 
 We start miner A at address and port `localhost:8000` and connect to itself by setting the bootstrap address to the same address.
@@ -77,25 +77,25 @@ In our case, we can use miner's A `WalletA.txt` (e.g. copy the file to the Bazo 
 Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we create a new account:
 
 ```bash
-bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
+./bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
 ```
 
 The minimum amount of coins required for staking is defined in the configuration of Bazo.
 Thus, miner B first needs Bazo coins to start mining and we must first send coins to miner B's account.
 
 ```bash
-bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 1000 --multisig WalletA.txt
+./bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 2000 --multisig WalletA.txt
 ```
 
 Then, miner B has to join the pool of validators (enable staking):
 ```bash
-bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
+./bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
 ```
 
 Start miner B, using the generated `WalletB.txt` and `CommitmentB.txt` (e.g. copy the files to the Bazo miner directory):
 
 ```bash
-bazo-miner start --database StoreB.db --address localhost:8001 --bootstrap localhost:8000 --wallet WalletB.txt --commitment CommitmentB.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+./bazo-miner start --database StoreB.db --address localhost:8001 --bootstrap localhost:8000 --wallet WalletB.txt --commitment CommitmentB.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
 ```
 
 Note that both files specified for `--rootwallet` and `--rootcommitment` only require to contain the wallet and commitemt public key respectively.
@@ -117,7 +117,7 @@ Options
 Example
 
 ```bash
-bazo-miner generate-wallet --file wallet.txt
+./bazo-miner generate-wallet --file wallet.txt
 ```
 
 
@@ -135,6 +135,6 @@ Options
 Example
 
 ```bash
-bazo-miner generate-commitment --file commitment.txt
+./bazo-miner generate-commitment --file commitment.txt
 ```
 
