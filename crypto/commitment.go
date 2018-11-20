@@ -57,6 +57,35 @@ func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error)
 
 	return privKey, VerifyRSAKey(privKey)
 }
+func ExtractRSAPubKeyFromFile(filename string) (pubKey *rsa.PublicKey, err error) {
+	if _, err = os.Stat(filename); os.IsNotExist(err) {
+		err = CreateRSAKeyFile(filename)
+		if err != nil {
+			return pubKey, err
+		}
+	}
+
+	filehandle, err := os.Open(filename)
+	if err != nil {
+		return pubKey, errors.New(fmt.Sprintf("%v", err))
+	}
+	defer filehandle.Close()
+
+	scanner := bufio.NewScanner(filehandle)
+
+	strModulus := nextLine(scanner)
+
+	if scanErr := scanner.Err(); scanErr != nil || err != nil {
+		return pubKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
+	}
+
+	pubKey, err = CreateRSAPubKeyFromBase64(strModulus)
+	if err != nil {
+		return pubKey, err
+	}
+
+	return pubKey, nil
+}
 
 func VerifyRSAKey(privKey *rsa.PrivateKey) error {
 	message := "Test"
@@ -74,6 +103,14 @@ func VerifyRSAKey(privKey *rsa.PrivateKey) error {
 
 func CreateRSAPubKeyFromBytes(bytModulus [COMM_KEY_LENGTH]byte) (pubKey *rsa.PublicKey, err error) {
 	modulus := new(big.Int).SetBytes(bytModulus[:])
+	pubKey = new(rsa.PublicKey)
+	pubKey.N = modulus
+	pubKey.E = COMM_PUBLIC_EXPONENT
+	return
+}
+
+func CreateRSAPubKeyFromBase64(strModulus string) (pubKey *rsa.PublicKey, err error) {
+	modulus, err := fromBase64(strModulus, &err)
 	pubKey = new(rsa.PublicKey)
 	pubKey.N = modulus
 	pubKey.E = COMM_PUBLIC_EXPONENT
@@ -143,13 +180,17 @@ func CreateRSAKeyFile(filename string) error {
 		return err
 	}
 
-	key, err := rsa.GenerateMultiPrimeKey(rand.Reader, COMM_NOF_PRIMES, COMM_KEY_BITS)
+	key, err := GenerateRSAKey()
 	if err != nil {
 		return err
 	}
 
 	_, err = file.WriteString(stringifyRSAKey(key))
 	return err
+}
+
+func GenerateRSAKey() (*rsa.PrivateKey, error) {
+	return rsa.GenerateMultiPrimeKey(rand.Reader, COMM_NOF_PRIMES, COMM_KEY_BITS)
 }
 
 func stringifyRSAKey(key *rsa.PrivateKey) string {

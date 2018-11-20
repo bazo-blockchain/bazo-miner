@@ -64,7 +64,7 @@ Miner B
 Commands
 
 ```bash
-bazo-miner start --dataDir NodeA --address localhost:8000 --bootstrap localhost:8000
+./bazo-miner start --dataDir NodeA --address localhost:8000 --bootstrap localhost:8000
 ```
 
 We start miner A at address and port `localhost:8000` and connect to itself by setting the bootstrap address to the same address.
@@ -76,19 +76,19 @@ In our case, we can use miner's A `WalletA.txt` (e.g. copy the file to the Bazo 
 Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we create a new account:
 
 ```bash
-./bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
+./bazo-client account create --rootwallet WalletA.key --wallet WalletB.key 
 ```
 
 The minimum amount of coins required for staking is defined in the configuration of Bazo.
 Thus, miner B first needs Bazo coins to start mining and we must first send coins to miner B's account.
 
 ```bash
-./bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 2000 --multisig WalletA.txt
+./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 --multisig WalletA.key
 ```
 
 Then, miner B has to join the pool of validators (enable staking):
 ```bash
-./bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
+./bazo-client staking enable --wallet WalletB.key --commitment CommitmentB.key
 ```
 
 In addition to the created `NodeA` directory before (located in the Bazo miner directory), create a new directory `NodeB`, 
@@ -115,7 +115,7 @@ and the root commitment (in our case `CommitmentA.key`) to the `NodeB` directory
 Then start the miner:
 
 ```bash
-bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000
+./bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000
 ```
 
 We start miner B at address and port `localhost:8001` and connect to miner A (which is the boostrap node).

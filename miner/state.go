@@ -141,7 +141,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 	} else {
 		initialBlock = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
 
-		commitmentProof, err := crypto.SignMessageWithRSAKey(rootCommPrivKey, fmt.Sprint(initialBlock.Height))
+		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
 			return nil, err
 		}

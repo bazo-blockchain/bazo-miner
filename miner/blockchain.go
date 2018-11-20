@@ -20,17 +20,16 @@ var (
 	slashingDict        			= make(map[[64]byte]SlashingProof)
 	validatorAccAddress 			[64]byte
 	multisigPubKey      			*ecdsa.PublicKey
-	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
+	commPrivKey						*rsa.PrivateKey
 )
 
 //Miner entry point
-func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validatorCommitment, rootCommitment *rsa.PrivateKey) {
+func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, rootCommitment *rsa.PublicKey, validatorCommitment *rsa.PrivateKey) {
 	var err error
 
 	validatorAccAddress = crypto.GetAddressFromPubKey(validatorWallet)
 	multisigPubKey = multisigWallet
 	commPrivKey = validatorCommitment
-	rootCommPrivKey = rootCommitment
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -38,11 +37,7 @@ func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validato
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
 
-	//Initialize root key.
-	initRootKey(rootWallet)
-	if err != nil {
-		logger.Printf("Could not create a root account.\n")
-	}
+	initRoot(rootWallet, rootCommitment)
 
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
@@ -58,6 +53,16 @@ func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validato
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
 	mining(initialBlock)
+}
+
+func initRoot(rootWallet *ecdsa.PublicKey, rootCommitment *rsa.PublicKey) {
+	var commPubKey [crypto.COMM_KEY_LENGTH]byte
+	copy(commPubKey[:], rootCommitment.N.Bytes())
+
+	address := crypto.GetAddressFromPubKey(rootWallet)
+	rootAcc := protocol.NewAccount(address, [64]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
+	storage.State[address] = &rootAcc
+	storage.RootKeys[address] = &rootAcc
 }
 
 //Mining is a constant process, trying to come up with a successful PoW.
@@ -92,18 +97,4 @@ func mining(initialBlock *protocol.Block) {
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
 	}
-}
-
-//At least one root key needs to be set which is allowed to create new accounts.
-func initRootKey(rootKey *ecdsa.PublicKey) error {
-	address := crypto.GetAddressFromPubKey(rootKey)
-
-	var commPubKey [crypto.COMM_KEY_LENGTH]byte
-	copy(commPubKey[:], rootCommPrivKey.N.Bytes())
-
-	rootAcc := protocol.NewAccount(address, [64]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
-	storage.State[address] = &rootAcc
-	storage.RootKeys[address] = &rootAcc
-
-	return nil
 }

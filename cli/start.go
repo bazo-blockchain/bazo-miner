@@ -17,6 +17,7 @@ type startArgs struct {
 	dataDirectory        string
 	myNodeAddress        string
 	bootstrapNodeAddress string
+	isRoot				 bool
 }
 
 func GetStartCommand(logger *log.Logger) cli.Command {
@@ -25,9 +26,10 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 		Usage: "start the miner",
 		Action: func(c *cli.Context) error {
 			args := &startArgs{
-				dataDirectory:        c.String("dataDir"),
-				myNodeAddress:        c.String("address"),
-				bootstrapNodeAddress: c.String("bootstrap"),
+				dataDirectory:        	c.String("dataDir"),
+				myNodeAddress:        	c.String("address"),
+				bootstrapNodeAddress: 	c.String("bootstrap"),
+				isRoot: 			  	c.Bool("isRoot"),
 			}
 
 			if !c.IsSet("bootstrap") {
@@ -64,6 +66,10 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 				Value: "localhost:8000",
 			},
 			cli.BoolFlag{
+				Name:  "isRoot",
+				Usage: "Starts the node as root",
+			},
+			cli.BoolFlag{
 				Name:  "confirm",
 				Usage: "User must press enter before starting the miner",
 			},
@@ -80,11 +86,11 @@ func Start(args *startArgs, logger *log.Logger) error {
 	}
 
 	const (
-		database       = "StoreA.db"
-		wallet         = "WalletA.key"
-		commitment     = "CommitmentA.key"
-		rootWallet     = "WalletRoot.key"
-		rootCommitment = "CommitmentRoot.key"
+		database       = "Store.db"
+		wallet         = "ValidatorWallet.key"
+		commitment     = "ValidatorCommitment.key"
+		rootWallet     = "RootWallet.key"
+		rootCommitment = "RootCommitment.key"
 		multisig       = "Multisig.key"
 	)
 
@@ -97,31 +103,42 @@ func Start(args *startArgs, logger *log.Logger) error {
 		return err
 	}
 
-	rootPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.dataDirectory + "/" + rootWallet)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return err
-	}
-
-	multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + multisig)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return err
-	}
-
 	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.dataDirectory + "/" + commitment)
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err
 	}
 
-	rootCommPrivKey, err := crypto.ExtractRSAKeyFromFile(args.dataDirectory + "/" + rootCommitment)
-	if err != nil {
-		logger.Printf("%v\n", err)
-		return err
+	if args.isRoot {
+		multisigPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.dataDirectory + "/" + multisig)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		miner.Init(validatorPubKey, &multisigPrivKey.PublicKey, validatorPubKey, &commPrivKey.PublicKey, commPrivKey)
+	} else {
+		multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + multisig)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		rootPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + rootWallet)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		rootCommPubKey, err := crypto.ExtractRSAPubKeyFromFile(args.dataDirectory + "/" + rootCommitment)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			return err
+		}
+
+		miner.Init(validatorPubKey, multisigPubKey, rootPubKey, rootCommPubKey, commPrivKey)
 	}
 
-	miner.Init(validatorPubKey, multisigPubKey, &rootPrivKey.PublicKey, commPrivKey, rootCommPrivKey)
 	return nil
 }
 
