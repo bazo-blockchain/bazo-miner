@@ -3,11 +3,9 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"math/big"
-	"reflect"
-
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"math/big"
 )
 
 //We can't use polymorphism, e.g. we can't use tx.verify() because the Transaction interface doesn't declare
@@ -45,28 +43,11 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return false
 	}
 
-	//Check if accounts are present in the actual state
-	accFrom := storage.State[tx.From]
-	if accFrom == nil {
-		// TODO: Requires a Mutex?
-		newAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [256]byte{}, nil, nil)
-		accFrom = &newAcc
-		storage.WriteAccount(accFrom)
-	}
+	accFromHash := protocol.SerializeHashContent(tx.From)
+	accToHash := protocol.SerializeHashContent(tx.To)
 
-	accTo := storage.State[tx.To]
-	if accTo == nil {
-		// TODO: Requires a Mutex?
-		newAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [256]byte{}, nil, nil)
-		accTo = &newAcc
-		storage.WriteAccount(accTo)
-	}
-
-	accFromHash := protocol.SerializeHashContent(accFrom.Address)
-	accToHash := protocol.SerializeHashContent(accTo.Address)
-
-	pubKey1Sig1.SetBytes(accFrom.Address[:32])
-	pubKey2Sig1.SetBytes(accFrom.Address[32:])
+	pubKey1Sig1.SetBytes(tx.From[:32])
+	pubKey2Sig1.SetBytes(tx.From[32:])
 
 	r.SetBytes(tx.Sig1[:32])
 	s.SetBytes(tx.Sig1[32:])
@@ -76,7 +57,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	var validSig1, validSig2 bool
 
 	pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) && !reflect.DeepEqual(accFrom, accTo) {
+	if ecdsa.Verify(&pubKey, txHash[:], r, s) && tx.From != tx.To {
 		validSig1 = true
 	} else {
 		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
