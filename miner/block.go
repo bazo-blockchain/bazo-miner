@@ -663,25 +663,26 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 func validateState(data blockData) error {
 	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
 	//even though the accounts did not exist before the block validation.
-	if err := accStateChange(data.accTxSlice); err != nil {
+	newAccounts, err := accStateChange(data.fundsTxSlice)
+	if err != nil {
 		return err
 	}
 
 	if err := fundsStateChange(data.fundsTxSlice); err != nil {
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 
 	if err := collectTxFees(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 
@@ -689,7 +690,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 
@@ -698,7 +699,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 
@@ -708,7 +709,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(newAccounts)
 		return err
 	}
 

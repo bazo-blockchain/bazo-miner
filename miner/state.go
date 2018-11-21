@@ -192,37 +192,32 @@ func initState() (initialBlock *protocol.Block, err error) {
 	return initialBlock, nil
 }
 
-func accStateChange(txSlice []*protocol.AccTx) error {
+func accStateChange(txSlice []*protocol.FundsTx) (newAccounts []*protocol.Account, err error) {
 	for _, tx := range txSlice {
-		if tx.Header != 2 {
-			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
-			acc, _ := storage.GetAccount(tx.PubKey)
-			if acc != nil {
-				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
-				return errors.New("Address already exists in the state.")
-			}
-
-			//If acc does not exist, write to state
-			storage.State[tx.PubKey] = &newAcc
-
-			if tx.Header == 1 {
-				//First bit set, given account will be a new root account
-				//It might be cleaner to move this to the storage package (e.g., storage.Delete(...))
-				//leave it here for now (not fully convinced yet)
-				storage.RootKeys[tx.PubKey] = &newAcc
-			}
-		} else if tx.Header == 2 {
-			_, err := storage.GetAccount(tx.PubKey)
+		fromAcc, _ := storage.GetAccount(tx.From)
+		if fromAcc == nil {
+			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			newAccounts = append(newAccounts, &newFromAcc)
+			storage.State[newFromAcc.Address] = &newFromAcc
+			err = storage.WriteAccount(&newFromAcc)
 			if err != nil {
-				return err
+				return nil, err
 			}
+		}
 
-			//Second bit set, delete account from root account
-			delete(storage.RootKeys, tx.PubKey)
+		toAcc, _ := storage.GetAccount(tx.To)
+		if toAcc == nil {
+			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			newAccounts = append(newAccounts, &newToAcc)
+			storage.State[newToAcc.Address] = &newToAcc
+			err = storage.WriteAccount(&newToAcc)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return nil
+	return newAccounts, nil
 }
 
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
