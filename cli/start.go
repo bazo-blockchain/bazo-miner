@@ -161,7 +161,7 @@ func (args startArgs) String() string {
 	return fmt.Sprintf("Starting bazo miner with arguments \n"+
 		"- My Address:\t\t\t %v\n"+
 		"- Bootstrap Address:\t\t %v\n"+
-		"- Data Directory:\t\t\t %v\n",
+		"- Data Directory:\t\t %v\n",
 		args.myNodeAddress,
 		args.bootstrapNodeAddress,
 		args.dataDirectory)
