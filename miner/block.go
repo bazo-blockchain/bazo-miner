@@ -175,7 +175,8 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 				b.StateCopy[tx.From] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Sender account not present in the state: %x\n", tx.From))
+			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.From] = &newFromAcc
 		}
 	}
 
@@ -188,7 +189,8 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 				b.StateCopy[tx.To] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Receiver account not present in the state: %x\n", tx.To))
+			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.To] = &newToAcc
 		}
 	}
 
@@ -258,7 +260,8 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 				b.StateCopy[tx.Account] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Sender account not present in the state: %x\n", tx.Account))
+			newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.Account] = &newAcc
 		}
 	}
 
@@ -502,7 +505,6 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		uptodate = true
 	}
 
-	//No rollback needed, just a new block to validate.
 	if len(blocksToRollback) > 0 {
 		for _, block := range blocksToRollback {
 			if err := rollback(block); err != nil {
@@ -602,6 +604,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check state contains beneficiary.
+	//TODO: Beneficiary must be in the state before-hand, it will not be added automatically. Is this a good idea?
 	acc, err := storage.GetAccount(block.Beneficiary)
 	if err != nil {
 		return nil, nil, nil, nil, err
