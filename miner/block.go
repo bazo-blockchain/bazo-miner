@@ -503,56 +503,35 @@ func validate(b *protocol.Block, initialSetup bool) error {
 	}
 
 	//No rollback needed, just a new block to validate.
-	if len(blocksToRollback) == 0 {
-		for _, block := range blocksToValidate {
-			//Fetching payload data from the txs (if necessary, ask other miners).
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
-
-			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-			//The proof will be stored in the global slashing dictionary.
-			if block.Height > 0 {
-				seekSlashingProof(block)
-			}
-
-			if err != nil {
-				return err
-			}
-
-			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := validateState(blockDataMap[block.Hash]); err != nil {
-				return err
-			}
-
-			postValidate(blockDataMap[block.Hash], initialSetup)
-		}
-	} else {
+	if len(blocksToRollback) > 0 {
 		for _, block := range blocksToRollback {
 			if err := rollback(block); err != nil {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
-		for _, block := range blocksToValidate {
-			//Fetching payload data from the txs (if necessary, ask other miners).
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
+	}
 
-			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-			//The proof will be stored in the global slashing dictionary.
-			if block.Height > 0 {
-				seekSlashingProof(block)
-			}
+	for _, block := range blocksToValidate {
+		//Fetching payload data from the txs (if necessary, ask other miners).
+		accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
 
-			if err != nil {
-				return err
-			}
-
-			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := validateState(blockDataMap[block.Hash]); err != nil {
-				return err
-			}
-
-			postValidate(blockDataMap[block.Hash], initialSetup)
+		//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
+		//The proof will be stored in the global slashing dictionary.
+		if block.Height > 0 {
+			seekSlashingProof(block)
 		}
+
+		if err != nil {
+			return err
+		}
+
+		blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
+		if err := validateState(blockDataMap[block.Hash]); err != nil {
+			return err
+		}
+
+		postValidate(blockDataMap[block.Hash], initialSetup)
 	}
 
 	return nil
