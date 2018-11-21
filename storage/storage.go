@@ -17,96 +17,73 @@ var (
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
+	Buckets			   []string
 )
 
 const (
-	ERROR_MSG = "Initiate storage aborted: "
+	ERROR_MSG 				= "Storage initialization aborted. Reason: "
+	OPENBLOCKS_BUCKET 		= "openblocks"
+	CLOSEDBLOCKS_BUCKET 	= "closedblocks"
+	CLOSEDFUNDS_BUCKET 		= "closedfunds"
+	CLOSEDACCS_BUCKET 		= "closedaccs"
+	CLOSEDSTAKES_BUCKET 	= "closedstakes"
+	CLOSEDCONFIGS_BUCKET	= "closedconfigs"
+	LASTCLOSEDBLOCK_BUCKET 	= "lastclosedblock"
+	ACCOUNTS_BUCKET			= "accounts"
 )
 
 //Entry function for the storage package
-func Init(dbname string, bootstrapIpport string) {
+func Init(dbname string, bootstrapIpport string) error {
 	BootstrapServer = bootstrapIpport
 	logger = InitLogger()
+
+	Buckets = []string {
+		OPENBLOCKS_BUCKET,
+		CLOSEDBLOCKS_BUCKET,
+		CLOSEDFUNDS_BUCKET,
+		CLOSEDACCS_BUCKET,
+		CLOSEDSTAKES_BUCKET,
+		CLOSEDCONFIGS_BUCKET,
+		LASTCLOSEDBLOCK_BUCKET,
+		ACCOUNTS_BUCKET,
+	}
 
 	var err error
 	db, err = bolt.Open(dbname, 0600, &bolt.Options{Timeout: 5 * time.Second})
 	if err != nil {
 		logger.Fatal(ERROR_MSG, err)
+		return err
 	}
 
-	//Check if db file is empty for all non-bootstraping miners
-	//if ipport != BOOTSTRAP_SERVER_PORT {
-	//	err := db.View(func(tx *bolt.Tx) error {
-	//		err := tx.ForEach(func(name []byte, bkt *bolt.Bucket) error {
-	//			err := bkt.ForEach(func(k, v []byte) error {
-	//				if k != nil && v != nil {
-	//					return errors.New("Non-empty database given.")
-	//				}
-	//				return nil
-	//			})
-	//			return err
-	//		})
-	//		return err
-	//	})
-	//
-	//	if err != nil {
-	//		logger.Fatal(ERROR_MSG, err)
-	//	}
-	//}
+	for _, bucket := range Buckets {
+		err = createBucket(bucket)
+		if err != nil {
+			return err
+		}
+	}
 
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("openblocks"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
+	err = loadAccountState()
+
+	return err
+}
+
+func loadAccountState() error {
+	return db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
+		return b.ForEach(func(k, v []byte) error {
+			var acc *protocol.Account
+			acc = acc.Decode(v)
+			State[acc.Address] = acc
+			return nil
+		})
 	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("closedblocks"))
+}
+
+func createBucket(bucketName string) (err error) {
+	return db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucket([]byte(bucketName))
 		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("closedfunds"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("closedaccs"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("closedstakes"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("closedconfigs"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("lastclosedblock"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
-		}
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte("accounts"))
-		if err != nil {
-			return fmt.Errorf(ERROR_MSG+"Create bucket: %s", err)
+			return fmt.Errorf(ERROR_MSG + " %s", err)
 		}
 		return nil
 	})

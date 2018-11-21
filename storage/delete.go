@@ -6,38 +6,33 @@ import (
 )
 
 //There exist open/closed buckets and closed tx buckets for all types (open txs are in volatile storage)
-func DeleteOpenBlock(hash [32]byte) {
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("openblocks"))
-		err := b.Delete(hash[:])
-		return err
+func DeleteOpenBlock(hash [32]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(OPENBLOCKS_BUCKET))
+		return b.Delete(hash[:])
 	})
 }
 
-func DeleteClosedBlock(hash [32]byte) {
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedblocks"))
-		err := b.Delete(hash[:])
-		return err
+func DeleteClosedBlock(hash [32]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(CLOSEDBLOCKS_BUCKET))
+		return b.Delete(hash[:])
 	})
 }
 
-func DeleteLastClosedBlock(hash [32]byte) {
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("lastclosedblock"))
-		err := b.Delete(hash[:])
-		return err
+func DeleteLastClosedBlock(hash [32]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))
+		return b.Delete(hash[:])
 	})
 }
 
-func DeleteAllLastClosedBlock() {
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("lastclosedblock"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
+func DeleteAllLastClosedBlock() error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))
+		return b.ForEach(func(k, v []byte) error {
+			return b.Delete(k)
 		})
-		return nil
 	})
 }
 
@@ -45,88 +40,55 @@ func DeleteOpenTx(transaction protocol.Transaction) {
 	delete(txMemPool, transaction.Hash())
 }
 
-func DeleteClosedTx(transaction protocol.Transaction) {
+func DeleteClosedTx(transaction protocol.Transaction) error {
 	var bucket string
 	switch transaction.(type) {
 	case *protocol.FundsTx:
-		bucket = "closedfunds"
+		bucket = CLOSEDFUNDS_BUCKET
 	case *protocol.AccTx:
-		bucket = "closedaccs"
+		bucket = CLOSEDACCS_BUCKET
 	case *protocol.ConfigTx:
-		bucket = "closedconfigs"
+		bucket = CLOSEDCONFIGS_BUCKET
 	case *protocol.StakeTx:
-		bucket = "closedstakes"
+		bucket = CLOSEDSTAKES_BUCKET
 	}
 
 	hash := transaction.Hash()
-	db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		err := b.Delete(hash[:])
-		return err
+		return b.Delete(hash[:])
 	})
 }
 
-func DeleteAll() {
+func DeleteAccount(address [64]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
+		return b.Delete(address[:])
+	})
+}
+
+func DeleteAll() (err error) {
 	//Delete in-memory storage
 	for key := range txMemPool {
 		delete(txMemPool, key)
 	}
 
 	//Delete disk-based storage
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("openblocks"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
+	for _, bucket := range Buckets {
+		err = clearBucket(bucket)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func clearBucket(bucketName string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketName))
+		return b.ForEach(func(k, v []byte) error {
+			return b.Delete(k)
 		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedblocks"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedfunds"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedaccs"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedconfigs"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedstakes"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
-	})
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("lastclosedblock"))
-		b.ForEach(func(k, v []byte) error {
-			b.Delete(k)
-			return nil
-		})
-		return nil
 	})
 }
