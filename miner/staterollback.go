@@ -5,23 +5,10 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
-func accStateChangeRollback(txSlice []*protocol.AccTx) {
-	for _, tx := range txSlice {
-		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
-			acc, err := storage.GetAccount(tx.PubKey)
-			if err != nil {
-				logger.Fatal("CRITICAL: An account that should have been saved does not exist.")
-			}
-
-			delete(storage.State, tx.PubKey)
-
-			switch tx.Header {
-			case 1:
-				delete(storage.RootKeys, tx.PubKey)
-			case 2:
-				storage.RootKeys[tx.PubKey] = acc
-			}
-		}
+func accStateChangeRollback(accounts []*protocol.Account) {
+	for _, account := range accounts {
+		delete(storage.State, account.Address)
+		storage.DeleteAccount(account.Address)
 	}
 }
 
