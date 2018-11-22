@@ -24,6 +24,7 @@ const (
 	ACC_REQ                = 16
 	ROOTACC_REQ            = 17
 	INTERMEDIATE_NODES_REQ = 18
+	GENESIS_REQ			   = 19
 
 	FUNDSTX_RES            = 20
 	ACCTX_RES              = 21
@@ -34,6 +35,7 @@ const (
 	ACC_RES                = 26
 	ROOTACC_RES            = 27
 	INTERMEDIATE_NODES_RES = 28
+	GENESIS_RES			   = 29
 
 	NEIGHBOR_REQ = 30
 	NEIGHBOR_RES = 40

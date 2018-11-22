@@ -20,7 +20,8 @@ var (
 	ConfigTxChan = make(chan *protocol.ConfigTx)
 	StakeTxChan  = make(chan *protocol.StakeTx)
 
-	BlockReqChan = make(chan []byte)
+	BlockReqChan 	= make(chan []byte)
+	GenesisReqChan 	= make(chan []byte)
 )
 
 //This is for blocks and txs that the miner successfully validated.

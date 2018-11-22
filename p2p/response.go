@@ -72,6 +72,18 @@ func blockRes(p *peer, payload []byte) {
 	sendData(p, packet)
 }
 
+func genesisRes(p *peer) {
+	var packet []byte
+	genesis, err := storage.ReadGenesis()
+	if err != nil || genesis == nil {
+		packet = BuildPacket(GENESIS_RES, genesis.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
 //Response the requested block SPV header
 func blockHeaderRes(p *peer, payload []byte) {
 	var encodedHeader, packet []byte

@@ -43,6 +43,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		neighborRes(p)
 	case INTERMEDIATE_NODES_REQ:
 		intermediateNodesRes(p, payload)
+	case GENESIS_REQ:
+		genesisRes(p)
 
 		//RESPONSES
 	case NEIGHBOR_RES:
