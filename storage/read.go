@@ -135,3 +135,12 @@ func ReadAccounts() (accounts []*protocol.Account, err error) {
 
 	return accounts, nil
 }
+
+func ReadGenesis() (genesis *protocol.Genesis, err error) {
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(GENESIS_BUCKET))
+		encoded := b.Get([]byte("genesis"))
+		genesis = genesis.Decode(encoded)
+		return nil
+	})
+}

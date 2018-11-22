@@ -57,3 +57,10 @@ func WriteAccount(account *protocol.Account) error {
 		return b.Put(account.Address[:], account.Encode())
 	})
 }
+
+func WriteGenesis(genesis *protocol.Genesis) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(GENESIS_BUCKET))
+		return b.Put([]byte("genesis"), genesis.Encode())
+	})
+}

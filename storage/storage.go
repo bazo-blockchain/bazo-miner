@@ -30,6 +30,7 @@ const (
 	CLOSEDCONFIGS_BUCKET	= "closedconfigs"
 	LASTCLOSEDBLOCK_BUCKET 	= "lastclosedblock"
 	ACCOUNTS_BUCKET			= "accounts"
+	GENESIS_BUCKET			= "genesis"
 )
 
 //Entry function for the storage package
@@ -46,6 +47,7 @@ func Init(dbname string, bootstrapIpport string) error {
 		CLOSEDCONFIGS_BUCKET,
 		LASTCLOSEDBLOCK_BUCKET,
 		ACCOUNTS_BUCKET,
+		GENESIS_BUCKET,
 	}
 
 	var err error
