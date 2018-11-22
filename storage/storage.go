@@ -63,20 +63,23 @@ func Init(dbname string, bootstrapIpport string) error {
 	}
 
 	err = loadAccountState()
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func loadAccountState() error {
-	return db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
-		return b.ForEach(func(k, v []byte) error {
-			var acc *protocol.Account
-			acc = acc.Decode(v)
-			State[acc.Address] = acc
-			return nil
-		})
-	})
+	accounts, err := ReadAccounts()
+	if err != nil {
+		return err
+	}
+
+	for _, acc := range accounts {
+		State[acc.Address] = acc
+	}
+	return nil
 }
 
 func createBucket(bucketName string) (err error) {

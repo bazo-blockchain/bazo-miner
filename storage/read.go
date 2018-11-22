@@ -117,3 +117,21 @@ func readClosedTx(bucketName string, hash [32]byte) (encodedTx []byte) {
 	})
 	return encodedTx
 }
+
+func ReadAccounts() (accounts []*protocol.Account, err error) {
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
+		return b.ForEach(func(k, v []byte) error {
+			var acc *protocol.Account
+			acc = acc.Decode(v)
+			accounts = append(accounts, acc)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return accounts, nil
+}
