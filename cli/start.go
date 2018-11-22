@@ -89,12 +89,12 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 			cli.StringFlag {
 				Name: 	"rootwallet",
 				Usage: 	"load root's public key from `FILE`",
-				Value: 	"rootwallet.txt",
+				Value: 	"wallet.txt",
 			},
 			cli.StringFlag {
 				Name: 	"rootcommitment",
 				Usage: 	"load root's RSA public-private key from `FILE`",
-				Value: 	"rootcommitment.txt",
+				Value: 	"commitment.txt",
 			},
 			cli.BoolFlag {
 				Name: 	"confirm",

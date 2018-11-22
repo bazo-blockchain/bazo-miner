@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"strconv"
-
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"time"
 )
 
 //Separate function to reuse mechanism in client implementation
@@ -85,7 +86,51 @@ func getState() (state string) {
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
-	allClosedBlocks := storage.ReadAllClosedBlocks()
+	var allClosedBlocks []*protocol.Block
+	if p2p.IsBootstrap() {
+		allClosedBlocks = storage.ReadAllClosedBlocks()
+	} else {
+		p2p.LastBlockReq()
+		var lastBlock *protocol.Block
+		//Blocking wait
+		select {
+		case encodedBlock := <-p2p.BlockReqChan:
+			lastBlock = lastBlock.Decode(encodedBlock)
+			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+			return nil, nil
+		}
+
+		storage.WriteClosedBlock(lastBlock)
+		storage.WriteLastClosedBlock(lastBlock)
+		if len(allClosedBlocks) > 0 && allClosedBlocks[len(allClosedBlocks)-1].Hash == lastBlock.Hash {
+			fmt.Printf("Block with height %v already exists", lastBlock.Height)
+		} else {
+			allClosedBlocks = append(allClosedBlocks, lastBlock)
+		}
+
+		for {
+			p2p.BlockReq(lastBlock.PrevHash)
+			select {
+			case encodedBlock := <-p2p.BlockReqChan:
+				lastBlock = lastBlock.Decode(encodedBlock)
+				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+				logger.Println("Timed out")
+			}
+
+			storage.WriteClosedBlock(lastBlock)
+			if len(allClosedBlocks) > 0 && allClosedBlocks[len(allClosedBlocks)-1].Hash == lastBlock.Hash {
+				fmt.Printf("Block with height %v already exists", lastBlock.Height)
+			} else {
+				allClosedBlocks = append(allClosedBlocks, lastBlock)
+			}
+			fmt.Println("Last block: ", lastBlock.Height)
+			if lastBlock.Height == 0 {
+				break;
+			}
+		}
+	}
 
 	//Switch array order to validate genesis block first
 	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
@@ -136,7 +181,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 			postValidate(blockDataMap[blockToValidate.Hash], true)
 		}
 
-		logger.Printf("Validated block: %v\n", blockToValidate.Height)
+		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
 
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate

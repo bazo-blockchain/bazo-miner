@@ -5,7 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"net"
+	"strings"
 	"time"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
@@ -148,4 +150,14 @@ func extractHeader(headerData []byte) *Header {
 	header.TypeID = uint8(headerData[4])
 
 	return header
+}
+
+func IsBootstrap() bool {
+	//Set thisPort global, this will be the listening port for incoming connection
+	bootstrapPort := strings.Split(storage.Bootstrap_Server, ":")[1]
+	thisPort := strings.Split(Ipport, ":")[1]
+	if thisPort == bootstrapPort {
+		return true
+	}
+	return false
 }

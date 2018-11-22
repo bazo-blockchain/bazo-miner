@@ -42,10 +42,7 @@ func Init(ipport string) {
 	go forwardVerifiedTxsToMiner()
 	go peerService()
 
-	//Set localPort global, this will be the listening port for incoming connection
-	bootstrapPort := strings.Split(storage.Bootstrap_Server, ":")[1]
-	localPort := strings.Split(Ipport, ":")[1]
-	if localPort != bootstrapPort {
+	if !IsBootstrap() {
 		bootstrap()
 	}
 
@@ -180,6 +177,6 @@ func peerConn(p *peer) {
 			return
 		}
 
-		processIncomingMsg(p, header, payload)
+		go processIncomingMsg(p, header, payload)
 	}
 }
