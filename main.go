@@ -8,8 +8,6 @@ import (
 )
 
 func main() {
-	logger := storage.InitLogger()
-
 	app := cli2.NewApp()
 
 	app.Name = "bazo-miner"
@@ -17,13 +15,14 @@ func main() {
 	app.Version = "1.0.0"
 	app.EnableBashCompletion = true
 	app.Commands = []cli2.Command {
-		cli.GetStartCommand(logger),
+		cli.GetStartCommand(),
 		cli.GetGenerateWalletCommand(),
 		cli.GetGenerateCommitmentCommand(),
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
+		logger := storage.InitLogger()
 		logger.Fatal(err)
 	}
 }

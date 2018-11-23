@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/bazo-blockchain/bazo-miner/crypto"
@@ -17,10 +16,9 @@ type startArgs struct {
 	dataDirectory        string
 	myNodeAddress        string
 	bootstrapNodeAddress string
-	isRoot				 bool
 }
 
-func GetStartCommand(logger *log.Logger) cli.Command {
+func GetStartCommand() cli.Command {
 	return cli.Command{
 		Name:  "start",
 		Usage: "start the miner",
@@ -29,7 +27,6 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 				dataDirectory:        	c.String("dataDir"),
 				myNodeAddress:        	c.String("address"),
 				bootstrapNodeAddress: 	c.String("bootstrap"),
-				isRoot: 			  	c.Bool("isRoot"),
 			}
 
 			if !c.IsSet("bootstrap") {
@@ -47,7 +44,7 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 				fmt.Scanf("\n")
 			}
 
-			return Start(args, logger)
+			return Start(args)
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -66,10 +63,6 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 				Value: "localhost:8000",
 			},
 			cli.BoolFlag{
-				Name:  "isRoot",
-				Usage: "Starts the node as root",
-			},
-			cli.BoolFlag{
 				Name:  "confirm",
 				Usage: "User must press enter before starting the miner",
 			},
@@ -77,66 +70,45 @@ func GetStartCommand(logger *log.Logger) cli.Command {
 	}
 }
 
-func Start(args *startArgs, logger *log.Logger) error {
+func Start(args *startArgs) error {
+	var firstStart = false
 	if _, err := os.Stat(args.dataDirectory); os.IsNotExist(err) {
 		err = os.MkdirAll(args.dataDirectory, 0755)
 		if err != nil {
 			return err
 		}
+		firstStart = true
 	}
 
 	const (
-		database       = "Store.db"
-		wallet         = "ValidatorWallet.key"
-		commitment     = "ValidatorCommitment.key"
-		rootWallet     = "RootWallet.key"
-		rootCommitment = "RootCommitment.key"
-		multisig       = "Multisig.key"
+		database       = "store.db"
+		wallet         = "wallet.key"
+		commitment     = "commitment.key"
+		multisig       = "multisig.key"
 	)
 
-	storage.Init(args.dataDirectory+"/"+database, args.bootstrapNodeAddress)
+	storage.Init(args.dataDirectory+"/" + database, args.bootstrapNodeAddress)
 	p2p.Init(args.myNodeAddress)
 
 	validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
 	if err != nil {
-		logger.Printf("%v\n", err)
 		return err
 	}
 
 	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.dataDirectory + "/" + commitment)
 	if err != nil {
-		logger.Printf("%v\n", err)
 		return err
 	}
 
-	if args.isRoot {
-		multisigPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.dataDirectory + "/" + multisig)
-		if err != nil {
-			logger.Printf("%v\n", err)
-			return err
-		}
-
-		miner.Init(validatorPubKey, &multisigPrivKey.PublicKey, validatorPubKey, &commPrivKey.PublicKey, commPrivKey)
-	} else {
+	// Check if executor is root and if it's the first start
+	if p2p.IsBootstrap() && firstStart {
 		multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + multisig)
 		if err != nil {
-			logger.Printf("%v\n", err)
 			return err
 		}
-
-		rootPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + rootWallet)
-		if err != nil {
-			logger.Printf("%v\n", err)
-			return err
-		}
-
-		rootCommPubKey, err := crypto.ExtractRSAPubKeyFromFile(args.dataDirectory + "/" + rootCommitment)
-		if err != nil {
-			logger.Printf("%v\n", err)
-			return err
-		}
-
-		miner.Init(validatorPubKey, multisigPubKey, rootPubKey, rootCommPubKey, commPrivKey)
+		return miner.InitFirstStart(validatorPubKey, multisigPubKey, commPrivKey)
+	} else {
+		return miner.Init(validatorPubKey, commPrivKey)
 	}
 
 	return nil
