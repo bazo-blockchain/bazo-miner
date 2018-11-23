@@ -63,7 +63,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	r.SetBytes(tx.Sig2[:32])
 	s.SetBytes(tx.Sig2[32:])
 
-	if ecdsa.Verify(multisigPubKey, txHash[:], r, s) {
+	if ecdsa.Verify(rootMultisig, txHash[:], r, s) {
 		validSig2 = true
 	} else {
 		logger.Printf("Sig2 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])

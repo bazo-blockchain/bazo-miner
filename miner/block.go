@@ -166,7 +166,6 @@ func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
 
 func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Checking if the sender account is already in the local state copy. If not and account exist, create local copy.
-	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.From]; !exists {
 		if acc := storage.State[tx.From]; acc != nil {
 			if acc.Address == tx.From {
@@ -604,7 +603,6 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check state contains beneficiary.
-	//TODO: Beneficiary must be in the state before-hand, it will not be added automatically. Is this a good idea?
 	acc, err := storage.GetAccount(block.Beneficiary)
 	if err != nil {
 		return nil, nil, nil, nil, err

@@ -118,7 +118,7 @@ func addTestingAccounts() {
 	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
 
 	//Set the global variable in blockchain.go
-	multisigPubKey = pubKeyMultiSig
+	rootMultisig = pubKeyMultiSig
 
 	privKeyValidator, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
