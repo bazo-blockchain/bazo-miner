@@ -85,12 +85,68 @@ func getState() (state string) {
 	return state
 }
 
-func initState() (initialBlock *protocol.Block, err error) {
+func initState() (initialBlock *protocol.Block, genesis *protocol.Genesis, err error) {
+	genesis, err = initGenesis()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	initRootAccounts(genesis)
+
+	err = initClosedBlocks(genesis)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	initialBlock, err = getInitialBlock(genesis)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = validateClosedBlocks()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return initialBlock, genesis, nil
+}
+
+func initGenesis() (genesis *protocol.Genesis, err error) {
+	if genesis, err = storage.ReadGenesis(); err != nil {
+		return nil, err
+	}
+
+	if genesis == nil {
+		p2p.GenesisReq()
+
+		// TODO: @rmnblm parallelize this
+		// blocking wait
+		select {
+		case encodedGenesis := <-p2p.GenesisReqChan:
+			genesis = genesis.Decode(encodedGenesis)
+			logger.Printf("Received genesis: %v", genesis.String())
+		case <-time.After(GENESISFETCH_TIMEOUT * time.Second):
+			return nil, errors.New("genesis fetch timeout")
+		}
+
+		storage.WriteGenesis(genesis)
+	}
+	return genesis, nil
+}
+
+func initRootAccounts(genesis *protocol.Genesis) {
+	rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, activeParameters.Staking_minimum, true, genesis.RootCommitment, nil, nil)
+	storage.State[genesis.RootAddress] = &rootAcc
+	storage.RootKeys[genesis.RootAddress] = &rootAcc
+}
+
+func initClosedBlocks(genesis *protocol.Genesis) error {
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
 		allClosedBlocks = storage.ReadAllClosedBlocks()
 	} else {
 		p2p.LastBlockReq()
+
 		var lastBlock *protocol.Block
 		//Blocking wait
 		select {
@@ -98,7 +154,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 			lastBlock = lastBlock.Decode(encodedBlock)
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			return nil, nil
+			return errors.New("block fetch timeout")
 		}
 
 		storage.WriteClosedBlock(lastBlock)
@@ -127,7 +183,10 @@ func initState() (initialBlock *protocol.Block, err error) {
 			}
 			fmt.Println("Last block: ", lastBlock.Height)
 			if lastBlock.Height == 0 {
-				break;
+				if lastBlock.PrevHash != genesis.Hash() {
+					return errors.New("invalid genesis")
+				}
+				break
 			}
 		}
 	}
@@ -135,11 +194,15 @@ func initState() (initialBlock *protocol.Block, err error) {
 	//Switch array order to validate genesis block first
 	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
 
+	return nil
+}
+
+func getInitialBlock(genesis *protocol.Genesis) (initialBlock *protocol.Block, err error) {
 	if len(storage.AllClosedBlocksAsc) > 0 {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
+		initialBlock = newBlock(genesis.Hash(), [crypto.COMM_PROOF_LENGTH]byte{}, 0)
 
 		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
@@ -154,6 +217,10 @@ func initState() (initialBlock *protocol.Block, err error) {
 		storage.WriteClosedBlock(initialBlock)
 	}
 
+	return initialBlock, nil
+}
+
+func validateClosedBlocks() error {
 	//Validate all closed blocks and update state
 	for _, blockToValidate := range storage.AllClosedBlocksAsc {
 		//Prepare datastructure to fill tx payloads
@@ -164,14 +231,14 @@ func initState() (initialBlock *protocol.Block, err error) {
 			//Fetching payload data from the txs (if necessary, ask other miners)
 			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
+				return errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 
 			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
 
 			err = validateState(blockDataMap[blockToValidate.Hash])
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("Block (%x) could not be statevalidated: %v\n", blockToValidate.Hash[0:8], err))
+				return errors.New(fmt.Sprintf("Block (%x) could not be statevalidated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 
 			postValidate(blockDataMap[blockToValidate.Hash], true)
@@ -188,8 +255,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 	}
 
 	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
-
-	return initialBlock, nil
+	return nil
 }
 
 func accStateChange(txSlice []*protocol.FundsTx) (newAccounts []*protocol.Account, err error) {

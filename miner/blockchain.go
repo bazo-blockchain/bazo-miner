@@ -12,24 +12,21 @@ import (
 )
 
 var (
-	logger              			*log.Logger
-	blockValidation     			= &sync.Mutex{}
-	parameterSlice      			[]Parameters
-	activeParameters    			*Parameters
-	uptodate            			bool
-	slashingDict        			= make(map[[64]byte]SlashingProof)
-	validatorAccAddress 			[64]byte
-	multisigPubKey      			*ecdsa.PublicKey
-	commPrivKey						*rsa.PrivateKey
+	logger              *log.Logger
+	blockValidation     = &sync.Mutex{}
+	parameterSlice      []Parameters
+	activeParameters    *Parameters
+	uptodate            bool
+	slashingDict        = make(map[[64]byte]SlashingProof)
+	validatorAccAddress [64]byte
+	rootMultisig        *ecdsa.PublicKey
+	commPrivKey         *rsa.PrivateKey
 )
 
 //Miner entry point
-func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, rootCommitment *rsa.PublicKey, validatorCommitment *rsa.PrivateKey) {
-	var err error
-
-	validatorAccAddress = crypto.GetAddressFromPubKey(validatorWallet)
-	multisigPubKey = multisigWallet
-	commPrivKey = validatorCommitment
+func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
+	commPrivKey = commitment
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -37,32 +34,35 @@ func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, rootComm
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
 
-	initRoot(rootWallet, rootCommitment)
-
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	initialBlock, err := initState()
+	initialBlock, genesis, err := initState()
 	if err != nil {
-		logger.Printf("Could not set up initial state: %v.\n", err)
-		return
+		return err
 	}
+
+	rootMultisig = crypto.GetPubKeyFromAddress(genesis.RootMultisig)
 
 	logger.Printf("Active config params:%v", activeParameters)
 
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
 	mining(initialBlock)
+
+	return nil
 }
 
-func initRoot(rootWallet *ecdsa.PublicKey, rootCommitment *rsa.PublicKey) {
-	var commPubKey [crypto.COMM_KEY_LENGTH]byte
-	copy(commPubKey[:], rootCommitment.N.Bytes())
+func InitFirstStart(wallet, multisig *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	rootAddress := crypto.GetAddressFromPubKey(wallet)
+	rootMultisig := crypto.GetAddressFromPubKey(multisig)
 
-	address := crypto.GetAddressFromPubKey(rootWallet)
-	rootAcc := protocol.NewAccount(address, [64]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
-	storage.State[address] = &rootAcc
-	storage.RootKeys[address] = &rootAcc
+	var rootCommitment [crypto.COMM_KEY_LENGTH]byte
+	copy(rootCommitment[:], commitment.N.Bytes())
+
+	genesis := protocol.NewGenesis(rootAddress, rootMultisig, rootCommitment)
+	storage.WriteGenesis(&genesis)
+	return Init(wallet, commitment)
 }
 
 //Mining is a constant process, trying to come up with a successful PoW.
