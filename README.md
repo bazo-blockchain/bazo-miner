@@ -41,25 +41,15 @@ Let's assume we want to start two miners, miner `A` and miner `B`, whereas miner
 Further assume that we start from scratch and no key files have been created yet.
 
 Miner A (Root)
-* Data Directory: `NodeA`
+* Data Directory: `NodeA`, contains `wallet.key`, `commitment.key`, `multisig.key` and `store.db`
 * Address: `localhost:8000`
 * Bootstrap Address: `localhost:8000`
-* Database: `StoreA.db`
-* Wallet: `WalletA.key`
-* Commitment: `CommitmentA.key`
-* Root Wallet: `WalletA.key`
-* Root Commitment: `CommitmentA.key`
 
 
 Miner B
-* Data Directory: `NodeB`
+* Data Directory: `NodeB`, contains `wallet.key`, `commitment.key`, `multisig.key` and `store.db`
 * Address: `localhost:8001`
 * Bootstrap Address: `localhost:8000`
-* Database: `StoreB.db`
-* Wallet: `WalletB.key`
-* Commitment: `CommitmentB.key`
-* Root Wallet: `WalletA.key` (can contain only the public key)
-* Root Commitment: `CommitmentA.key` (can contain only the public key)
 
 Commands
 
@@ -71,55 +61,61 @@ We start miner A at address and port `localhost:8000` and connect to itself by s
 Note that we could have omitted these two options since they are passed by default with these values.
 Wallet and commitment keys are automatically created. Using this command, we define miner A as the root.
 
-Starting miner B requires more work since new accounts have to be registered by a root account.
-In our case, we can use miner's A `WalletA.txt` (e.g. copy the file to the Bazo client directory) to create and add a new account to the network.
-Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we create a new account:
-
-```bash
-./bazo-client account create --rootwallet WalletA.key --wallet WalletB.key 
-```
-
-The minimum amount of coins required for staking is defined in the configuration of Bazo.
-Thus, miner B first needs Bazo coins to start mining and we must first send coins to miner B's account.
-
-```bash
-./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 --multisig WalletA.key
-```
-
-Then, miner B has to join the pool of validators (enable staking):
-```bash
-./bazo-client staking enable --wallet WalletB.key --commitment CommitmentB.key
-```
-
-In addition to the created `NodeA` directory before (located in the Bazo miner directory), create a new directory `NodeB`, 
-copy the generated files `WalletB.txt` and `CommitmentB.txt`, as well as the root wallet (in our case `WalletA.key`) 
-and the root commitment (in our case `CommitmentA.key`) to the `NodeB` directory, resulting in the following directory structure:
-
-```
-:open_file_folder: bazo-miner
--- :open_file_folder: NodeA
----- :key: WalletA.key
----- :key: CommitmentA.key
----- :floppy_disk: StoreA.db
----- :key: WalletA.key
----- :key: CommitmentA.key
--- :open_file_folder: NodeB
----- :key: WalletB.key
----- :key: CommitmentB.key
----- :floppy_disk: StoreB.db
----- :key: WalletA.key
----- :key: CommitmentA.key
--- bazo-miner (executable)
-``` 
-
-Then start the miner:
+In a second terminal, run
 
 ```bash
 ./bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000
 ```
 
-We start miner B at address and port `localhost:8001` and connect to miner A (which is the boostrap node).
-Wallet and commitment keys are automatically created.
+Notice how miner B ist started at address and port `localhost:8001` but bootstraps to miner A.
+Running this command will give you an error message, i.e.,
+
+```bash
+Acc (...) not in the state.
+```
+
+Starting miner B requires more work since every miner must have sufficient funds and be part of the set of validators.
+The minimum amount of coins required for staking is defined in the configuration of Bazo.
+
+Our current Bazo miner directory should look like this:
+
+```
+:open_file_folder: bazo-miner
+-- :open_file_folder: NodeA
+---- :key: wallet.key
+---- :key: commitment.key
+---- :key: multisig.key
+---- :floppy_disk: store.db
+-- :open_file_folder: NodeB
+---- :key: wallet.key
+---- :key: commitment.key
+---- :floppy_disk: store.db
+-- bazo-miner (executable)
+``` 
+
+In our case, we can use the wallet of miner A wallet to move funds to miner B. 
+* Copy `wallet.key` and `multisig.key` from the directory `NodeA` to the Bazo client directory and rename the file to `WalletA.key`.
+* Copy `wallet.key` and `commitment.key` from the directory `NodeB` to the Bazo client directory and rename the file to `WalletB.key` and `CommitmentB.key` respectively.
+
+Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we transfer 2000 coins from A to B:
+
+```bash
+./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 --multisig Multisig.key 
+```
+
+Check the terminal of miner B. The error message should change to (may need some time until the FundsTx is validated)
+
+```bash
+Validator (...) is not part of the validator set.
+```
+
+Now, miner B has to join the pool of validators (enable staking):
+
+```bash
+./bazo-client staking enable --wallet WalletB.key --commitment CommitmentB.key
+```
+
+Again, check miner B's terminal. After some time, miner B should validate and create blocks automatically.
 
 ### Generate a wallet
 
