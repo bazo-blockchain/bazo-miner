@@ -6,6 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -70,7 +71,14 @@ func mining(initialBlock *protocol.Block) {
 	currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
-		err := finalizeBlock(currentBlock)
+		_, err := storage.GetAccount(validatorAccAddress)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		err = finalizeBlock(currentBlock)
 		if err != nil {
 			logger.Printf("%v\n", err)
 		} else {
