@@ -128,12 +128,7 @@ func ReadAccounts() (accounts []*protocol.Account, err error) {
 			return nil
 		})
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return accounts, nil
+	return accounts, err
 }
 
 func ReadGenesis() (genesis *protocol.Genesis, err error) {
@@ -143,4 +138,5 @@ func ReadGenesis() (genesis *protocol.Genesis, err error) {
 		genesis = genesis.Decode(encoded)
 		return nil
 	})
+	return genesis, err
 }
