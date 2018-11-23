@@ -125,12 +125,13 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 	}
 
 	//Check if account is present in the actual state
-	accFrom := storage.State[tx.Account]
-	if accFrom == nil {
+	acc := storage.State[tx.Account]
+	if acc == nil {
 		// TODO: Requires a Mutex?
 		newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [256]byte{}, nil, nil)
-		accFrom = &newAcc
-		storage.WriteAccount(accFrom)
+		acc = &newAcc
+		storage.State[newAcc.Address] = acc
+		storage.WriteAccount(acc)
 	}
 
 	r, s := new(big.Int), new(big.Int)
@@ -138,11 +139,11 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
-	tx.Account = accFrom.Address
+	tx.Account = acc.Address
 
 	txHash := tx.Hash()
 
-	pubKey := crypto.GetPubKeyFromAddress(accFrom.Address)
+	pubKey := crypto.GetPubKeyFromAddress(acc.Address)
 
 	return ecdsa.Verify(pubKey, txHash[:], r, s)
 }
