@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 )
 
@@ -57,9 +58,25 @@ func (genesis *Genesis) Encode() []byte {
 }
 
 func (*Genesis) Decode(encoded []byte) (acc *Genesis) {
+	if encoded == nil {
+		return nil
+	}
+
 	var decoded Genesis
 	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
 	decoder.Decode(&decoded)
 	return &decoded
+}
+
+func (genesis *Genesis) String() string {
+	return fmt.Sprintf(
+		"\n"+
+			"RootAddress: %x\n"+
+			"RootMultisig: %x\n"+
+			"RootCommitment: %x\n",
+		genesis.RootAddress[0:8],
+		genesis.RootMultisig[0:8],
+		genesis.RootCommitment[0:8],
+	)
 }
