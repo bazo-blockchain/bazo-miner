@@ -2,10 +2,10 @@ package vm
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/big"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -1048,14 +1048,14 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CHECKSIG:
-			publicKeySig, errArg1 := vm.PopBytes(opCode)
+			signature, errArg1 := vm.PopBytes(opCode)
 			hash, errArg2 := vm.PopBytes(opCode)
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
-			if len(publicKeySig) != 64 {
+			if len(signature) != 64 {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": Not a valid address"))
 				return false
 			}
@@ -1065,19 +1065,17 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 			r, s := new(big.Int), new(big.Int)
-
-			pubKey1Sig1.SetBytes(publicKeySig[:32])
-			pubKey2Sig1.SetBytes(publicKeySig[32:])
 
 			sig1 := vm.context.GetSig1()
 			r.SetBytes(sig1[:32])
 			s.SetBytes(sig1[32:])
 
-			pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
+			var pubKeySig [64]byte
+			copy(pubKeySig[:], signature[:])
+			pubKey := crypto.GetPubKeyFromAddress(pubKeySig)
 
-			result := ecdsa.Verify(&pubKey, hash, r, s)
+			result := ecdsa.Verify(pubKey, hash, r, s)
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case ERRHALT:

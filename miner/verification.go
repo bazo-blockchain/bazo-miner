@@ -2,7 +2,7 @@ package miner
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/big"
@@ -34,7 +34,6 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return false
 	}
 
-	pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
 
 	//fundsTx only makes sense if amount > 0
@@ -46,9 +45,6 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	accFromHash := protocol.SerializeHashContent(tx.From)
 	accToHash := protocol.SerializeHashContent(tx.To)
 
-	pubKey1Sig1.SetBytes(tx.From[:32])
-	pubKey2Sig1.SetBytes(tx.From[32:])
-
 	r.SetBytes(tx.Sig1[:32])
 	s.SetBytes(tx.Sig1[32:])
 
@@ -56,8 +52,8 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 
 	var validSig1, validSig2 bool
 
-	pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) && tx.From != tx.To {
+	pubKey := crypto.GetPubKeyFromAddress(tx.From)
+	if ecdsa.Verify(pubKey, txHash[:], r, s) && tx.From != tx.To {
 		validSig1 = true
 	} else {
 		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
@@ -83,20 +79,16 @@ func verifyAccTx(tx *protocol.AccTx) bool {
 	}
 
 	r, s := new(big.Int), new(big.Int)
-	pub1, pub2 := new(big.Int), new(big.Int)
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
 	for _, rootAcc := range storage.RootKeys {
-		pub1.SetBytes(rootAcc.Address[:32])
-		pub2.SetBytes(rootAcc.Address[32:])
-
-		pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+		pubKey := crypto.GetPubKeyFromAddress(rootAcc.Address)
 		txHash := tx.Hash()
 
 		//Only the hash of the pubkey is hashed and verified here
-		if ecdsa.Verify(&pubKey, txHash[:], r, s) == true {
+		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
 			return true
 		}
 	}
@@ -111,18 +103,14 @@ func verifyConfigTx(tx *protocol.ConfigTx) bool {
 
 	//account creation can only be done with a valid priv/pub key which is hard-coded
 	r, s := new(big.Int), new(big.Int)
-	pub1, pub2 := new(big.Int), new(big.Int)
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
 	for _, rootAcc := range storage.RootKeys {
-		pub1.SetBytes(rootAcc.Address[:32])
-		pub2.SetBytes(rootAcc.Address[32:])
-
-		pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+		pubKey := crypto.GetPubKeyFromAddress(rootAcc.Address)
 		txHash := tx.Hash()
-		if ecdsa.Verify(&pubKey, txHash[:], r, s) == true {
+		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
 			return true
 		}
 	}
@@ -145,11 +133,7 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 		storage.WriteAccount(accFrom)
 	}
 
-	pub1, pub2 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
-
-	pub1.SetBytes(accFrom.Address[:32])
-	pub2.SetBytes(accFrom.Address[32:])
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
@@ -158,9 +142,9 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	txHash := tx.Hash()
 
-	pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+	pubKey := crypto.GetPubKeyFromAddress(accFrom.Address)
 
-	return ecdsa.Verify(&pubKey, txHash[:], r, s)
+	return ecdsa.Verify(pubKey, txHash[:], r, s)
 }
 
 //Returns true if id is in the list of possible ids and rational value for payload parameter.

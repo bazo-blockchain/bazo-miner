@@ -131,6 +131,17 @@ func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
 	return address
 }
 
+func GetPubKeyFromAddress(address [64]byte) (pubKey *ecdsa.PublicKey) {
+	pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
+	pubKey1Sig1.SetBytes(address[:32])
+	pubKey2Sig1.SetBytes(address[32:])
+	return &ecdsa.PublicKey {
+		Curve: elliptic.P256(),
+		X: pubKey1Sig1,
+		Y: pubKey2Sig1,
+	}
+}
+
 func GetPubKeyFromString(pub1, pub2 string) (pubKey *ecdsa.PublicKey, err error) {
 	pub1Int, b := new(big.Int).SetString(pub1, 16)
 	pub2Int, b := new(big.Int).SetString(pub2, 16)
