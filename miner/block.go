@@ -610,7 +610,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 
 	//Check if node is part of the validator set.
 	if !acc.IsStaking {
-		return nil, nil, nil, nil, errors.New("Validator is not part of the validator set.")
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Validator (%x) is not part of the validator set.", acc.Address[0:8]))
 	}
 
 	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
