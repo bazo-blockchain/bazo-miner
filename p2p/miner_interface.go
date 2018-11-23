@@ -93,6 +93,10 @@ func forwardBlockReqToMiner(p *peer, payload []byte) {
 	BlockReqChan <- payload
 }
 
+func forwardGenesisReqToMiner(p *peer, payload []byte) {
+	GenesisReqChan <- payload
+}
+
 func ReadSystemTime() int64 {
 	return systemTime
 }
