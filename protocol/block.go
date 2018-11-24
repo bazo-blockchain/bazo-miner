@@ -199,7 +199,6 @@ func (block Block) String() string {
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
 		block.Hash[0:8],
-		block.Hash[0:8],
 		block.PrevHash[0:8],
 		block.Nonce,
 		block.Timestamp,
