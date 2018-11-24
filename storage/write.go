@@ -42,6 +42,7 @@ func WriteLastClosedBlock(block *protocol.Block) (err error) {
 func WriteOpenTx(transaction protocol.Transaction) {
 
 	txMemPool[transaction.Hash()] = transaction
+	logger.Printf("Numbers of transactins in the Mempool: %x .\n", len(txMemPool))
 }
 
 func WriteClosedTx(transaction protocol.Transaction) (err error) {

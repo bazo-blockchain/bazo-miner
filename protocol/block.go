@@ -192,11 +192,13 @@ func (block Block) String() string {
 		"Amount of accTx: %v\n"+
 		"Amount of configTx: %v\n"+
 		"Amount of stakeTx: %v\n"+
+		"Total Transactions in this block: %v\n"+
 		"Height: %d\n"+
 		"Commitment Proof: %x\n"+
 		"Slashed Address:%x\n"+
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
+		block.Hash[0:8],
 		block.Hash[0:8],
 		block.PrevHash[0:8],
 		block.Nonce,
@@ -207,6 +209,7 @@ func (block Block) String() string {
 		block.NrAccTx,
 		block.NrConfigTx,
 		block.NrStakeTx,
+		uint16(block.NrFundsTx) + uint16(block.NrAccTx) + uint16(block.NrConfigTx) + uint16(block.NrStakeTx),
 		block.Height,
 		block.CommitmentProof[0:8],
 		block.SlashedAddress[0:8],

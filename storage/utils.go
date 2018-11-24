@@ -4,12 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"io"
 	"log"
 	"os"
 )
 
 func InitLogger() *log.Logger {
-	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	performanceLogFile, err := os.OpenFile("PerformanceLogger.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+
+	wrt := io.MultiWriter(os.Stdout, performanceLogFile)
+	log.SetOutput(wrt)
+	return log.New(wrt, "INFO: ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
 }
 
 //Needed by miner and p2p package
