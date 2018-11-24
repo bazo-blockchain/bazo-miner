@@ -80,16 +80,16 @@ The minimum amount of coins required for staking is defined in the configuration
 Our current Bazo miner directory should look like this:
 
 ```
-:open_file_folder: bazo-miner
--- :open_file_folder: NodeA
----- :key: wallet.key
----- :key: commitment.key
----- :key: multisig.key
----- :floppy_disk: store.db
--- :open_file_folder: NodeB
----- :key: wallet.key
----- :key: commitment.key
----- :floppy_disk: store.db
+bazo-miner (root folder)
+-- NodeA
+---- wallet.key
+---- commitment.key
+---- multisig.key
+---- store.db
+-- NodeB
+---- wallet.key
+---- commitment.key
+---- store.db
 -- bazo-miner (executable)
 ``` 
 
