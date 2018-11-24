@@ -188,10 +188,10 @@ func (block Block) String() string {
 		"Timestamp: %v\n"+
 		"MerkleRoot: %x\n"+
 		"Beneficiary: %x\n"+
-		"Amount of fundsTx: %v\n"+
-		"Amount of accTx: %v\n"+
-		"Amount of configTx: %v\n"+
-		"Amount of stakeTx: %v\n"+
+		"Amount of fundsTx: %v --> %x\n"+
+		"Amount of accTx: %v --> %x\n"+
+		"Amount of configTx: %v --> %x\n"+
+		"Amount of stakeTx: %v --> %x\n"+
 		"Total Transactions in this block: %v\n"+
 		"Height: %d\n"+
 		"Commitment Proof: %x\n"+
@@ -204,10 +204,10 @@ func (block Block) String() string {
 		block.Timestamp,
 		block.MerkleRoot[0:8],
 		block.Beneficiary[0:8],
-		block.NrFundsTx,
-		block.NrAccTx,
-		block.NrConfigTx,
-		block.NrStakeTx,
+		block.NrFundsTx, block.FundsTxData,
+		block.NrAccTx, block.AccTxData,
+		block.NrConfigTx, block.ConfigTxData,
+		block.NrStakeTx, block.StakeTxData,
 		uint16(block.NrFundsTx) + uint16(block.NrAccTx) + uint16(block.NrConfigTx) + uint16(block.NrStakeTx),
 		block.Height,
 		block.CommitmentProof[0:8],

@@ -162,7 +162,7 @@ func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.AccTxData = append(b.AccTxData, tx.Hash())
-	logger.Printf("Added tx to the AccTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the AccTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -240,14 +240,14 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
-	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
 	//No further checks needed, static checks were already done with verify().
 	b.ConfigTxData = append(b.ConfigTxData, tx.Hash())
-	logger.Printf("Added tx to the ConfigTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the ConfigTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -287,7 +287,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 
 	//No further checks needed, static checks were already done with verify().
 	b.StakeTxData = append(b.StakeTxData, tx.Hash())
-	logger.Printf("Added tx to the StakeTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the StakeTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
