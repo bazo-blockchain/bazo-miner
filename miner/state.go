@@ -543,3 +543,23 @@ func updateStakingHeight(block *protocol.Block) error {
 
 	return nil
 }
+
+func deleteZeroBalanceAccounts() error {
+	accs, err := storage.ReadAccounts()
+	if err != nil {
+		return err
+	}
+
+	for _, acc := range accs {
+		if acc.Balance > 0 || acc.Contract != nil {
+			continue
+		}
+
+		err = storage.DeleteAccount(acc.Address)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

@@ -124,6 +124,49 @@ func TestAccTxNewAccsStateChange(t *testing.T) {
 	}
 }
 
+func TestDeleteZeroBalanceAccounts(t *testing.T) {
+	cleanAndPrepare()
+
+	for _, acc := range storage.State {
+		delete(storage.State, acc.Address)
+	}
+
+	var testSize uint32 = 1000
+	var accsWithBalanceZero []*protocol.Account
+	var accsWithBalanceGreaterZero []*protocol.Account
+
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
+
+	loopMax := int(randVar.Uint32()%testSize + 1)
+	for i := 0; i < loopMax+1; i++ {
+		address := [64]byte{}
+		rand.Read(address[:])
+		newAcc := protocol.NewAccount(address, [64]byte{}, randVar.Uint64()%2, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+		storage.WriteAccount(&newAcc)
+
+		if newAcc.Balance == 0 {
+			accsWithBalanceZero = append(accsWithBalanceZero, &newAcc)
+		} else {
+			accsWithBalanceGreaterZero = append(accsWithBalanceGreaterZero, &newAcc)
+		}
+
+	}
+
+	deleteZeroBalanceAccounts()
+
+	for _, accWithBalanceZero := range accsWithBalanceZero {
+		if acc, _ := storage.GetAccount(accWithBalanceZero.Address); acc != nil {
+			t.Errorf("Account with balance zero not deleted from storage: %v\n", acc)
+		}
+	}
+
+	for _, accWithBalanceGreaterZero := range accsWithBalanceGreaterZero {
+		if acc, _ := storage.GetAccount(accWithBalanceGreaterZero.Address); acc == nil {
+			t.Errorf("Account with balance greater zero deleted from storage: %v\n", acc)
+		}
+	}
+}
+
 func TestFundsTxNewAccsStateChange(t *testing.T) {
 	cleanAndPrepare()
 

@@ -535,7 +535,10 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		postValidate(blockDataMap[block.Hash], initialSetup)
 	}
 
-	// TODO: @rmnblm remove accounts with balance 0
+	err = deleteZeroBalanceAccounts()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
