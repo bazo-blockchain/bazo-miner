@@ -62,7 +62,7 @@ var (
 	accA, accB, validatorAcc, multiSigAcc, rootAcc         	*protocol.Account
 	PrivKeyAccA, PrivKeyAccB, PrivKeyMultiSig, PrivKeyRoot 	*ecdsa.PrivateKey
 	CommPrivKeyAccA, CommPrivKeyAccB, CommPrivKeyRoot	   	*rsa.PrivateKey
-	genesisBlock *protocol.Block
+	initialBlock *protocol.Block
 )
 
 //Create some accounts that are used by the tests
@@ -217,14 +217,19 @@ func cleanAndPrepare() {
 	addTestingAccounts()
 	addRootAccounts()
 
-	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
-	genesisBlock = newBlock([32]byte{}, genesisCommitmentProof, 0)
+	genesis := protocol.NewGenesis(
+		crypto.GetAddressFromPubKey(&PrivKeyRoot.PublicKey),
+		crypto.GetAddressFromPubKey(&PrivKeyMultiSig.PublicKey),
+		crypto.GetBytesFromRSAPubKey(&CommPrivKeyRoot.PublicKey))
 
-	collectStatistics(genesisBlock)
-	if err := storage.WriteClosedBlock(genesisBlock); err != nil {
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
+	initialBlock = newBlock(genesis.Hash(), commitmentProof, 0)
+
+	collectStatistics(initialBlock)
+	if err := storage.WriteClosedBlock(initialBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
-	if err := storage.WriteLastClosedBlock(genesisBlock); err != nil {
+	if err := storage.WriteLastClosedBlock(initialBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 

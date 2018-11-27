@@ -535,6 +535,8 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		postValidate(blockDataMap[block.Hash], initialSetup)
 	}
 
+	// TODO: @rmnblm remove accounts with balance 0
+
 	return nil
 }
 
@@ -661,29 +663,29 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 }
 
 //Dynamic state check.
+//The sequence of validation matters
 func validateState(data blockData) error {
-	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
-	//even though the accounts did not exist before the block validation.
-	newAccounts, err := accStateChange(data.fundsTxSlice)
+	err := accStateChange(data.accTxSlice)
 	if err != nil {
 		return err
 	}
 
-	if err := fundsStateChange(data.fundsTxSlice); err != nil {
-		accStateChangeRollback(newAccounts)
+	err = fundsStateChange(data.fundsTxSlice)
+	if err != nil {
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(newAccounts)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
 	if err := collectTxFees(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(newAccounts)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
@@ -691,7 +693,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(newAccounts)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
@@ -700,7 +702,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(newAccounts)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 
@@ -710,7 +712,7 @@ func validateState(data blockData) error {
 		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(newAccounts)
+		accStateChangeRollback(data.accTxSlice)
 		return err
 	}
 

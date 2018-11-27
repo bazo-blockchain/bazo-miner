@@ -83,7 +83,7 @@ func validateStateRollback(data blockData) {
 	collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 	stakeStateChangeRollback(data.stakeTxSlice)
 	fundsStateChangeRollback(data.fundsTxSlice)
-	// TODO: @rmnblm do we need to rollback the accounts here?
+	accStateChangeRollback(data.accTxSlice)
 }
 
 func postValidateRollback(data blockData) {

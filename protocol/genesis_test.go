@@ -37,3 +37,19 @@ func TestGenesisSerialization(t *testing.T) {
 		t.Error("Genesis encoding/decoding failed!")
 	}
 }
+
+func TestInitialBlockWithGenesisHash(t *testing.T) {
+	var genesis Genesis
+
+	rand.Read(genesis.RootAddress[:])
+	rand.Read(genesis.RootCommitment[:])
+	rand.Read(genesis.RootMultisig[:])
+
+	genesisHash := genesis.Hash()
+
+	createdBlock := NewBlock(genesisHash, 0)
+
+	if !reflect.DeepEqual(createdBlock.PrevHash, genesis.Hash()) {
+		t.Errorf("Previous hash does not match the genesis hash: %x vs. %x", createdBlock.PrevHash, genesisHash)
+	}
+}

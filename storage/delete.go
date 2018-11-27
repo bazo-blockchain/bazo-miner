@@ -61,6 +61,7 @@ func DeleteClosedTx(transaction protocol.Transaction) error {
 }
 
 func DeleteAccount(address [64]byte) error {
+	delete(State, address)
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
 		return b.Delete(address[:])

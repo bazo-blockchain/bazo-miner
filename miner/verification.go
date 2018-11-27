@@ -130,7 +130,6 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 		// TODO: Requires a Mutex?
 		newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [256]byte{}, nil, nil)
 		acc = &newAcc
-		storage.State[newAcc.Address] = acc
 		storage.WriteAccount(acc)
 	}
 

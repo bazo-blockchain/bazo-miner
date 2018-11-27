@@ -1,15 +1,20 @@
 package miner
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
-func accStateChangeRollback(accounts []*protocol.Account) {
-	for _, account := range accounts {
-		delete(storage.State, account.Address)
-		storage.DeleteAccount(account.Address)
+func accStateChangeRollback(txSlice []*protocol.AccTx) error {
+	for _, accTx := range txSlice {
+		err := storage.DeleteAccount(accTx.PubKey)
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("account state change rollback failed for account %x", accTx.PubKey[0:8]))
+			return err
+		}
 	}
+	return nil
 }
 
 func fundsStateChangeRollback(txSlice []*protocol.FundsTx) {

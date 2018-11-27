@@ -258,32 +258,19 @@ func validateClosedBlocks() error {
 	return nil
 }
 
-func accStateChange(txSlice []*protocol.FundsTx) (newAccounts []*protocol.Account, err error) {
+func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
-		fromAcc, _ := storage.GetAccount(tx.From)
-		if fromAcc == nil {
-			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
-			newAccounts = append(newAccounts, &newFromAcc)
-			storage.State[newFromAcc.Address] = &newFromAcc
-			err = storage.WriteAccount(&newFromAcc)
+		acc, _ := storage.GetAccount(tx.PubKey)
+		if acc == nil {
+			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
+			err := storage.WriteAccount(&newAcc)
 			if err != nil {
-				return nil, err
-			}
-		}
-
-		toAcc, _ := storage.GetAccount(tx.To)
-		if toAcc == nil {
-			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
-			newAccounts = append(newAccounts, &newToAcc)
-			storage.State[newToAcc.Address] = &newToAcc
-			err = storage.WriteAccount(&newToAcc)
-			if err != nil {
-				return nil, err
+				return nil
 			}
 		}
 	}
 
-	return newAccounts, nil
+	return nil
 }
 
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
@@ -295,7 +282,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		}
 
 		if rootAcc != nil && rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
-			return errors.New("Transaction amount would lead to balance overflow at the receiver (root) account.")
+			return errors.New("transaction amount would lead to balance overflow at the receiver (root) account")
 		}
 
 		//Will not be reached if errors occured
@@ -304,28 +291,44 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			rootAcc.Balance += tx.Fee
 		}
 
-		var accSender, accReceiver *protocol.Account
-		accSender, err = storage.GetAccount(tx.From)
-		accReceiver, err = storage.GetAccount(tx.To)
+		accSender, _ := storage.GetAccount(tx.From)
+		if accSender == nil {
+			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			accSender = &newFromAcc
+			err = storage.WriteAccount(accSender)
+			if err != nil {
+				return err
+			}
+		}
+
+		accReceiver, _ := storage.GetAccount(tx.To)
+		if accReceiver == nil {
+			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			accReceiver = &newToAcc
+			err = storage.WriteAccount(accReceiver)
+			if err != nil {
+				return err
+			}
+		}
 
 		//Check transaction counter
 		if tx.TxCnt != accSender.TxCnt {
-			err = errors.New(fmt.Sprintf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt).", tx.TxCnt, accSender.TxCnt))
+			err = errors.New(fmt.Sprintf("sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt)", tx.TxCnt, accSender.TxCnt))
 		}
 
 		//Check sender balance
 		if (tx.Amount + tx.Fee) > accSender.Balance {
-			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, tx.Amount, tx.Fee))
+			err = errors.New(fmt.Sprintf("sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v", accSender.Balance, tx.Amount, tx.Fee))
 		}
 
 		//After Tx fees, account must still have more than the minimum staking amount
 		if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
-			err = errors.New("Sender is staking and does not have enough funds in order to fulfill the required staking minimum.")
+			err = errors.New("sender is staking and does not have enough funds in order to fulfill the required staking minimum")
 		}
 
 		//Overflow protection
 		if tx.Amount+accReceiver.Balance > MAX_MONEY {
-			err = errors.New("Transaction amount would lead to balance overflow at the receiver account.")
+			err = errors.New("transaction amount would lead to balance overflow at the receiver account")
 		}
 
 		if err != nil {

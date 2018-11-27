@@ -205,3 +205,8 @@ func stringifyRSAKey(key *rsa.PrivateKey) string {
 
 	return keyString
 }
+
+func GetBytesFromRSAPubKey(key *rsa.PublicKey) (commPubKey [COMM_KEY_LENGTH]byte) {
+	copy(commPubKey[:], key.N.Bytes())
+	return commPubKey
+}

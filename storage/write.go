@@ -52,6 +52,7 @@ func WriteClosedTx(transaction protocol.Transaction) error {
 }
 
 func WriteAccount(account *protocol.Account) error {
+	State[account.Address] = account
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
 		return b.Put(account.Address[:], account.Encode())
