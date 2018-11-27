@@ -20,7 +20,6 @@ var (
 	uptodate            bool
 	slashingDict        = make(map[[64]byte]SlashingProof)
 	validatorAccAddress [64]byte
-	rootMultisig        *ecdsa.PublicKey
 	commPrivKey         *rsa.PrivateKey
 )
 
@@ -38,12 +37,10 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	initialBlock, genesis, err := initState()
+	initialBlock, err := initState()
 	if err != nil {
 		return err
 	}
-
-	rootMultisig = crypto.GetPubKeyFromAddress(genesis.RootMultisig)
 
 	logger.Printf("Active config params:%v", activeParameters)
 
@@ -54,14 +51,13 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	return nil
 }
 
-func InitFirstStart(wallet, multisig *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	rootAddress := crypto.GetAddressFromPubKey(wallet)
-	rootMultisig := crypto.GetAddressFromPubKey(multisig)
 
 	var rootCommitment [crypto.COMM_KEY_LENGTH]byte
 	copy(rootCommitment[:], commitment.N.Bytes())
 
-	genesis := protocol.NewGenesis(rootAddress, rootMultisig, rootCommitment)
+	genesis := protocol.NewGenesis(rootAddress, rootCommitment)
 	storage.WriteGenesis(&genesis)
 	return Init(wallet, commitment)
 }

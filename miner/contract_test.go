@@ -273,7 +273,7 @@ func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, c
 }
 
 func createBlockWithSingleContractCallTx(contractAddress [64]byte, b *protocol.Block, transactionData []byte) {
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, contractAddress, PrivKeyAccA, PrivKeyMultiSig, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, contractAddress, PrivKeyAccA, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {
@@ -285,7 +285,7 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 	accA, _ := storage.GetAccount(from)
 	accB, _ := storage.GetAccount(to)
 
-	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Address, accB.Address, PrivKeyAccA, PrivKeyMultiSig, transactionData)
+	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Address, accB.Address, PrivKeyAccA, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 	} else {

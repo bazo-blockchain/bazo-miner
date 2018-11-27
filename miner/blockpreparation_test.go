@@ -17,8 +17,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	//fill the open storage with fundstx
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, PrivKeyMultiSig, nil)
-		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accB.Address, accA.Address, PrivKeyAccB, PrivKeyMultiSig, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accB.Address, accA.Address, PrivKeyAccB, nil)
 
 		if verifyFundsTx(tx) {
 			storage.WriteOpenTx(tx)

@@ -24,7 +24,7 @@ type Context interface {
 	GetAmount() uint64
 	GetTransactionData() []byte
 	GetFee() uint64
-	GetSig1() [64]byte
+	GetSig() [64]byte
 }
 
 type VM struct {
@@ -1067,9 +1067,9 @@ func (vm *VM) Exec(trace bool) bool {
 
 			r, s := new(big.Int), new(big.Int)
 
-			sig1 := vm.context.GetSig1()
-			r.SetBytes(sig1[:32])
-			s.SetBytes(sig1[32:])
+			sig := vm.context.GetSig()
+			r.SetBytes(sig[:32])
+			s.SetBytes(sig[32:])
 
 			var pubKeySig [64]byte
 			copy(pubKeySig[:], signature[:])

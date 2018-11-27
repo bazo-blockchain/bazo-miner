@@ -45,32 +45,18 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	accFromHash := protocol.SerializeHashContent(tx.From)
 	accToHash := protocol.SerializeHashContent(tx.To)
 
-	r.SetBytes(tx.Sig1[:32])
-	s.SetBytes(tx.Sig1[32:])
+	r.SetBytes(tx.Sig[:32])
+	s.SetBytes(tx.Sig[32:])
 
 	txHash := tx.Hash()
 
-	var validSig1, validSig2 bool
-
 	pubKey := crypto.GetPubKeyFromAddress(tx.From)
 	if ecdsa.Verify(pubKey, txHash[:], r, s) && tx.From != tx.To {
-		validSig1 = true
+		return true
 	} else {
-		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
+		logger.Printf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
 		return false
 	}
-
-	r.SetBytes(tx.Sig2[:32])
-	s.SetBytes(tx.Sig2[32:])
-
-	if ecdsa.Verify(rootMultisig, txHash[:], r, s) {
-		validSig2 = true
-	} else {
-		logger.Printf("Sig2 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
-		return false
-	}
-
-	return validSig1 && validSig2
 }
 
 func verifyAccTx(tx *protocol.AccTx) bool {

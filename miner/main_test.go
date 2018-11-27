@@ -49,25 +49,19 @@ const (
 	CommPrivRoot = "jKphuoBsaw1wDdzrvB6PJF65JE5UFjeoIgswF+jD46YPyV1bq65RooN7xcXr5cHaujl76Vk3FkuBbbP2bBl+3WCWwC/oRboBlRex/IvKd1tWkQXDvmlkrzeeL3qhggSDE6AcpnN1VbPBZpFU7FaA1yQmqSsYKaK20jaSPvPlFRAllP1adSd+m3ZrJY5rPWzPkPDmeyLRhbTPMp2ke3gAVXn2JdX6hYwYBeZJv2ZnDM/ZQfmWezHJpjsaichnbB8mUiHOOqBnGXaHKKomgmveZ+UjLD7QN9x12NfRyhFM7Aih8iAgbK06CNzBMPvj4J3MGrJrZ1sjqpOw7ljLiGccGQ=="
 	CommPrimRoot1 = "/dCNZfqFkgE3360DnH+wE9eR1KL0xdjC3XY+0ge2rkg3XxJc2hZsv0MO2JiGuqQBsAfjEtJCmqayJaTemPMHBJABrhJnfLaDL2fHLRzwGzGYvEd2LVTGqOOW5+0qfimEV5dwnCVE7CcZ/uXwH0R2baQzWN2S29DxEq706Bhtpsc="
 	CommPrimRoot2 = "18UX/SiRcgUsjXlFsurz9Vjuh05vpREyn5wlNIHLjqmm5Rg/A37/gKiVls7o6CArM344Vhc6e5KpTVcM9FY496Xr/CNBA4ujl71hr93D6oCo50fLXdABoGFBjDP9d8eguK/Bi4L9q1MptTf2UM5JV/IkntVy1X4ff50uh1J5o3U="
-
-
-	//Multisig account for testing
-	MultiSigPub1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
-	MultiSigPub2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
-	MultiSigPriv = "b8d1fa3cc7476eafca970ea222676647da1817d1d9dc602e9446290454ffe1a4"
 )
 
 //Globally accessible values for all other tests, (root)account-related
 var (
-	accA, accB, validatorAcc, multiSigAcc, rootAcc         	*protocol.Account
-	PrivKeyAccA, PrivKeyAccB, PrivKeyMultiSig, PrivKeyRoot 	*ecdsa.PrivateKey
+	accA, accB, validatorAcc, rootAcc         	*protocol.Account
+	PrivKeyAccA, PrivKeyAccB, PrivKeyRoot 	*ecdsa.PrivateKey
 	CommPrivKeyAccA, CommPrivKeyAccB, CommPrivKeyRoot	   	*rsa.PrivateKey
 	initialBlock *protocol.Block
 )
 
 //Create some accounts that are used by the tests
 func addTestingAccounts() {
-	accA, accB, validatorAcc, multiSigAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account), new(protocol.Account)
+	accA, accB, validatorAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account)
 
 	pubAccA1, _ := new(big.Int).SetString(PubA1, 16)
 	pubAccA2, _ := new(big.Int).SetString(PubA2, 16)
@@ -107,19 +101,6 @@ func addTestingAccounts() {
 	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
 	copy(accB.CommitmentKey[:], CommPrivKeyAccB.PublicKey.N.Bytes())
 
-	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
-	pubKeyMultiSig, _ := crypto.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
-	PrivKeyMultiSig = &ecdsa.PrivateKey{
-		*pubKeyMultiSig,
-		privMultiSig,
-	}
-
-	copy(multiSigAcc.Address[0:32], PrivKeyMultiSig.PublicKey.X.Bytes())
-	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
-
-	//Set the global variable in blockchain.go
-	rootMultisig = pubKeyMultiSig
-
 	privKeyValidator, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	copy(validatorAcc.Address[:32], privKeyValidator.X.Bytes())
@@ -138,7 +119,6 @@ func addTestingAccounts() {
 
 	storage.State[accA.Address] = accA
 	storage.State[accB.Address] = accB
-	storage.State[multiSigAcc.Address] = multiSigAcc
 	storage.State[validatorAcc.Address] = validatorAcc
 }
 
@@ -219,7 +199,6 @@ func cleanAndPrepare() {
 
 	genesis := protocol.NewGenesis(
 		crypto.GetAddressFromPubKey(&PrivKeyRoot.PublicKey),
-		crypto.GetAddressFromPubKey(&PrivKeyMultiSig.PublicKey),
 		crypto.GetBytesFromRSAPubKey(&CommPrivKeyRoot.PublicKey))
 
 	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")

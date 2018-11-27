@@ -84,7 +84,6 @@ func Start(args *startArgs) error {
 		database       = "store.db"
 		wallet         = "wallet.key"
 		commitment     = "commitment.key"
-		multisig       = "multisig.key"
 	)
 
 	storage.Init(args.dataDirectory+"/" + database, args.bootstrapNodeAddress)
@@ -102,11 +101,7 @@ func Start(args *startArgs) error {
 
 	// Check if executor is root and if it's the first start
 	if p2p.IsBootstrap() && firstStart {
-		multisigPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + multisig)
-		if err != nil {
-			return err
-		}
-		return miner.InitFirstStart(validatorPubKey, multisigPubKey, commPrivKey)
+		return miner.InitFirstStart(validatorPubKey, commPrivKey)
 	} else {
 		return miner.Init(validatorPubKey, commPrivKey)
 	}

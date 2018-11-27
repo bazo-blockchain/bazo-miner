@@ -41,13 +41,13 @@ Let's assume we want to start two miners, miner `A` and miner `B`, whereas miner
 Further assume that we start from scratch and no key files have been created yet.
 
 Miner A (Root)
-* Data Directory: `NodeA`, contains `wallet.key`, `commitment.key`, `multisig.key` and `store.db`
+* Data Directory: `NodeA`, contains `wallet.key`, `commitment.key` and `store.db`
 * Address: `localhost:8000`
 * Bootstrap Address: `localhost:8000`
 
 
 Miner B
-* Data Directory: `NodeB`, contains `wallet.key`, `commitment.key`, `multisig.key` and `store.db`
+* Data Directory: `NodeB`, contains `wallet.key`, `commitment.key` and `store.db`
 * Address: `localhost:8001`
 * Bootstrap Address: `localhost:8000`
 
@@ -84,7 +84,6 @@ bazo-miner (root folder)
 -- NodeA
 ---- wallet.key
 ---- commitment.key
----- multisig.key
 ---- store.db
 -- NodeB
 ---- wallet.key
@@ -94,13 +93,13 @@ bazo-miner (root folder)
 ``` 
 
 In our case, we can use the wallet of miner A wallet to move funds to miner B. 
-* Copy `wallet.key` and `multisig.key` from the directory `NodeA` to the Bazo client directory and rename the file to `WalletA.key`.
+* Copy `wallet.key` from the directory `NodeA` to the Bazo client directory and rename the file to `WalletA.key`.
 * Copy `wallet.key` and `commitment.key` from the directory `NodeB` to the Bazo client directory and rename the file to `WalletB.key` and `CommitmentB.key` respectively.
 
 Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we transfer 2000 coins from A to B:
 
 ```bash
-./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 --multisig Multisig.key 
+./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 
 ```
 
 Check the terminal of miner B. The error message should change to (may need some time until the FundsTx is validated)

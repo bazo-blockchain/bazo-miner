@@ -85,30 +85,30 @@ func getState() (state string) {
 	return state
 }
 
-func initState() (initialBlock *protocol.Block, genesis *protocol.Genesis, err error) {
-	genesis, err = initGenesis()
+func initState() (initialBlock *protocol.Block, err error) {
+	genesis, err := initGenesis()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	initRootAccounts(genesis)
 
 	err = initClosedBlocks(genesis)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	initialBlock, err = getInitialBlock(genesis)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	err = validateClosedBlocks()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return initialBlock, genesis, nil
+	return initialBlock, nil
 }
 
 func initGenesis() (genesis *protocol.Genesis, err error) {

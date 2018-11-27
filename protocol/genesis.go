@@ -9,16 +9,13 @@ import (
 
 type Genesis struct {
 	RootAddress		[64]byte
-	RootMultisig	[64]byte
 	RootCommitment	[crypto.COMM_KEY_LENGTH]byte
 }
 
 func NewGenesis(rootAddress [64]byte,
-	rootMultisig [64]byte,
 	rootCommitment [crypto.COMM_KEY_LENGTH]byte) Genesis {
 	return Genesis {
 		rootAddress,
-		rootMultisig,
 		rootCommitment,
 	}
 }
@@ -30,11 +27,9 @@ func (genesis *Genesis) Hash() [32]byte {
 
 	input := struct {
 		rootAddress		[64]byte
-		rootMultisig	[64]byte
 		rootCommitment	[crypto.COMM_KEY_LENGTH]byte
 	} {
 		genesis.RootAddress,
-		genesis.RootMultisig,
 		genesis.RootCommitment,
 	}
 
@@ -48,7 +43,6 @@ func (genesis *Genesis) Encode() []byte {
 
 	encoded := Genesis{
 		RootAddress:    genesis.RootAddress,
-		RootMultisig:	genesis.RootMultisig,
 		RootCommitment:	genesis.RootCommitment,
 	}
 
@@ -73,10 +67,8 @@ func (genesis *Genesis) String() string {
 	return fmt.Sprintf(
 		"\n"+
 			"RootAddress: %x\n"+
-			"RootMultisig: %x\n"+
 			"RootCommitment: %x\n",
 		genesis.RootAddress[0:8],
-		genesis.RootMultisig[0:8],
 		genesis.RootCommitment[0:8],
 	)
 }

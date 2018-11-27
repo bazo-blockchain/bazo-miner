@@ -34,7 +34,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -43,7 +43,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -79,7 +79,7 @@ func TestAccountOverflow(t *testing.T) {
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, PrivKeyMultiSig, nil)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -185,7 +185,7 @@ func TestFundsTxNewAccsStateChange(t *testing.T) {
 		rand.Read(fromAddress[:])
 		rand.Read(toAddress[:])
 
-		tx, _ := protocol.ConstrFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, PrivKeyMultiSig, nil)
+		tx, _ := protocol.ConstrFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
 		fundsTxs = append(fundsTxs, tx)
 	}
 

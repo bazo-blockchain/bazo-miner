@@ -13,7 +13,7 @@ func TestFundsTxVerification(t *testing.T) {
 
 	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100000+1, randVar.Uint64()%10+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, PrivKeyMultiSig, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100000+1, randVar.Uint64()%10+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if verifyFundsTx(tx) == false {
 			t.Errorf("Tx could not be verified: \n%v", tx)
 		}

@@ -165,7 +165,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	loopMax += int(accA.TxCnt)
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, PrivKeyMultiSig, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if err := addTx(b, tx); err == nil {
 			//Might  be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {
