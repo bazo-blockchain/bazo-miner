@@ -229,12 +229,12 @@ func validateClosedBlocks() error {
 		//Do not validate the genesis block, since a lot of properties are set to nil
 		if blockToValidate.Hash != [32]byte{} {
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
+			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
 			if err != nil {
 				return errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 
-			blockDataMap[blockToValidate.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
+			blockDataMap[blockToValidate.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
 
 			err = validateState(blockDataMap[blockToValidate.Hash])
 			if err != nil {
@@ -258,7 +258,7 @@ func validateClosedBlocks() error {
 	return nil
 }
 
-func accStateChange(txSlice []*protocol.AccTx) {
+func accStateChange(txSlice []*protocol.ContractTx) {
 	for _, tx := range txSlice {
 		acc, _ := storage.ReadAccount(tx.PubKey)
 		if acc == nil {
@@ -392,8 +392,8 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 	return nil
 }
 
-func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerAddress [64]byte) (err error) {
-	var tmpAccTx []*protocol.AccTx
+func collectTxFees(contractTxSlice []*protocol.ContractTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, minerAddress [64]byte) (err error) {
+	var tmpContractTx []*protocol.ContractTx
 	var tmpFundsTx []*protocol.FundsTx
 	var tmpConfigTx []*protocol.ConfigTx
 	var tmpStakeTx []*protocol.StakeTx
@@ -405,20 +405,20 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 	var senderAcc *protocol.Account
 
-	for _, tx := range accTxSlice {
+	for _, tx := range contractTxSlice {
 		if minerAcc.Balance+tx.Fee > MAX_MONEY {
 			err = errors.New("Fee amount would lead to balance overflow at the miner account.")
 		}
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
+			collectTxFeesRollback(tmpContractTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
 		//Money gets created from thin air, no need to subtract money from root key
 		minerAcc.Balance += tx.Fee
-		tmpAccTx = append(tmpAccTx, tx)
+		tmpContractTx = append(tmpContractTx, tx)
 	}
 
 	//subtract fees from sender (check if that is allowed has already been done in the block validation)
@@ -432,7 +432,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
+			collectTxFeesRollback(tmpContractTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -448,7 +448,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
+			collectTxFeesRollback(tmpContractTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 
@@ -466,7 +466,7 @@ func collectTxFees(accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsT
 
 		if err != nil {
 			//Rollback of all perviously transferred transaction fees to the protocol's account
-			collectTxFeesRollback(tmpAccTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
+			collectTxFeesRollback(tmpContractTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
 

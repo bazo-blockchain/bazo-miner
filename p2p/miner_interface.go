@@ -16,7 +16,7 @@ var (
 
 	//Data requested by miner, to allow parallelism, we have a chan for every tx type.
 	FundsTxChan  = make(chan *protocol.FundsTx)
-	AccTxChan    = make(chan *protocol.AccTx)
+	ContractTxChan    = make(chan *protocol.ContractTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
 	StakeTxChan  = make(chan *protocol.StakeTx)
 
@@ -66,12 +66,12 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 		}
 		FundsTxChan <- fundsTx
 	case ACCTX_RES:
-		var accTx *protocol.AccTx
-		accTx = accTx.Decode(payload)
-		if accTx == nil {
+		var contractTx *protocol.ContractTx
+		contractTx = contractTx.Decode(payload)
+		if contractTx == nil {
 			return
 		}
-		AccTxChan <- accTx
+		ContractTxChan <- contractTx
 	case CONFIGTX_RES:
 		var configTx *protocol.ConfigTx
 		configTx = configTx.Decode(payload)

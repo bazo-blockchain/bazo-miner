@@ -18,8 +18,8 @@ func verify(tx protocol.Transaction) bool {
 	switch tx.(type) {
 	case *protocol.FundsTx:
 		verified = verifyFundsTx(tx.(*protocol.FundsTx))
-	case *protocol.AccTx:
-		verified = verifyAccTx(tx.(*protocol.AccTx))
+	case *protocol.ContractTx:
+		verified = verifyContractTx(tx.(*protocol.ContractTx))
 	case *protocol.ConfigTx:
 		verified = verifyConfigTx(tx.(*protocol.ConfigTx))
 	case *protocol.StakeTx:
@@ -59,7 +59,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	}
 }
 
-func verifyAccTx(tx *protocol.AccTx) bool {
+func verifyContractTx(tx *protocol.ContractTx) bool {
 	if tx == nil {
 		return false
 	}

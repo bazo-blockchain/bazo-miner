@@ -30,10 +30,9 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	}
 
 	//Add other tx types as well to make the test more challenging
-	nullAddress := [64]byte{}
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%100+1, nullAddress, PrivKeyRoot, nil, nil)
-		if verifyAccTx(tx) {
+		tx, _, _ := protocol.ConstrContractTx(0x01, randVar.Uint64()%100+1, PrivKeyRoot, nil, nil)
+		if verifyContractTx(tx) {
 			storage.WriteOpenTx(tx)
 		}
 	}

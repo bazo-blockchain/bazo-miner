@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	ACCTX_SIZE = 201
+	CONTRACTTX_SIZE = 201
 )
 
-type AccTx struct {
+type ContractTx struct {
 	Header            byte
 	Issuer            [64]byte
 	Fee               uint64
@@ -23,37 +23,27 @@ type AccTx struct {
 	ContractVariables []ByteArray
 }
 
-func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables []ByteArray) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
-	tx = new(AccTx)
+func ConstrContractTx(header byte, fee uint64, issuerSigKey *ecdsa.PrivateKey, contract []byte, contractVariables []ByteArray) (tx *ContractTx, newContractKey *ecdsa.PrivateKey, err error) {
+	tx = new(ContractTx)
 	tx.Header = header
 	tx.Fee = fee
 	tx.Contract = contract
 	tx.ContractVariables = contractVariables
 
-	if address != [64]byte{} {
-		copy(tx.PubKey[:], address[:])
-	} else {
-		var newAccAddressString string
-		//Check if string representation of account address is 128 long. Else there will be problems when doing REST calls.
-		for len(newAccAddressString) != 128 {
-			newAccAddress, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			newAccPub1, newAccPub2 := newAccAddress.PublicKey.X.Bytes(), newAccAddress.PublicKey.Y.Bytes()
-			copy(tx.PubKey[32-len(newAccPub1):32], newAccPub1)
-			copy(tx.PubKey[64-len(newAccPub2):], newAccPub2)
+	newContractKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	newAccPub1, newAccPub2 := newContractKey.PublicKey.X.Bytes(), newContractKey.PublicKey.Y.Bytes()
+	copy(tx.PubKey[32-len(newAccPub1):32], newAccPub1)
+	copy(tx.PubKey[64-len(newAccPub2):], newAccPub2)
 
-			newAccAddressString = newAccAddress.X.Text(16) + newAccAddress.Y.Text(16)
-		}
-	}
-
-	var rootPublicKey [64]byte
-	rootPubKey1, rootPubKey2 := rootPrivKey.PublicKey.X.Bytes(), rootPrivKey.PublicKey.Y.Bytes()
-	copy(rootPublicKey[32-len(rootPubKey1):32], rootPubKey1)
-	copy(rootPublicKey[64-len(rootPubKey2):], rootPubKey2)
-	copy(tx.Issuer[:], rootPublicKey[:])
+	var issuerPublicKey [64]byte
+	issuerPubKey1, issuerPubKey2 := issuerSigKey.PublicKey.X.Bytes(), issuerSigKey.PublicKey.Y.Bytes()
+	copy(issuerPublicKey[32-len(issuerPubKey1):32], issuerPubKey1)
+	copy(issuerPublicKey[64-len(issuerPubKey2):], issuerPubKey2)
+	copy(tx.Issuer[:], issuerPublicKey[:])
 
 	txHash := tx.Hash()
 
-	r, s, err := ecdsa.Sign(rand.Reader, rootPrivKey, txHash[:])
+	r, s, err := ecdsa.Sign(rand.Reader, issuerSigKey, txHash[:])
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,10 +51,10 @@ func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.P
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
 
-	return tx, newAccAddress, nil
+	return tx, newContractKey, nil
 }
 
-func (tx *AccTx) Hash() [32]byte {
+func (tx *ContractTx) Hash() [32]byte {
 	if tx == nil {
 		return [32]byte{}
 	}
@@ -88,12 +78,12 @@ func (tx *AccTx) Hash() [32]byte {
 	return SerializeHashContent(txHash)
 }
 
-func (tx *AccTx) Encode() []byte {
+func (tx *ContractTx) Encode() []byte {
 	if tx == nil {
 		return nil
 	}
 
-	encoded := AccTx{
+	encoded := ContractTx{
 		Header: tx.Header,
 		Issuer: tx.Issuer,
 		Fee:    tx.Fee,
@@ -106,19 +96,19 @@ func (tx *AccTx) Encode() []byte {
 	return buffer.Bytes()
 }
 
-func (*AccTx) Decode(encoded []byte) (tx *AccTx) {
-	var decoded AccTx
+func (*ContractTx) Decode(encoded []byte) (tx *ContractTx) {
+	var decoded ContractTx
 	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
 	decoder.Decode(&decoded)
 	return &decoded
 }
 
-func (tx *AccTx) TxFee() uint64 { return tx.Fee }
+func (tx *ContractTx) TxFee() uint64 { return tx.Fee }
 
-func (tx *AccTx) Size() uint64 { return ACCTX_SIZE }
+func (tx *ContractTx) Size() uint64 { return CONTRACTTX_SIZE }
 
-func (tx AccTx) String() string {
+func (tx ContractTx) String() string {
 	return fmt.Sprintf(
 		"\n"+
 			"Header: %x\n"+

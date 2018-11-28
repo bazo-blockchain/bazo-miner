@@ -262,7 +262,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 }
 
 func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, contractVariables []protocol.ByteArray) [64]byte {
-	tx, contractPrivKey, _ := protocol.ConstrAccTx(0, 1000000, [64]byte{}, PrivKeyRoot, contract, contractVariables)
+	tx, contractPrivKey, _ := protocol.ConstrContractTx(0, 1000000, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
 		return crypto.GetAddressFromPubKey(&contractPrivKey.PublicKey)

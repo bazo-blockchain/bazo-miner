@@ -5,9 +5,9 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
-func accStateChangeRollback(txSlice []*protocol.AccTx) {
-	for _, accTx := range txSlice {
-		storage.DeleteAccount(accTx.PubKey)
+func accStateChangeRollback(txSlice []*protocol.ContractTx) {
+	for _, contractTx := range txSlice {
+		storage.DeleteAccount(contractTx.PubKey)
 	}
 }
 
@@ -60,11 +60,11 @@ func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {
 	}
 }
 
-func collectTxFeesRollback(accTx []*protocol.AccTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerAddress [64]byte) {
+func collectTxFeesRollback(contractTx []*protocol.ContractTx, fundsTx []*protocol.FundsTx, configTx []*protocol.ConfigTx, stakeTx []*protocol.StakeTx, minerAddress [64]byte) {
 	minerAcc, _ := storage.ReadAccount(minerAddress)
 
 	//Subtract fees from sender (check if that is allowed has already been done in the block validation)
-	for _, tx := range accTx {
+	for _, tx := range contractTx {
 		//Money was created out of thin air, no need to write back
 		minerAcc.Balance -= tx.Fee
 	}

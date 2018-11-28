@@ -36,7 +36,7 @@ func WriteClosedTx(transaction protocol.Transaction) error {
 	switch transaction.(type) {
 	case *protocol.FundsTx:
 		bucket = CLOSEDFUNDS_BUCKET
-	case *protocol.AccTx:
+	case *protocol.ContractTx:
 		bucket = CLOSEDACCS_BUCKET
 	case *protocol.ConfigTx:
 		bucket = CLOSEDCONFIGS_BUCKET

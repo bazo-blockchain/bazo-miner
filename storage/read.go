@@ -94,7 +94,7 @@ func ReadClosedTx(hash [32]byte) (transaction protocol.Transaction) {
 	}
 
 	if encodedTx := readClosedTx(CLOSEDACCS_BUCKET, hash); encodedTx != nil {
-		var tx *protocol.AccTx
+		var tx *protocol.ContractTx
 		return tx.Decode(encodedTx)
 	}
 

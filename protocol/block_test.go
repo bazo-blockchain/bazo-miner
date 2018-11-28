@@ -66,7 +66,7 @@ func TestBlockSerialization(t *testing.T) {
 	block.Timestamp = time.Now().Unix()
 	rand.Read(block.MerkleRoot[:])
 	rand.Read(block.Beneficiary[:])
-	block.NrAccTx = uint16(randVar.Uint32())
+	block.NrContractTx = uint16(randVar.Uint32())
 	block.NrFundsTx = uint16(randVar.Uint32())
 	block.NrConfigTx = uint8(randVar.Uint32())
 	block.NrStakeTx = uint16(randVar.Uint32())
@@ -130,12 +130,12 @@ func TestBlockHeaderSerialization(t *testing.T) {
 func TestGetSize(t *testing.T) {
 	b := new(Block)
 
-	b.NrAccTx = uint16(rand.Uint32())
+	b.NrContractTx = uint16(rand.Uint32())
 	b.NrFundsTx = uint16(rand.Uint32())
 	b.NrConfigTx = uint8(rand.Uint32())
 	b.NrStakeTx = uint16(rand.Uint32())
 
-	txAmount := b.NrAccTx + b.NrFundsTx + uint16(b.NrConfigTx) + b.NrStakeTx
+	txAmount := b.NrContractTx + b.NrFundsTx + uint16(b.NrConfigTx) + b.NrStakeTx
 
 	if b.GetSize() != uint64(txAmount)*TXHASH_LEN+128+4+MIN_BLOCK_SIZE {
 		fmt.Printf("Miscalculated block size: %v vs. %v\n", b.GetSize(), uint64(txAmount)*32+MIN_BLOCK_SIZE)

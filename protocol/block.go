@@ -32,7 +32,7 @@ type Block struct {
 	Nonce                 [8]byte
 	Timestamp             int64
 	MerkleRoot            [32]byte
-	NrAccTx               uint16
+	NrContractTx          uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
 	SlashedAddress        [64]byte
@@ -41,10 +41,10 @@ type Block struct {
 	ConflictingBlockHash2 [32]byte
 	StateCopy             map[[64]byte]*Account //won't be serialized, just keeping track of local state changes
 
-	AccTxData    [][32]byte
-	FundsTxData  [][32]byte
-	ConfigTxData [][32]byte
-	StakeTxData  [][32]byte
+	ContractTxData  [][32]byte
+	FundsTxData  	[][32]byte
+	ConfigTxData 	[][32]byte
+	StakeTxData  	[][32]byte
 }
 
 func NewBlock(prevHash [32]byte, height uint32) *Block {
@@ -100,7 +100,7 @@ func (block *Block) InitBloomFilter(txPubKeys [][64]byte) {
 func (block *Block) GetSize() uint64 {
 	size :=
 		MIN_BLOCKSIZE +
-			int(block.NrAccTx)*TXHASH_LEN +
+			int(block.NrContractTx)*TXHASH_LEN +
 			int(block.NrFundsTx)*TXHASH_LEN +
 			int(block.NrConfigTx)*TXHASH_LEN +
 			int(block.NrStakeTx)*TXHASH_LEN
@@ -126,7 +126,7 @@ func (block *Block) Encode() []byte {
 		Timestamp:             block.Timestamp,
 		MerkleRoot:            block.MerkleRoot,
 		Beneficiary:           block.Beneficiary,
-		NrAccTx:               block.NrAccTx,
+		NrContractTx:               block.NrContractTx,
 		NrFundsTx:             block.NrFundsTx,
 		NrConfigTx:            block.NrConfigTx,
 		NrStakeTx:             block.NrStakeTx,
@@ -138,7 +138,7 @@ func (block *Block) Encode() []byte {
 		ConflictingBlockHash1: block.ConflictingBlockHash1,
 		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
-		AccTxData:    block.AccTxData,
+		ContractTxData:    block.ContractTxData,
 		FundsTxData:  block.FundsTxData,
 		ConfigTxData: block.ConfigTxData,
 		StakeTxData:  block.StakeTxData,
@@ -190,7 +190,7 @@ func (block Block) String() string {
 		"MerkleRoot: %x\n"+
 		"Beneficiary: %x\n"+
 		"Amount of fundsTx: %v\n"+
-		"Amount of accTx: %v\n"+
+		"Amount of contractTx: %v\n"+
 		"Amount of configTx: %v\n"+
 		"Amount of stakeTx: %v\n"+
 		"Height: %d\n"+
@@ -205,7 +205,7 @@ func (block Block) String() string {
 		block.MerkleRoot[0:8],
 		block.Beneficiary[0:8],
 		block.NrFundsTx,
-		block.NrAccTx,
+		block.NrContractTx,
 		block.NrConfigTx,
 		block.NrStakeTx,
 		block.Height,

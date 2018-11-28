@@ -15,31 +15,31 @@ func IsRootKey(pubKey [64]byte) bool {
 	return exists
 }
 
-//Get all pubKeys involved in AccTx, FundsTx of a given block
+//Get all pubKeys involved in ContractTx, FundsTx of a given block
 func GetTxPubKeys(block *protocol.Block) (txPubKeys [][64]byte) {
-	txPubKeys = GetAccTxPubKeys(block.AccTxData)
+	txPubKeys = GetContractTxPubKeys(block.ContractTxData)
 	txPubKeys = append(txPubKeys, GetFundsTxPubKeys(block.FundsTxData)...)
 
 	return txPubKeys
 }
 
-//Get all pubKey involved in AccTx
-func GetAccTxPubKeys(accTxData [][32]byte) (accTxPubKeys [][64]byte) {
-	for _, txHash := range accTxData {
+//Get all pubKey involved in ContractTx
+func GetContractTxPubKeys(contractTxData [][32]byte) (contractTxPubKeys [][64]byte) {
+	for _, txHash := range contractTxData {
 		var tx protocol.Transaction
-		var accTx *protocol.AccTx
+		var contractTx *protocol.ContractTx
 
 		tx = ReadClosedTx(txHash)
 		if tx == nil {
 			tx = ReadOpenTx(txHash)
 		}
 
-		accTx = tx.(*protocol.AccTx)
-		accTxPubKeys = append(accTxPubKeys, accTx.Issuer)
-		accTxPubKeys = append(accTxPubKeys, accTx.PubKey)
+		contractTx = tx.(*protocol.ContractTx)
+		contractTxPubKeys = append(contractTxPubKeys, contractTx.Issuer)
+		contractTxPubKeys = append(contractTxPubKeys, contractTx.PubKey)
 	}
 
-	return accTxPubKeys
+	return contractTxPubKeys
 }
 
 //Get all pubKey involved in FundsTx

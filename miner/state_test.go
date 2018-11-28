@@ -94,7 +94,7 @@ func TestAccountOverflow(t *testing.T) {
 	}
 }
 
-func TestAccTxNewAccsStateChange(t *testing.T) {
+func TestContractTxNewAccsStateChange(t *testing.T) {
 	cleanAndPrepare()
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
@@ -102,21 +102,18 @@ func TestAccTxNewAccsStateChange(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	var accTxs []*protocol.AccTx
+	var contractTxs []*protocol.ContractTx
 
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		address := [64]byte{}
-		rand.Read(address[:])
-
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, address, PrivKeyRoot, nil, nil)
-		accTxs = append(accTxs, tx)
+		tx, _, _ := protocol.ConstrContractTx(0, randVar.Uint64()%1000, PrivKeyRoot, nil, nil)
+		contractTxs = append(contractTxs, tx)
 	}
 
-	accStateChange(accTxs)
+	accStateChange(contractTxs)
 
-	for _, accTx := range accTxs {
-		acc := storage.State[accTx.PubKey]
+	for _, contractTx := range contractTxs {
+		acc := storage.State[contractTx.PubKey]
 		//make sure the previously created acc is in the state
 		if acc == nil {
 			t.Errorf("Account State failed to update for the following account: %v\n", acc)
