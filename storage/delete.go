@@ -43,6 +43,7 @@ func DeleteAllLastClosedBlock() {
 
 func DeleteOpenTx(transaction protocol.Transaction) {
 	delete(txMemPool, transaction.Hash())
+	PrintMemPoolSize()
 }
 
 func DeleteClosedTx(transaction protocol.Transaction) {

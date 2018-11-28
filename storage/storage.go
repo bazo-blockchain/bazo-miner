@@ -108,3 +108,7 @@ func Init(dbname string, bootstrapIpport string) {
 func TearDown() {
 	db.Close()
 }
+
+func PrintMemPoolSize(){
+	logger.Printf("Number of transactions in the Mempool: %v \n", len(txMemPool))
+}
