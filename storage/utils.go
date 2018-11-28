@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"errors"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"log"
 	"os"
@@ -10,24 +8,6 @@ import (
 
 func InitLogger() *log.Logger {
 	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-}
-
-//Needed by miner and p2p package
-func GetAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
-	if acc = State[pubKey]; acc != nil {
-		return acc, nil
-	} else {
-		return nil, errors.New(fmt.Sprintf("Acc (%x) not in the state.", pubKey[0:8]))
-	}
-}
-
-func GetRootAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
-	if IsRootKey(pubKey) {
-		acc, err = GetAccount(pubKey)
-		return acc, err
-	}
-
-	return nil, err
 }
 
 func IsRootKey(pubKey [64]byte) bool {

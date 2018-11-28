@@ -155,13 +155,13 @@ func TestDeleteZeroBalanceAccounts(t *testing.T) {
 	deleteZeroBalanceAccounts()
 
 	for _, accWithBalanceZero := range accsWithBalanceZero {
-		if acc, _ := storage.GetAccount(accWithBalanceZero.Address); acc != nil {
+		if acc, _ := storage.ReadAccount(accWithBalanceZero.Address); acc != nil {
 			t.Errorf("Account with balance zero not deleted from storage: %v\n", acc)
 		}
 	}
 
 	for _, accWithBalanceGreaterZero := range accsWithBalanceGreaterZero {
-		if acc, _ := storage.GetAccount(accWithBalanceGreaterZero.Address); acc == nil {
+		if acc, _ := storage.ReadAccount(accWithBalanceGreaterZero.Address); acc == nil {
 			t.Errorf("Account with balance greater zero deleted from storage: %v\n", acc)
 		}
 	}

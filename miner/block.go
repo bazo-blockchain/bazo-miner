@@ -53,7 +53,7 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc, err := storage.GetAccount(validatorAccAddress)
+	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		return err
 	}
@@ -608,7 +608,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check state contains beneficiary.
-	acc, err := storage.GetAccount(block.Beneficiary)
+	acc, err := storage.ReadAccount(block.Beneficiary)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -667,11 +667,8 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 
 //Dynamic state check.
 //The sequence of validation matters
-func validateState(data blockData) error {
-	err := accStateChange(data.accTxSlice)
-	if err != nil {
-		return err
-	}
+func validateState(data blockData) (err error) {
+	accStateChange(data.accTxSlice)
 
 	err = fundsStateChange(data.fundsTxSlice)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 func TestSlashingCondition(t *testing.T) {
 	cleanAndPrepare()
 
-	myAcc, _ := storage.GetAccount(validatorAccAddress)
+	myAcc, _ := storage.ReadAccount(validatorAccAddress)
 	initBalance := myAcc.Balance
 
 	forkBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)

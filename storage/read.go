@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 )
@@ -118,17 +120,21 @@ func readClosedTx(bucketName string, hash [32]byte) (encodedTx []byte) {
 	return encodedTx
 }
 
-func ReadAccounts() (accounts []*protocol.Account, err error) {
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(ACCOUNTS_BUCKET))
-		return b.ForEach(func(k, v []byte) error {
-			var acc *protocol.Account
-			acc = acc.Decode(v)
-			accounts = append(accounts, acc)
-			return nil
-		})
-	})
-	return accounts, err
+func ReadAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
+	if acc = State[pubKey]; acc != nil {
+		return acc, nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("Acc (%x) not in the state.", pubKey[0:8]))
+	}
+}
+
+func ReadRootAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
+	if IsRootKey(pubKey) {
+		acc, err = ReadAccount(pubKey)
+		return acc, err
+	}
+
+	return nil, err
 }
 
 func ReadGenesis() (genesis *protocol.Genesis, err error) {

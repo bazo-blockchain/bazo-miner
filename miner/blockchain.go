@@ -67,7 +67,7 @@ func mining(initialBlock *protocol.Block) {
 	currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
-		_, err := storage.GetAccount(validatorAccAddress)
+		_, err := storage.ReadAccount(validatorAccAddress)
 		if err != nil {
 			logger.Printf("%v\n", err)
 			time.Sleep(10 * time.Second)

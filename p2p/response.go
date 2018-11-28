@@ -118,7 +118,7 @@ func accRes(p *peer, payload []byte) {
 	var pubKey [64]byte
 	copy(pubKey[:], payload[0:64])
 
-	acc, _ := storage.GetAccount(pubKey)
+	acc, _ := storage.ReadAccount(pubKey)
 	packet = BuildPacket(ACC_RES, acc.Encode())
 
 	sendData(p, packet)
@@ -129,7 +129,7 @@ func rootAccRes(p *peer, payload []byte) {
 	var pubKey [64]byte
 	copy(pubKey[:], payload[0:64])
 
-	acc, _ := storage.GetRootAccount(pubKey)
+	acc, _ := storage.ReadRootAccount(pubKey)
 	packet = BuildPacket(ROOTACC_RES, acc.Encode())
 
 	sendData(p, packet)

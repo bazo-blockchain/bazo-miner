@@ -20,7 +20,7 @@ func TestSerializeHashContent(t *testing.T) {
 }
 
 func TestGetAccount(t *testing.T) {
-	acc, err := GetAccount(accA.Address)
+	acc, err := ReadAccount(accA.Address)
 
 	if acc != accA && err == nil {
 		t.Errorf("Error fetching account from state: %x\n", accA.Address)
@@ -31,7 +31,7 @@ func TestGetAccount(t *testing.T) {
 	}
 
 	var nilAddress [64]byte
-	acc, err = GetAccount(nilAddress)
+	acc, err = ReadAccount(nilAddress)
 
 	if acc != nil || err.Error() != fmt.Sprintf("Acc (%x) not in the state.", nilAddress[0:8]) {
 		t.Errorf("Error fetching account from state: %x\n", nilAddress)
@@ -39,14 +39,14 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestGetRootAccount(t *testing.T) {
-	root, err := GetRootAccount(rootAcc.Address)
+	root, err := ReadRootAccount(rootAcc.Address)
 
 	if root == nil || err != nil {
 		t.Errorf("Error fetching root account from state: %x\n", rootAcc.Address)
 	}
 
 	var nilAddress [64]byte
-	root, err = GetRootAccount(nilAddress)
+	root, err = ReadRootAccount(nilAddress)
 
 	if root != nil {
 		t.Errorf("Error fetching account from state: %x\n", nilAddress)

@@ -29,7 +29,6 @@ const (
 	CLOSEDSTAKES_BUCKET 	= "closedstakes"
 	CLOSEDCONFIGS_BUCKET	= "closedconfigs"
 	LASTCLOSEDBLOCK_BUCKET 	= "lastclosedblock"
-	ACCOUNTS_BUCKET			= "accounts"
 	GENESIS_BUCKET			= "genesis"
 )
 
@@ -46,7 +45,6 @@ func Init(dbname string, bootstrapIpport string) error {
 		CLOSEDSTAKES_BUCKET,
 		CLOSEDCONFIGS_BUCKET,
 		LASTCLOSEDBLOCK_BUCKET,
-		ACCOUNTS_BUCKET,
 		GENESIS_BUCKET,
 	}
 
@@ -64,23 +62,6 @@ func Init(dbname string, bootstrapIpport string) error {
 		}
 	}
 
-	err = loadAccountState()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func loadAccountState() error {
-	accounts, err := ReadAccounts()
-	if err != nil {
-		return err
-	}
-
-	for _, acc := range accounts {
-		State[acc.Address] = acc
-	}
 	return nil
 }
 

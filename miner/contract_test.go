@@ -69,7 +69,7 @@ func TestMultipleBlocksWithStateChangeContractTx(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(contractAddress)
+	acc, _ := storage.ReadAccount(contractAddress)
 	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 17}}
 	if !reflect.DeepEqual(contractVariables, expected) {
@@ -116,7 +116,7 @@ func TestMultipleBlocksWithDoubleStateChangeContractTx(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(contractAddress)
+	acc, _ := storage.ReadAccount(contractAddress)
 	contractVariables := acc.ContractVariables
 	expected := []protocol.ByteArray{[]byte{0, 32}}
 	if !reflect.DeepEqual(contractVariables, expected) {
@@ -188,7 +188,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(contractAddress)
+	acc, _ := storage.ReadAccount(contractAddress)
 	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
@@ -243,7 +243,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	acc, _ := storage.GetAccount(contractAddress)
+	acc, _ := storage.ReadAccount(contractAddress)
 	m, err := vm.MapFromByteArray(acc.ContractVariables[2])
 	if err != nil {
 		t.Errorf(err.Error())
@@ -282,8 +282,8 @@ func createBlockWithSingleContractCallTx(contractAddress [64]byte, b *protocol.B
 }
 
 func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionData []byte, from [64]byte, to [64]byte) {
-	accA, _ := storage.GetAccount(from)
-	accB, _ := storage.GetAccount(to)
+	accA, _ := storage.ReadAccount(from)
+	accB, _ := storage.ReadAccount(to)
 
 	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, rand.Uint64()%100+1, uint32(accA.TxCnt), accA.Address, accB.Address, PrivKeyAccA, transactionData)
 	if err := addTx(b, tx); err == nil {
@@ -296,7 +296,7 @@ func createBlockWithSingleContractCallTxDefined(b *protocol.Block, transactionDa
 func getAccountsWithContracts() []protocol.Account {
 	var accounts []protocol.Account
 	for address := range storage.State {
-		acc, _ := storage.GetAccount(address)
+		acc, _ := storage.ReadAccount(address)
 		if acc.Contract != nil {
 			accounts = append(accounts, *acc)
 		}
