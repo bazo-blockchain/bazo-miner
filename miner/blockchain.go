@@ -4,11 +4,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
-	"log"
-	"sync"
-
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"log"
+	"sync"
 )
 
 var (
@@ -77,6 +76,10 @@ func mining(initialBlock *protocol.Block) {
 			err := validate(currentBlock, false)
 			if err == nil {
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				logger.Printf("Size of Block %x: %v Bytes. --> Header: %v Bytes, Body: %v Bytes " +
+					"--> Body includes %v Bytes of TxData\n",
+					currentBlock.Hash[0:8], currentBlock.GetSize(), currentBlock.GetHeaderSize(),
+					currentBlock.GetBodySize(), currentBlock.GetTxDataSize())
 			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}

@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/willf/bloom"
+	"reflect"
 )
 
 const (
 	HASH_LEN                = 32
 	HEIGHT_LEN				= 4
+	//All fixed sizes form the Block struct are 254
 	MIN_BLOCKSIZE           = 254 + crypto.COMM_PROOF_LENGTH
 	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
@@ -98,12 +100,59 @@ func (block *Block) InitBloomFilter(txPubKeys [][32]byte) {
 
 func (block *Block) GetSize() uint64 {
 	size :=
-		MIN_BLOCKSIZE +
-			int(block.NrAccTx)*HASH_LEN +
-			int(block.NrFundsTx)*HASH_LEN +
-			int(block.NrConfigTx)*HASH_LEN +
-			int(block.NrStakeTx)*HASH_LEN
+		MIN_BLOCKSIZE + int(block.GetTxDataSize())
 
+	if block.BloomFilter != nil {
+		encodedBF, _ := block.BloomFilter.GobEncode()
+		size += len(encodedBF)
+	}
+
+	return uint64(size)
+}
+
+func (block *Block) GetHeaderSize() uint64 {
+	size := int(reflect.TypeOf(block.Header).Size() +
+		reflect.TypeOf(block.Hash).Size() +
+		reflect.TypeOf(block.PrevHash).Size() +
+		reflect.TypeOf(block.NrConfigTx).Size() +
+		reflect.TypeOf(block.NrElementsBF).Size() +
+		reflect.TypeOf(block.Height).Size() +
+		reflect.TypeOf(block.Beneficiary).Size())
+
+	size += int(block.GetBloomFilterSize())
+
+	return uint64(size)
+}
+
+func (block *Block) GetBodySize() uint64 {
+	size := int(reflect.TypeOf(block.Nonce).Size() +
+		reflect.TypeOf(block.Timestamp).Size() +
+		reflect.TypeOf(block.MerkleRoot).Size() +
+		reflect.TypeOf(block.NrAccTx).Size() +
+		reflect.TypeOf(block.NrFundsTx).Size() +
+		reflect.TypeOf(block.NrStakeTx).Size() +
+		reflect.TypeOf(block.SlashedAddress).Size() +
+		reflect.TypeOf(block.CommitmentProof).Size() +
+		reflect.TypeOf(block.ConflictingBlockHash1).Size() +
+		reflect.TypeOf(block.ConflictingBlockHash2).Size()) +
+		int(block.GetTxDataSize())
+
+	size += int(block.GetBloomFilterSize())
+
+	return uint64(size)
+}
+
+func (block *Block) GetTxDataSize() uint64 {
+	size := int(block.NrAccTx)*HASH_LEN +
+		int(block.NrFundsTx)*HASH_LEN +
+		int(block.NrConfigTx)*HASH_LEN +
+		int(block.NrStakeTx)*HASH_LEN
+
+	return uint64(size)
+}
+
+func (block *Block) GetBloomFilterSize() uint64 {
+	size := 0
 	if block.BloomFilter != nil {
 		encodedBF, _ := block.BloomFilter.GobEncode()
 		size += len(encodedBF)
