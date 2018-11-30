@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// test commit for new sharding branch
 	app := cli2.NewApp()
 
 	app.Name = "bazo-miner"
