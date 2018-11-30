@@ -36,8 +36,8 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 	switch txKind {
 	case FUNDSTX_REQ:
 		packet = BuildPacket(FUNDSTX_RES, tx.Encode())
-	case ACCTX_REQ:
-		packet = BuildPacket(ACCTX_RES, tx.Encode())
+	case CONTRACTTX_REQ:
+		packet = BuildPacket(CONTRACTTX_RES, tx.Encode())
 	case CONFIGTX_REQ:
 		packet = BuildPacket(CONFIGTX_RES, tx.Encode())
 	case STAKETX_REQ:
