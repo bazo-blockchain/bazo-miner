@@ -18,11 +18,11 @@ func TestBlockCreation(t *testing.T) {
 	createdBlock := NewBlock(prevHash, height)
 
 	if !reflect.DeepEqual(createdBlock.PrevHash, prevHash) {
-		t.Errorf("Previous hash does not match the given one: %x vs. %x", createdBlock.PrevHash, prevHash);
+		t.Errorf("Previous hash does not match the given one: %x vs. %x", createdBlock.PrevHash, prevHash)
 	}
 
 	if !reflect.DeepEqual(createdBlock.Height, height) {
-		t.Errorf("Height does not match the given one: %x vs. %x", createdBlock.Height, height);
+		t.Errorf("Height does not match the given one: %x vs. %x", createdBlock.Height, height)
 	}
 }
 
@@ -66,12 +66,13 @@ func TestBlockSerialization(t *testing.T) {
 	block.Timestamp = time.Now().Unix()
 	rand.Read(block.MerkleRoot[:])
 	rand.Read(block.Beneficiary[:])
-	block.NrAccTx = uint16(randVar.Uint32())
+	block.NrContractTx = uint16(randVar.Uint32())
 	block.NrFundsTx = uint16(randVar.Uint32())
 	block.NrConfigTx = uint8(randVar.Uint32())
 	block.NrStakeTx = uint16(randVar.Uint32())
 	rand.Read(block.SlashedAddress[:])
 	block.Height = uint32(randVar.Uint32())
+	rand.Read(block.CommitmentProof[:])
 	rand.Read(block.ConflictingBlockHash1[:])
 	rand.Read(block.ConflictingBlockHash2[:])
 
@@ -95,12 +96,12 @@ func TestBlockHeaderSerialization(t *testing.T) {
 	blockHeader.NrConfigTx = uint8(randVar.Uint32())
 	blockHeader.NrElementsBF = uint16(randVar.Uint32())
 
-	var v1, v2, v3 [32]byte
+	var v1, v2, v3 [64]byte
 	rand.Read(v1[:])
 	rand.Read(v2[:])
 	rand.Read(v3[:])
 
-	blockHeader.InitBloomFilter([][32]byte{v1, v2, v3})
+	blockHeader.InitBloomFilter([][64]byte{v1, v2, v3})
 
 	blockHeader.Height = uint32(randVar.Uint32())
 	rand.Read(blockHeader.Beneficiary[:])
@@ -129,14 +130,14 @@ func TestBlockHeaderSerialization(t *testing.T) {
 func TestGetSize(t *testing.T) {
 	b := new(Block)
 
-	b.NrAccTx = uint16(rand.Uint32())
+	b.NrContractTx = uint16(rand.Uint32())
 	b.NrFundsTx = uint16(rand.Uint32())
 	b.NrConfigTx = uint8(rand.Uint32())
 	b.NrStakeTx = uint16(rand.Uint32())
 
-	txAmount := b.NrAccTx + b.NrFundsTx + uint16(b.NrConfigTx) + b.NrStakeTx
+	txAmount := b.NrContractTx + b.NrFundsTx + uint16(b.NrConfigTx) + b.NrStakeTx
 
-	if b.GetSize() != uint64(txAmount)*HASH_LEN+128+4+MIN_BLOCK_SIZE {
+	if b.GetSize() != uint64(txAmount)*TXHASH_LEN+128+4+MIN_BLOCK_SIZE {
 		fmt.Printf("Miscalculated block size: %v vs. %v\n", b.GetSize(), uint64(txAmount)*32+MIN_BLOCK_SIZE)
 	}
 }

@@ -17,10 +17,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	//fill the open storage with fundstx
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	for cnt := 0; cnt < testsize; cnt++ {
-		accAHash := protocol.SerializeHashContent(accA.Address)
-		accBHash := protocol.SerializeHashContent(accB.Address)
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accAHash, accBHash, PrivKeyAccA, PrivKeyMultiSig, nil)
-		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accBHash, accAHash, PrivKeyAccB, PrivKeyMultiSig, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accB.Address, accA.Address, PrivKeyAccB, nil)
 
 		if verifyFundsTx(tx) {
 			storage.WriteOpenTx(tx)
@@ -32,10 +30,9 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	}
 
 	//Add other tx types as well to make the test more challenging
-	nullAddress := [64]byte{}
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%100+1, nullAddress, PrivKeyRoot, nil, nil)
-		if verifyAccTx(tx) {
+		tx, _, _ := protocol.ConstrContractTx(0x01, randVar.Uint64()%100+1, PrivKeyRoot, nil, nil)
+		if verifyContractTx(tx) {
 			storage.WriteOpenTx(tx)
 		}
 	}

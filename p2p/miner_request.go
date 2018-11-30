@@ -30,6 +30,17 @@ func LastBlockReq() error {
 	return nil
 }
 
+func GenesisReq() error {
+	p := peers.getRandomPeer(PEERTYPE_MINER)
+	if p == nil {
+		return errors.New("Couldn't get a connection, request not transmitted.")
+	}
+
+	packet := BuildPacket(GENESIS_REQ, nil)
+	sendData(p, packet)
+	return nil
+}
+
 //Request specific transaction
 func TxReq(hash [32]byte, reqType uint8) error {
 

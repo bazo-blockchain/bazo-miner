@@ -9,7 +9,7 @@ import (
 
 type Account struct {
 	Address            [64]byte              // 64 Byte
-	Issuer             [32]byte              // 32 Byte
+	Issuer             [64]byte              // 64 Byte
 	Balance            uint64                // 8 Byte
 	TxCnt              uint32                // 4 Byte
 	IsStaking          bool                  // 1 Byte
@@ -20,7 +20,7 @@ type Account struct {
 }
 
 func NewAccount(address [64]byte,
-	issuer [32]byte,
+	issuer [64]byte,
 	balance uint64,
 	isStaking bool,
 	commitmentKey [crypto.COMM_KEY_LENGTH]byte,

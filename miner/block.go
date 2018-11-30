@@ -17,7 +17,7 @@ import (
 
 //Datastructure to fetch the payload of all transactions, needed for state validation.
 type blockData struct {
-	accTxSlice    []*protocol.AccTx
+	contractTxSlice    []*protocol.ContractTx
 	fundsTxSlice  []*protocol.FundsTx
 	configTxSlice []*protocol.ConfigTx
 	stakeTxSlice  []*protocol.StakeTx
@@ -30,7 +30,7 @@ func newBlock(prevHash [32]byte, commitmentProof [crypto.COMM_PROOF_LENGTH]byte,
 	block.PrevHash = prevHash
 	block.CommitmentProof = commitmentProof
 	block.Height = height
-	block.StateCopy = make(map[[32]byte]*protocol.Account)
+	block.StateCopy = make(map[[64]byte]*protocol.Account)
 
 	return block
 }
@@ -41,8 +41,8 @@ func finalizeBlock(block *protocol.Block) error {
 	//The slashingDict is updated when a new block is received and when a slashing proof is provided.
 	if len(slashingDict) != 0 {
 		//Get the first slashing proof.
-		for hash, slashingProof := range slashingDict {
-			block.SlashedAddress = hash
+		for address, slashingProof := range slashingDict {
+			block.SlashedAddress = address
 			block.ConflictingBlockHash1 = slashingProof.ConflictingBlockHash1
 			block.ConflictingBlockHash2 = slashingProof.ConflictingBlockHash2
 			//TODO @simibac Why do you break?
@@ -53,13 +53,12 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	validatorAcc, err := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		return err
 	}
 
-	validatorAccHash := validatorAcc.Hash()
-	copy(block.Beneficiary[:], validatorAccHash[:])
+	copy(block.Beneficiary[:], validatorAcc.Address[:])
 
 	// Cryptographic Sortition for PoS in Bazo
 	// The commitment proof stores a signed message of the Height that this block was created at.
@@ -85,7 +84,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
 
 	//This doesn't need to be hashed, because we already have the merkle tree taking care of consistency.
-	block.NrAccTx = uint16(len(block.AccTxData))
+	block.NrContractTx = uint16(len(block.ContractTxData))
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
@@ -108,7 +107,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	}
 
 	//There is a trade-off what tests can be made now and which have to be delayed (when dynamic state is needed
-	//for inspection. The decision made is to check whether accTx and configTx have been signed with rootAcc. This
+	//for inspection. The decision made is to check whether contractTx and configTx have been signed with rootAcc. This
 	//is a dynamic test because it needs to have access to the rootAcc state. The other option would be to include
 	//the address (public key of signature) in the transaction inside the tx -> would resulted in bigger tx size.
 	//So the trade-off is effectively clean abstraction vs. tx size. Everything related to fundsTx is postponed because
@@ -119,10 +118,10 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	}
 
 	switch tx.(type) {
-	case *protocol.AccTx:
-		err := addAccTx(b, tx.(*protocol.AccTx))
+	case *protocol.ContractTx:
+		err := addContractTx(b, tx.(*protocol.ContractTx))
 		if err != nil {
-			logger.Printf("Adding accTx tx failed (%v): %v\n", err, tx.(*protocol.AccTx))
+			logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
 			return err
 		}
 	case *protocol.FundsTx:
@@ -150,49 +149,47 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	return nil
 }
 
-func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
-	accHash := sha3.Sum256(tx.PubKey[:])
-	//According to the accTx specification, we only accept new accounts except if the removal bit is
+func addContractTx(b *protocol.Block, tx *protocol.ContractTx) error {
+	//According to the contractTx specification, we only accept new accounts except if the removal bit is
 	//set in the header (2nd bit).
 	if tx.Header&0x02 != 0x02 {
-		if _, exists := storage.State[accHash]; exists {
+		if _, exists := storage.State[tx.PubKey]; exists {
 			return errors.New("Account already exists.")
 		}
 	}
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
-	b.AccTxData = append(b.AccTxData, tx.Hash())
-	logger.Printf("Added tx to the AccTxData slice: %v", *tx)
+	b.ContractTxData = append(b.ContractTxData, tx.Hash())
+	logger.Printf("Added tx to the ContractTxData slice: %v", *tx)
 	return nil
 }
 
 func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Checking if the sender account is already in the local state copy. If not and account exist, create local copy.
-	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.From]; !exists {
 		if acc := storage.State[tx.From]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.From {
+			if acc.Address == tx.From {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.From] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Sender account not present in the state: %x\n", tx.From))
+			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.From] = &newFromAcc
 		}
 	}
 
 	//Vice versa for receiver account.
 	if _, exists := b.StateCopy[tx.To]; !exists {
 		if acc := storage.State[tx.To]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.To {
+			if acc.Address == tx.To {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.To] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Receiver account not present in the state: %x\n", tx.To))
+			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.To] = &newToAcc
 		}
 	}
 
@@ -256,14 +253,14 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//If account does not exist in state, abort.
 	if _, exists := b.StateCopy[tx.Account]; !exists {
 		if acc := storage.State[tx.Account]; acc != nil {
-			hash := protocol.SerializeHashContent(acc.Address)
-			if hash == tx.Account {
+			if acc.Address == tx.Account {
 				newAcc := protocol.Account{}
 				newAcc = *acc
 				b.StateCopy[tx.Account] = &newAcc
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Sender account not present in the state: %x\n", tx.Account))
+			newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+			b.StateCopy[tx.Account] = &newAcc
 		}
 	}
 
@@ -292,20 +289,20 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 }
 
 //We use slices (not maps) because order is now important.
-func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initialSetup bool, errChan chan error) {
-	for cnt, txHash := range block.AccTxData {
+func fetchContractTxData(block *protocol.Block, contractTxSlice []*protocol.ContractTx, initialSetup bool, errChan chan error) {
+	for cnt, txHash := range block.ContractTxData {
 		var tx protocol.Transaction
-		var accTx *protocol.AccTx
+		var contractTx *protocol.ContractTx
 
 		closedTx := storage.ReadClosedTx(txHash)
 		if closedTx != nil {
 			if initialSetup {
-				accTx = closedTx.(*protocol.AccTx)
-				accTxSlice[cnt] = accTx
+				contractTx = closedTx.(*protocol.ContractTx)
+				contractTxSlice[cnt] = contractTx
 				continue
 			} else {
 				//Reject blocks that have txs which have already been validated.
-				errChan <- errors.New("Block validation had accTx that was already in a previous block.")
+				errChan <- errors.New("Block validation had contractTx that was already in a previous block.")
 				return
 			}
 		}
@@ -314,29 +311,29 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 		//Tx is either in open storage or needs to be fetched from the network.
 		tx = storage.ReadOpenTx(txHash)
 		if tx != nil {
-			accTx = tx.(*protocol.AccTx)
+			contractTx = tx.(*protocol.ContractTx)
 		} else {
-			err := p2p.TxReq(txHash, p2p.ACCTX_REQ)
+			err := p2p.TxReq(txHash, p2p.CONTRACTTX_REQ)
 			if err != nil {
-				errChan <- errors.New(fmt.Sprintf("AccTx could not be read: %v", err))
+				errChan <- errors.New(fmt.Sprintf("ContractTx could not be read: %v", err))
 				return
 			}
 
 			//Blocking Wait
 			select {
-			case accTx = <-p2p.AccTxChan:
+			case contractTx = <-p2p.ContractTxChan:
 				//Limit the waiting time for TXFETCH_TIMEOUT seconds.
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("AccTx fetch timed out.")
+				errChan <- errors.New("ContractTx fetch timed out.")
 			}
 			//This check is important. A malicious miner might have sent us a tx whose hash is a different one
 			//from what we requested.
-			if accTx.Hash() != txHash {
+			if contractTx.Hash() != txHash {
 				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
 		}
 
-		accTxSlice[cnt] = accTx
+		contractTxSlice[cnt] = contractTx
 	}
 
 	errChan <- nil
@@ -507,64 +504,47 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		uptodate = true
 	}
 
-	//No rollback needed, just a new block to validate.
-	if len(blocksToRollback) == 0 {
-		for _, block := range blocksToValidate {
-			//Fetching payload data from the txs (if necessary, ask other miners).
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
-
-			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-			//The proof will be stored in the global slashing dictionary.
-			if block.Height > 0 {
-				seekSlashingProof(block)
-			}
-
-			if err != nil {
-				return err
-			}
-
-			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := validateState(blockDataMap[block.Hash]); err != nil {
-				return err
-			}
-
-			postValidate(blockDataMap[block.Hash], initialSetup)
-		}
-	} else {
+	if len(blocksToRollback) > 0 {
 		for _, block := range blocksToRollback {
 			if err := rollback(block); err != nil {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
-		for _, block := range blocksToValidate {
-			//Fetching payload data from the txs (if necessary, ask other miners).
-			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
+	}
 
-			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-			//The proof will be stored in the global slashing dictionary.
-			if block.Height > 0 {
-				seekSlashingProof(block)
-			}
+	for _, block := range blocksToValidate {
+		//Fetching payload data from the txs (if necessary, ask other miners).
+		contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
 
-			if err != nil {
-				return err
-			}
-
-			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
-			if err := validateState(blockDataMap[block.Hash]); err != nil {
-				return err
-			}
-
-			postValidate(blockDataMap[block.Hash], initialSetup)
+		//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
+		//The proof will be stored in the global slashing dictionary.
+		if block.Height > 0 {
+			seekSlashingProof(block)
 		}
+
+		if err != nil {
+			return err
+		}
+
+		blockDataMap[block.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, block}
+		if err := validateState(blockDataMap[block.Hash]); err != nil {
+			return err
+		}
+
+		postValidate(blockDataMap[block.Hash], initialSetup)
+	}
+
+	err = deleteZeroBalanceAccounts()
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 //Doesn't involve any state changes.
-func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protocol.AccTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
+func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*protocol.ContractTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
 	//This dynamic check is only done if we're up-to-date with syncing, otherwise timestamp is not checked.
 	//Other miners (which are up-to-date) made sure that this is correct.
 	if !initialSetup && uptodate {
@@ -580,7 +560,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 
 	//Duplicates are not allowed, use tx hash hashmap to easily check for duplicates.
 	duplicates := make(map[[32]byte]bool)
-	for _, txHash := range block.AccTxData {
+	for _, txHash := range block.ContractTxData {
 		if _, exists := duplicates[txHash]; exists {
 			return nil, nil, nil, nil, errors.New("Duplicate Account Transaction Hash detected.")
 		}
@@ -609,12 +589,12 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	errChan := make(chan error, 4)
 
 	//We need to allocate slice space for the underlying array when we pass them as reference.
-	accTxSlice = make([]*protocol.AccTx, block.NrAccTx)
+	contractTxSlice = make([]*protocol.ContractTx, block.NrContractTx)
 	fundsTxSlice = make([]*protocol.FundsTx, block.NrFundsTx)
 	configTxSlice = make([]*protocol.ConfigTx, block.NrConfigTx)
 	stakeTxSlice = make([]*protocol.StakeTx, block.NrStakeTx)
 
-	go fetchAccTxData(block, accTxSlice, initialSetup, errChan)
+	go fetchContractTxData(block, contractTxSlice, initialSetup, errChan)
 	go fetchFundsTxData(block, fundsTxSlice, initialSetup, errChan)
 	go fetchConfigTxData(block, configTxSlice, initialSetup, errChan)
 	go fetchStakeTxData(block, stakeTxSlice, initialSetup, errChan)
@@ -628,14 +608,14 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check state contains beneficiary.
-	acc, err := storage.GetAccount(block.Beneficiary)
+	acc, err := storage.ReadAccount(block.Beneficiary)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
 	//Check if node is part of the validator set.
 	if !acc.IsStaking {
-		return nil, nil, nil, nil, errors.New("Validator is not part of the validator set.")
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Validator (%x) is not part of the validator set.", acc.Address[0:8]))
 	}
 
 	//First, initialize an RSA Public Key instance with the modulus of the proposer of the block (acc)
@@ -671,7 +651,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 	}
 
 	//Check if block contains a proof for two conflicting block hashes, else no proof provided.
-	if block.SlashedAddress != [32]byte{} {
+	if block.SlashedAddress != [64]byte{} {
 		if _, err = slashingCheck(block.SlashedAddress, block.ConflictingBlockHash1, block.ConflictingBlockHash2); err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -682,59 +662,57 @@ func preValidate(block *protocol.Block, initialSetup bool) (accTxSlice []*protoc
 		return nil, nil, nil, nil, errors.New("Merkle Root is incorrect.")
 	}
 
-	return accTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
+	return contractTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
 }
 
 //Dynamic state check.
-func validateState(data blockData) error {
-	//The sequence of validation matters. If we start with accs, then fund/stake transactions can be done in the same block
-	//even though the accounts did not exist before the block validation.
-	if err := accStateChange(data.accTxSlice); err != nil {
-		return err
-	}
+//The sequence of validation matters
+func validateState(data blockData) (err error) {
+	accStateChange(data.contractTxSlice)
 
-	if err := fundsStateChange(data.fundsTxSlice); err != nil {
-		accStateChangeRollback(data.accTxSlice)
+	err = fundsStateChange(data.fundsTxSlice)
+	if err != nil {
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
 	if err := stakeStateChange(data.stakeTxSlice, data.block.Height); err != nil {
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
-	if err := collectTxFees(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
+	if err := collectTxFees(data.contractTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary); err != nil {
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
 	if err := collectBlockReward(activeParameters.Block_reward, data.block.Beneficiary); err != nil {
-		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		collectTxFeesRollback(data.contractTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
 	if err := collectSlashReward(activeParameters.Slash_reward, data.block); err != nil {
 		collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
-		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		collectTxFeesRollback(data.contractTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
 	if err := updateStakingHeight(data.block); err != nil {
 		collectSlashRewardRollback(activeParameters.Slash_reward, data.block)
 		collectBlockRewardRollback(activeParameters.Block_reward, data.block.Beneficiary)
-		collectTxFeesRollback(data.accTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
+		collectTxFeesRollback(data.contractTxSlice, data.fundsTxSlice, data.configTxSlice, data.stakeTxSlice, data.block.Beneficiary)
 		stakeStateChangeRollback(data.stakeTxSlice)
 		fundsStateChangeRollback(data.fundsTxSlice)
-		accStateChangeRollback(data.accTxSlice)
+		accStateChangeRollback(data.contractTxSlice)
 		return err
 	}
 
@@ -743,7 +721,7 @@ func validateState(data blockData) error {
 
 func postValidate(data blockData, initialSetup bool) {
 	//The new system parameters get active if the block was successfully validated
-	//This is done after state validation (in contrast to accTx/fundsTx).
+	//This is done after state validation (in contrast to contractTx/fundsTx).
 	//Conversely, if blocks are rolled back, the system parameters are changed first.
 	configStateChange(data.configTxSlice, data.block.Hash)
 	//Collects meta information about the block (and handled difficulty adaption).
@@ -751,7 +729,7 @@ func postValidate(data blockData, initialSetup bool) {
 
 	if !initialSetup {
 		//Write all open transactions to closed/validated storage.
-		for _, tx := range data.accTxSlice {
+		for _, tx := range data.contractTxSlice {
 			storage.WriteClosedTx(tx)
 			storage.DeleteOpenTx(tx)
 		}
@@ -802,7 +780,7 @@ func timestampCheck(timestamp int64) error {
 	return nil
 }
 
-func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
+func slashingCheck(slashedAddress [64]byte, conflictingBlockHash1, conflictingBlockHash2 [32]byte) (bool, error) {
 	prefix := "Invalid slashing proof: "
 
 	if conflictingBlockHash1 == [32]byte{} || conflictingBlockHash2 == [32]byte{} {

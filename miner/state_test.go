@@ -17,10 +17,6 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
-
 	var testSize uint32
 	testSize = 1000
 
@@ -38,7 +34,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, PrivKeyAccA, nil, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -47,7 +43,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accAHash, PrivKeyAccB, nil, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -63,14 +59,14 @@ func TestFundsTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v or %v != %v\n", accA.Balance, balanceA, accB.Balance, balanceB)
 	}
 
-	collectTxFees(nil, funds, nil, nil, minerAccHash)
+	collectTxFees(nil, funds, nil, nil, validatorAcc.Address)
 	if feeA+feeB != validatorAcc.Balance-minerBal {
 		t.Error("Fee Collection failed!")
 	}
 
 	t.Log(activeParameters)
 	balBeforeRew := validatorAcc.Balance
-	collectBlockReward(activeParameters.Block_reward, minerAccHash)
+	collectBlockReward(activeParameters.Block_reward, validatorAcc.Address)
 	if validatorAcc.Balance != balBeforeRew+activeParameters.Block_reward {
 		t.Error("Block reward collection failed!")
 	}
@@ -80,12 +76,10 @@ func TestAccountOverflow(t *testing.T) {
 	cleanAndPrepare()
 
 	var accSlice []*protocol.FundsTx
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accBHash, accAHash, PrivKeyAccB, PrivKeyMultiSig, nil)
+	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
 	if !verifyFundsTx(tx) || err != nil {
 		t.Error("Failed to create reasonable fundsTx\n")
 		return
@@ -100,7 +94,7 @@ func TestAccountOverflow(t *testing.T) {
 	}
 }
 
-func TestAccTxStateChange(t *testing.T) {
+func TestContractTxNewAccsStateChange(t *testing.T) {
 	cleanAndPrepare()
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
@@ -108,47 +102,106 @@ func TestAccTxStateChange(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	var accs []*protocol.AccTx
+	var contractTxs []*protocol.ContractTx
 
-	nullAddress := [64]byte{}
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, PrivKeyRoot, nil, nil)
-		accs = append(accs, tx)
+		tx, _, _ := protocol.ConstrContractTx(0, randVar.Uint64()%1000, PrivKeyRoot, nil, nil)
+		contractTxs = append(contractTxs, tx)
 	}
 
-	accStateChange(accs)
+	accStateChange(contractTxs)
 
-	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
-		acc := storage.State[accHash]
+	for _, contractTx := range contractTxs {
+		acc := storage.State[contractTx.PubKey]
 		//make sure the previously created acc is in the state
 		if acc == nil {
 			t.Errorf("Account State failed to update for the following account: %v\n", acc)
 		}
 	}
+}
 
-	//Create a new root account, set the header to 0x01
-	var singleSlice []*protocol.AccTx
-	tx, _, _ := protocol.ConstrAccTx(0x01, randVar.Uint64()%1000, nullAddress, PrivKeyRoot, nil, nil)
-	singleSlice = append(singleSlice, tx)
-	var pubKeyTmp [64]byte
-	copy(pubKeyTmp[:], tx.PubKey[:])
+func TestDeleteZeroBalanceAccounts(t *testing.T) {
+	cleanAndPrepare()
 
-	accStateChange(singleSlice)
-
-	if !storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
-		t.Errorf("AccTx Header bit 1 not working.")
+	for _, acc := range storage.State {
+		delete(storage.State, acc.Address)
 	}
 
-	//Set header to 0x02 -> delete root account
-	newTx := *tx
-	newTx.Header = 0x02
-	singleSlice[0] = &newTx
-	accStateChange(singleSlice)
+	var testSize uint32 = 1000
+	var accsWithBalanceZero []*protocol.Account
+	var accsWithBalanceGreaterZero []*protocol.Account
 
-	if storage.IsRootKey(protocol.SerializeHashContent(pubKeyTmp)) {
-		t.Errorf("AccTx Header bit 2 not working.")
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
+
+	loopMax := int(randVar.Uint32()%testSize + 1)
+	for i := 0; i < loopMax+1; i++ {
+		address := [64]byte{}
+		rand.Read(address[:])
+		newAcc := protocol.NewAccount(address, [64]byte{}, randVar.Uint64()%2, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
+		storage.WriteAccount(&newAcc)
+
+		if newAcc.Balance == 0 {
+			accsWithBalanceZero = append(accsWithBalanceZero, &newAcc)
+		} else {
+			accsWithBalanceGreaterZero = append(accsWithBalanceGreaterZero, &newAcc)
+		}
+
+	}
+
+	deleteZeroBalanceAccounts()
+
+	for _, accWithBalanceZero := range accsWithBalanceZero {
+		if acc, _ := storage.ReadAccount(accWithBalanceZero.Address); acc != nil {
+			t.Errorf("Account with balance zero not deleted from storage: %v\n", acc)
+		}
+	}
+
+	for _, accWithBalanceGreaterZero := range accsWithBalanceGreaterZero {
+		if acc, _ := storage.ReadAccount(accWithBalanceGreaterZero.Address); acc == nil {
+			t.Errorf("Account with balance greater zero deleted from storage: %v\n", acc)
+		}
+	}
+}
+
+func TestFundsTxNewAccsStateChange(t *testing.T) {
+	cleanAndPrepare()
+
+	randVar := rand.New(rand.NewSource(time.Now().Unix()))
+
+	var testSize uint32
+	testSize = 1000
+
+	var fundsTxs []*protocol.FundsTx
+
+	loopMax := int(randVar.Uint32()%testSize) + 1
+	for i := 0; i < loopMax; i++ {
+		fromAddress := [64]byte{}
+		toAddress := [64]byte{}
+
+		rand.Read(fromAddress[:])
+		rand.Read(toAddress[:])
+
+		tx, _ := protocol.ConstrFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
+		fundsTxs = append(fundsTxs, tx)
+	}
+
+	err := fundsStateChange(fundsTxs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, fundsTx := range fundsTxs {
+		fromAcc := storage.State[fundsTx.From]
+		toAcc := storage.State[fundsTx.To]
+		//make sure the previously created acc is in the state
+		if fromAcc == nil {
+			t.Errorf("Account State failed to update for the following account: %v\n", fromAcc)
+		}
+
+		if toAcc == nil {
+			t.Errorf("Account State failed to update for the following account: %v\n", toAcc)
+		}
 	}
 }
 
@@ -278,15 +331,13 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-
 	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false
 	stakingA := accA.IsStaking
 
-	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, accAHash, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
+	stx, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, true, accA.Address, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = true
 		stake = append(stake, stx)
@@ -297,7 +348,7 @@ func TestStakeTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v", accA.IsStaking, stakingA)
 	}
 
-	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, accAHash, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
+	stx2, _ := protocol.ConstrStakeTx(0x01, randVar.Uint64()%100+1, false, accA.Address, PrivKeyAccA, &CommPrivKeyAccA.PublicKey)
 	if addTx(b, stx) == nil {
 		stakingA = false
 		stake2 = append(stake2, stx2)

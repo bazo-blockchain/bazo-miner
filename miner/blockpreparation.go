@@ -51,10 +51,10 @@ func (f openTxs) Less(i, j int) bool {
 	//Comparison only makes sense if both tx are fundsTxs.
 	//Why can we only do that with switch, and not e.g., if tx.(type) == ..?
 	switch f[i].(type) {
-	case *protocol.AccTx:
+	case *protocol.ContractTx:
 		//We only want to sort a subset of all transactions, namely all fundsTxs.
 		//However, to successfully do that we have to place all other txs at the beginning.
-		//The order between accTxs and configTxs doesn't matter.
+		//The order between contractTxs and configTxs doesn't matter.
 		return true
 	case *protocol.ConfigTx:
 		return true
@@ -63,7 +63,7 @@ func (f openTxs) Less(i, j int) bool {
 	}
 
 	switch f[j].(type) {
-	case *protocol.AccTx:
+	case *protocol.ContractTx:
 		return false
 	case *protocol.ConfigTx:
 		return false

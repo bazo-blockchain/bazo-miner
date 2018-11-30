@@ -6,31 +6,27 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
-	logger              			*log.Logger
-	blockValidation     			= &sync.Mutex{}
-	parameterSlice      			[]Parameters
-	activeParameters    			*Parameters
-	uptodate            			bool
-	slashingDict        			= make(map[[32]byte]SlashingProof)
-	validatorAccAddress 			[64]byte
-	multisigPubKey      			*ecdsa.PublicKey
-	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
+	logger              *log.Logger
+	blockValidation     = &sync.Mutex{}
+	parameterSlice      []Parameters
+	activeParameters    *Parameters
+	uptodate            bool
+	slashingDict        = make(map[[64]byte]SlashingProof)
+	validatorAccAddress [64]byte
+	commPrivKey         *rsa.PrivateKey
 )
 
 //Miner entry point
-func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validatorCommitment, rootCommitment *rsa.PrivateKey) {
-	var err error
-
-	validatorAccAddress = crypto.GetAddressFromPubKey(validatorWallet)
-	multisigPubKey = multisigWallet
-	commPrivKey = validatorCommitment
-	rootCommPrivKey = rootCommitment
+func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
+	commPrivKey = commitment
 
 	//Set up logger.
 	logger = storage.InitLogger()
@@ -38,19 +34,12 @@ func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validato
 	parameterSlice = append(parameterSlice, NewDefaultParameters())
 	activeParameters = &parameterSlice[0]
 
-	//Initialize root key.
-	initRootKey(rootWallet)
-	if err != nil {
-		logger.Printf("Could not create a root account.\n")
-	}
-
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
 	initialBlock, err := initState()
 	if err != nil {
-		logger.Printf("Could not set up initial state: %v.\n", err)
-		return
+		return err
 	}
 
 	logger.Printf("Active config params:%v", activeParameters)
@@ -58,6 +47,19 @@ func Init(validatorWallet, multisigWallet, rootWallet *ecdsa.PublicKey, validato
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
 	mining(initialBlock)
+
+	return nil
+}
+
+func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	rootAddress := crypto.GetAddressFromPubKey(wallet)
+
+	var rootCommitment [crypto.COMM_KEY_LENGTH]byte
+	copy(rootCommitment[:], commitment.N.Bytes())
+
+	genesis := protocol.NewGenesis(rootAddress, rootCommitment)
+	storage.WriteGenesis(&genesis)
+	return Init(wallet, commitment)
 }
 
 //Mining is a constant process, trying to come up with a successful PoW.
@@ -65,7 +67,14 @@ func mining(initialBlock *protocol.Block) {
 	currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
-		err := finalizeBlock(currentBlock)
+		_, err := storage.ReadAccount(validatorAccAddress)
+		if err != nil {
+			logger.Printf("%v\n", err)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		err = finalizeBlock(currentBlock)
 		if err != nil {
 			logger.Printf("%v\n", err)
 		} else {
@@ -92,19 +101,4 @@ func mining(initialBlock *protocol.Block) {
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
 	}
-}
-
-//At least one root key needs to be set which is allowed to create new accounts.
-func initRootKey(rootKey *ecdsa.PublicKey) error {
-	address := crypto.GetAddressFromPubKey(rootKey)
-	addressHash := protocol.SerializeHashContent(address)
-
-	var commPubKey [crypto.COMM_KEY_LENGTH]byte
-	copy(commPubKey[:], rootCommPrivKey.N.Bytes())
-
-	rootAcc := protocol.NewAccount(address, [32]byte{}, activeParameters.Staking_minimum, true, commPubKey, nil, nil)
-	storage.State[addressHash] = &rootAcc
-	storage.RootKeys[addressHash] = &rootAcc
-
-	return nil
 }

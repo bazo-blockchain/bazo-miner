@@ -5,65 +5,59 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-func WriteOpenBlock(block *protocol.Block) (err error) {
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("openblocks"))
-		err := b.Put(block.Hash[:], block.Encode())
-		return err
+func WriteOpenBlock(block *protocol.Block) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(OPENBLOCKS_BUCKET))
+		return b.Put(block.Hash[:], block.Encode())
 	})
-
-	return err
 }
 
-func WriteClosedBlock(block *protocol.Block) (err error) {
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedblocks"))
-		err := b.Put(block.Hash[:], block.Encode())
-		return err
+func WriteClosedBlock(block *protocol.Block) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(CLOSEDBLOCKS_BUCKET))
+		return b.Put(block.Hash[:], block.Encode())
 	})
-
-	return err
 }
 
 func WriteLastClosedBlock(block *protocol.Block) (err error) {
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("lastclosedblock"))
-		err := b.Put(block.Hash[:], block.Encode())
-		return err
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))
+		return b.Put(block.Hash[:], block.Encode())
 	})
-
-	return err
 }
 
 //Changing the "tx" shortcut here and using "transaction" to distinguish between bolt's transactions
 func WriteOpenTx(transaction protocol.Transaction) {
-
 	txMemPool[transaction.Hash()] = transaction
 }
 
-func WriteClosedTx(transaction protocol.Transaction) (err error) {
-
+func WriteClosedTx(transaction protocol.Transaction) error {
 	var bucket string
 	switch transaction.(type) {
 	case *protocol.FundsTx:
-		bucket = "closedfunds"
-	case *protocol.AccTx:
-		bucket = "closedaccs"
+		bucket = CLOSEDFUNDS_BUCKET
+	case *protocol.ContractTx:
+		bucket = CLOSEDACCS_BUCKET
 	case *protocol.ConfigTx:
-		bucket = "closedconfigs"
+		bucket = CLOSEDCONFIGS_BUCKET
 	case *protocol.StakeTx:
-		bucket = "closedstakes"
+		bucket = CLOSEDSTAKES_BUCKET
 	}
 
 	hash := transaction.Hash()
-	err = db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		err := b.Put(hash[:], transaction.Encode())
-		return err
+		return b.Put(hash[:], transaction.Encode())
 	})
+}
 
-	return err
+func WriteAccount(account *protocol.Account) {
+	State[account.Address] = account
+}
+
+func WriteGenesis(genesis *protocol.Genesis) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(GENESIS_BUCKET))
+		return b.Put([]byte("genesis"), genesis.Encode())
+	})
 }

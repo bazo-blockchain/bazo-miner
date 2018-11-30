@@ -16,11 +16,8 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	rand := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-
 	var hashFundsSlice []*protocol.FundsTx
-	var hashAccSlice []*protocol.AccTx
+	var hashAccSlice []*protocol.ContractTx
 	var hashConfigSlice []*protocol.ConfigTx
 	var hashStakeSlice []*protocol.StakeTx
 
@@ -28,15 +25,14 @@ func TestReadWriteDeleteTx(t *testing.T) {
 
 	loopMax := testsize
 	for i := 0; i < loopMax; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accAHash, accBHash, &PrivKeyA, nil, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(i), accA.Address, accB.Address, &PrivKeyA, nil)
 		WriteOpenTx(tx)
 		hashFundsSlice = append(hashFundsSlice, tx)
 	}
 
 	loopMax = testsize
-	nullAddress := [64]byte{}
 	for i := 0; i < 1000; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, rand.Uint64()%100+1, nullAddress, &RootPrivKey, nil, nil)
+		tx, _, _ := protocol.ConstrContractTx(0, rand.Uint64()%100+1, &RootPrivKey, nil, nil)
 		WriteOpenTx(tx)
 		hashAccSlice = append(hashAccSlice, tx)
 	}
@@ -55,7 +51,7 @@ func TestReadWriteDeleteTx(t *testing.T) {
 		if math.Mod(float64(cnt), 2.00) == 1 {
 			isStaking = true
 		}
-		tx, _ := protocol.ConstrStakeTx(0, uint64(cnt), isStaking, accAHash, &PrivKeyA, &CommitmentKeyA.PublicKey)
+		tx, _ := protocol.ConstrStakeTx(0, uint64(cnt), isStaking, accA.Address, &PrivKeyA, &CommitmentKeyA.PublicKey)
 		hashStakeSlice = append(hashStakeSlice, tx)
 		WriteOpenTx(tx)
 	}

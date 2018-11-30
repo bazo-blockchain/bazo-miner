@@ -2,7 +2,6 @@ package miner
 
 import (
 	"github.com/bazo-blockchain/bazo-miner/crypto"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"reflect"
 	"testing"
@@ -11,7 +10,7 @@ import (
 func TestSlashingCondition(t *testing.T) {
 	cleanAndPrepare()
 
-	myAcc, _ := storage.GetAccount(protocol.SerializeHashContent(validatorAccAddress))
+	myAcc, _ := storage.ReadAccount(validatorAccAddress)
 	initBalance := myAcc.Balance
 
 	forkBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
@@ -45,7 +44,7 @@ func TestSlashingCondition(t *testing.T) {
 		t.Errorf("Block validation for b2 (%v) failed: %v\n", b2, err)
 	}
 
-	slashingDict2 := make(map[[32]byte]SlashingProof)
+	slashingDict2 := make(map[[64]byte]SlashingProof)
 	slashingDict2[b.Beneficiary] = SlashingProof{b2.Hash, b.Hash}
 
 	if !reflect.DeepEqual(slashingDict, slashingDict2) {
@@ -59,7 +58,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	//Check whether the right proof was included in b3
-	slashingDict3 := make(map[[32]byte]SlashingProof)
+	slashingDict3 := make(map[[64]byte]SlashingProof)
 	slashingDict3[b3.Beneficiary] = SlashingProof{b3.ConflictingBlockHash1, b3.ConflictingBlockHash2}
 
 	if !reflect.DeepEqual(slashingDict, slashingDict3) {

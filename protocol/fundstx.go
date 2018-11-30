@@ -19,14 +19,13 @@ type FundsTx struct {
 	Amount uint64
 	Fee    uint64
 	TxCnt  uint32
-	From   [32]byte
-	To     [32]byte
-	Sig1   [64]byte
-	Sig2   [64]byte
+	From   [64]byte
+	To     [64]byte
+	Sig    [64]byte
 	Data   []byte
 }
 
-func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [32]byte, sig1Key *ecdsa.PrivateKey, sig2Key *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
+func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header
@@ -39,23 +38,13 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 
 	txHash := tx.Hash()
 
-	r, s, err := ecdsa.Sign(rand.Reader, sig1Key, txHash[:])
+	r, s, err := ecdsa.Sign(rand.Reader, sigKey, txHash[:])
 	if err != nil {
 		return nil, err
 	}
 
-	copy(tx.Sig1[32-len(r.Bytes()):32], r.Bytes())
-	copy(tx.Sig1[64-len(s.Bytes()):], s.Bytes())
-
-	if sig2Key != nil {
-		r, s, err := ecdsa.Sign(rand.Reader, sig2Key, txHash[:])
-		if err != nil {
-			return nil, err
-		}
-
-		copy(tx.Sig2[32-len(r.Bytes()):32], r.Bytes())
-		copy(tx.Sig2[64-len(s.Bytes()):], s.Bytes())
-	}
+	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
+	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
 
 	return tx, nil
 }
@@ -71,8 +60,8 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 		Amount uint64
 		Fee    uint64
 		TxCnt  uint32
-		From   [32]byte
-		To     [32]byte
+		From   [64]byte
+		To     [64]byte
 		Data   []byte
 	}{
 		tx.Header,
@@ -92,15 +81,14 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 func (tx *FundsTx) Encode() (encodedTx []byte) {
 	// Encode
 	encodeData := FundsTx{
-		Header: tx.Header,
-		Amount: tx.Amount,
-		Fee:    tx.Fee,
-		TxCnt:  tx.TxCnt,
-		From:   tx.From,
-		To:     tx.To,
-		Sig1:   tx.Sig1,
-		Sig2:   tx.Sig2,
-		Data:   tx.Data,
+		tx.Header,
+		tx.Amount,
+		tx.Fee,
+		tx.TxCnt,
+		tx.From,
+		tx.To,
+		tx.Sig,
+		tx.Data,
 	}
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)
@@ -126,8 +114,7 @@ func (tx FundsTx) String() string {
 			"TxCnt: %v\n"+
 			"From: %x\n"+
 			"To: %x\n"+
-			"Sig1: %x\n"+
-			"Sig2: %x\n"+
+			"Sig: %x\n"+
 			"Data: %v\n",
 		tx.Header,
 		tx.Amount,
@@ -135,8 +122,7 @@ func (tx FundsTx) String() string {
 		tx.TxCnt,
 		tx.From[0:8],
 		tx.To[0:8],
-		tx.Sig1[0:8],
-		tx.Sig2[0:8],
+		tx.Sig[0:8],
 		tx.Data,
 	)
 }

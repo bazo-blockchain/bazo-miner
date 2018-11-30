@@ -17,10 +17,6 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerAccHash := protocol.SerializeHashContent(validatorAcc.Address)
-
 	var testSize uint32
 	testSize = 1000
 
@@ -39,7 +35,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, PrivKeyAccA, PrivKeyMultiSig, nil)
+		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -50,7 +46,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 			t.Errorf("Block rejected a valid transaction: %v\n", ftx)
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accBHash, accAHash, PrivKeyAccB, PrivKeyMultiSig, nil)
+		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accB.Address, accA.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -73,11 +69,11 @@ func TestFundsStateChangeRollback(t *testing.T) {
 	//collectTxFees is checked below in its own test (to additionally cover overflow scenario)
 	balBeforeRew := validatorAcc.Balance
 	reward := 5
-	collectBlockReward(uint64(reward), minerAccHash)
+	collectBlockReward(uint64(reward), validatorAcc.Address)
 	if validatorAcc.Balance != balBeforeRew+uint64(reward) {
 		t.Error("Block reward collection failed!")
 	}
-	collectBlockRewardRollback(uint64(reward), minerAccHash)
+	collectBlockRewardRollback(uint64(reward), validatorAcc.Address)
 	if validatorAcc.Balance != balBeforeRew {
 		t.Error("Block reward collection rollback failed!")
 	}
@@ -91,21 +87,19 @@ func TestAccStateChangeRollback(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	var accs []*protocol.AccTx
+	var accs []*protocol.ContractTx
 
-	//Store accs that are to be changed and rolled back in a accTx slice
-	nullAddress := [64]byte{}
+	//Store accs that are to be changed and rolled back in a contractTx slice
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	for i := 0; i < loopMax; i++ {
-		tx, _, _ := protocol.ConstrAccTx(0, randVar.Uint64()%1000, nullAddress, PrivKeyRoot, nil, nil)
+		tx, _, _ := protocol.ConstrContractTx(0, randVar.Uint64()%1000, PrivKeyRoot, nil, nil)
 		accs = append(accs, tx)
 	}
 
 	accStateChange(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
-		acc := storage.State[accHash]
+		acc := storage.State[acc.PubKey]
 		if acc == nil {
 			t.Errorf("Account State failed to update for the following account: %v\n", acc)
 		}
@@ -114,8 +108,7 @@ func TestAccStateChangeRollback(t *testing.T) {
 	accStateChangeRollback(accs)
 
 	for _, acc := range accs {
-		accHash := protocol.SerializeHashContent(acc.PubKey)
-		acc := storage.State[accHash]
+		acc := storage.State[acc.PubKey]
 		if acc != nil {
 			t.Errorf("Account State failed to rollback the following account: %v\n", acc)
 		}
@@ -157,26 +150,22 @@ func TestCollectTxFeesRollback(t *testing.T) {
 
 	var funds, funds2 []*protocol.FundsTx
 
-	accAHash := protocol.SerializeHashContent(accA.Address)
-	accBHash := protocol.SerializeHashContent(accB.Address)
-	minerHash := protocol.SerializeHashContent(validatorAcc.Address)
-
 	minerBal := validatorAcc.Balance
 	//Rollback everything
 	var fee uint64
 	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i < loopMax+1; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accAHash, accBHash, PrivKeyAccA, nil, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 
 		funds = append(funds, tx)
 		fee += tx.Fee
 	}
 
-	collectTxFees(nil, funds, nil, nil, minerHash)
+	collectTxFees(nil, funds, nil, nil, validatorAcc.Address)
 	if minerBal+fee != validatorAcc.Balance {
 		t.Errorf("%v + %v != %v\n", minerBal, fee, validatorAcc.Balance)
 	}
-	collectTxFeesRollback(nil, funds, nil, nil, minerHash)
+	collectTxFeesRollback(nil, funds, nil, nil, validatorAcc.Address)
 	if minerBal != validatorAcc.Balance {
 		t.Errorf("Tx fees rollback failed: %v != %v\n", minerBal, validatorAcc.Balance)
 	}
@@ -186,7 +175,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal = validatorAcc.Balance
 	//Miner gets fees, the miner account balance will overflow at some point
 	for i := 2; i < 100; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accAHash, accBHash, PrivKeyAccA, nil, nil)
+		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		funds2 = append(funds2, tx)
 		fee2 += tx.Fee
 	}
@@ -195,7 +184,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	accBBal := accB.Balance
 	//Should throw an error and result in a rollback, because of acc balance overflow
 	tmpBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
-	tmpBlock.Beneficiary = minerHash
+	tmpBlock.Beneficiary = validatorAcc.Address
 	data := blockData{nil, funds2, nil, nil, tmpBlock}
 	if err := validateState(data); err == nil ||
 		minerBal != validatorAcc.Balance ||

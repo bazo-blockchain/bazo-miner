@@ -36,8 +36,8 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 	switch txKind {
 	case FUNDSTX_REQ:
 		packet = BuildPacket(FUNDSTX_RES, tx.Encode())
-	case ACCTX_REQ:
-		packet = BuildPacket(ACCTX_RES, tx.Encode())
+	case CONTRACTTX_REQ:
+		packet = BuildPacket(CONTRACTTX_RES, tx.Encode())
 	case CONFIGTX_REQ:
 		packet = BuildPacket(CONFIGTX_RES, tx.Encode())
 	case STAKETX_REQ:
@@ -65,6 +65,18 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
+func genesisRes(p *peer, payload []byte) {
+	var packet []byte
+	genesis, err := storage.ReadGenesis()
+	if err == nil && genesis != nil {
+		packet = BuildPacket(GENESIS_RES, genesis.Encode())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
@@ -103,10 +115,10 @@ func blockHeaderRes(p *peer, payload []byte) {
 //Responds to an account request from another miner
 func accRes(p *peer, payload []byte) {
 	var packet []byte
-	var hash [32]byte
-	copy(hash[:], payload[0:32])
+	var pubKey [64]byte
+	copy(pubKey[:], payload[0:64])
 
-	acc, _ := storage.GetAccount(hash)
+	acc, _ := storage.ReadAccount(pubKey)
 	packet = BuildPacket(ACC_RES, acc.Encode())
 
 	sendData(p, packet)
@@ -114,10 +126,10 @@ func accRes(p *peer, payload []byte) {
 
 func rootAccRes(p *peer, payload []byte) {
 	var packet []byte
-	var hash [32]byte
-	copy(hash[:], payload[0:32])
+	var pubKey [64]byte
+	copy(pubKey[:], payload[0:64])
 
-	acc, _ := storage.GetRootAccount(hash)
+	acc, _ := storage.ReadRootAccount(pubKey)
 	packet = BuildPacket(ROOTACC_RES, acc.Encode())
 
 	sendData(p, packet)

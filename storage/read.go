@@ -1,16 +1,17 @@
 package storage
 
 import (
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 )
 
 //Always return nil if requested hash is not in the storage. This return value is then checked against by the caller
 func ReadOpenBlock(hash [32]byte) (block *protocol.Block) {
-
 	var encodedBlock []byte
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("openblocks"))
+		b := tx.Bucket([]byte(OPENBLOCKS_BUCKET))
 		encodedBlock = b.Get(hash[:])
 		return nil
 	})
@@ -23,9 +24,8 @@ func ReadOpenBlock(hash [32]byte) (block *protocol.Block) {
 }
 
 func ReadClosedBlock(hash [32]byte) (block *protocol.Block) {
-
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedblocks"))
+		b := tx.Bucket([]byte(CLOSEDBLOCKS_BUCKET))
 		encodedBlock := b.Get(hash[:])
 		block = block.Decode(encodedBlock)
 		return nil
@@ -39,9 +39,8 @@ func ReadClosedBlock(hash [32]byte) (block *protocol.Block) {
 }
 
 func ReadLastClosedBlock() (block *protocol.Block) {
-
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("lastclosedblock"))
+		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))
 		cb := b.Cursor()
 		_, encodedBlock := cb.First()
 		block = block.Decode(encodedBlock)
@@ -76,13 +75,11 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 }
 
 func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
-
 	return txMemPool[hash]
 }
 
 //Needed for the miner to prepare a new block
 func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
-
 	for key := range txMemPool {
 		allOpenTxs = append(allOpenTxs, txMemPool[key])
 	}
@@ -91,46 +88,61 @@ func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
 
 //Personally I like it better to test (which tx type it is) here, and get returned the interface. Simplifies the code
 func ReadClosedTx(hash [32]byte) (transaction protocol.Transaction) {
-
-	var encodedTx []byte
-	var fundstx *protocol.FundsTx
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedfunds"))
-		encodedTx = b.Get(hash[:])
-		return nil
-	})
-	if encodedTx != nil {
-		return fundstx.Decode(encodedTx)
+	if encodedTx := readClosedTx(CLOSEDFUNDS_BUCKET, hash); encodedTx != nil {
+		var tx *protocol.FundsTx
+		return tx.Decode(encodedTx)
 	}
 
-	var acctx *protocol.AccTx
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedaccs"))
-		encodedTx = b.Get(hash[:])
-		return nil
-	})
-	if encodedTx != nil {
-		return acctx.Decode(encodedTx)
+	if encodedTx := readClosedTx(CLOSEDACCS_BUCKET, hash); encodedTx != nil {
+		var tx *protocol.ContractTx
+		return tx.Decode(encodedTx)
 	}
 
-	var configtx *protocol.ConfigTx
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedconfigs"))
-		encodedTx = b.Get(hash[:])
-		return nil
-	})
-	if encodedTx != nil {
-		return configtx.Decode(encodedTx)
+	if encodedTx := readClosedTx(CLOSEDCONFIGS_BUCKET, hash); encodedTx != nil {
+		var tx *protocol.ConfigTx
+		return tx.Decode(encodedTx)
 	}
 
-	var staketx *protocol.StakeTx
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("closedstakes"))
-		encodedTx = b.Get(hash[:])
-		return nil
-	})
-	if encodedTx != nil {
-		return staketx.Decode(encodedTx)
+	if encodedTx := readClosedTx(CLOSEDSTAKES_BUCKET, hash); encodedTx != nil {
+		var tx *protocol.StakeTx
+		return tx.Decode(encodedTx)
 	}
+
 	return nil
+}
+
+func readClosedTx(bucketName string, hash [32]byte) (encodedTx []byte) {
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketName))
+		encodedTx = b.Get(hash[:])
+		return nil
+	})
+	return encodedTx
+}
+
+func ReadAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
+	if acc = State[pubKey]; acc != nil {
+		return acc, nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("Acc (%x) not in the state.", pubKey[0:8]))
+	}
+}
+
+func ReadRootAccount(pubKey [64]byte) (acc *protocol.Account, err error) {
+	if IsRootKey(pubKey) {
+		acc, err = ReadAccount(pubKey)
+		return acc, err
+	}
+
+	return nil, err
+}
+
+func ReadGenesis() (genesis *protocol.Genesis, err error) {
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(GENESIS_BUCKET))
+		encoded := b.Get([]byte("genesis"))
+		genesis = genesis.Decode(encoded)
+		return nil
+	})
+	return genesis, err
 }

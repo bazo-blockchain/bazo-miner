@@ -21,8 +21,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		//REQUESTS
 	case FUNDSTX_REQ:
 		txRes(p, payload, FUNDSTX_REQ)
-	case ACCTX_REQ:
-		txRes(p, payload, ACCTX_REQ)
+	case CONTRACTTX_REQ:
+		txRes(p, payload, CONTRACTTX_REQ)
 	case CONFIGTX_REQ:
 		txRes(p, payload, CONFIGTX_REQ)
 	case STAKETX_REQ:
@@ -43,6 +43,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		neighborRes(p)
 	case INTERMEDIATE_NODES_REQ:
 		intermediateNodesRes(p, payload)
+	case GENESIS_REQ:
+		genesisRes(p, payload)
 
 		//RESPONSES
 	case NEIGHBOR_RES:
@@ -51,11 +53,13 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardBlockReqToMiner(p, payload)
 	case FUNDSTX_RES:
 		forwardTxReqToMiner(p, payload, FUNDSTX_RES)
-	case ACCTX_RES:
-		forwardTxReqToMiner(p, payload, ACCTX_RES)
+	case CONTRACTTX_RES:
+		forwardTxReqToMiner(p, payload, CONTRACTTX_RES)
 	case CONFIGTX_RES:
 		forwardTxReqToMiner(p, payload, CONFIGTX_RES)
 	case STAKETX_RES:
 		forwardTxReqToMiner(p, payload, STAKETX_RES)
+	case GENESIS_RES:
+		forwardGenesisReqToMiner(p, payload)
 	}
 }

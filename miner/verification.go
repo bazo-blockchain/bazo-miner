@@ -2,12 +2,10 @@ package miner
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"math/big"
-	"reflect"
-
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"math/big"
 )
 
 //We can't use polymorphism, e.g. we can't use tx.verify() because the Transaction interface doesn't declare
@@ -20,8 +18,8 @@ func verify(tx protocol.Transaction) bool {
 	switch tx.(type) {
 	case *protocol.FundsTx:
 		verified = verifyFundsTx(tx.(*protocol.FundsTx))
-	case *protocol.AccTx:
-		verified = verifyAccTx(tx.(*protocol.AccTx))
+	case *protocol.ContractTx:
+		verified = verifyContractTx(tx.(*protocol.ContractTx))
 	case *protocol.ConfigTx:
 		verified = verifyConfigTx(tx.(*protocol.ConfigTx))
 	case *protocol.StakeTx:
@@ -36,7 +34,6 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return false
 	}
 
-	pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
 
 	//fundsTx only makes sense if amount > 0
@@ -45,75 +42,39 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return false
 	}
 
-	//Check if accounts are present in the actual state
-	accFrom := storage.State[tx.From]
-	accTo := storage.State[tx.To]
+	accFromHash := protocol.SerializeHashContent(tx.From)
+	accToHash := protocol.SerializeHashContent(tx.To)
 
-	//Accounts non existent
-	if accFrom == nil || accTo == nil {
-		logger.Printf("Account non existent. From: %v\nTo: %v\n", accFrom, accTo)
-		return false
-	}
-
-	accFromHash := protocol.SerializeHashContent(accFrom.Address)
-	accToHash := protocol.SerializeHashContent(accTo.Address)
-
-	pubKey1Sig1.SetBytes(accFrom.Address[:32])
-	pubKey2Sig1.SetBytes(accFrom.Address[32:])
-
-	r.SetBytes(tx.Sig1[:32])
-	s.SetBytes(tx.Sig1[32:])
-
-	tx.From = accFromHash
-	tx.To = accToHash
+	r.SetBytes(tx.Sig[:32])
+	s.SetBytes(tx.Sig[32:])
 
 	txHash := tx.Hash()
 
-	var validSig1, validSig2 bool
-
-	pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
-	if ecdsa.Verify(&pubKey, txHash[:], r, s) && !reflect.DeepEqual(accFrom, accTo) {
-		tx.From = accFromHash
-		tx.To = accToHash
-		validSig1 = true
+	pubKey := crypto.GetPubKeyFromAddress(tx.From)
+	if ecdsa.Verify(pubKey, txHash[:], r, s) && tx.From != tx.To {
+		return true
 	} else {
-		logger.Printf("Sig1 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
+		logger.Printf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
 		return false
 	}
-
-	r.SetBytes(tx.Sig2[:32])
-	s.SetBytes(tx.Sig2[32:])
-
-	if ecdsa.Verify(multisigPubKey, txHash[:], r, s) {
-		validSig2 = true
-	} else {
-		logger.Printf("Sig2 invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
-		return false
-	}
-
-	return validSig1 && validSig2
 }
 
-func verifyAccTx(tx *protocol.AccTx) bool {
+func verifyContractTx(tx *protocol.ContractTx) bool {
 	if tx == nil {
 		return false
 	}
 
 	r, s := new(big.Int), new(big.Int)
-	pub1, pub2 := new(big.Int), new(big.Int)
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
 	for _, rootAcc := range storage.RootKeys {
-		pub1.SetBytes(rootAcc.Address[:32])
-		pub2.SetBytes(rootAcc.Address[32:])
-
-		pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+		pubKey := crypto.GetPubKeyFromAddress(rootAcc.Address)
 		txHash := tx.Hash()
 
 		//Only the hash of the pubkey is hashed and verified here
-		if ecdsa.Verify(&pubKey, txHash[:], r, s) == true {
+		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
 			return true
 		}
 	}
@@ -128,18 +89,14 @@ func verifyConfigTx(tx *protocol.ConfigTx) bool {
 
 	//account creation can only be done with a valid priv/pub key which is hard-coded
 	r, s := new(big.Int), new(big.Int)
-	pub1, pub2 := new(big.Int), new(big.Int)
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
 	for _, rootAcc := range storage.RootKeys {
-		pub1.SetBytes(rootAcc.Address[:32])
-		pub2.SetBytes(rootAcc.Address[32:])
-
-		pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+		pubKey := crypto.GetPubKeyFromAddress(rootAcc.Address)
 		txHash := tx.Hash()
-		if ecdsa.Verify(&pubKey, txHash[:], r, s) == true {
+		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
 			return true
 		}
 	}
@@ -154,32 +111,26 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 	}
 
 	//Check if account is present in the actual state
-	accFrom := storage.State[tx.Account]
-
-	//Account non existent
-	if accFrom == nil {
-		logger.Println("Account does not exist.")
-		return false
+	acc := storage.State[tx.Account]
+	if acc == nil {
+		// TODO: Requires a Mutex?
+		newAcc := protocol.NewAccount(tx.Account, [64]byte{}, 0, false, [256]byte{}, nil, nil)
+		acc = &newAcc
+		storage.WriteAccount(acc)
 	}
 
-	accFromHash := protocol.SerializeHashContent(accFrom.Address)
-
-	pub1, pub2 := new(big.Int), new(big.Int)
 	r, s := new(big.Int), new(big.Int)
-
-	pub1.SetBytes(accFrom.Address[:32])
-	pub2.SetBytes(accFrom.Address[32:])
 
 	r.SetBytes(tx.Sig[:32])
 	s.SetBytes(tx.Sig[32:])
 
-	tx.Account = accFromHash
+	tx.Account = acc.Address
 
 	txHash := tx.Hash()
 
-	pubKey := ecdsa.PublicKey{elliptic.P256(), pub1, pub2}
+	pubKey := crypto.GetPubKeyFromAddress(acc.Address)
 
-	return ecdsa.Verify(&pubKey, txHash[:], r, s)
+	return ecdsa.Verify(pubKey, txHash[:], r, s)
 }
 
 //Returns true if id is in the list of possible ids and rational value for payload parameter.

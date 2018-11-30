@@ -2,10 +2,10 @@ package vm
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/big"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -18,13 +18,13 @@ type Context interface {
 	GetContractVariable(index int) ([]byte, error)
 	SetContractVariable(index int, value []byte) error
 	GetAddress() [64]byte
-	GetIssuer() [32]byte
+	GetIssuer() [64]byte
 	GetBalance() uint64
-	GetSender() [32]byte
+	GetSender() [64]byte
 	GetAmount() uint64
 	GetTransactionData() []byte
 	GetFee() uint64
-	GetSig1() [64]byte
+	GetSig() [64]byte
 }
 
 type VM struct {
@@ -95,9 +95,9 @@ func (vm *VM) trace() {
 			}
 
 		case ADDR:
-			if len(vm.code)-vm.pc > 31 {
-				args = vm.code[vm.pc+1+counter : vm.pc+33+counter]
-				counter += 32
+			if len(vm.code)-vm.pc > 63 {
+				args = vm.code[vm.pc+1+counter : vm.pc+65+counter]
+				counter += 64
 				formattedArgs += fmt.Sprintf("%v (bazo address) ", args[:])
 			}
 
@@ -521,7 +521,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CALLEXT:
-			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 32) // Addresses are 32 bytes (var name: transactionAddress)
+			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 64) // Addresses are 64 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(opCode.Name, 4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
 			argsToLoad, errArg3 := vm.fetch(opCode.Name)                 // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
 
@@ -1048,14 +1048,14 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case CHECKSIG:
-			publicKeySig, errArg1 := vm.PopBytes(opCode)
+			signature, errArg1 := vm.PopBytes(opCode)
 			hash, errArg2 := vm.PopBytes(opCode)
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
-			if len(publicKeySig) != 64 {
+			if len(signature) != 64 {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": Not a valid address"))
 				return false
 			}
@@ -1065,19 +1065,17 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			pubKey1Sig1, pubKey2Sig1 := new(big.Int), new(big.Int)
 			r, s := new(big.Int), new(big.Int)
 
-			pubKey1Sig1.SetBytes(publicKeySig[:32])
-			pubKey2Sig1.SetBytes(publicKeySig[32:])
+			sig := vm.context.GetSig()
+			r.SetBytes(sig[:32])
+			s.SetBytes(sig[32:])
 
-			sig1 := vm.context.GetSig1()
-			r.SetBytes(sig1[:32])
-			s.SetBytes(sig1[32:])
+			var pubKeySig [64]byte
+			copy(pubKeySig[:], signature[:])
+			pubKey := crypto.GetPubKeyFromAddress(pubKeySig)
 
-			pubKey := ecdsa.PublicKey{elliptic.P256(), pubKey1Sig1, pubKey2Sig1}
-
-			result := ecdsa.Verify(&pubKey, hash, r, s)
+			result := ecdsa.Verify(pubKey, hash, r, s)
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
 		case ERRHALT:

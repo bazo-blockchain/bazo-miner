@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/willf/bloom"
 )
 
 const (
-	HASH_LEN                = 32
-	HEIGHT_LEN				= 4
-	MIN_BLOCKSIZE           = 254 + crypto.COMM_PROOF_LENGTH
-	MIN_BLOCKHEADER_SIZE    = 104
+	TXHASH_LEN              = 32
+	HEIGHT_LEN              = 4
+	MIN_BLOCKHEADER_SIZE    = 136
+	MIN_BLOCKSIZE           = 184 + MIN_BLOCKHEADER_SIZE + crypto.COMM_PROOF_LENGTH
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -25,34 +26,34 @@ type Block struct {
 	NrElementsBF uint16
 	BloomFilter  *bloom.BloomFilter
 	Height       uint32
-	Beneficiary  [32]byte
+	Beneficiary  [64]byte
 
 	//Body
 	Nonce                 [8]byte
 	Timestamp             int64
 	MerkleRoot            [32]byte
-	NrAccTx               uint16
+	NrContractTx          uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
-	SlashedAddress        [32]byte
+	SlashedAddress        [64]byte
 	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 	ConflictingBlockHash1 [32]byte
 	ConflictingBlockHash2 [32]byte
-	StateCopy             map[[32]byte]*Account //won't be serialized, just keeping track of local state changes
+	StateCopy             map[[64]byte]*Account //won't be serialized, just keeping track of local state changes
 
-	AccTxData    [][32]byte
-	FundsTxData  [][32]byte
-	ConfigTxData [][32]byte
-	StakeTxData  [][32]byte
+	ContractTxData  [][32]byte
+	FundsTxData  	[][32]byte
+	ConfigTxData 	[][32]byte
+	StakeTxData  	[][32]byte
 }
 
 func NewBlock(prevHash [32]byte, height uint32) *Block {
 	newBlock := Block{
-		PrevHash:   prevHash,
-		Height:     height,
+		PrevHash: prevHash,
+		Height:   height,
 	}
 
-	newBlock.StateCopy = make(map[[32]byte]*Account)
+	newBlock.StateCopy = make(map[[64]byte]*Account)
 
 	return &newBlock
 }
@@ -66,9 +67,9 @@ func (block *Block) HashBlock() [32]byte {
 		prevHash              [32]byte
 		timestamp             int64
 		merkleRoot            [32]byte
-		beneficiary           [32]byte
+		beneficiary           [64]byte
 		commitmentProof       [crypto.COMM_PROOF_LENGTH]byte
-		slashedAddress        [32]byte
+		slashedAddress        [64]byte
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
 	}{
@@ -84,7 +85,7 @@ func (block *Block) HashBlock() [32]byte {
 	return SerializeHashContent(blockHash)
 }
 
-func (block *Block) InitBloomFilter(txPubKeys [][32]byte) {
+func (block *Block) InitBloomFilter(txPubKeys [][64]byte) {
 	block.NrElementsBF = uint16(len(txPubKeys))
 
 	m, k := calculateBloomFilterParams(float64(len(txPubKeys)), BLOOM_FILTER_ERROR_RATE)
@@ -99,10 +100,10 @@ func (block *Block) InitBloomFilter(txPubKeys [][32]byte) {
 func (block *Block) GetSize() uint64 {
 	size :=
 		MIN_BLOCKSIZE +
-			int(block.NrAccTx)*HASH_LEN +
-			int(block.NrFundsTx)*HASH_LEN +
-			int(block.NrConfigTx)*HASH_LEN +
-			int(block.NrStakeTx)*HASH_LEN
+			int(block.NrContractTx)*TXHASH_LEN +
+			int(block.NrFundsTx)*TXHASH_LEN +
+			int(block.NrConfigTx)*TXHASH_LEN +
+			int(block.NrStakeTx)*TXHASH_LEN
 
 	if block.BloomFilter != nil {
 		encodedBF, _ := block.BloomFilter.GobEncode()
@@ -125,7 +126,7 @@ func (block *Block) Encode() []byte {
 		Timestamp:             block.Timestamp,
 		MerkleRoot:            block.MerkleRoot,
 		Beneficiary:           block.Beneficiary,
-		NrAccTx:               block.NrAccTx,
+		NrContractTx:               block.NrContractTx,
 		NrFundsTx:             block.NrFundsTx,
 		NrConfigTx:            block.NrConfigTx,
 		NrStakeTx:             block.NrStakeTx,
@@ -133,11 +134,11 @@ func (block *Block) Encode() []byte {
 		BloomFilter:           block.BloomFilter,
 		SlashedAddress:        block.SlashedAddress,
 		Height:                block.Height,
-		CommitmentProof:	   block.CommitmentProof,
+		CommitmentProof:       block.CommitmentProof,
 		ConflictingBlockHash1: block.ConflictingBlockHash1,
 		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
-		AccTxData:    block.AccTxData,
+		ContractTxData:    block.ContractTxData,
 		FundsTxData:  block.FundsTxData,
 		ConfigTxData: block.ConfigTxData,
 		StakeTxData:  block.StakeTxData,
@@ -189,7 +190,7 @@ func (block Block) String() string {
 		"MerkleRoot: %x\n"+
 		"Beneficiary: %x\n"+
 		"Amount of fundsTx: %v\n"+
-		"Amount of accTx: %v\n"+
+		"Amount of contractTx: %v\n"+
 		"Amount of configTx: %v\n"+
 		"Amount of stakeTx: %v\n"+
 		"Height: %d\n"+
@@ -204,7 +205,7 @@ func (block Block) String() string {
 		block.MerkleRoot[0:8],
 		block.Beneficiary[0:8],
 		block.NrFundsTx,
-		block.NrAccTx,
+		block.NrContractTx,
 		block.NrConfigTx,
 		block.NrStakeTx,
 		block.Height,

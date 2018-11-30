@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -53,7 +54,7 @@ func Init(ipport string) {
 func bootstrap() {
 	//Connect to bootstrap server. To make it more fault-tolerant, we can increase the number of bootstrap servers in
 	//the future. initiateNewMinerConn(...) starts with MINER_PING to perform the initial handshake message
-	p, err := initiateNewMinerConnection(storage.Bootstrap_Server)
+	p, err := initiateNewMinerConnection(storage.BootstrapServer)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v", err)
 	}

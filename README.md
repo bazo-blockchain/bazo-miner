@@ -28,14 +28,9 @@ bazo-miner start [command options] [arguments...]
 ```
 
 Options
-* `--database`: (default store.db) Specify where to load database of the disk-based key/value store from. The database is created if it does not exist yet.
 * `--address`: (default: localhost:8000) Specify starting address and port, in format `IP:PORT`
 * `--bootstrap`: (default: localhost:8000) Specify the address and port of the boostrapping node. Note that when this option is not specified, the miner connects to itself.
-* `--wallet`: (default: wallet.txt) Load the public key from this file. A new private key is generated if it does not exist yet. Note that only the public key is required.
-* `--multisig`: (optional) The file to load the multisig's private key from.
-* `--commitment`: The file to load the validator's commitment key from (will be created if it does not exist)
-* `--rootkey`: (default: key.txt) The file to load root's public key from this file. A new public private key is generated if it does not exist yet. Note that only the public key is required.
-* `--rootcommitment`: The file to load root's commitment key from. A new commitment key is generated if it does not exist yet.
+* `--dataDir`: (default: bazodata) Data directory for the database (store.db) and keystore (wallet.key, commitment.key). Database and keys are generated if they do not exist yet.
 * `--confirm`: In order to review the miner startup options, the user must press Enter before the miner starts.
 
 Example
@@ -46,62 +41,80 @@ Let's assume we want to start two miners, miner `A` and miner `B`, whereas miner
 Further assume that we start from scratch and no key files have been created yet.
 
 Miner A (Root)
-* Database: `StoreA.db`
+* Data Directory: `NodeA`, contains `wallet.key`, `commitment.key` and `store.db`
 * Address: `localhost:8000`
 * Bootstrap Address: `localhost:8000`
-* Wallet: `WalletA.txt`
-* Commitment: `CommitmentA.txt`
-* Root Wallet: `WalletA.txt`
-* Root Commitment: `CommitmentA.txt`
 
 
 Miner B
-* Database: `StoreB.db`
+* Data Directory: `NodeB`, contains `wallet.key`, `commitment.key` and `store.db`
 * Address: `localhost:8001`
 * Bootstrap Address: `localhost:8000`
-* Wallet: `WalletB.txt`
-* Commitment: `CommitmentB.txt`
 
 Commands
 
 ```bash
-./bazo-miner start --database StoreA.db --address localhost:8000 --bootstrap localhost:8000 --wallet WalletA.txt --commitment CommitmentA.txt --multisig WalletA.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+./bazo-miner start --dataDir NodeA --address localhost:8000 --bootstrap localhost:8000
 ```
 
 We start miner A at address and port `localhost:8000` and connect to itself by setting the bootstrap address to the same address.
 Note that we could have omitted these two options since they are passed by default with these values.
 Wallet and commitment keys are automatically created. Using this command, we define miner A as the root.
 
-Starting miner B requires more work since new accounts have to be registered by a root account.
-In our case, we can use miner's A `WalletA.txt` (e.g. copy the file to the Bazo client directory) to create and add a new account to the network.
-Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we create a new account:
+In a second terminal, run
 
 ```bash
-./bazo-client account create --rootwallet WalletA.txt --wallet WalletB.txt 
+./bazo-miner start --dataDir NodeB --address localhost:8001 --bootstrap localhost:8000
 ```
 
+Notice how miner B ist started at address and port `localhost:8001` but bootstraps to miner A.
+Running this command will give you an error message, i.e.,
+
+```bash
+Acc (...) not in the state.
+```
+
+Starting miner B requires more work since every miner must have sufficient funds and be part of the set of validators.
 The minimum amount of coins required for staking is defined in the configuration of Bazo.
-Thus, miner B first needs Bazo coins to start mining and we must first send coins to miner B's account.
+
+Our current Bazo miner directory should look like this:
+
+```
+bazo-miner (root folder)
+-- NodeA
+---- wallet.key
+---- commitment.key
+---- store.db
+-- NodeB
+---- wallet.key
+---- commitment.key
+---- store.db
+-- bazo-miner (executable)
+``` 
+
+In our case, we can use the wallet of miner A wallet to move funds to miner B. 
+* Copy `wallet.key` from the directory `NodeA` to the Bazo client directory and rename the file to `WalletA.key`.
+* Copy `wallet.key` and `commitment.key` from the directory `NodeB` to the Bazo client directory and rename the file to `WalletB.key` and `CommitmentB.key` respectively.
+
+Using the [Bazo client](https://github.com/bazo-blockchain/bazo-client), we transfer 2000 coins from A to B:
 
 ```bash
-./bazo-client funds --from WalletA.txt --to WalletB.txt --txcount 0 --amount 2000 --multisig WalletA.txt
+./bazo-client funds --from WalletA.key --to WalletB.key --txcount 0 --amount 2000 
 ```
 
-Then, miner B has to join the pool of validators (enable staking):
-```bash
-./bazo-client staking enable --wallet WalletB.txt --commitment CommitmentB.txt
-```
-
-Start miner B, using the generated `WalletB.txt` and `CommitmentB.txt` (e.g. copy the files to the Bazo miner directory):
+Check the terminal of miner B. The error message should change to (may need some time until the FundsTx is validated)
 
 ```bash
-./bazo-miner start --database StoreB.db --address localhost:8001 --bootstrap localhost:8000 --wallet WalletB.txt --commitment CommitmentB.txt --rootwallet WalletA.txt --rootcommitment CommitmentA.txt
+Validator (...) is not part of the validator set.
 ```
 
-Note that both files specified for `--rootwallet` and `--rootcommitment` only require to contain the wallet and commitemt public key respectively.
+Now, miner B has to join the pool of validators (enable staking):
 
-We start miner B at address and port `localhost:8001` and connect to miner A (which is the boostrap node).
-Wallet and commitment keys are automatically created.
+```bash
+./bazo-client staking enable --wallet WalletB.key --commitment CommitmentB.key
+```
+
+Again, check miner B's terminal. After some time, miner B should validate and create blocks automatically.
 
 ### Generate a wallet
 

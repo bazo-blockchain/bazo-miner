@@ -96,15 +96,13 @@ func addTestingAccounts() {
 
 	copy(accA.Address[0:32], PrivKeyA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyA.PublicKey.Y.Bytes())
-	accAHash := protocol.SerializeHashContent(accA.Address)
 
 	//This one is just for testing purposes
 	copy(accB.Address[0:32], PrivKeyB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyB.PublicKey.Y.Bytes())
-	accBHash := protocol.SerializeHashContent(accB.Address)
 
-	State[accAHash] = accA
-	State[accBHash] = accB
+	State[accA.Address] = accA
+	State[accB.Address] = accB
 }
 
 func addRootAccounts() {
@@ -127,11 +125,9 @@ func addRootAccounts() {
 	copy(pubKey[32-len(pub1.Bytes()):32], pub1.Bytes())
 	copy(pubKey[64-len(pub2.Bytes()):], pub2.Bytes())
 
-	rootHash := protocol.SerializeHashContent(pubKey)
-
 	rootAcc = new(protocol.Account)
 	rootAcc.Address = pubKey
 
-	State[rootHash] = rootAcc
-	RootKeys[rootHash] = rootAcc
+	State[rootAcc.Address] = rootAcc
+	RootKeys[rootAcc.Address] = rootAcc
 }

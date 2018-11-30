@@ -49,25 +49,19 @@ const (
 	CommPrivRoot = "jKphuoBsaw1wDdzrvB6PJF65JE5UFjeoIgswF+jD46YPyV1bq65RooN7xcXr5cHaujl76Vk3FkuBbbP2bBl+3WCWwC/oRboBlRex/IvKd1tWkQXDvmlkrzeeL3qhggSDE6AcpnN1VbPBZpFU7FaA1yQmqSsYKaK20jaSPvPlFRAllP1adSd+m3ZrJY5rPWzPkPDmeyLRhbTPMp2ke3gAVXn2JdX6hYwYBeZJv2ZnDM/ZQfmWezHJpjsaichnbB8mUiHOOqBnGXaHKKomgmveZ+UjLD7QN9x12NfRyhFM7Aih8iAgbK06CNzBMPvj4J3MGrJrZ1sjqpOw7ljLiGccGQ=="
 	CommPrimRoot1 = "/dCNZfqFkgE3360DnH+wE9eR1KL0xdjC3XY+0ge2rkg3XxJc2hZsv0MO2JiGuqQBsAfjEtJCmqayJaTemPMHBJABrhJnfLaDL2fHLRzwGzGYvEd2LVTGqOOW5+0qfimEV5dwnCVE7CcZ/uXwH0R2baQzWN2S29DxEq706Bhtpsc="
 	CommPrimRoot2 = "18UX/SiRcgUsjXlFsurz9Vjuh05vpREyn5wlNIHLjqmm5Rg/A37/gKiVls7o6CArM344Vhc6e5KpTVcM9FY496Xr/CNBA4ujl71hr93D6oCo50fLXdABoGFBjDP9d8eguK/Bi4L9q1MptTf2UM5JV/IkntVy1X4ff50uh1J5o3U="
-
-
-	//Multisig account for testing
-	MultiSigPub1 = "d5a0c62eeaf699eeba121f92e08becd38577f57b83eba981dc057e92fde1ad22"
-	MultiSigPub2 = "a480e4ee6ff8b4edbf9470631ec27d3b1eb27f210d5a994a7cbcffa3bfce958e"
-	MultiSigPriv = "b8d1fa3cc7476eafca970ea222676647da1817d1d9dc602e9446290454ffe1a4"
 )
 
 //Globally accessible values for all other tests, (root)account-related
 var (
-	accA, accB, validatorAcc, multiSigAcc, rootAcc         	*protocol.Account
-	PrivKeyAccA, PrivKeyAccB, PrivKeyMultiSig, PrivKeyRoot 	*ecdsa.PrivateKey
+	accA, accB, validatorAcc, rootAcc         	*protocol.Account
+	PrivKeyAccA, PrivKeyAccB, PrivKeyRoot 	*ecdsa.PrivateKey
 	CommPrivKeyAccA, CommPrivKeyAccB, CommPrivKeyRoot	   	*rsa.PrivateKey
-	genesisBlock *protocol.Block
+	initialBlock *protocol.Block
 )
 
 //Create some accounts that are used by the tests
 func addTestingAccounts() {
-	accA, accB, validatorAcc, multiSigAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account), new(protocol.Account)
+	accA, accB, validatorAcc = new(protocol.Account), new(protocol.Account), new(protocol.Account)
 
 	pubAccA1, _ := new(big.Int).SetString(PubA1, 16)
 	pubAccA2, _ := new(big.Int).SetString(PubA2, 16)
@@ -87,7 +81,6 @@ func addTestingAccounts() {
 	copy(accA.Address[0:32], PrivKeyAccA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyAccA.PublicKey.Y.Bytes())
 	copy(accA.CommitmentKey[:], CommPrivKeyAccA.PublicKey.N.Bytes())
-	hashAccA := protocol.SerializeHashContent(accA.Address)
 
 	pubAccB1, _ := new(big.Int).SetString(PubB1, 16)
 	pubAccB2, _ := new(big.Int).SetString(PubB2, 16)
@@ -107,27 +100,11 @@ func addTestingAccounts() {
 	copy(accB.Address[0:32], PrivKeyAccB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyAccB.PublicKey.Y.Bytes())
 	copy(accB.CommitmentKey[:], CommPrivKeyAccB.PublicKey.N.Bytes())
-	hashAccB := protocol.SerializeHashContent(accB.Address)
-
-	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
-	pubKeyMultiSig, _ := crypto.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
-	PrivKeyMultiSig = &ecdsa.PrivateKey{
-		*pubKeyMultiSig,
-		privMultiSig,
-	}
-
-	copy(multiSigAcc.Address[0:32], PrivKeyMultiSig.PublicKey.X.Bytes())
-	copy(multiSigAcc.Address[32:64], PrivKeyMultiSig.PublicKey.Y.Bytes())
-	hashMultiSig := protocol.SerializeHashContent(multiSigAcc.Address)
-
-	//Set the global variable in blockchain.go
-	multisigPubKey = pubKeyMultiSig
 
 	privKeyValidator, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	copy(validatorAcc.Address[:32], privKeyValidator.X.Bytes())
 	copy(validatorAcc.Address[32:64], privKeyValidator.Y.Bytes())
-	hashValidator := protocol.SerializeHashContent(validatorAcc.Address)
 
 	//Create and store an initial commitment key for the validator account.
 	commPrivKeyValidator, _ := rsa.GenerateMultiPrimeKey(rand.Reader, crypto.COMM_NOF_PRIMES, crypto.COMM_KEY_BITS)
@@ -140,10 +117,9 @@ func addTestingAccounts() {
 	validatorAccAddress = validatorAcc.Address
 	commPrivKey = commPrivKeyValidator
 
-	storage.State[hashAccA] = accA
-	storage.State[hashAccB] = accB
-	storage.State[hashMultiSig] = multiSigAcc
-	storage.State[hashValidator] = validatorAcc
+	storage.State[accA.Address] = accA
+	storage.State[accB.Address] = accB
+	storage.State[validatorAcc.Address] = validatorAcc
 }
 
 //Create some root accounts that are used by the tests
@@ -165,7 +141,6 @@ func addRootAccounts() {
 
 	copy(rootAcc.Address[:32], PrivKeyRoot.X.Bytes())
 	copy(rootAcc.Address[32:64], PrivKeyRoot.Y.Bytes())
-	hashRoot := protocol.SerializeHashContent(rootAcc.Address)
 
 	//Create root file
 	file, _ := os.Create(TestKeyFileName)
@@ -179,8 +154,8 @@ func addRootAccounts() {
 	rootAcc.Balance = activeParameters.Staking_minimum
 	rootAcc.IsStaking = true
 
-	storage.State[hashRoot] = rootAcc
-	storage.RootKeys[hashRoot] = rootAcc
+	storage.State[rootAcc.Address] = rootAcc
+	storage.RootKeys[rootAcc.Address] = rootAcc
 }
 
 //The state changes (accounts, funds, system parameters etc.) need to be reverted before any new test starts
@@ -188,8 +163,8 @@ func addRootAccounts() {
 func cleanAndPrepare() {
 	storage.DeleteAll()
 
-	tmpState := make(map[[32]byte]*protocol.Account)
-	tmpRootKeys := make(map[[32]byte]*protocol.Account)
+	tmpState := make(map[[64]byte]*protocol.Account)
+	tmpRootKeys := make(map[[64]byte]*protocol.Account)
 
 	storage.State = tmpState
 	storage.RootKeys = tmpRootKeys
@@ -207,12 +182,12 @@ func cleanAndPrepare() {
 	var tmpSlice []Parameters
 	tmpSlice = append(tmpSlice, NewDefaultParameters())
 
-	slashingDict = make(map[[32]byte]SlashingProof)
+	slashingDict = make(map[[64]byte]SlashingProof)
 
 	parameterSlice = tmpSlice
 	activeParameters = &tmpSlice[0]
 
-	slashingDict = make(map[[32]byte]SlashingProof)
+	slashingDict = make(map[[64]byte]SlashingProof)
 
 	//Override some params to ensure tests work correctly.
 	activeParameters.num_included_prev_proofs = 0
@@ -222,14 +197,18 @@ func cleanAndPrepare() {
 	addTestingAccounts()
 	addRootAccounts()
 
-	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
-	genesisBlock = newBlock([32]byte{}, genesisCommitmentProof, 0)
+	genesis := protocol.NewGenesis(
+		crypto.GetAddressFromPubKey(&PrivKeyRoot.PublicKey),
+		crypto.GetBytesFromRSAPubKey(&CommPrivKeyRoot.PublicKey))
 
-	collectStatistics(genesisBlock)
-	if err := storage.WriteClosedBlock(genesisBlock); err != nil {
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
+	initialBlock = newBlock(genesis.Hash(), commitmentProof, 0)
+
+	collectStatistics(initialBlock)
+	if err := storage.WriteClosedBlock(initialBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
-	if err := storage.WriteLastClosedBlock(genesisBlock); err != nil {
+	if err := storage.WriteLastClosedBlock(initialBlock); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 

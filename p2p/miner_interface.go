@@ -16,11 +16,12 @@ var (
 
 	//Data requested by miner, to allow parallelism, we have a chan for every tx type.
 	FundsTxChan  = make(chan *protocol.FundsTx)
-	AccTxChan    = make(chan *protocol.AccTx)
+	ContractTxChan    = make(chan *protocol.ContractTx)
 	ConfigTxChan = make(chan *protocol.ConfigTx)
 	StakeTxChan  = make(chan *protocol.StakeTx)
 
-	BlockReqChan = make(chan []byte)
+	BlockReqChan 	= make(chan []byte)
+	GenesisReqChan 	= make(chan []byte)
 )
 
 //This is for blocks and txs that the miner successfully validated.
@@ -64,13 +65,13 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 			return
 		}
 		FundsTxChan <- fundsTx
-	case ACCTX_RES:
-		var accTx *protocol.AccTx
-		accTx = accTx.Decode(payload)
-		if accTx == nil {
+	case CONTRACTTX_RES:
+		var contractTx *protocol.ContractTx
+		contractTx = contractTx.Decode(payload)
+		if contractTx == nil {
 			return
 		}
-		AccTxChan <- accTx
+		ContractTxChan <- contractTx
 	case CONFIGTX_RES:
 		var configTx *protocol.ConfigTx
 		configTx = configTx.Decode(payload)
@@ -90,6 +91,10 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 
 func forwardBlockReqToMiner(p *peer, payload []byte) {
 	BlockReqChan <- payload
+}
+
+func forwardGenesisReqToMiner(p *peer, payload []byte) {
+	GenesisReqChan <- payload
 }
 
 func ReadSystemTime() int64 {

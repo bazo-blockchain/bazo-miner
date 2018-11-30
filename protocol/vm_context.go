@@ -71,7 +71,7 @@ func (c *Context) GetAddress() [64]byte {
 	return c.Address
 }
 
-func (c *Context) GetIssuer() [32]byte {
+func (c *Context) GetIssuer() [64]byte {
 	return c.Issuer
 }
 
@@ -79,7 +79,7 @@ func (c *Context) GetBalance() uint64 {
 	return c.Balance
 }
 
-func (c *Context) GetSender() [32]byte {
+func (c *Context) GetSender() [64]byte {
 	return c.From
 }
 
@@ -95,6 +95,6 @@ func (c *Context) GetFee() uint64 {
 	return c.Fee
 }
 
-func (c *Context) GetSig1() [64]byte {
-	return c.Sig1
+func (c *Context) GetSig() [64]byte {
+	return c.Sig
 }
