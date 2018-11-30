@@ -313,7 +313,7 @@ func fetchContractTxData(block *protocol.Block, contractTxSlice []*protocol.Cont
 		if tx != nil {
 			contractTx = tx.(*protocol.ContractTx)
 		} else {
-			err := p2p.TxReq(txHash, p2p.ACCTX_REQ)
+			err := p2p.TxReq(txHash, p2p.CONTRACTTX_REQ)
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("ContractTx could not be read: %v", err))
 				return

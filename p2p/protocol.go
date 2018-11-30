@@ -16,7 +16,7 @@ const (
 	TX_BRDCST_ACK       = 8
 
 	FUNDSTX_REQ            = 10
-	ACCTX_REQ              = 11
+	CONTRACTTX_REQ              = 11
 	CONFIGTX_REQ           = 12
 	STAKETX_REQ            = 13
 	BLOCK_REQ              = 14
@@ -27,7 +27,7 @@ const (
 	GENESIS_REQ			   = 19
 
 	FUNDSTX_RES            = 20
-	ACCTX_RES              = 21
+	CONTRACTTX_RES              = 21
 	CONFIGTX_RES           = 22
 	STAKETX_RES            = 23
 	BLOCK_RES              = 24
