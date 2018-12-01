@@ -85,6 +85,17 @@ func getState() (state string) {
 	return state
 }
 
+func getValidatorsCount() (validatorsCount int) {
+	var returnValCounts int
+	returnValCounts = 0
+	for _, acc := range storage.State {
+		if (acc.IsStaking){
+			returnValCounts += 1
+		}
+	}
+	return returnValCounts
+}
+
 func initState() (initialBlock *protocol.Block, err error) {
 	genesis, err := initGenesis()
 	if err != nil {

@@ -27,4 +27,8 @@ const (
 	SLASHING_WINDOW_SIZE = 100     //Blocks
 	SLASH_REWARD         = 2       //Coins
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
+
+	//Parameters for sharding concept
+	EPOCH_LENGTH = 5 // 5 Blocks per Epoch
+	USERS_PER_SHARD = 10
 )
