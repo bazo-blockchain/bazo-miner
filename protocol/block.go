@@ -47,6 +47,38 @@ type Block struct {
 	StakeTxData  	[][32]byte
 }
 
+type ShardBlock struct {
+	//Header
+	Header 	     byte
+	ShardId      byte
+	Hash         [32]byte
+	PrevHash     [32]byte
+	NrConfigTx   uint8
+	NrElementsBF uint16
+	BloomFilter  *bloom.BloomFilter
+	Height       uint32
+	Beneficiary  [64]byte
+
+	//Body
+	Nonce                 [8]byte
+	Timestamp             int64
+	MerkleRoot            [32]byte
+	MerklePatriciaRoot    [32]byte
+	NrContractTx          uint16
+	NrFundsTx             uint16
+	NrStakeTx             uint16
+	SlashedAddress        [64]byte
+	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
+	ConflictingBlockHash1 [32]byte
+	ConflictingBlockHash2 [32]byte
+	StateCopy             map[[64]byte]*Account //won't be serialized, just keeping track of local state changes
+
+	ContractTxData  [][32]byte
+	FundsTxData  	[][32]byte
+	ConfigTxData 	[][32]byte
+	StakeTxData  	[][32]byte
+}
+
 func NewBlock(prevHash [32]byte, height uint32) *Block {
 	newBlock := Block{
 		PrevHash: prevHash,

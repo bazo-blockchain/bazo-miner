@@ -165,6 +165,99 @@ func proofOfStake(diff uint8,
 	return timestamp, nil
 }
 
+func LeaderAggregatorElection(diff uint8,
+	prevHash [32]byte,
+	prevProofs [][crypto.COMM_PROOF_LENGTH]byte,
+	role uint32, // Leader := 1 and Aggregator := 0
+	balance uint64,
+	commitmentProof [crypto.COMM_PROOF_LENGTH]byte) (int64, error) {
+
+	var (
+		pos    [32]byte
+		byteNr uint8
+		abort  bool
+
+		timestampBuf [8]byte
+		roleBuf      [1]byte
+
+		timestamp int64
+
+		hashArgs []byte
+	)
+
+	// allocate memory
+	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (localCommPubKey)+ 1 byte (role) + 8 bytes (count)
+	hashArgs = make([]byte, len(prevProofs)*crypto.COMM_PROOF_LENGTH+crypto.COMM_PROOF_LENGTH+1+8)
+
+	binary.BigEndian.PutUint32(roleBuf[:], role)
+
+	// all required parameters are concatenated in the following order:
+	// ([PrevProofs] ⋅ CommitmentProof ⋅ Role ⋅ Seconds)
+	index := 0
+	for _, prevProof := range prevProofs {
+		copy(hashArgs[index:index + crypto.COMM_PROOF_LENGTH], prevProof[:])
+		index += crypto.COMM_PROOF_LENGTH
+	}
+
+	copy(hashArgs[index:index + crypto.COMM_PROOF_LENGTH], commitmentProof[:]) // COMM_KEY_LENGTH bytes
+	index += crypto.COMM_PROOF_LENGTH
+	copy(hashArgs[index:index + 1], roleBuf[:]) // 1 bytes
+	index += 1
+
+	timestampBufIndexStart := index
+	timestampBufIndexEnd := index + 8
+
+	for range time.Tick(time.Second) {
+		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
+		// block has been validated
+		if prevHash != lastBlock.Hash {
+			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
+		}
+
+		abort = false
+
+		//add the number of seconds that have passed since the Unix epoch (00:00:00 UTC, 1 January 1970)
+		timestamp = time.Now().Unix()
+		binary.BigEndian.PutUint64(timestampBuf[:], uint64(timestamp))
+		copy(hashArgs[timestampBufIndexStart:timestampBufIndexEnd], timestampBuf[:]) //8 bytes
+
+		//calculate the hash
+		pos = sha3.Sum256(hashArgs[:])
+
+		//divide the hash by the balance (should not happen but possible in a testing environment)
+		data := binary.BigEndian.Uint64(pos[:])
+		if balance == 0 {
+			return -1, errors.New("Zero division: Account owns 0 coins.")
+		}
+		data = data / balance
+		var buf bytes.Buffer
+		binary.Write(&buf, binary.BigEndian, data)
+
+		copy(pos[0:32], buf.Bytes())
+
+		//TODO @simibac What do you do here?
+		//Byte check
+		for byteNr = 0; byteNr < (uint8)(diff/8); byteNr++ {
+			if pos[byteNr] != 0 {
+				//continue begins the next iteration of the innermost
+				abort = true
+				break
+			}
+		}
+
+		if abort {
+			continue
+		}
+		//Bit check
+		if diff%8 != 0 && pos[byteNr] >= 1<<(8-diff%8) {
+			continue
+		}
+		break
+	}
+
+	return timestamp, nil
+}
+
 func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][crypto.COMM_PROOF_LENGTH]byte) {
 	for block.Height > 0 && n > 0 {
 		block = storage.ReadClosedBlock(block.PrevHash)

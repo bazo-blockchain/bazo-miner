@@ -3,11 +3,17 @@ package main
 import (
 	"github.com/bazo-blockchain/bazo-miner/cli"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/trie"
 	cli2 "github.com/urfave/cli"
 	"os"
 )
 
 func main() {
+	Trie, _ := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
+	println(Trie)
+
 	// test commit for new sharding branch
 	app := cli2.NewApp()
 

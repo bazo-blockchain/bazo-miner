@@ -89,11 +89,15 @@ func getValidatorsCount() (validatorsCount int) {
 	var returnValCounts int
 	returnValCounts = 0
 	for _, acc := range storage.State {
-		if (acc.IsStaking){
+		if acc.IsStaking {
 			returnValCounts += 1
 		}
 	}
 	return returnValCounts
+}
+
+func getTotalAccountsCount() (accountsCount int) {
+	return len(storage.State)
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
