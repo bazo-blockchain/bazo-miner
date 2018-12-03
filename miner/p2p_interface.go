@@ -30,6 +30,7 @@ func processBlock(payload []byte) {
 	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
+		CalculateBlockchainSize(block.GetSize())
 		broadcastBlock(block)
 	} else {
 		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)

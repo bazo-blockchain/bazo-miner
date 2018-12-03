@@ -183,6 +183,9 @@ func initState() (initialBlock *protocol.Block, err error) {
 
 		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
 
+		//calculate the blockchain size for all validated blocks.
+		CalculateBlockchainSize(blockToValidate.GetSize())
+
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate
 	}

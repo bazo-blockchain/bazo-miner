@@ -122,25 +122,26 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.AccTx:
 		err := addAccTx(b, tx.(*protocol.AccTx))
 		if err != nil {
-			logger.Printf("Adding accTx tx failed (%v): %v\n", err, tx.(*protocol.AccTx))
+			logger.Printf("Adding accTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.AccTx))
+
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
+			logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
-			logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
+			logger.Printf("Adding configTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.ConfigTx))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			logger.Printf("Adding stakeTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.StakeTx))
 			return err
 		}
 	default:

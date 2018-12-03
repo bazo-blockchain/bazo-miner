@@ -20,6 +20,7 @@ var (
 	validatorAccAddress 			[64]byte
 	multisigPubKey      			*ecdsa.PublicKey
 	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
+	blockchainSize uint64			= 0
 )
 
 //Miner entry point
@@ -80,6 +81,7 @@ func mining(initialBlock *protocol.Block) {
 					"--> Body includes %v Bytes of TxData\n",
 					currentBlock.Hash[0:8], currentBlock.GetSize(), currentBlock.GetHeaderSize(),
 					currentBlock.GetBodySize(), currentBlock.GetTxDataSize())
+				CalculateBlockchainSize(currentBlock.GetSize())
 			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
@@ -110,4 +112,10 @@ func initRootKey(rootKey *ecdsa.PublicKey) error {
 	storage.RootKeys[addressHash] = &rootAcc
 
 	return nil
+}
+
+func CalculateBlockchainSize(currentBlockSize uint64) {
+	blockchainSize = blockchainSize + currentBlockSize
+
+	logger.Printf("Blockchain size is: %v bytes\n", blockchainSize)
 }
