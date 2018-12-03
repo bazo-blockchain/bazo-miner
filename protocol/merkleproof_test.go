@@ -4,20 +4,30 @@ import (
 	"math/rand"
 	"reflect"
 	"testing"
-	"time"
 )
 
 func TestMerkleProofSerialization(t *testing.T) {
-	randVal := rand.New(rand.NewSource(time.Now().Unix()))
-
-	randHeight := randVal.Uint32() % 10
-	proof := NewMerkleProof(randHeight, [][32]byte{}, 0x01, randVal.Uint64()%100000+1, randVal.Uint64()%10+1, uint32(0), accA.Address, accB.Address, nil)
-
+	proof := NewMerkleProof(rand.Uint32() % 10, [][33]byte{}, 0x01, rand.Uint64()%100000+1, rand.Uint64()%10+1, uint32(0), accA.Address, accB.Address, nil)
 	merkleTreeDepth := int(rand.Uint32() % 10) + 1
 	for j:= 0; j < merkleTreeDepth; j++ {
-		var mhash [32]byte
-		randVal.Read(mhash[:])
+		leftOrRightNumber := int(rand.Uint32() % 2)
+
+		var mhash [33]byte
+		var leftOrRight [1]byte
+		if leftOrRightNumber == 0 {
+			leftOrRight = [1]byte{'l'}
+		} else {
+			leftOrRight = [1]byte{'r'}
+		}
+
+		copy(mhash[0:1], leftOrRight[:])
+		rand.Read(mhash[1:33])
 		proof.MHashes = append(proof.MHashes, mhash)
+	}
+
+	merkleRootBefore, err := proof.CalculateMerkleRoot()
+	if err != nil {
+		t.Error(err)
 	}
 
 	encoded := proof.Encode()
@@ -25,13 +35,8 @@ func TestMerkleProofSerialization(t *testing.T) {
 	var decoded *MerkleProof
 	decoded = decoded.Decode(encoded)
 
-	if !reflect.DeepEqual(proof, decoded) {
-		t.Errorf("Proof does not match the given one: %v vs. %v", proof.String(), decoded.String())
-	}
-
-	merkleRootBefore, err := proof.CalculateMerkleRoot()
-	if err != nil {
-		t.Error(err)
+	if !reflect.DeepEqual(&proof, decoded) {
+		t.Errorf("Proof does not match the given one: \n%vvs.\n%v", proof.String(), decoded.String())
 	}
 
 	merkleRootAfter, err := decoded.CalculateMerkleRoot()

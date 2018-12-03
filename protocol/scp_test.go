@@ -69,12 +69,23 @@ func getDummySCP() (int, *SCP) {
 	scp := NewSCP()
 	for i := 0; i < nofProofs; i++ {
 		randHeight := (randVal.Uint32() % 10) + uint32(i * 10)
-		proof := NewMerkleProof(randHeight, [][32]byte{}, 0x01, randVal.Uint64()%100000+1, randVal.Uint64()%10+1, uint32(i), accA.Address, accB.Address, nil)
+		proof := NewMerkleProof(randHeight, [][33]byte{}, 0x01, randVal.Uint64()%100000+1, randVal.Uint64()%10+1, uint32(i), accA.Address, accB.Address, nil)
 
 		merkleTreeDepth := int(rand.Uint32() % 10) + 1
 		for j:= 0; j < merkleTreeDepth; j++ {
-			var mhash [32]byte
-			randVal.Read(mhash[:])
+			leftOrRightNumber := int(rand.Uint32() % 2)
+
+			var mhash [33]byte
+			var leftOrRight [1]byte
+
+			if leftOrRightNumber == 0 {
+				leftOrRight = [1]byte{'l'}
+			} else {
+				leftOrRight = [1]byte{'r'}
+			}
+
+			copy(mhash[0:1], leftOrRight[:])
+			randVal.Read(mhash[1:33])
 			proof.MHashes = append(proof.MHashes, mhash)
 		}
 

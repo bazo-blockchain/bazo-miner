@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"golang.org/x/crypto/sha3"
 )
 
 type MerkleProof struct {
@@ -13,11 +12,12 @@ type MerkleProof struct {
 
 	// Merkle hashes
 	// Intermediate hashes required to create a Merkle proof
-	MHashes	[][32]byte
+	// Note that the first byte specifies the left or right node of the Merkle tree while the rest is the actual hash
+	MHashes	[][33]byte
 
 	// Proof properties
 	// Must equal the hashed data of FundsTx.Hash()
-	PHeader  byte
+	PHeader byte
 	PAmount uint64
 	PFee    uint64
 	PTxCnt  uint32
@@ -27,7 +27,7 @@ type MerkleProof struct {
 }
 
 
-func NewMerkleProof(height uint32, mhashes [][32]byte, header byte, amount uint64, fee uint64, txcnt uint32, from [64]byte, to [64]byte, data []byte) (proof MerkleProof) {
+func NewMerkleProof(height uint32, mhashes [][33]byte, header byte, amount uint64, fee uint64, txcnt uint32, from [64]byte, to [64]byte, data []byte) (proof MerkleProof) {
 	proof.Height = height
 	proof.MHashes = mhashes
 	proof.PHeader = header
@@ -48,7 +48,7 @@ func (proof *MerkleProof) Hash() (hash [32]byte) {
 
 	input := struct {
 		Height 	uint32
-		MHashes	[][32]byte
+		MHashes	[][33]byte
 		PHeader byte
 		PAmount uint64
 		PFee    uint64
@@ -106,13 +106,13 @@ func (proof *MerkleProof) String() string {
 
 	return fmt.Sprintf("Height: %v\n" +
 		"MHashes: [%v]\n" +
-		"PHash Header: %v\n" +
-		"PHash Amount: %v\n"+
-		"PHash Fee: %v\n"+
-		"PHash TxCnt: %v\n"+
-		"PHash From: %x\n"+
-		"PHash To: %x\n"+
-		"PHash Data: %v\n",
+		"Proof Header: %v\n" +
+		"Proof Amount: %v\n"+
+		"Proof Fee: %v\n"+
+		"Proof TxCnt: %v\n"+
+		"Proof From: %x\n"+
+		"Proof To: %x\n"+
+		"Proof Data: %v\n",
 		proof.Height,
 		mhashesString,
 		proof.PHeader,
@@ -125,16 +125,24 @@ func (proof *MerkleProof) String() string {
 	)
 }
 
-func (proof *MerkleProof) CalculateMerkleRoot() (merkleRoot [32]byte, err error) {
+func (proof *MerkleProof) CalculateMerkleRoot() (computedHash [32]byte, err error) {
 	phash := proof.getProofHash()
 
-	merkleRoot = phash
+	computedHash = phash
 	for _, mhash := range proof.MHashes {
-		concatHash := append(merkleRoot[:], mhash[:]...)
-		merkleRoot = sha3.Sum256(concatHash)
+		var hash [32]byte
+		var leftOrRight [1]byte
+		copy(leftOrRight[:], mhash[0:1])
+		copy(hash[:], mhash[1:33])
+
+		if leftOrRight == [1]byte{'l'} {
+			computedHash = MTHash(append(hash[:], computedHash[:]...))
+		} else {
+			computedHash = MTHash(append(computedHash[:], hash[:]...))
+		}
 	}
 
-	return merkleRoot, nil
+	return computedHash, nil
 }
 
 func (proof *MerkleProof) getProofHash() [32]byte {
