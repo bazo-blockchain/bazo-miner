@@ -72,12 +72,16 @@ func (acc *Account) Encode() []byte {
 	return buffer.Bytes()
 }
 
-func (*Account) Decode(encoded []byte) (acc *Account) {
+func (*Account) Decode(encoded []byte) (acc *Account, err error) {
 	var decoded Account
 	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
-	decoder.Decode(&decoded)
-	return &decoded
+	err = decoder.Decode(&decoded)
+	if err != nil {
+		return nil, err
+	}
+
+	return &decoded, nil
 }
 
 func (acc Account) String() string {
