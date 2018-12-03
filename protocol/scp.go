@@ -28,6 +28,37 @@ type SCP struct {
 	PData   [][]byte
 }
 
+func NewSCP() SCP {
+	return SCP{}
+}
+
+func (scp *SCP) AddProof(height uint32, mhashes [][32]byte, pheader byte, pamount uint64, pfee uint64, ptxcnt uint32, pfrom [64]byte, pto [64]byte, pdata []byte) (index int) {
+	scp.Height = append(scp.Height, height)
+	scp.MHashes = append(scp.MHashes, mhashes)
+	scp.PHeader = append(scp.PHeader, pheader)
+	scp.PAmount = append(scp.PAmount, pamount)
+	scp.PFee = append(scp.PFee, pfee)
+	scp.PTxCnt = append(scp.PTxCnt, ptxcnt)
+	scp.PFrom = append(scp.PFrom, pfrom)
+	scp.PTo = append(scp.PTo, pto)
+	scp.PData = append(scp.PData, pdata)
+
+	return len(scp.Height) - 1
+}
+
+func (scp *SCP) NewProof() (index int) {
+	scp.Height = append(scp.Height, uint32(0))
+	scp.MHashes = append(scp.MHashes, [][32]byte{})
+	scp.PHeader = append(scp.PHeader, 0)
+	scp.PAmount = append(scp.PAmount, 0)
+	scp.PFee = append(scp.PFee, 0)
+	scp.PTxCnt = append(scp.PTxCnt, 0)
+	scp.PFrom = append(scp.PFrom, [64]byte{})
+	scp.PTo = append(scp.PTo, [64]byte{})
+	scp.PData = append(scp.PData, nil)
+	return len(scp.Height) - 1
+}
+
 func (scp *SCP) CalculateMerkleRoot(index int) (merkleRoot [32]byte, err error) {
 	if err = scp.verifyProofPrerequisites(); err != nil {
 		return [32]byte{}, err

@@ -101,21 +101,12 @@ func getDummySCP() (int, *SCP) {
 	randVal := rand.New(rand.NewSource(time.Now().Unix()))
 	nofProofs := int(randVal.Uint32() % 10) + 1
 
-	var scp SCP
+	scp := NewSCP()
 	for i := 0; i < nofProofs; i++ {
 		tx, _ := ConstrFundsTx(0x01, randVal.Uint64()%100000+1, randVal.Uint64()%10+1, uint32(i), accA.Address, accB.Address, PrivKeyA, nil)
 
-		scp.Height = append(scp.Height, (randVal.Uint32() % 10) + uint32(i * 10))
-		scp.PHeader = append(scp.PHeader, tx.Header)
-		scp.PAmount = append(scp.PAmount, tx.Amount)
-		scp.PFee = append(scp.PFee, tx.Fee)
-		scp.PTxCnt = append(scp.PTxCnt, tx.TxCnt)
-		scp.PFrom = append(scp.PFrom, tx.From)
-		scp.PTo = append(scp.PTo, tx.To)
-		scp.PData = append(scp.PData, tx.Data)
-
-		scp.MHashes = append(scp.MHashes, [][32]byte{})
-
+		randHeight := (randVal.Uint32() % 10) + uint32(i * 10)
+		scp.AddProof(randHeight, [][32]byte{}, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
 		merkleTreeDepth := int(rand.Uint32() % 10) + 1
 		for j:= 0; j < merkleTreeDepth; j++ {
 			var mhash [32]byte

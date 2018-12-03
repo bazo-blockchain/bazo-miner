@@ -36,7 +36,7 @@ func (n *Node) verifyNode() [32]byte {
 	leftHash := n.Left.verifyNode()
 	rightHash := n.Right.verifyNode()
 	concatHash := append(leftHash[:], rightHash[:]...)
-	return sha3.Sum256(concatHash)
+	return MTHash(concatHash)
 }
 
 func BuildMerkleTree(b *Block) *MerkleTree {
@@ -129,7 +129,7 @@ func buildIntermediate(nl []*Node) *Node {
 		n := &Node{
 			Left:  nl[i],
 			Right: nl[i+1],
-			Hash:  sha3.Sum256(concatHash),
+			Hash:  MTHash(concatHash),
 		}
 		nodes = append(nodes, n)
 		nl[i].Parent = n
@@ -174,13 +174,60 @@ func (m *MerkleTree) VerifyTree() bool {
 	return false
 }
 
-func GetLeaf(merkleTree *MerkleTree, leafHash [32]byte) *Node {
-	for _, leaf := range merkleTree.Leafs {
+func (m *MerkleTree) GetLeaf(leafHash [32]byte) *Node {
+	for _, leaf := range m.Leafs {
 		if leafHash == leaf.Hash {
 			return leaf
 		}
 	}
 	return nil
+}
+
+func MTHash(data []byte) [32]byte {
+	return sha3.Sum256(data)
+}
+
+func (m *MerkleTree) MerkleProof(leafHash [32]byte) (hashes [][33]byte, err error) {
+	leaf := m.GetLeaf(leafHash)
+	currentNode := leaf
+	currentParent := leaf.Parent
+	for currentParent != nil {
+		left := currentParent.Left
+		right := currentParent.Right
+		var hash [33]byte
+		if currentNode.Hash == left.Hash {
+			copy(hash[0:1], []byte{'r'})
+			copy(hash[1:33], right.Hash[:])
+			hashes = append(hashes, hash)
+		} else if currentNode.Hash == right.Hash {
+			copy(hash[0:1], []byte{'l'})
+			copy(hash[1:33], left.Hash[:])
+			hashes = append(hashes, hash)
+		} else {
+			return nil, errors.New(fmt.Sprintf("could not find intermediate node to verify %x\n", leaf.Hash))
+		}
+		currentNode = currentParent
+		currentParent = currentParent.Parent
+	}
+	return hashes, nil
+}
+
+func (m *MerkleTree) VerifyMerkleProof(leafHash [32]byte, hashes [][33]byte) bool {
+	computedRootHash := leafHash
+	for i := 0; i < len(hashes); i++ {
+		var hash [32]byte
+		var leftOrRight [1]byte
+		copy(leftOrRight[:], hashes[i][0:1])
+		copy(hash[:], hashes[i][1:33])
+
+		if leftOrRight == [1]byte{'l'} {
+			computedRootHash = MTHash(append(hash[:], computedRootHash[:]...))
+		} else {
+			computedRootHash = MTHash(append(computedRootHash[:], hash[:]...))
+		}
+	}
+
+	return computedRootHash == m.MerkleRoot()
 }
 
 //VerifyContent indicates whether a given content is in the tree and the hashes are valid for that content.

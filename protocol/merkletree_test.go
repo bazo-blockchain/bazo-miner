@@ -1,25 +1,20 @@
 package protocol
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"testing"
-
 	"golang.org/x/crypto/sha3"
+	"math/rand"
+	"testing"
+	"time"
 )
 
 func TestBuildMerkleTree3N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 3; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -44,14 +39,11 @@ func TestBuildMerkleTree3N(t *testing.T) {
 func TestBuildMerkleTree2N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 2; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -71,14 +63,11 @@ func TestBuildMerkleTree2N(t *testing.T) {
 func TestBuildMerkleTree4N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 4; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -106,14 +95,11 @@ func TestBuildMerkleTree4N(t *testing.T) {
 func TestBuildMerkleTree6N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 6; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -149,14 +135,11 @@ func TestBuildMerkleTree6N(t *testing.T) {
 func TestBuildMerkleTree8N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 8; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -198,14 +181,11 @@ func TestBuildMerkleTree8N(t *testing.T) {
 func TestBuildMerkleTree10N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 10; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -255,14 +235,11 @@ func TestBuildMerkleTree10N(t *testing.T) {
 func TestBuildMerkleTree11N(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 11; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -318,14 +295,11 @@ func TestBuildMerkleTree11N(t *testing.T) {
 func TestGetIntermediate(t *testing.T) {
 
 	var hashSlice [][32]byte
-	var tx *FundsTx
-
-	//Generating a private key and prepare data
-	privA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	for i := 0; i < 11; i++ {
-		tx, _ = ConstrFundsTx(0, 10, 1, uint32(i), [64]byte{'1'}, [64]byte{'2'}, privA, nil)
-		hashSlice = append(hashSlice, tx.Hash())
+		var txHash [32]byte
+		rand.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
 	}
 
 	b := Block{
@@ -370,7 +344,7 @@ func TestGetIntermediate(t *testing.T) {
 
 	merkleTree := BuildMerkleTree(&b)
 
-	intermediates, _ := GetIntermediate(GetLeaf(merkleTree, hashSlice[9]))
+	intermediates, _ := GetIntermediate(merkleTree.GetLeaf(hashSlice[9]))
 
 	if intermediates[0].Hash != hashSlice[8] {
 		t.Errorf("Hashes don't match: %x != %x\n", intermediates[0].Hash, hashSlice[8])
@@ -390,5 +364,134 @@ func TestGetIntermediate(t *testing.T) {
 
 	if intermediates[4].Hash != hash12345678 {
 		t.Errorf("Hashes don't match: %x != %x\n", intermediates[4].Hash, hash12345678)
+	}
+}
+
+
+
+func TestMerkleProof(t *testing.T) {
+	randVal := rand.New(rand.NewSource(time.Now().Unix()))
+
+	var hash1, hash2, hash3, hash4 [32]byte
+
+	randVal.Read(hash1[:])
+	randVal.Read(hash2[:])
+	randVal.Read(hash3[:])
+	randVal.Read(hash4[:])
+
+	var hashSlice [][32]byte
+	hashSlice = append(hashSlice, hash1, hash2, hash3, hash4)
+
+	b := Block{
+		FundsTxData: hashSlice,
+	}
+
+	m := BuildMerkleTree(&b)
+
+	hash12 := MTHash(append(hash1[:], hash2[:]...))
+	hash34 := MTHash(append(hash3[:], hash4[:]...))
+	hash1234 := MTHash(append(hash12[:], hash34[:]...))
+	if hash1234 != m.MerkleRoot() {
+		t.Errorf("Root hashes don't match: %x != %x\n", hash1234, m.MerkleRoot())
+	}
+
+	hashes, err := m.MerkleProof(hash1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(hashes) != 2 {
+		t.Errorf("Merkle proof returns invalid amount of hashes")
+	}
+
+	var mhash [32]byte
+	var leftOrRight [1]byte
+	copy(leftOrRight[:], hashes[0][0:1])
+	copy(mhash[:], hashes[0][1:33])
+
+	if leftOrRight != [1]byte{'r'} {
+		t.Errorf("invalid left/right byte: is left but should be right")
+	}
+
+	if hash2 != mhash {
+		t.Errorf("invalid Merkle proof hash at index 0")
+	}
+
+	copy(leftOrRight[:], hashes[1][0:1])
+	copy(mhash[:], hashes[1][1:33])
+
+	if leftOrRight != [1]byte{'r'} {
+		t.Errorf("invalid left/right byte: is left but should be right")
+	}
+
+	if hash34 != mhash {
+		t.Errorf("invalid Merkle proof hash at index 1")
+	}
+}
+
+
+
+func TestMerkleProofWithVerification(t *testing.T) {
+	randVal := rand.New(rand.NewSource(time.Now().Unix()))
+	var hashSlice [][32]byte
+	nofHashes := int(randVal.Uint32() % 1000) + 1
+	for i := 0; i < nofHashes; i++ {
+		var txHash [32]byte
+		randVal.Read(txHash[:])
+		hashSlice = append(hashSlice, txHash)
+	}
+
+	b := Block{
+		FundsTxData: hashSlice,
+	}
+
+	m := BuildMerkleTree(&b)
+
+
+	randomIndex := randVal.Uint32() % uint32(nofHashes)
+	leafHash := hashSlice[randomIndex]
+	hashes, err := m.MerkleProof(leafHash)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !m.VerifyMerkleProof(leafHash, hashes) {
+		t.Errorf("Merkle proof verification failed for hash %x", leafHash)
+	}
+}
+
+func TestVerifyMerkleProof(t *testing.T) {
+	randVal := rand.New(rand.NewSource(time.Now().Unix()))
+
+	var hash1, hash2, hash3, hash4 [32]byte
+
+	randVal.Read(hash1[:])
+	randVal.Read(hash2[:])
+	randVal.Read(hash3[:])
+	randVal.Read(hash4[:])
+
+	var hashSlice [][32]byte
+	hashSlice = append(hashSlice, hash1, hash2, hash3, hash4)
+
+	b := Block{
+		FundsTxData: hashSlice,
+	}
+
+	m := BuildMerkleTree(&b)
+
+	hash12 := MTHash(append(hash1[:], hash2[:]...))
+	hash34 := MTHash(append(hash3[:], hash4[:]...))
+	hash1234 := MTHash(append(hash12[:], hash34[:]...))
+	if hash1234 != m.MerkleRoot() {
+		t.Errorf("Root hashes don't match: %x != %x\n", hash1234, m.MerkleRoot())
+	}
+
+	hashes, err := m.MerkleProof(hash1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !m.VerifyMerkleProof(hash1, hashes) {
+		t.Errorf("Merkle proof verification failed for hash %x", hash1)
 	}
 }
