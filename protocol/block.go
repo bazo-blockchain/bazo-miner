@@ -12,7 +12,7 @@ import (
 const (
 	TXHASH_LEN              = 32
 	HEIGHT_LEN              = 4
-	MIN_BLOCKHEADER_SIZE    = 136
+	MIN_BLOCKHEADER_SIZE    = 144
 	MIN_BLOCKSIZE           = 184 + MIN_BLOCKHEADER_SIZE + crypto.COMM_PROOF_LENGTH
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
@@ -27,6 +27,7 @@ type Block struct {
 	BloomFilter  *bloom.BloomFilter
 	Height       uint32
 	Beneficiary  [64]byte
+	TotalFees	 uint64
 
 	//Body
 	Nonce                 [8]byte
@@ -68,6 +69,7 @@ func (block *Block) HashBlock() [32]byte {
 		timestamp             int64
 		merkleRoot            [32]byte
 		beneficiary           [64]byte
+		totalFees			  uint64
 		commitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 		slashedAddress        [64]byte
 		conflictingBlockHash1 [32]byte
@@ -77,6 +79,7 @@ func (block *Block) HashBlock() [32]byte {
 		block.Timestamp,
 		block.MerkleRoot,
 		block.Beneficiary,
+		block.TotalFees,
 		block.CommitmentProof,
 		block.SlashedAddress,
 		block.ConflictingBlockHash1,
@@ -125,8 +128,9 @@ func (block *Block) Encode() []byte {
 		Nonce:                 block.Nonce,
 		Timestamp:             block.Timestamp,
 		MerkleRoot:            block.MerkleRoot,
+		TotalFees:			   block.TotalFees,
 		Beneficiary:           block.Beneficiary,
-		NrContractTx:               block.NrContractTx,
+		NrContractTx:          block.NrContractTx,
 		NrFundsTx:             block.NrFundsTx,
 		NrConfigTx:            block.NrConfigTx,
 		NrStakeTx:             block.NrStakeTx,
@@ -163,6 +167,7 @@ func (block *Block) EncodeHeader() []byte {
 		BloomFilter:  block.BloomFilter,
 		Height:       block.Height,
 		Beneficiary:  block.Beneficiary,
+		TotalFees:	  block.TotalFees,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -189,6 +194,7 @@ func (block Block) String() string {
 		"Timestamp: %v\n"+
 		"MerkleRoot: %x\n"+
 		"Beneficiary: %x\n"+
+		"Total Fees: %v\n"+
 		"Amount of fundsTx: %v\n"+
 		"Amount of contractTx: %v\n"+
 		"Amount of configTx: %v\n"+
@@ -204,6 +210,7 @@ func (block Block) String() string {
 		block.Timestamp,
 		block.MerkleRoot[0:8],
 		block.Beneficiary[0:8],
+		block.TotalFees,
 		block.NrFundsTx,
 		block.NrContractTx,
 		block.NrConfigTx,
