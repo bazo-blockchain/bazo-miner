@@ -366,6 +366,7 @@ func TestVerifySCP(t *testing.T) {
 
 	var blocks []*protocol.Block
 
+	// Setup test by transferring 100 coins to accB
 	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
 	tx, _ := protocol.ConstrFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
 	if err := addTx(b, tx); err != nil {
@@ -375,19 +376,45 @@ func TestVerifySCP(t *testing.T) {
 	finalizeBlock(b)
 	blocks = append(blocks, b)
 
-	tx1, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	// Create new SCP
 	scp := protocol.NewSCP()
 	merkleTree := protocol.BuildMerkleTree(b)
 	mhashes, err := merkleTree.MerkleProof(tx.Hash())
 	if err != nil {
 		t.Error(err)
 	}
-
 	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
 	scp.AddMerkleProof(&merkleProof)
-	tx1.Proof = &scp
 
-	if _, err := verifySCP(tx1, blocks); err != nil {
+	// Create transaction that contains SCP
+	tx1, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx1.Proof = &scp
+	if err := verifySCP(tx1, blocks); err != nil {
 		t.Error(err)
 	}
+
+	// Create new block
+	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	if err := addTx(b1, tx1); err != nil {
+		t.Error(err)
+	}
+	b1.InitBloomFilter([][64]byte {accA.Address, accB.Address})
+	finalizeBlock(b1)
+	blocks = append(blocks, b1)
+
+	merkleTree1 := protocol.BuildMerkleTree(b1)
+	mhashes1, err := merkleTree1.MerkleProof(tx1.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes1, tx1.Header, tx1.Amount, tx1.Fee, tx1.TxCnt, tx1.From, tx1.To, tx1.Data)
+	scp.AddMerkleProof(&merkleProof1)
+
+	// Create another transaction that contains SCP
+	tx2, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx2.Proof = &scp
+	if err := verifySCP(tx2, blocks); err == nil {
+		t.Error("self-contained proof should be invalid (double spending) but verifySCP returns no error")
+	}
+
 }

@@ -340,10 +340,11 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		// Only verify SCP if sender is no root
 		if rootAcc == nil {
 			// TODO: @rmnblm testing purposes
-			if verified, err := verifySCP(tx, previousBlocks); verified && err == nil {
-				logger.Printf("self-contained proof is valid\n")
+			if err := verifySCP(tx, previousBlocks); err != nil {
+				logger.Printf("self-contained proof is invalid: %v\n", err)
+				// return err
 			} else {
-				logger.Printf("self-contained proof is invalid\n")
+				logger.Printf("self-contained proof is valid\n")
 			}
 		}
 	}
@@ -351,10 +352,10 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 	return nil
 }
 
-func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified bool, err error) {
+func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
 	scp := tx.Proof
 	blockIndex := 0
-	var balance int64 = 0
+	var verifiedBalance int64 = 0
 
 	for _, proof := range scp.Proofs {
 		for ; blockIndex < len(previousBlocks); blockIndex++ {
@@ -362,25 +363,25 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified
 
 			// Bloomfilter check
 			if currentBlock.BloomFilter.Test(tx.From[:]) && proof.Height != currentBlock.Height {
-				return false, errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v\n", currentBlock.Height))
+				return errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v\n", currentBlock.Height))
 			}
 
 			if proof.Height == currentBlock.Height {
 				merkleRoot, err := proof.CalculateMerkleRoot()
 				if err != nil {
-					return false, err
+					return err
 				}
 
 				if currentBlock.MerkleRoot != merkleRoot {
-					return false, errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x\n", currentBlock.MerkleRoot, merkleRoot))
+					return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x\n", currentBlock.MerkleRoot, merkleRoot))
 				}
 
 				if proof.PFrom == tx.From {
 					// Sender
-					balance -= int64(proof.PAmount)
+					verifiedBalance -= int64(proof.PAmount)
 				} else if proof.PTo == tx.From {
 					// Receipient
-					balance += int64(proof.PAmount)
+					verifiedBalance += int64(proof.PAmount)
 				} else if currentBlock.Beneficiary == tx.From {
 					// Beneificiary
 					// TODO: @rmnblm implement beneficiary
@@ -391,7 +392,11 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified
 		}
 	}
 
-	return balance >= int64(tx.Amount), nil
+	if verifiedBalance < int64(tx.Amount) {
+		return errors.New(fmt.Sprintf("verified balance less than amount (%v < %v) spent by acc %x\n", verifiedBalance, tx.Amount, tx.From[0:8]))
+	}
+
+	return nil
 }
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
