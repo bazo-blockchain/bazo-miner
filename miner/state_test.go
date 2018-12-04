@@ -360,3 +360,34 @@ func TestStakeTxStateChange(t *testing.T) {
 	}
 
 }
+
+func TestVerifySCP(t *testing.T) {
+	cleanAndPrepare()
+
+	var blocks []*protocol.Block
+
+	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
+	tx, _ := protocol.ConstrFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
+	if err := addTx(b, tx); err != nil {
+		t.Error(err)
+	}
+	b.InitBloomFilter([][64]byte {accA.Address, accB.Address})
+	finalizeBlock(b)
+	blocks = append(blocks, b)
+
+	tx1, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	scp := protocol.NewSCP()
+	merkleTree := protocol.BuildMerkleTree(b)
+	mhashes, err := merkleTree.MerkleProof(tx.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+
+	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
+	scp.AddMerkleProof(&merkleProof)
+	tx1.Proof = &scp
+
+	if _, err := verifySCP(tx1, blocks); err != nil {
+		t.Error(err)
+	}
+}

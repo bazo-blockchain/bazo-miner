@@ -67,7 +67,7 @@ func Init(dbname string, bootstrapIpport string) error {
 
 func CreateBucket(bucketName string, db *bolt.DB) (err error) {
 	return db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte(bucketName))
+		_, err = tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return fmt.Errorf(ERROR_MSG + " %s", err)
 		}

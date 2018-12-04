@@ -23,6 +23,7 @@ type FundsTx struct {
 	To     [64]byte
 	Sig    [64]byte
 	Data   []byte
+	Proof  *SCP
 }
 
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
@@ -79,6 +80,9 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 //when we serialize the struct with binary.Write, unexported field get serialized as well, undesired
 //behavior. Therefore, writing own encoder/decoder
 func (tx *FundsTx) Encode() (encodedTx []byte) {
+	gob.Register(SCP{})
+	gob.Register(MerkleProof{})
+
 	// Encode
 	encodeData := FundsTx{
 		tx.Header,
@@ -89,6 +93,7 @@ func (tx *FundsTx) Encode() (encodedTx []byte) {
 		tx.To,
 		tx.Sig,
 		tx.Data,
+		tx.Proof,
 	}
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)

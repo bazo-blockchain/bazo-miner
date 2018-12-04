@@ -269,6 +269,8 @@ func accStateChange(txSlice []*protocol.ContractTx) {
 }
 
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
+	previousBlocks := storage.ReadAllClosedBlocks()
+
 	for _, tx := range txSlice {
 		var rootAcc *protocol.Account
 		//Check if we have to issue new coins (in case a root account signed the tx)
@@ -334,9 +336,62 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		accSender.TxCnt += 1
 		accSender.Balance -= tx.Amount
 		accReceiver.Balance += tx.Amount
+
+		// Only verify SCP if sender is no root
+		if rootAcc == nil {
+			// TODO: @rmnblm testing purposes
+			if verified, err := verifySCP(tx, previousBlocks); verified && err == nil {
+				logger.Printf("self-contained proof is valid\n")
+			} else {
+				logger.Printf("self-contained proof is invalid\n")
+			}
+		}
 	}
 
 	return nil
+}
+
+func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified bool, err error) {
+	scp := tx.Proof
+	blockIndex := 0
+	var balance int64 = 0
+
+	for _, proof := range scp.Proofs {
+		for ; blockIndex < len(previousBlocks); blockIndex++ {
+			currentBlock := previousBlocks[blockIndex]
+
+			// Bloomfilter check
+			if currentBlock.BloomFilter.Test(tx.From[:]) && proof.Height != currentBlock.Height {
+				return false, errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v\n", currentBlock.Height))
+			}
+
+			if proof.Height == currentBlock.Height {
+				merkleRoot, err := proof.CalculateMerkleRoot()
+				if err != nil {
+					return false, err
+				}
+
+				if currentBlock.MerkleRoot != merkleRoot {
+					return false, errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x\n", currentBlock.MerkleRoot, merkleRoot))
+				}
+
+				if proof.PFrom == tx.From {
+					// Sender
+					balance -= int64(proof.PAmount)
+				} else if proof.PTo == tx.From {
+					// Receipient
+					balance += int64(proof.PAmount)
+				} else if currentBlock.Beneficiary == tx.From {
+					// Beneificiary
+					// TODO: @rmnblm implement beneficiary
+				}
+
+				break
+			}
+		}
+	}
+
+	return balance >= int64(tx.Amount), nil
 }
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
