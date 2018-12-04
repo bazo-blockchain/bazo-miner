@@ -19,6 +19,7 @@ func IsRootKey(pubKey [64]byte) bool {
 func GetTxPubKeys(block *protocol.Block) (txPubKeys [][64]byte) {
 	txPubKeys = GetContractTxPubKeys(block.ContractTxData)
 	txPubKeys = append(txPubKeys, GetFundsTxPubKeys(block.FundsTxData)...)
+	txPubKeys = append(txPubKeys, block.Beneficiary)
 
 	return txPubKeys
 }
