@@ -354,6 +354,10 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 
 func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
 	scp := tx.Proof
+	if scp == nil {
+		return errors.New("FundsTx does not contain a self-contained proof")
+	}
+
 	blockIndex := 0
 	var verifiedBalance int64 = 0
 
