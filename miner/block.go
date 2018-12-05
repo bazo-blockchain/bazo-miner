@@ -50,8 +50,8 @@ func finalizeBlock(block *protocol.Block) error {
 		}
 	}
 
-	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
+	block.InitBloomFilter(storage.GetTxPubKeys(block))
 
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
