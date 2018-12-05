@@ -671,7 +671,7 @@ func preValidate(block *protocol.Block, initialSetup bool) (data *blockData, err
 		totalFees += tx.Fee
 	}
 	if totalFees != block.TotalFees {
-		return nil, errors.New(fmt.Sprintf("computed total fees do not equal the block's total fees %vs. %v", totalFees, block.TotalFees))
+		return nil, errors.New(fmt.Sprintf("computed total fees do not equal the block's total fees %v vs. %v", totalFees, block.TotalFees))
 	}
 
 	//Merkle Tree validation

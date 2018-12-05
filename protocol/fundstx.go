@@ -119,7 +119,8 @@ func (tx FundsTx) String() string {
 			"From: %x\n"+
 			"To: %x\n"+
 			"Sig: %x\n"+
-			"Data: %v\n",
+			"Data: %v\n" +
+			"SCP Length: %v\n",
 		tx.Header,
 		tx.Amount,
 		tx.Fee,
@@ -128,5 +129,6 @@ func (tx FundsTx) String() string {
 		tx.To[0:8],
 		tx.Sig[0:8],
 		tx.Data,
+		len(tx.Proofs),
 	)
 }

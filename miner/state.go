@@ -362,7 +362,7 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 
 			// Bloomfilter check
 			if currentBlock.BloomFilter.Test(tx.From[:]) && proof.Height != currentBlock.Height {
-				return errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v\n", currentBlock.Height))
+				return errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v", currentBlock.Height))
 			}
 
 			if proof.Height == currentBlock.Height {
@@ -372,7 +372,7 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 				}
 
 				if currentBlock.MerkleRoot != merkleRoot {
-					return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x\n", currentBlock.MerkleRoot, merkleRoot))
+					return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x", currentBlock.MerkleRoot, merkleRoot))
 				}
 
 				if proof.PFrom == tx.From {
@@ -392,7 +392,7 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 	}
 
 	if verifiedBalance < int64(tx.Amount) {
-		return errors.New(fmt.Sprintf("verified balance less than amount (%v < %v) spent by acc %x\n", verifiedBalance, tx.Amount, tx.From[0:8]))
+		return errors.New(fmt.Sprintf("verified balance less than amount (%v < %v) spent by acc %x", verifiedBalance, tx.Amount, tx.From[0:8]))
 	}
 
 	return nil
