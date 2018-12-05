@@ -229,12 +229,12 @@ func validateClosedBlocks() error {
 		//Do not validate the genesis block, since a lot of properties are set to nil
 		if blockToValidate.Hash != [32]byte{} {
 			//Fetching payload data from the txs (if necessary, ask other miners)
-			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
+			data, err := preValidate(blockToValidate, true)
 			if err != nil {
 				return errors.New(fmt.Sprintf("Block (%x) could not be prevalidated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 
-			blockDataMap[blockToValidate.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, blockToValidate}
+			blockDataMap[blockToValidate.Hash] = *data
 
 			err = validateState(blockDataMap[blockToValidate.Hash])
 			if err != nil {
@@ -383,7 +383,7 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 					verifiedBalance += int64(proof.PAmount)
 				} else if currentBlock.Beneficiary == tx.From {
 					// Beneificiary
-					// TODO: @rmnblm implement beneficiary
+					verifiedBalance += int64(currentBlock.TotalFees)
 				}
 
 				break
