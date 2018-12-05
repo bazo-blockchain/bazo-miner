@@ -360,6 +360,10 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 		for ; blockIndex < len(previousBlocks); blockIndex++ {
 			currentBlock := previousBlocks[blockIndex]
 
+			if currentBlock.BloomFilter == nil {
+				continue
+			}
+
 			// Bloomfilter check
 			if currentBlock.BloomFilter.Test(tx.From[:]) && proof.Height != currentBlock.Height {
 				return errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v", currentBlock.Height))
