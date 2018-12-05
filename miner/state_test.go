@@ -377,18 +377,16 @@ func TestVerifySCP(t *testing.T) {
 	blocks = append(blocks, b)
 
 	// Create new SCP
-	scp := protocol.NewSCP()
 	merkleTree := protocol.BuildMerkleTree(b)
 	mhashes, err := merkleTree.MerkleProof(tx.Hash())
 	if err != nil {
 		t.Error(err)
 	}
 	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
-	scp.AddMerkleProof(&merkleProof)
 
 	// Create transaction that contains SCP
 	tx1, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
-	tx1.Proof = &scp
+	tx1.Proofs = append(tx1.Proofs, &merkleProof)
 	if err := verifySCP(tx1, blocks); err != nil {
 		t.Error(err)
 	}
@@ -408,11 +406,10 @@ func TestVerifySCP(t *testing.T) {
 		t.Error(err)
 	}
 	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes1, tx1.Header, tx1.Amount, tx1.Fee, tx1.TxCnt, tx1.From, tx1.To, tx1.Data)
-	scp.AddMerkleProof(&merkleProof1)
 
 	// Create another transaction that contains SCP
 	tx2, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
-	tx2.Proof = &scp
+	tx2.Proofs = append(tx2.Proofs, &merkleProof1, &merkleProof)
 	if err := verifySCP(tx2, blocks); err == nil {
 		t.Error("self-contained proof should be invalid (double spending) but verifySCP returns no error")
 	}

@@ -353,15 +353,10 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 }
 
 func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
-	scp := tx.Proof
-	if scp == nil {
-		return errors.New("FundsTx does not contain a self-contained proof")
-	}
-
 	blockIndex := 0
 	var verifiedBalance int64 = 0
 
-	for _, proof := range scp.Proofs {
+	for _, proof := range tx.Proofs {
 		for ; blockIndex < len(previousBlocks); blockIndex++ {
 			currentBlock := previousBlocks[blockIndex]
 
@@ -597,7 +592,7 @@ func updateStakingHeight(block *protocol.Block) error {
 	return nil
 }
 
-func deleteZeroBalanceAccounts() error {
+func deleteZeroBalanceAccounts() {
 	for _, acc := range storage.State {
 		if acc.Balance > 0 || acc.Contract != nil {
 			continue
@@ -605,6 +600,4 @@ func deleteZeroBalanceAccounts() error {
 
 		storage.DeleteAccount(acc.Address)
 	}
-
-	return nil
 }
