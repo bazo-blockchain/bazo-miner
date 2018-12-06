@@ -97,23 +97,14 @@ func finalizeBlock(block *protocol.Block) error {
 //We do not operate global state because the work might get interrupted by receiving a block that needs validation
 //which is done on the global state.
 func addTx(b *protocol.Block, tx protocol.Transaction) error {
-	//ActiveParameters is a datastructure that stores the current system parameters, gets only changed when
-	//configTxs are broadcast in the network.
-	if tx.TxFee() < activeParameters.Fee_minimum {
-		logger.Printf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
-		err := fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
-		return errors.New(err)
-	}
-
 	//There is a trade-off what tests can be made now and which have to be delayed (when dynamic state is needed
 	//for inspection. The decision made is to check whether contractTx and configTx have been signed with rootAcc. This
 	//is a dynamic test because it needs to have access to the rootAcc state. The other option would be to include
 	//the address (public key of signature) in the transaction inside the tx -> would resulted in bigger tx size.
 	//So the trade-off is effectively clean abstraction vs. tx size. Everything related to fundsTx is postponed because
 	//the txs depend on each other.
-	if !verify(tx) {
-		logger.Printf("Transaction could not be verified: %v", tx)
-		return errors.New("Transaction could not be verified.")
+	if err := verify(tx); err != nil {
+		return errors.New(fmt.Sprintf("transaction could not be verified: %v\n", err))
 	}
 
 	switch tx.(type) {

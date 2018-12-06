@@ -80,10 +80,16 @@ func TestAccountOverflow(t *testing.T) {
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
 	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
-	if !verifyFundsTx(tx) || err != nil {
-		t.Error("Failed to create reasonable fundsTx\n")
+	if err != nil {
+		t.Error(err)
 		return
 	}
+
+	if err = verifyFundsTx(tx); err != nil {
+		t.Error(err)
+		return
+	}
+
 	accSlice = append(accSlice, tx)
 	err = fundsStateChange(accSlice)
 
@@ -219,7 +225,7 @@ func TestConfigTxStateChange(t *testing.T) {
 		if err != nil {
 			t.Errorf("ConfigTx Creation failed (%v)\n", err)
 		}
-		if verifyConfigTx(tx) {
+		if verifyConfigTx(tx) == nil {
 			configs = append(configs, tx)
 		}
 	}
