@@ -5,6 +5,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -40,31 +42,60 @@ func TestEthereumMPTInsertNodes(t *testing.T){
 	println(Trie)
 }
 
-func TestIncludeStateInMPT(t *testing.T){
-	db := ethdb.NewMemDatabase()
-	db.Put([]byte("key1"),[]byte("val1"))
-
-	fmt.Printf("\n")
-}
-
 func TestGetValuesMPT(t *testing.T){
 	Trie, _ := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
 
-	key1 := []byte("a1111111")
-	value1 := []byte("45")
-	Trie.Update(key1,value1)
+	updateString(Trie,"a1111111", "45")
 
-	testVal := Trie.Get(key1)
+	testVal := Trie.Get([]byte("a1111111"))
 
 	fmt.Printf("First insert: %v",string(testVal))
 	fmt.Printf("\n")
 
-	Trie.Update(key1,[]byte("90"))
+	if(string(testVal) != "45"){
+		t.Errorf("Retrieved value does not match with inserted value for key: %v", "a1111111")
+	}
 
-	testVal = Trie.Get(key1)
-	fmt.Printf("Second insert: %v",string(testVal))
+	updateString(Trie,"a1111111", "90")
+
+	testVal2 := Trie.Get([]byte("a1111111"))
+	fmt.Printf("Second insert: %v",string(testVal2))
 	fmt.Printf("\n")
 
+	if(string(testVal2) != string([]byte("90"))){
+		t.Errorf("Retrieved value does not match with inserted value for key: %v", "a1111111")
+	}
+
+	assert.Equal(t,testVal2,getString(Trie,"a1111111"),"The two values should match")
+}
+
+/*
+This test asserts that the root hash of the MPT does not change due to insertion order of the nodes.
+This is in contrast to regular Merkle Trees where insertion order of the leafs is crucial for getting the same root hash
+*/
+func TestStaleRootInsertOrder(t *testing.T)  {
+	Trie, _ := initTrie()
+
+	updateString(Trie, "address111", "testValForAddress111")
+	updateString(Trie, "address222", "testValForAddress222")
+	updateString(Trie, "address333", "testValForAddress333")
+	updateString(Trie, "address444", "testValForAddress444")
+
+	rootHashOne := Trie.Hash()
+
+	deleteString(Trie,"address111")
+	deleteString(Trie,"address222")
+	deleteString(Trie,"address333")
+	deleteString(Trie,"address444")
+
+	updateString(Trie, "address333", "testValForAddress333")
+	updateString(Trie, "address444", "testValForAddress444")
+	updateString(Trie, "address111", "testValForAddress111")
+	updateString(Trie, "address222", "testValForAddress222")
+
+	rootHashTwo := Trie.Hash()
+
+	assert.Equal(t, rootHashOne,rootHashTwo, "The two root hashes should match")
 }
 
 func keybytesToHex(str []byte) []byte {
@@ -76,4 +107,14 @@ func keybytesToHex(str []byte) []byte {
 	}
 	nibbles[l-1] = 16
 	return nibbles
+}
+
+func initTrie() (*trie.Trie, error)  {
+	Trie, err := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
+
+	if err != nil {
+		return nil, errors.New("error while initializing new trie")
+	}
+
+	return Trie, nil
 }
