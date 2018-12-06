@@ -21,25 +21,36 @@ func TestMPT(t *testing.T){
 
 func TestEthereumMPTInsertNodes(t *testing.T){
 	Trie, _ := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
-	key1 := []byte("a1111111")
+	key1 := []byte("11111")
 	value1 := []byte("45")
 	Trie.Update(key1,value1)
 
-	key2 := []byte("a2222222")
+	key2 := []byte("11222")
 	value2 := []byte("100")
 	Trie.Update(key2,value2)
 
-	key3 := []byte("a3333333")
+	key3 := []byte("22222")
 	value3 := []byte("400")
 	Trie.Update(key3,value3)
 
-	key4 := []byte("a4444444")
+	key4 := []byte("2211111")
 	value4 := []byte("350")
 	Trie.Update(key4,value4)
 
-	key5 := []byte("a1211111")
-	value5 := []byte("350")
-	Trie.Update(key5,value5)
+	itNode := Trie.NodeIterator(key1)
+	it := trie.NewIterator(itNode)
+
+	for it.Next() {
+		fmt.Printf("Key: %v || Value: %v \n", string(it.Key),string(it.Value))
+		fmt.Printf("==> Iterator Prove: ")
+		currentProve := it.Prove()
+
+		for i:=0; i< len(currentProve[0]);i++{
+			fmt.Printf(string(currentProve[0][i]))
+		}
+		fmt.Printf("\n ---------------- \n")
+	}
+
 
 	println(Trie)
 }
@@ -61,6 +72,7 @@ func TestGetValuesMPT(t *testing.T){
 	testVal = Trie.Get(key1)
 	fmt.Printf("Second insert: %v",string(testVal))
 	fmt.Printf("\n")
+
 }
 
 func keybytesToHex(str []byte) []byte {
