@@ -16,8 +16,26 @@ type NodePatricia struct {
 
 }
 
-func MPT(){
+func BuildMPT(state map[[64]byte]*Account) (*trie.Trie, error){
 	Trie, _ := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
-	println(Trie)
+
+	//loop through state of the blockchain and add nodes to the MPT
+	for _, acc := range state {
+		updateString(Trie,string(acc.Address[:]),string(acc.Balance))
+	}
+
+	return Trie, nil
+}
+
+func getString(trie *trie.Trie, k string) []byte {
+	return trie.Get([]byte(k))
+}
+
+func updateString(trie *trie.Trie, k, v string) {
+	trie.Update([]byte(k), []byte(v))
+}
+
+func deleteString(trie *trie.Trie, k string) {
+	trie.Delete([]byte(k))
 }
 

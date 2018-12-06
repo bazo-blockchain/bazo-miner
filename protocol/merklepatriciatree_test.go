@@ -37,22 +37,14 @@ func TestEthereumMPTInsertNodes(t *testing.T){
 	value4 := []byte("350")
 	Trie.Update(key4,value4)
 
-	itNode := Trie.NodeIterator(key1)
-	it := trie.NewIterator(itNode)
-
-	for it.Next() {
-		fmt.Printf("Key: %v || Value: %v \n", string(it.Key),string(it.Value))
-		fmt.Printf("==> Iterator Prove: ")
-		currentProve := it.Prove()
-
-		for i:=0; i< len(currentProve[0]);i++{
-			fmt.Printf(string(currentProve[0][i]))
-		}
-		fmt.Printf("\n ---------------- \n")
-	}
-
-
 	println(Trie)
+}
+
+func TestIncludeStateInMPT(t *testing.T){
+	db := ethdb.NewMemDatabase()
+	db.Put([]byte("key1"),[]byte("val1"))
+
+	fmt.Printf("\n")
 }
 
 func TestGetValuesMPT(t *testing.T){

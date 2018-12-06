@@ -53,6 +53,14 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
+
+	//Add Merkle Patricia Tree hash in the block
+	stateMPT, err := protocol.BuildMPT(storage.State)
+	if err != nil {
+		return err
+	}
+	block.MerklePatriciaRoot = stateMPT.Hash()
+
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		return err

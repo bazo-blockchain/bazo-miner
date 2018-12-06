@@ -32,6 +32,7 @@ type Block struct {
 	Nonce                 [8]byte
 	Timestamp             int64
 	MerkleRoot            [32]byte
+	MerklePatriciaRoot    [32]byte
 	NrContractTx          uint16
 	NrFundsTx             uint16
 	NrStakeTx             uint16
