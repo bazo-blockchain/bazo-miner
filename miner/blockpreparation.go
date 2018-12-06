@@ -24,8 +24,6 @@ func prepareBlock(block *protocol.Block) {
 
 	sort.Sort(tmpCopy)
 
-	var totalFees uint64 = 0
-
 	for _, tx := range opentxs {
 		//Prevent block size to overflow.
 		if block.GetSize()+tx.Size() > activeParameters.Block_size {
@@ -37,11 +35,7 @@ func prepareBlock(block *protocol.Block) {
 			//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
 			storage.DeleteOpenTx(tx)
 		}
-
-		totalFees += tx.TxFee()
 	}
-
-	block.TotalFees = totalFees
 }
 
 //Implement the sort interface

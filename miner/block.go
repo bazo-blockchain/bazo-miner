@@ -145,6 +145,8 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 		return errors.New("Transaction type not recognized.")
 	}
 
+	b.TotalFees += tx.TxFee()
+
 	return nil
 }
 
