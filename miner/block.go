@@ -66,6 +66,7 @@ func finalizeBlock(block *protocol.Block) error {
 	if err != nil {
 		return err
 	}
+	copy(block.CommitmentProof[0:crypto.COMM_PROOF_LENGTH], commitmentProof[:])
 
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
@@ -88,8 +89,6 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
-
-	copy(block.CommitmentProof[0:crypto.COMM_PROOF_LENGTH], commitmentProof[:])
 
 	return nil
 }

@@ -265,6 +265,7 @@ func createBlockWithSingleContractDeployTx(b *protocol.Block, contract []byte, c
 	tx, contractPrivKey, _ := protocol.ConstrContractTx(0, 1000000, PrivKeyRoot, contract, contractVariables)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
+		b.TotalFees = tx.Fee
 		return crypto.GetAddressFromPubKey(&contractPrivKey.PublicKey)
 	} else {
 		fmt.Print(err)
@@ -276,6 +277,7 @@ func createBlockWithSingleContractCallTx(contractAddress [64]byte, b *protocol.B
 	tx, _ := protocol.ConstrFundsTx(0x01, rand.Uint64()%100+1, 100000, uint32(accA.TxCnt), accA.Address, contractAddress, PrivKeyAccA, transactionData)
 	if err := addTx(b, tx); err == nil {
 		storage.WriteOpenTx(tx)
+		b.TotalFees = tx.Fee
 	} else {
 		fmt.Print(err)
 	}

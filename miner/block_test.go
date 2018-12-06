@@ -160,6 +160,8 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	var hashConfigSlice [][32]byte
 	var hashStakeSlice [][32]byte
 
+	var totalFees uint64 = 0
+
 	//in order to create valid funds transactions we need to know the tx count of acc A
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	loopMax := int(randVar.Uint32()%testSize) + 1
@@ -173,6 +175,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 			}
 			hashFundsSlice = append(hashFundsSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+			totalFees += tx.Fee
 		} else {
 			fmt.Print(err)
 		}
@@ -187,6 +190,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 			}
 			hashAccSlice = append(hashAccSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+			totalFees += tx.Fee
 		} else {
 			fmt.Print(err)
 		}
@@ -211,10 +215,13 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 
 			hashConfigSlice = append(hashConfigSlice, tx.Hash())
 			storage.WriteOpenTx(tx)
+			totalFees += tx.Fee
 		} else {
 			fmt.Print(err)
 		}
 	}
+
+	b.TotalFees = totalFees
 
 	return hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice
 }

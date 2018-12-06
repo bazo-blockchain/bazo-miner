@@ -372,6 +372,7 @@ func TestVerifySCP(t *testing.T) {
 	if err := addTx(b, tx); err != nil {
 		t.Error(err)
 	}
+	storage.WriteOpenTx(tx)
 	b.InitBloomFilter([][64]byte {accA.Address, accB.Address})
 	finalizeBlock(b)
 	blocks = append(blocks, b)
@@ -396,6 +397,7 @@ func TestVerifySCP(t *testing.T) {
 	if err := addTx(b1, tx1); err != nil {
 		t.Error(err)
 	}
+	storage.WriteOpenTx(tx1)
 	b1.InitBloomFilter([][64]byte {accA.Address, accB.Address})
 	finalizeBlock(b1)
 	blocks = append(blocks, b1)
