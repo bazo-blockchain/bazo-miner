@@ -22,24 +22,15 @@ func TestMPT(t *testing.T){
 }
 
 func TestEthereumMPTInsertNodes(t *testing.T){
-	Trie, _ := trie.New(common.Hash{}, trie.NewDatabase(ethdb.NewMemDatabase()))
-	key1 := []byte("11111")
-	value1 := []byte("45")
-	Trie.Update(key1,value1)
+	Trie, _ := initTrie()
 
-	key2 := []byte("11222")
-	value2 := []byte("100")
-	Trie.Update(key2,value2)
+	updateString(Trie,"11111", "45")
 
-	key3 := []byte("22222")
-	value3 := []byte("400")
-	Trie.Update(key3,value3)
+	updateString(Trie,"11222", "100")
 
-	key4 := []byte("2211111")
-	value4 := []byte("350")
-	Trie.Update(key4,value4)
+	updateString(Trie,"22222", "400")
 
-	println(Trie)
+	updateString(Trie,"2211111", "350")
 }
 
 func TestGetValuesMPT(t *testing.T){
@@ -59,6 +50,7 @@ func TestGetValuesMPT(t *testing.T){
 	updateString(Trie,"a1111111", "90")
 
 	testVal2 := Trie.Get([]byte("a1111111"))
+
 	fmt.Printf("Second insert: %v",string(testVal2))
 	fmt.Printf("\n")
 
