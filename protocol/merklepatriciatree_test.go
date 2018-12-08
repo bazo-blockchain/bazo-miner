@@ -128,19 +128,21 @@ func TestProofMPT(t *testing.T) {
 
 	root := Trie.Hash()
 
-	//Create Prove for key1
-	proof := createProver(Trie,[]byte("key1"))
-	if proof == nil {
-		t.Fatalf("prover: missing key %x while constructing proof", "key1")
-	}
 
-	val, _, err := trie.VerifyProof(root, []byte("key1"), proof)
+	for k,v := range m {
+		proof := createProver(Trie,[]byte(k))
+		if proof == nil {
+			t.Fatalf("prover: missing key %x while constructing proof", k)
+		}
 
-	if err != nil {
-		t.Fatalf("prover: failed to verify proof for key %x: %v\nraw ", "key1",Trie.Get([]byte("key1")))
-	}
-	if !bytes.Equal(val, Trie.Get([]byte("key1"))) {
-		t.Fatalf("prover: verified value mismatch for key %x: have %x, want %x", "key1", val, Trie.Get([]byte("key1")))
+		val, _, err := trie.VerifyProof(root, []byte(k), proof)
+
+		if err != nil {
+			t.Fatalf("prover: failed to verify proof for key %x: %v\nraw ", k,v)
+		}
+		if !bytes.Equal(val, []byte(v)) {
+			t.Fatalf("prover: verified value mismatch for key %x: have %x, want %x", k, val, v)
+		}
 	}
 }
 
