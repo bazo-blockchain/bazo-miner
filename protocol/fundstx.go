@@ -26,8 +26,10 @@ type FundsTx struct {
 }
 
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
-	tx = new(FundsTx)
 
+
+
+	tx = new(FundsTx)
 	tx.Header = header
 	tx.From = from
 	tx.To = to

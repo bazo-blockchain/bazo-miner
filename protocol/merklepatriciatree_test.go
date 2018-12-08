@@ -1,8 +1,10 @@
 package protocol
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/pkg/errors"
@@ -109,4 +111,63 @@ func initTrie() (*trie.Trie, error)  {
 	}
 
 	return Trie, nil
+}
+
+func TestProofMPT(t *testing.T) {
+	Trie, _ := initTrie()
+	m := make(map[string]string)
+
+	updateString(Trie,"key1","1")
+	m["key1"] = "1"
+	updateString(Trie,"key2","11")
+	m["key2"] = "11"
+	updateString(Trie,"olaf3","111")
+	m["olaf3"] = "111"
+	updateString(Trie,"olaf4","1111")
+	m["olaf4"] = "1111"
+
+	root := Trie.Hash()
+
+	//Create Prove for key1
+	proof := createProver(Trie,[]byte("key1"))
+	if proof == nil {
+		t.Fatalf("prover: missing key %x while constructing proof", "key1")
+	}
+
+	val, _, err := trie.VerifyProof(root, []byte("key1"), proof)
+
+	if err != nil {
+		t.Fatalf("prover: failed to verify proof for key %x: %v\nraw ", "key1",Trie.Get([]byte("key1")))
+	}
+	if !bytes.Equal(val, Trie.Get([]byte("key1"))) {
+		t.Fatalf("prover: verified value mismatch for key %x: have %x, want %x", "key1", val, Trie.Get([]byte("key1")))
+	}
+}
+
+func createProver(trie *trie.Trie, key []byte) *ethdb.MemDatabase{
+	proof := ethdb.NewMemDatabase()
+	trie.Prove(key, 0, proof)
+	return proof
+}
+
+func makeProvers(trie *trie.Trie) []func(key []byte) *ethdb.MemDatabase {
+	var provers []func(key []byte) *ethdb.MemDatabase
+
+	// Create a direct trie based Merkle prover
+	provers = append(provers, func(key []byte) *ethdb.MemDatabase {
+		proof := ethdb.NewMemDatabase()
+		trie.Prove(key, 0, proof)
+		return proof
+	})
+	// Create a leaf iterator based Merkle prover
+	provers = append(provers, func(key []byte) *ethdb.MemDatabase {
+		proof := ethdb.NewMemDatabase()
+		if it := trie.NodeIterator(key); it.Next(true) && bytes.Equal(key, it.LeafKey()) {
+			for _, p := range it.LeafProof() {
+				proof.Put(crypto.Keccak256(p), p)
+			}
+		}
+		return proof
+	})
+	return provers
 }
