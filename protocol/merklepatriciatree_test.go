@@ -174,6 +174,35 @@ func TestProofMPTFailValueMismatch(t *testing.T) {
 	assert.NotEqual(t, val, []byte("newValue"))
 }
 
+func TestMPTProofMissingKey(t *testing.T)  {
+	Trie, _ := initTrie()
+
+	updateString(Trie,"key1","1")
+	updateString(Trie,"key2","11")
+
+	// test missing key
+	//proof := createProver(Trie,[]byte("key3"))
+
+	for i, key := range []string{"a", "j", "l", "z"} {
+		proof := ethdb.NewMemDatabase()
+		Trie.Prove([]byte(key), 0, proof)
+
+		if proof.Len() != 1 {
+			t.Errorf("test %d: proof should have one element", i)
+		}
+		val, _, err := trie.VerifyProof(Trie.Hash(), []byte(key), proof)
+		if err != nil {
+			t.Fatalf("test %d: failed to verify proof: %v\nraw proof: %x", i, err, proof)
+		}
+		if val != nil {
+			t.Fatalf("test %d: verified value mismatch: have %x, want nil", i, val)
+		}
+
+		//expect that the retrieved value for the missing key is nil
+		assert.Equal(t, []uint8([]byte(nil)),val)
+	}
+}
+
 func createProver(trie *trie.Trie, key []byte) *ethdb.MemDatabase{
 	proof := ethdb.NewMemDatabase()
 	trie.Prove(key, 0, proof)
