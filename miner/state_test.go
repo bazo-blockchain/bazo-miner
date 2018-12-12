@@ -384,7 +384,7 @@ func TestVerifySCP(t *testing.T) {
 	blocks = append(blocks, b)
 
 	// Create new SCP
-	merkleTree := protocol.BuildMerkleTree(b)
+	merkleTree := b.BuildMerkleTree()
 	mhashes, err := merkleTree.MerkleProof(tx.Hash())
 	if err != nil {
 		t.Error(err)
@@ -408,7 +408,7 @@ func TestVerifySCP(t *testing.T) {
 	finalizeBlock(b1)
 	blocks = append(blocks, b1)
 
-	merkleTree1 := protocol.BuildMerkleTree(b1)
+	merkleTree1 := b1.BuildMerkleTree()
 	mhashes1, err := merkleTree1.MerkleProof(tx1.Hash())
 	if err != nil {
 		t.Error(err)

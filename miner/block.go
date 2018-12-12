@@ -50,7 +50,7 @@ func finalizeBlock(block *protocol.Block) error {
 		}
 	}
 
-	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
+	block.MerkleRoot = block.BuildMerkleTree().MerkleRoot()
 	block.InitBloomFilter(storage.GetTxPubKeys(block))
 
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)

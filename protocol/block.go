@@ -59,6 +59,46 @@ func NewBlock(prevHash [32]byte, height uint32) *Block {
 	return &newBlock
 }
 
+
+func (block *Block) BuildMerkleTree() *MerkleTree {
+	var txHashes hashArray
+
+	if block == nil {
+		return nil
+	}
+
+	if block.FundsTxData != nil {
+		for _, txHash := range block.FundsTxData {
+			txHashes = append(txHashes, txHash)
+		}
+	}
+	if block.ContractTxData != nil {
+		for _, txHash := range block.ContractTxData {
+			txHashes = append(txHashes, txHash)
+		}
+	}
+	if block.ConfigTxData != nil {
+		for _, txHash := range block.ConfigTxData {
+			txHashes = append(txHashes, txHash)
+		}
+	}
+
+	if block.StakeTxData != nil {
+		for _, txHash := range block.StakeTxData {
+			txHashes = append(txHashes, txHash)
+		}
+	}
+
+	//Merkle root for no transactions is 0 hash
+	if len(txHashes) == 0 {
+		return nil
+	}
+
+	m, _ := NewMerkleTree(txHashes)
+
+	return m
+}
+
 func (block *Block) HashBlock() [32]byte {
 	if block == nil {
 		return [32]byte{}

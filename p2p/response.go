@@ -231,7 +231,7 @@ func intermediateNodesRes(p *peer, payload []byte) {
 	copy(blockHash[:], payload[:32])
 	copy(txHash[:], payload[32:64])
 
-	merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
+	merkleTree := storage.ReadClosedBlock(blockHash).BuildMerkleTree()
 
 	if intermediates, _ := protocol.GetIntermediate(merkleTree.GetLeaf(txHash)); intermediates != nil {
 		for _, node := range intermediates {

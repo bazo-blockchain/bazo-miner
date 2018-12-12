@@ -80,6 +80,8 @@ func BuildMerkleTree(b *Block) *MerkleTree {
 
 //NewTree creates a new Merkle Tree using the content cs.
 func newTree(txSlices [][32]byte) (*MerkleTree, error) {
+//NewMerkleTree creates a new Merkle Tree using the content cs.
+func NewMerkleTree(txSlices hashArray) (*MerkleTree, error) {
 	root, leafs, err := buildWithContent(txSlices)
 	if err != nil {
 		return nil, err
@@ -92,10 +94,22 @@ func newTree(txSlices [][32]byte) (*MerkleTree, error) {
 	return t, nil
 }
 
+//verifyNode walks down the tree until hitting a leaf, calculating the hash at each level
+//and returning the resulting hash of Node n.
+func (n *Node) verifyNode() [32]byte {
+	if n.leaf {
+		return n.Hash
+	}
+	leftHash := n.Left.verifyNode()
+	rightHash := n.Right.verifyNode()
+	concatHash := append(leftHash[:], rightHash[:]...)
+	return MTHash(concatHash)
+}
+
 //buildWithContent is a helper function that for a given set of Contents, generates a
 //corresponding tree and returns the root node, a list of leaf nodes, and a possible error.
 //Returns an error if cs contains no Contents.
-func buildWithContent(txSlices [][32]byte) (*Node, []*Node, error) {
+func buildWithContent(txSlices hashArray) (*Node, []*Node, error) {
 	if len(txSlices) == 0 {
 		return nil, nil, errors.New("Error: cannot construct tree with no content.")
 	}
