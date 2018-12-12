@@ -100,6 +100,7 @@ func (block *Block) HashBlock() [32]byte {
 		prevHash              [32]byte
 		timestamp             int64
 		merkleRoot            [32]byte
+		merklePatriciaRoot	  [32]byte
 		beneficiary           [64]byte
 		commitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 		slashedAddress        [64]byte
@@ -109,6 +110,7 @@ func (block *Block) HashBlock() [32]byte {
 		block.PrevHash,
 		block.Timestamp,
 		block.MerkleRoot,
+		block.MerklePatriciaRoot,
 		block.Beneficiary,
 		block.CommitmentProof,
 		block.SlashedAddress,
@@ -158,6 +160,7 @@ func (block *Block) Encode() []byte {
 		Nonce:                 block.Nonce,
 		Timestamp:             block.Timestamp,
 		MerkleRoot:            block.MerkleRoot,
+		MerklePatriciaRoot:    block.MerklePatriciaRoot,
 		Beneficiary:           block.Beneficiary,
 		NrContractTx:               block.NrContractTx,
 		NrFundsTx:             block.NrFundsTx,
@@ -221,6 +224,7 @@ func (block Block) String() string {
 		"Nonce: %x\n"+
 		"Timestamp: %v\n"+
 		"MerkleRoot: %x\n"+
+		"MerklePatriciaRoot: %x\n"+
 		"Beneficiary: %x\n"+
 		"Amount of fundsTx: %v\n"+
 		"Amount of contractTx: %v\n"+
@@ -236,6 +240,7 @@ func (block Block) String() string {
 		block.Nonce,
 		block.Timestamp,
 		block.MerkleRoot[0:8],
+		block.MerklePatriciaRoot,
 		block.Beneficiary[0:8],
 		block.NrFundsTx,
 		block.NrContractTx,

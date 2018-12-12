@@ -203,12 +203,6 @@ func TestMPTProofMissingKey(t *testing.T)  {
 	}
 }
 
-func createProver(trie *trie.Trie, key []byte) *ethdb.MemDatabase{
-	proof := ethdb.NewMemDatabase()
-	trie.Prove(key, 0, proof)
-	return proof
-}
-
 func makeProvers(trie *trie.Trie) []func(key []byte) *ethdb.MemDatabase {
 	var provers []func(key []byte) *ethdb.MemDatabase
 

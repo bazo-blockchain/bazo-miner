@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 const (
@@ -23,12 +25,10 @@ type FundsTx struct {
 	To     [64]byte
 	Sig    [64]byte
 	Data   []byte
+	MPT_Proof ethdb.MemDatabase
 }
 
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
-
-
-
 	tx = new(FundsTx)
 	tx.Header = header
 	tx.From = from
@@ -47,6 +47,11 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
+
+	stateMPT, _ := BuildMPT(storage.State)
+
+	//Include MPT proof for the sender address in the transaction
+	tx.MPT_Proof = *createProver(stateMPT,tx.From[:])
 
 	return tx, nil
 }
@@ -91,9 +96,11 @@ func (tx *FundsTx) Encode() (encodedTx []byte) {
 		tx.To,
 		tx.Sig,
 		tx.Data,
+		tx.MPT_Proof,
 	}
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)
+
 	return buffer.Bytes()
 }
 

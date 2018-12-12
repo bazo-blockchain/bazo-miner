@@ -39,3 +39,11 @@ func deleteString(trie *trie.Trie, k string) {
 	trie.Delete([]byte(k))
 }
 
+/*
+This function creates a MPT Proof for a given MPT and a key
+*/
+func createProver(trie *trie.Trie, key []byte) *ethdb.MemDatabase{
+	proof := ethdb.NewMemDatabase()
+	trie.Prove(key, 0, proof)
+	return proof
+}
