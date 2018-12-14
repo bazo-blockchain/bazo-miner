@@ -2,7 +2,6 @@ package miner
 
 import (
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -18,7 +17,7 @@ import (
 func TestBlock(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	hashFundsSlice, hashAccSlice, hashConfigSlice, hashStakeSlice := createBlockWithTxs(b)
 	err := finalizeBlock(b)
 	if err != nil {
@@ -61,7 +60,7 @@ func TestBlock(t *testing.T) {
 func TestBlockTxDuplicates(t *testing.T) {
 
 	cleanAndPrepare()
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	createBlockWithTxs(b)
 
 	if err := finalizeBlock(b); err != nil {
@@ -100,28 +99,28 @@ func TestBlockTxDuplicates(t *testing.T) {
 func TestMultipleBlocks(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {
 		t.Errorf("Block validation for (%v) failed: %v\n", b, err)
 	}
 
-	b2 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+	b2 := protocol.NewBlock(b.Hash, 2)
 	createBlockWithTxs(b2)
 	finalizeBlock(b2)
 	if err := validate(b2, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 3)
+	b3 := protocol.NewBlock(b2.Hash, 3)
 	createBlockWithTxs(b3)
 	finalizeBlock(b3)
 	if err := validate(b3, false); err != nil {
 		t.Errorf("Block validation failed: %v\n", err)
 	}
 
-	b4 := newBlock(b3.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 4)
+	b4 := protocol.NewBlock(b3.Hash, 4)
 	createBlockWithTxs(b4)
 	finalizeBlock(b4)
 	if err := validate(b4, false); err != nil {
@@ -165,7 +164,7 @@ func createBlockWithTxs(b *protocol.Block) ([][32]byte, [][32]byte, [][32]byte, 
 	loopMax := int(randVar.Uint32()%testSize) + 1
 	loopMax += int(accA.TxCnt)
 	for cnt := int(accA.TxCnt); cnt < loopMax; cnt++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if err := addTx(b, tx); err == nil {
 			//Might  be that we generated a block that was already generated before
 			if storage.ReadOpenTx(tx.Hash()) != nil || storage.ReadClosedTx(tx.Hash()) != nil {

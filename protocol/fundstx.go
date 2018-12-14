@@ -26,7 +26,20 @@ type FundsTx struct {
 	Proofs []*MerkleProof
 }
 
-func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
+func NewSimpleFundsTx(amount uint64, fee uint64, txCnt uint32, from, to [64]byte) (tx *FundsTx) {
+	tx = new(FundsTx)
+
+	tx.Header = 0x01
+	tx.From = from
+	tx.To = to
+	tx.Amount = amount
+	tx.Fee = fee
+	tx.TxCnt = txCnt
+
+	return tx
+}
+
+func NewSignedFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 
 	tx.Header = header

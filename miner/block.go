@@ -24,17 +24,6 @@ type blockData struct {
 	block         *protocol.Block
 }
 
-//Block constructor, argument is the previous block in the blockchain.
-func newBlock(prevHash [32]byte, commitmentProof [crypto.COMM_PROOF_LENGTH]byte, height uint32) *protocol.Block {
-	block := new(protocol.Block)
-	block.PrevHash = prevHash
-	block.CommitmentProof = commitmentProof
-	block.Height = height
-	block.StateCopy = make(map[[64]byte]*protocol.Account)
-
-	return block
-}
-
 //This function prepares the block to broadcast into the network. No new txs are added at this point.
 func finalizeBlock(block *protocol.Block) error {
 	//Check if we have a slashing proof that we can add to the block.

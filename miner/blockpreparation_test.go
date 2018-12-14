@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"testing"
 	"time"
@@ -17,8 +16,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 	//fill the open storage with fundstx
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 	for cnt := 0; cnt < testsize; cnt++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
-		tx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accB.Address, accA.Address, PrivKeyAccB, nil)
+		tx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx2, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%100+1, randVar.Uint64()%100+1, uint32(cnt), accB.Address, accA.Address, PrivKeyAccB, nil)
 
 		if verifyFundsTx(tx) == nil {
 			storage.WriteOpenTx(tx)
@@ -49,7 +48,7 @@ func TestPrepareAndSortTxs(t *testing.T) {
 		}
 	}
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	prepareBlock(b)
 	finalizeBlock(b)
 

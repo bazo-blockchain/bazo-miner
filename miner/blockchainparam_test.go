@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"testing"
 )
@@ -19,7 +18,7 @@ func TestTargetHistory(t *testing.T) {
 	var tmpBlock *protocol.Block
 	tmpBlock = new(protocol.Block)
 	for cnt := 0; cnt < 10; cnt++ {
-		tmpBlock = newBlock(tmpBlock.Hash, [crypto.COMM_KEY_LENGTH]byte{}, tmpBlock.Height+1)
+		tmpBlock = protocol.NewBlock(tmpBlock.Hash, tmpBlock.Height+1)
 		finalizeBlock(tmpBlock)
 		validate(tmpBlock, false)
 		blocks = append(blocks, tmpBlock)
@@ -53,7 +52,7 @@ func TestTargetHistory(t *testing.T) {
 	targetSize = len(target)
 	targetTimesSize = len(targetTimes)
 
-	tmpBlock = newBlock(blocks[len(blocks)-1].Hash, [crypto.COMM_PROOF_LENGTH]byte{}, blocks[len(blocks)-1].Height+1)
+	tmpBlock = protocol.NewBlock(blocks[len(blocks)-1].Hash, blocks[len(blocks)-1].Height+1)
 	finalizeBlock(tmpBlock)
 	validate(tmpBlock, false)
 
@@ -72,7 +71,7 @@ func TestTimestamps(t *testing.T) {
 
 	prevHash := [32]byte{}
 	for cnt := 0; cnt < 0; cnt++ {
-		b := newBlock(prevHash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+		b := protocol.NewBlock(prevHash, 1)
 
 		if cnt == 8 {
 			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, PrivKeyRoot)

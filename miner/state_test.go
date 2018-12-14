@@ -20,7 +20,7 @@ func TestFundsTxStateChange(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -34,7 +34,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
+		ftx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -43,7 +43,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
+		ftx2, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -79,7 +79,7 @@ func TestAccountOverflow(t *testing.T) {
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx, err := protocol.NewSignedFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -188,7 +188,7 @@ func TestFundsTxNewAccsStateChange(t *testing.T) {
 		rand.Read(fromAddress[:])
 		rand.Read(toAddress[:])
 
-		tx, _ := protocol.ConstrFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
+		tx, _ := protocol.NewSignedFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
 		fundsTxs = append(fundsTxs, tx)
 	}
 
@@ -337,7 +337,7 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false
@@ -373,8 +373,8 @@ func TestVerifySCP(t *testing.T) {
 	var blocks []*protocol.Block
 
 	// Setup test by transferring 100 coins to accB
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 0)
-	tx, _ := protocol.ConstrFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
+	b := protocol.NewBlock([32]byte{}, 0)
+	tx, _ := protocol.NewSignedFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
 	if err := addTx(b, tx); err != nil {
 		t.Error(err)
 	}
@@ -392,14 +392,14 @@ func TestVerifySCP(t *testing.T) {
 	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
 
 	// Create transaction that contains SCP
-	tx1, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx1, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
 	tx1.Proofs = append(tx1.Proofs, &merkleProof)
 	if err := verifySCP(tx1, blocks); err != nil {
 		t.Error(err)
 	}
 
 	// Create new block
-	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b1 := protocol.NewBlock(b.Hash, 1)
 	if err := addTx(b1, tx1); err != nil {
 		t.Error(err)
 	}
@@ -416,7 +416,7 @@ func TestVerifySCP(t *testing.T) {
 	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes1, tx1.Header, tx1.Amount, tx1.Fee, tx1.TxCnt, tx1.From, tx1.To, tx1.Data)
 
 	// Create another transaction that contains SCP
-	tx2, _ := protocol.ConstrFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx2, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
 	tx2.Proofs = append(tx2.Proofs, &merkleProof1, &merkleProof)
 	if err := verifySCP(tx2, blocks); err == nil {
 		t.Error("self-contained proof should be invalid (double spending) but verifySCP returns no error")

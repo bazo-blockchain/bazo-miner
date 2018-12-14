@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -20,7 +19,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -35,7 +34,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
+		ftx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -46,7 +45,7 @@ func TestFundsStateChangeRollback(t *testing.T) {
 			t.Errorf("Block rejected a valid transaction: %v\n", ftx)
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accB.Address, accA.Address, PrivKeyAccB, nil)
+		ftx2, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accB.Address, accA.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -155,7 +154,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	var fee uint64
 	loopMax := int(randVar.Uint64() % 1000)
 	for i := 0; i < loopMax+1; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 
 		funds = append(funds, tx)
 		fee += tx.Fee
@@ -175,7 +174,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	minerBal = validatorAcc.Balance
 	//Miner gets fees, the miner account balance will overflow at some point
 	for i := 2; i < 100; i++ {
-		tx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
+		tx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000000+1, uint64(i), uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		funds2 = append(funds2, tx)
 		fee2 += tx.Fee
 	}
@@ -183,7 +182,7 @@ func TestCollectTxFeesRollback(t *testing.T) {
 	accABal := accA.Balance
 	accBBal := accB.Balance
 	//Should throw an error and result in a rollback, because of acc balance overflow
-	tmpBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	tmpBlock := protocol.NewBlock([32]byte{}, 1)
 	tmpBlock.Beneficiary = validatorAcc.Address
 	data := blockData{nil, funds2, nil, nil, tmpBlock}
 	if err := validateState(data); err == nil ||

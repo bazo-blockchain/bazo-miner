@@ -202,7 +202,7 @@ func getInitialBlock(genesis *protocol.Genesis) (initialBlock *protocol.Block, e
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock(genesis.Hash(), [crypto.COMM_PROOF_LENGTH]byte{}, 0)
+		initialBlock = protocol.NewBlock(genesis.Hash(), 0)
 
 		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
