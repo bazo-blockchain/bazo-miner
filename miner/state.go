@@ -269,8 +269,6 @@ func accStateChange(txSlice []*protocol.ContractTx) {
 }
 
 func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
-	previousBlocks := storage.ReadAllClosedBlocks()
-
 	for _, tx := range txSlice {
 		var rootAcc *protocol.Account
 		//Check if we have to issue new coins (in case a root account signed the tx)
@@ -336,24 +334,56 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 		accSender.TxCnt += 1
 		accSender.Balance -= tx.Amount
 		accReceiver.Balance += tx.Amount
+	}
+
+	return nil
+}
+
+func verifyFundsTransactions(txSlice []*protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
+	tmpBuckets := make(map[protocol.AddressType]*protocol.TxBucket)
+
+	for _, tx := range txSlice {
+		var rootAcc *protocol.Account
+		//Check if we have to issue new coins (in case a root account signed the tx)
+		if rootAcc, err = storage.ReadRootAccount(tx.From); err != nil {
+			return err
+		}
+
+		if rootAcc != nil && rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
+			return errors.New("transaction amount would lead to balance overflow at the receiver (root) account")
+		}
 
 		// Only verify SCP if sender is no root
-		if rootAcc == nil {
-			// TODO: @rmnblm testing purposes
-			if err := verifySCP(tx, previousBlocks); err != nil {
-				logger.Printf("self-contained proof is invalid: %v\n", err)
-				// return err
-			} else {
-				logger.Printf("self-contained proof is valid\n")
-			}
+		if rootAcc != nil {
+			continue
+		}
+
+		tmpBucket, exists := tmpBuckets[tx.From]
+		if !exists {
+			tmpBucket = protocol.NewTxBucket(tx.From)
+			tmpBuckets[tx.From] = tmpBucket
+		}
+		tmpBucket.AddFundsTx(tx)
+	}
+
+	for _, bucket := range tmpBuckets {
+		tx := bucket.Transactions[0] // TODO @rmnblm we only check the first transaction to get the verified balance
+		verifiedBalance, err := verifySCP(tx, previousBlocks)
+		if err != nil {
+			return err
+		}
+
+		if  verifiedBalance + bucket.RelativeBalance < 0 {
+			return errors.New(fmt.Sprintf("verifying funds transactions failed: Address %x " +
+				"wants to spend more than actually available, (verified %v, relative %v)",
+				bucket.Address[0:8], verifiedBalance, bucket.RelativeBalance))
 		}
 	}
 
 	return nil
 }
 
-func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
-	var verifiedBalance int64 = 0
+func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verifiedBalance int64, err error) {
 	proofIndex := 0
 	sender := tx.From[:]
 
@@ -365,13 +395,13 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 		}
 
 		if proofIndex >= len(tx.Proofs) {
-			return errors.New(fmt.Sprintf("Bloom filter returned true but Merkle proof missing for block at height %v", currentBlock.Height))
+			return 0, errors.New(fmt.Sprintf("Bloom filter returned true but Merkle proof missing for block at height %v", currentBlock.Height))
 		}
 
 		currentProof := tx.Proofs[proofIndex]
 		// There must be at least one proof for the current block because the BF returned true
 		if currentProof.Height < currentBlock.Height {
-			return errors.New(fmt.Sprintf("SCP does not contain a prof for block at height %v", currentBlock.Height))
+			return 0, errors.New(fmt.Sprintf("SCP does not contain a prof for block at height %v", currentBlock.Height))
 		}
 
 		for {
@@ -383,16 +413,16 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 				// Get out of the infinite loop
 				break
 			} else if currentProof.Height > currentBlock.Height {
-				return errors.New(fmt.Sprintf("SCP is out of order because height of proof (%v) is greater than height of current block (%v)", currentProof.Height, currentBlock.Height))
+				return 0, errors.New(fmt.Sprintf("SCP is out of order because height of proof (%v) is greater than height of current block (%v)", currentProof.Height, currentBlock.Height))
 			}
 
 			merkleRoot, err := currentProof.CalculateMerkleRoot()
 			if err != nil {
-				return err
+				return 0, err
 			}
 
 			if currentBlock.MerkleRoot != merkleRoot {
-				return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x", currentBlock.MerkleRoot, merkleRoot))
+				return 0, errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x", currentBlock.MerkleRoot, merkleRoot))
 			}
 
 			if currentProof.BucketRelativeBalance == 0 {
@@ -415,10 +445,10 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err erro
 	}
 
 	if verifiedBalance < int64(tx.Amount) {
-		return errors.New(fmt.Sprintf("verified balance less than amount (%v < %v) spent by acc %x", verifiedBalance, tx.Amount, tx.From[0:8]))
+		return 0, errors.New(fmt.Sprintf("verified balance less than amount (%v < %v) spent by acc %x", verifiedBalance, tx.Amount, tx.From[0:8]))
 	}
 
-	return nil
+	return verifiedBalance, nil
 }
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new

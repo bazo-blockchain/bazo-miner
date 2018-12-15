@@ -12,8 +12,9 @@ type TxBucket struct {
 	Address         [64]byte
 	RelativeBalance int64
 
-	merkleRoot HashType
-	txHashes   HashArray
+	merkleRoot HashType // should not be accessed directly, instead, call CalculateMerkleRoot()
+
+	Transactions []*FundsTx // won't be serialized
 }
 
 func NewTxBucket(address [64]byte) *TxBucket {
@@ -33,8 +34,7 @@ func (bucket *TxBucket) AddFundsTx(tx *FundsTx) {
 		return
 	}
 
-	hash := tx.Hash()
-	bucket.txHashes = append(bucket.txHashes, hash)
+	bucket.Transactions = append(bucket.Transactions, tx)
 }
 
 func (bucket *TxBucket) CalculateMerkleRoot() HashType {
@@ -52,11 +52,16 @@ func (bucket *TxBucket) buildMerkleTree() *MerkleTree {
 	}
 
 	//Merkle root for no transactions is 0 hash
-	if len(bucket.txHashes) == 0 {
+	if len(bucket.Transactions) == 0 {
 		return nil
 	}
 
-	m, _ := NewMerkleTree(bucket.txHashes)
+	var txHashes HashArray
+	for _, tx := range bucket.Transactions {
+		txHashes = append(txHashes, tx.Hash())
+	}
+
+	m, _ := NewMerkleTree(txHashes)
 
 	return m
 }

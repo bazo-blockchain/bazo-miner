@@ -678,6 +678,14 @@ func preValidate(block *protocol.Block, initialSetup bool) (data *blockData, err
 func validateState(data blockData) (err error) {
 	accStateChange(data.contractTxSlice)
 
+	// TODO @rmnblm SCP Testing Purposes
+	// State validation does not stop when this returns an error
+	// Actual funds transaction validation is below in fundsStateChange(data.fundsTxSlice)
+	err = verifyFundsTransactions(data.fundsTxSlice, storage.ReadAllClosedBlocks())
+	if err != nil {
+		logger.Printf("self-contained proof is invalid: %v\n", err)
+	}
+
 	err = fundsStateChange(data.fundsTxSlice)
 	if err != nil {
 		accStateChangeRollback(data.contractTxSlice)
