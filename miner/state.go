@@ -378,6 +378,8 @@ func verifyFundsTransactions(txSlice []*protocol.FundsTx, previousBlocks []*prot
 				"wants to spend more than actually available, (verified %v, relative %v)",
 				bucket.Address[0:8], verifiedBalance, bucket.RelativeBalance))
 		}
+
+		logger.Printf("self-contained proof is valid, yay!")
 	}
 
 	return nil
@@ -388,6 +390,10 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified
 	sender := tx.From[:]
 
 	for _, currentBlock := range previousBlocks {
+		if currentBlock.Beneficiary == tx.From {
+			verifiedBalance += int64(currentBlock.TotalFees)
+		}
+
 		// Bloom filters never give false-negative, so if it does not contain the sender,
 		// we can easily skip the current block
 		if currentBlock.BloomFilter == nil || !currentBlock.BloomFilter.Test(sender) {
@@ -431,9 +437,6 @@ func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (verified
 			} else if currentProof.BucketAddress == tx.From || currentProof.BucketAddress == tx.To {
 				// Note that currentProof.BucketRelativeBalance can be either positive or negative
 				verifiedBalance += currentProof.BucketRelativeBalance
-			} else if currentBlock.Beneficiary == tx.From {
-				// (Receiver) Beneificiary
-				verifiedBalance += int64(currentBlock.TotalFees)
 			}
 
 			proofIndex++
