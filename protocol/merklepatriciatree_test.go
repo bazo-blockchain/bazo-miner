@@ -130,7 +130,7 @@ func TestProofMPT(t *testing.T) {
 
 
 	for k,v := range m {
-		proof := createProver(Trie,[]byte(k))
+		proof, err := createProver(Trie,[]byte(k))
 		if proof == nil {
 			t.Fatalf("prover: missing key %x while constructing proof", k)
 		}
@@ -158,7 +158,7 @@ func TestProofMPTFailValueMismatch(t *testing.T) {
 	root := Trie.Hash()
 
 	// test value mismatch for key2
-	proof := createProver(Trie,[]byte("key2"))
+	proof, err := createProver(Trie,[]byte("key2"))
 	if proof == nil {
 		t.Fatalf("prover: missing key %x while constructing proof", "key2")
 	}

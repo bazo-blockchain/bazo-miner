@@ -49,10 +49,10 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
 
-	//tx.MPT_Proof = nil
-	testMap := make(map[string][]byte)
+	tx.MPT_Proof = nil
+	/*testMap := make(map[string][]byte)
 	testMap["heyho"] = []byte("testtest")
-	tx.MPT_Proof = testMap
+	tx.MPT_Proof = testMap*/
 
 	/*stateMPT, _ := BuildMPT(storage.State)
 

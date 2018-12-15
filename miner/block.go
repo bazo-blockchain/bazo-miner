@@ -202,15 +202,15 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		}
 	}
 
-	//Root accounts are exempt from balance requirements. All other accounts need to have (at least)
+	/*//Root accounts are exempt from balance requirements. All other accounts need to have (at least)
 	//fee + amount to spend as balance available.
 	if !storage.IsRootKey(tx.From) {
 		if (tx.Amount + tx.Fee) > b.StateCopy[tx.From].Balance {
 			return errors.New("Not enough funds to complete the transaction!")
 		}
-	}
+	}*/
 
-	/*stateMPT, err := protocol.BuildMPT(storage.State)
+	stateMPT, err := protocol.BuildMPT(storage.State)
 
 	if err != nil{
 		err := fmt.Sprintf("Error while creating MPT of State in Block: %x ", b.Hash)
@@ -225,7 +225,25 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		return errors.New(err)
 	}
 
-	tx.MPT_Proof = mptProof*/
+	preliminaryMPTMap := make(map[string][]byte)
+
+	//Iterate over db of proof and append key and values to the map in MPT_Proof
+	for _, key := range mptProof.Keys(){
+		retrievedValue, err := mptProof.Get(key)
+
+		if err != nil {
+			err := fmt.Sprintf("Error while retrieving value for key: %x ", string(key))
+			return errors.New(err)
+		}
+
+		preliminaryMPTMap[string(key)] = retrievedValue
+	}
+
+	tx.MPT_Proof = preliminaryMPTMap
+
+
+	//Verify included MPT
+
 
 	//Transaction count need to match the state, preventing replay attacks.
 	if b.StateCopy[tx.From].TxCnt != tx.TxCnt {
@@ -267,13 +285,14 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	return nil
 }
 
-func createProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
-	proof := ethdb.NewMemDatabase()
-	proofError := trie.Prove(key, 0, proof)
+func createProver(trie *trie.Trie, key []byte) (ProofNodes *ethdb.MemDatabase,err error) {
+	proofDB := ethdb.NewMemDatabase()
+	proofError := trie.Prove(key, 0, proofDB)
 	if proofError != nil{
 		return nil, proofError
 	}
-	return proof, nil
+
+	return proofDB, nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
