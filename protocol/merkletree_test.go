@@ -9,7 +9,7 @@ import (
 
 func TestBuildMerkleTree3N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 3; i++ {
 		var txHash [32]byte
@@ -17,9 +17,7 @@ func TestBuildMerkleTree3N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -30,7 +28,6 @@ func TestBuildMerkleTree3N(t *testing.T) {
 	concat1233 := append(hash12[:], hash33[:]...)
 	hash1233 := sha3.Sum256(concat1233)
 
-	m := b.BuildMerkleTree()
 	if hash1233 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash1233, m.MerkleRoot())
 	}
@@ -38,7 +35,7 @@ func TestBuildMerkleTree3N(t *testing.T) {
 
 func TestBuildMerkleTree2N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 2; i++ {
 		var txHash [32]byte
@@ -46,14 +43,11 @@ func TestBuildMerkleTree2N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
 
-	m := b.BuildMerkleTree()
 	if hash12 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash12, m.MerkleRoot())
 	}
@@ -62,7 +56,7 @@ func TestBuildMerkleTree2N(t *testing.T) {
 
 func TestBuildMerkleTree4N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 4; i++ {
 		var txHash [32]byte
@@ -70,9 +64,7 @@ func TestBuildMerkleTree4N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -85,7 +77,6 @@ func TestBuildMerkleTree4N(t *testing.T) {
 	concat1234 := append(hash12[:], hash34[:]...)
 	hash1234 := sha3.Sum256(concat1234)
 
-	m := b.BuildMerkleTree()
 	if hash1234 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash1234, m.MerkleRoot())
 	}
@@ -94,7 +85,7 @@ func TestBuildMerkleTree4N(t *testing.T) {
 
 func TestBuildMerkleTree6N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 6; i++ {
 		var txHash [32]byte
@@ -102,9 +93,7 @@ func TestBuildMerkleTree6N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -125,7 +114,6 @@ func TestBuildMerkleTree6N(t *testing.T) {
 	concat123456 := append(hash1234[:], hash56[:]...)
 	hash123456 := sha3.Sum256(concat123456)
 
-	m := b.BuildMerkleTree()
 	if hash123456 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash123456, m.MerkleRoot())
 	}
@@ -134,7 +122,7 @@ func TestBuildMerkleTree6N(t *testing.T) {
 
 func TestBuildMerkleTree8N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 8; i++ {
 		var txHash [32]byte
@@ -142,9 +130,7 @@ func TestBuildMerkleTree8N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -171,7 +157,6 @@ func TestBuildMerkleTree8N(t *testing.T) {
 	concat12345678 := append(hash1234[:], hash5678[:]...)
 	hash12345678 := sha3.Sum256(concat12345678)
 
-	m := b.BuildMerkleTree()
 	if hash12345678 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash12345678, m.MerkleRoot())
 	}
@@ -180,7 +165,7 @@ func TestBuildMerkleTree8N(t *testing.T) {
 
 func TestBuildMerkleTree10N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 10; i++ {
 		var txHash [32]byte
@@ -188,9 +173,7 @@ func TestBuildMerkleTree10N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -225,7 +208,6 @@ func TestBuildMerkleTree10N(t *testing.T) {
 	concat12345678910 := append(hash12345678[:], hash910[:]...)
 	hash12345678910 := sha3.Sum256(concat12345678910)
 
-	m := b.BuildMerkleTree()
 	if hash12345678910 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash12345678910, m.MerkleRoot())
 	}
@@ -234,7 +216,7 @@ func TestBuildMerkleTree10N(t *testing.T) {
 
 func TestBuildMerkleTree11N(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 11; i++ {
 		var txHash [32]byte
@@ -242,9 +224,7 @@ func TestBuildMerkleTree11N(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
+	m, _ := NewMerkleTree(hashSlice)
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
 	hash12 := sha3.Sum256(concat12)
@@ -285,7 +265,6 @@ func TestBuildMerkleTree11N(t *testing.T) {
 	concat123456789101111 := append(hash12345678[:], hash9101111[:]...)
 	hash123456789101111 := sha3.Sum256(concat123456789101111)
 
-	m := b.BuildMerkleTree()
 	if hash123456789101111 != m.MerkleRoot() {
 		t.Errorf("Hashes don't match: %x != %x\n", hash123456789101111, m.MerkleRoot())
 	}
@@ -294,16 +273,12 @@ func TestBuildMerkleTree11N(t *testing.T) {
 
 func TestGetIntermediate(t *testing.T) {
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 
 	for i := 0; i < 11; i++ {
 		var txHash [32]byte
 		rand.Read(txHash[:])
 		hashSlice = append(hashSlice, txHash)
-	}
-
-	b := Block{
-		FundsTxData: hashSlice,
 	}
 
 	concat12 := append(hashSlice[0][:], hashSlice[1][:]...)
@@ -342,9 +317,9 @@ func TestGetIntermediate(t *testing.T) {
 	concat12345678 := append(hash1234[:], hash5678[:]...)
 	hash12345678 := sha3.Sum256(concat12345678)
 
-	merkleTree := b.BuildMerkleTree()
+	m, _ := NewMerkleTree(hashSlice)
 
-	intermediates, _ := GetIntermediate(merkleTree.GetLeaf(hashSlice[9]))
+	intermediates, _ := GetIntermediate(m.GetLeaf(hashSlice[9]))
 
 	if intermediates[0].Hash != hashSlice[8] {
 		t.Errorf("Hashes don't match: %x != %x\n", intermediates[0].Hash, hashSlice[8])
@@ -379,14 +354,10 @@ func TestMerkleProof(t *testing.T) {
 	randVal.Read(hash3[:])
 	randVal.Read(hash4[:])
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 	hashSlice = append(hashSlice, hash1, hash2, hash3, hash4)
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
-
-	m := b.BuildMerkleTree()
+	m, _ := NewMerkleTree(hashSlice)
 
 	hash12 := MTHash(append(hash1[:], hash2[:]...))
 	hash34 := MTHash(append(hash3[:], hash4[:]...))
@@ -433,7 +404,7 @@ func TestMerkleProof(t *testing.T) {
 
 func TestMerkleProofWithVerification(t *testing.T) {
 	randVal := rand.New(rand.NewSource(time.Now().Unix()))
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 	nofHashes := int(randVal.Uint32() % 1000) + 1
 	for i := 0; i < nofHashes; i++ {
 		var txHash [32]byte
@@ -441,12 +412,7 @@ func TestMerkleProofWithVerification(t *testing.T) {
 		hashSlice = append(hashSlice, txHash)
 	}
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
-
-	m := b.BuildMerkleTree()
-
+	m, _ := NewMerkleTree(hashSlice)
 
 	randomIndex := randVal.Uint32() % uint32(nofHashes)
 	leafHash := hashSlice[randomIndex]
@@ -470,14 +436,10 @@ func TestVerifyMerkleProof(t *testing.T) {
 	randVal.Read(hash3[:])
 	randVal.Read(hash4[:])
 
-	var hashSlice [][32]byte
+	var hashSlice HashArray
 	hashSlice = append(hashSlice, hash1, hash2, hash3, hash4)
 
-	b := Block{
-		FundsTxData: hashSlice,
-	}
-
-	m := b.BuildMerkleTree()
+	m, _ := NewMerkleTree(hashSlice)
 
 	hash12 := MTHash(append(hash1[:], hash2[:]...))
 	hash34 := MTHash(append(hash3[:], hash4[:]...))

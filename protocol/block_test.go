@@ -57,8 +57,7 @@ func TestBlockHash(t *testing.T) {
 func TestBlockSerialization(t *testing.T) {
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	var block Block
-
+	block := NewBlock([32]byte{}, 0)
 	block.Header = 1
 	rand.Read(block.Hash[:])
 	rand.Read(block.PrevHash[:])
@@ -70,26 +69,26 @@ func TestBlockSerialization(t *testing.T) {
 	block.NrFundsTx = uint16(randVar.Uint32())
 	block.NrConfigTx = uint8(randVar.Uint32())
 	block.NrStakeTx = uint16(randVar.Uint32())
+	block.NrTxBucket = uint16(randVar.Uint32())
 	rand.Read(block.SlashedAddress[:])
 	block.Height = uint32(randVar.Uint32())
 	rand.Read(block.CommitmentProof[:])
 	rand.Read(block.ConflictingBlockHash1[:])
 	rand.Read(block.ConflictingBlockHash2[:])
 
-	var compareBlock Block
+	var compareBlock *Block
 	encodedBlock := block.Encode()
-	compareBlock = *compareBlock.Decode(encodedBlock)
+	compareBlock = compareBlock.Decode(encodedBlock)
 
 	if !reflect.DeepEqual(block, compareBlock) {
-		t.Error("Block encoding/decoding failed!")
+		t.Errorf("Block encoding/decoding failed, %v vs %v", block.String(), compareBlock.String())
 	}
 }
 
 func TestBlockHeaderSerialization(t *testing.T) {
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	var blockHeader Block
-
+	blockHeader := NewBlock([32]byte{}, 0)
 	blockHeader.Header = 1
 	rand.Read(blockHeader.Hash[:])
 	rand.Read(blockHeader.PrevHash[:])
@@ -106,9 +105,9 @@ func TestBlockHeaderSerialization(t *testing.T) {
 	blockHeader.Height = uint32(randVar.Uint32())
 	rand.Read(blockHeader.Beneficiary[:])
 
-	var compareBlockHeader Block
+	var compareBlockHeader *Block
 	encodedBlock := blockHeader.EncodeHeader()
-	compareBlockHeader = *compareBlockHeader.Decode(encodedBlock)
+	compareBlockHeader = compareBlockHeader.Decode(encodedBlock)
 
 	if !reflect.DeepEqual(blockHeader, compareBlockHeader) {
 		t.Error("Block encoding/decoding failed!")

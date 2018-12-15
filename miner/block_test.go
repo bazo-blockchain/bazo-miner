@@ -34,7 +34,10 @@ func TestBlock(t *testing.T) {
 	err = validate(decodedBlock, false)
 
 	b.StateCopy = nil
+	b.TxBuckets = nil
+
 	decodedBlock.StateCopy = nil
+	decodedBlock.TxBuckets = nil
 
 	if err != nil {
 		t.Errorf("Block validation failed (%v)\n", err)
@@ -52,7 +55,7 @@ func TestBlock(t *testing.T) {
 		t.Error("StakeTx data is not properly serialized!")
 	}
 	if !reflect.DeepEqual(b, decodedBlock) {
-		t.Error("Either serialization or deserialization failed, blocks are not equal!")
+		t.Errorf("Either serialization or deserialization failed, blocks are not equal, %v vs %v", b.String(), decodedBlock.String())
 	}
 }
 

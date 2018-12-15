@@ -39,6 +39,11 @@ func finalizeBlock(block *protocol.Block) error {
 		}
 	}
 
+	block.TxBucketData = [][32]byte{}
+	for _, bucket := range block.TxBuckets.Sort() {
+		block.TxBucketData = append(block.TxBucketData, bucket.Hash())
+	}
+
 	block.MerkleRoot = block.BuildMerkleTree().MerkleRoot()
 	block.InitBloomFilter(storage.GetTxPubKeys(block))
 
@@ -78,6 +83,7 @@ func finalizeBlock(block *protocol.Block) error {
 	block.NrFundsTx = uint16(len(block.FundsTxData))
 	block.NrConfigTx = uint8(len(block.ConfigTxData))
 	block.NrStakeTx = uint16(len(block.StakeTxData))
+	block.NrTxBucket = uint16(len(block.TxBucketData))
 
 	return nil
 }
@@ -216,9 +222,9 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	accReceiver := b.StateCopy[tx.To]
 	accReceiver.Balance += tx.Amount
 
-	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
-	b.FundsTxData = append(b.FundsTxData, tx.Hash())
+	b.AddFundsTx(tx)
 	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
+
 	return nil
 }
 
@@ -655,8 +661,12 @@ func preValidate(block *protocol.Block, initialSetup bool) (data *blockData, err
 		return nil, errors.New(fmt.Sprintf("computed total fees do not equal the block's total fees %v vs. %v", totalFees, block.TotalFees))
 	}
 
+	/*for _, tx := range fundsTxSlice {
+		block.AddFundsTx(tx)
+	}*/
+
 	//Merkle Tree validation
-	if protocol.BuildMerkleTree(block).MerkleRoot() != block.MerkleRoot {
+	if block.BuildMerkleTree().MerkleRoot() != block.MerkleRoot {
 		return nil, errors.New("Merkle Root is incorrect.")
 	}
 

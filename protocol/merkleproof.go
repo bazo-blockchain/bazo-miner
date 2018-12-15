@@ -13,30 +13,22 @@ type MerkleProof struct {
 	// Merkle hashes
 	// Intermediate hashes required to create a Merkle proof
 	// Note that the first byte specifies the left or right node of the Merkle tree while the rest is the actual hash
-	MHashes	[][33]byte
+	MerkleHashes [][33]byte
 
-	// Proof properties
-	// Must equal the hashed data of FundsTx.Hash()
-	PHeader byte
-	PAmount uint64
-	PFee    uint64
-	PTxCnt  uint32
-	PFrom   [64]byte
-	PTo     [64]byte
-	PData   []byte
+	// Bucket properties
+	// Must equal the hashed data of TxBucket.Hash()
+	BucketAddress         AddressType
+	BucketRelativeBalance int64
+	BucketMerkleRoot      HashType
 }
 
 
-func NewMerkleProof(height uint32, mhashes [][33]byte, header byte, amount uint64, fee uint64, txcnt uint32, from [64]byte, to [64]byte, data []byte) (proof MerkleProof) {
+func NewMerkleProof(height uint32, mhashes [][33]byte, address AddressType, amount int64, merkleRoot HashType) (proof MerkleProof) {
 	proof.Height = height
-	proof.MHashes = mhashes
-	proof.PHeader = header
-	proof.PAmount = amount
-	proof.PFee = fee
-	proof.PTxCnt = txcnt
-	proof.PFrom = from
-	proof.PTo = to
-	proof.PData = data
+	proof.MerkleHashes = mhashes
+	proof.BucketAddress = address
+	proof.BucketRelativeBalance = amount
+	proof.BucketMerkleRoot = merkleRoot
 
 	return proof
 }
@@ -47,25 +39,17 @@ func (proof *MerkleProof) Hash() (hash [32]byte) {
 	}
 
 	input := struct {
-		Height 	uint32
-		MHashes	[][33]byte
-		PHeader byte
-		PAmount uint64
-		PFee    uint64
-		PTxCnt  uint32
-		PFrom   [64]byte
-		PTo     [64]byte
-		PData   []byte
+		Height     uint32
+		MHashes    [][33]byte
+		Address    AddressType
+		Amount     int64
+		MerkleRoot HashType
 	}{
 		proof.Height,
-		proof.MHashes,
-		proof.PHeader,
-		proof.PAmount,
-		proof.PFee,
-		proof.PTxCnt,
-		proof.PFrom,
-		proof.PTo,
-		proof.PData,
+		proof.MerkleHashes,
+		proof.BucketAddress,
+		proof.BucketRelativeBalance,
+		proof.BucketMerkleRoot,
 	}
 
 	return SerializeHashContent(input)
@@ -74,14 +58,10 @@ func (proof *MerkleProof) Hash() (hash [32]byte) {
 func (proof *MerkleProof) Encode() (encodedTx []byte) {
 	encodeData := MerkleProof{
 		proof.Height,
-		proof.MHashes,
-		proof.PHeader,
-		proof.PAmount,
-		proof.PFee,
-		proof.PTxCnt,
-		proof.PFrom,
-		proof.PTo,
-		proof.PData,
+		proof.MerkleHashes,
+		proof.BucketAddress,
+		proof.BucketRelativeBalance,
+		proof.BucketMerkleRoot,
 	}
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)
@@ -98,38 +78,30 @@ func (proof *MerkleProof) Decode(encoded []byte) *MerkleProof {
 
 func (proof *MerkleProof) String() string {
 	var mhashesString string
-	for _, mhash := range proof.MHashes {
+	for _, mhash := range proof.MerkleHashes {
 		mhashesString += fmt.Sprintf("%x, ", mhash[0:8])
 	}
 
 	mhashesString = mhashesString[0:len(mhashesString) - 2]
 
 	return fmt.Sprintf("Height: %v\n" +
-		"MHashes: [%v]\n" +
-		"Proof Header: %v\n" +
-		"Proof Amount: %v\n"+
-		"Proof Fee: %v\n"+
-		"Proof TxCnt: %v\n"+
-		"Proof From: %x\n"+
-		"Proof To: %x\n"+
-		"Proof Data: %v\n",
+		"MerkleHashes: [%v]\n" +
+		"Bucket BucketAddress: %v\n" +
+		"Bucket BucketRelativeBalance: %v\n"+
+		"Bucket BucketMerkleRoot: %v\n",
 		proof.Height,
 		mhashesString,
-		proof.PHeader,
-		proof.PAmount,
-		proof.PFee,
-		proof.PTxCnt,
-		proof.PFrom[0:8],
-		proof.PTo[0:8],
-		proof.PData,
+		proof.BucketAddress[0:8],
+		proof.BucketRelativeBalance,
+		proof.BucketMerkleRoot[0:8],
 	)
 }
 
 func (proof *MerkleProof) CalculateMerkleRoot() (computedHash [32]byte, err error) {
-	phash := proof.getProofHash()
+	bucketHash := proof.getBucketHash()
 
-	computedHash = phash
-	for _, mhash := range proof.MHashes {
+	computedHash = bucketHash
+	for _, mhash := range proof.MerkleHashes {
 		var hash [32]byte
 		var leftOrRight [1]byte
 		copy(leftOrRight[:], mhash[0:1])
@@ -145,25 +117,17 @@ func (proof *MerkleProof) CalculateMerkleRoot() (computedHash [32]byte, err erro
 	return computedHash, nil
 }
 
-func (proof *MerkleProof) getProofHash() [32]byte {
-	// Note that the hashed properties must equal to the hashed properties of FundsTx.Hash()
-	hash := struct {
-		Header byte
-		Amount uint64
-		Fee    uint64
-		TxCnt  uint32
-		From   [64]byte
-		To     [64]byte
-		Data   []byte
+func (proof *MerkleProof) getBucketHash() [32]byte {
+	// Note that the hashed properties must equal to the hashed properties of TxBucket.Hash()
+	input := struct {
+		Address    AddressType
+		Amount     int64
+		MerkleRoot HashType
 	}{
-		proof.PHeader,
-		proof.PAmount,
-		proof.PFee,
-		proof.PTxCnt,
-		proof.PFrom,
-		proof.PTo,
-		proof.PData,
+		proof.BucketAddress,
+		proof.BucketRelativeBalance,
+		proof.BucketMerkleRoot,
 	}
 
-	return SerializeHashContent(hash)
+	return SerializeHashContent(input)
 }

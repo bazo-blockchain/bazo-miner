@@ -62,7 +62,11 @@ func getDummyProofs() (proofs []*MerkleProof) {
 
 	for i := 0; i < nofProofs; i++ {
 		randHeight := (randVal.Uint32() % 10) + uint32(i * 10)
-		proof := NewMerkleProof(randHeight, [][33]byte{}, 0x01, randVal.Uint64()%100000+1, randVal.Uint64()%10+1, uint32(i), accA.Address, accB.Address, nil)
+		var address AddressType
+		var merkleRoot HashType
+		randVal.Read(address[:])
+		randVal.Read(merkleRoot[:])
+		proof := NewMerkleProof(randHeight, [][33]byte{}, address, randVal.Int63()%100000+1, merkleRoot)
 
 		merkleTreeDepth := int(rand.Uint32() % 10) + 1
 		for j:= 0; j < merkleTreeDepth; j++ {
@@ -79,7 +83,7 @@ func getDummyProofs() (proofs []*MerkleProof) {
 
 			copy(mhash[0:1], leftOrRight[:])
 			randVal.Read(mhash[1:33])
-			proof.MHashes = append(proof.MHashes, mhash)
+			proof.MerkleHashes = append(proof.MerkleHashes, mhash)
 		}
 
 		proofs = append(proofs, &proof)

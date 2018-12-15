@@ -27,61 +27,8 @@ type Node struct {
 	Hash   [32]byte
 }
 
-//verifyNode walks down the tree until hitting a leaf, calculating the hash at each level
-//and returning the resulting hash of Node n.
-func (n *Node) verifyNode() [32]byte {
-	if n.leaf {
-		return n.Hash
-	}
-	leftHash := n.Left.verifyNode()
-	rightHash := n.Right.verifyNode()
-	concatHash := append(leftHash[:], rightHash[:]...)
-	return MTHash(concatHash)
-}
-
-func BuildMerkleTree(b *Block) *MerkleTree {
-	var txHashes [][32]byte
-
-	if b == nil {
-		return nil
-	}
-
-	if b.FundsTxData != nil {
-		for _, txHash := range b.FundsTxData {
-			txHashes = append(txHashes, txHash)
-		}
-	}
-	if b.ContractTxData != nil {
-		for _, txHash := range b.ContractTxData {
-			txHashes = append(txHashes, txHash)
-		}
-	}
-	if b.ConfigTxData != nil {
-		for _, txHash := range b.ConfigTxData {
-			txHashes = append(txHashes, txHash)
-		}
-	}
-
-	if b.StakeTxData != nil {
-		for _, txHash := range b.StakeTxData {
-			txHashes = append(txHashes, txHash)
-		}
-	}
-
-	//Merkle root for no transactions is 0 hash
-	if len(txHashes) == 0 {
-		return nil
-	}
-
-	m, _ := newTree(txHashes)
-
-	return m
-}
-
-//NewTree creates a new Merkle Tree using the content cs.
-func newTree(txSlices [][32]byte) (*MerkleTree, error) {
 //NewMerkleTree creates a new Merkle Tree using the content cs.
-func NewMerkleTree(txSlices hashArray) (*MerkleTree, error) {
+func NewMerkleTree(txSlices HashArray) (*MerkleTree, error) {
 	root, leafs, err := buildWithContent(txSlices)
 	if err != nil {
 		return nil, err
@@ -109,7 +56,7 @@ func (n *Node) verifyNode() [32]byte {
 //buildWithContent is a helper function that for a given set of Contents, generates a
 //corresponding tree and returns the root node, a list of leaf nodes, and a possible error.
 //Returns an error if cs contains no Contents.
-func buildWithContent(txSlices hashArray) (*Node, []*Node, error) {
+func buildWithContent(txSlices HashArray) (*Node, []*Node, error) {
 	if len(txSlices) == 0 {
 		return nil, nil, errors.New("Error: cannot construct tree with no content.")
 	}
@@ -203,6 +150,9 @@ func MTHash(data []byte) [32]byte {
 
 func (m *MerkleTree) MerkleProof(leafHash [32]byte) (hashes [][33]byte, err error) {
 	leaf := m.GetLeaf(leafHash)
+	if leaf == nil {
+		return nil, errors.New(fmt.Sprintf("could not find leaf for hash %x", leafHash[0:8]))
+	}
 	currentNode := leaf
 	currentParent := leaf.Parent
 	for currentParent != nil {

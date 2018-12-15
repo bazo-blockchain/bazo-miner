@@ -12,8 +12,8 @@ type TxBucket struct {
 	Address         [64]byte
 	RelativeBalance int64
 
-	merkleRoot hashType
-	txHashes   hashArray
+	merkleRoot HashType
+	txHashes   HashArray
 }
 
 func NewTxBucket(address [64]byte) *TxBucket {
@@ -37,8 +37,8 @@ func (bucket *TxBucket) AddFundsTx(tx *FundsTx) {
 	bucket.txHashes = append(bucket.txHashes, hash)
 }
 
-func (bucket *TxBucket) CalculateMerkleRoot() hashType {
-	emptyHash := hashType{}
+func (bucket *TxBucket) CalculateMerkleRoot() HashType {
+	emptyHash := HashType{}
 	if bucket.merkleRoot == emptyHash {
 		merkleTree := bucket.buildMerkleTree()
 		bucket.merkleRoot = merkleTree.MerkleRoot()
@@ -61,15 +61,15 @@ func (bucket *TxBucket) buildMerkleTree() *MerkleTree {
 	return m
 }
 
-func (bucket *TxBucket) Hash() hashType {
+func (bucket *TxBucket) Hash() HashType {
 	if bucket == nil {
-		return hashType{}
+		return HashType{}
 	}
 
 	bucketHash := struct {
 		address    [64]byte
-		amount	   int64
-		merkleRoot hashType
+		amount     int64
+		merkleRoot HashType
 	}{
 		bucket.Address,
 		bucket.RelativeBalance,
@@ -122,7 +122,7 @@ func (bucket TxBucket) String() string {
 	)
 }
 
-type txBucketMap map[addressType]*TxBucket
+type txBucketMap map[AddressType]*TxBucket
 
 func NewTxBucketMap() txBucketMap {
 	return make(txBucketMap)

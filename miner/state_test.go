@@ -367,7 +367,7 @@ func TestStakeTxStateChange(t *testing.T) {
 
 }
 
-func TestVerifySCP(t *testing.T) {
+func TestVerifySCPTruePositiveProof(t *testing.T) {
 	cleanAndPrepare()
 
 	var blocks []*protocol.Block
@@ -378,6 +378,12 @@ func TestVerifySCP(t *testing.T) {
 	if err := addTx(b, tx); err != nil {
 		t.Error(err)
 	}
+
+	bucket, exists := b.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accA.Address[0:8])
+	}
+
 	storage.WriteOpenTx(tx)
 	b.InitBloomFilter([][64]byte {accA.Address, accB.Address})
 	finalizeBlock(b)
@@ -385,11 +391,11 @@ func TestVerifySCP(t *testing.T) {
 
 	// Create new SCP
 	merkleTree := b.BuildMerkleTree()
-	mhashes, err := merkleTree.MerkleProof(tx.Hash())
+	mhashes, err := merkleTree.MerkleProof(bucket.Hash())
 	if err != nil {
 		t.Error(err)
 	}
-	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, tx.Header, tx.Amount, tx.Fee, tx.TxCnt, tx.From, tx.To, tx.Data)
+	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
 
 	// Create transaction that contains SCP
 	tx1, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
@@ -403,23 +409,37 @@ func TestVerifySCP(t *testing.T) {
 	if err := addTx(b1, tx1); err != nil {
 		t.Error(err)
 	}
+
+	bucket, exists = b1.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accB.Address[0:8])
+	}
+
 	storage.WriteOpenTx(tx1)
 	b1.InitBloomFilter([][64]byte {accA.Address, accB.Address})
 	finalizeBlock(b1)
-	blocks = append(blocks, b1)
+	blocks = append([]*protocol.Block{b1}, blocks...) // prepend
 
-	merkleTree1 := b1.BuildMerkleTree()
-	mhashes1, err := merkleTree1.MerkleProof(tx1.Hash())
+	merkleTree = b1.BuildMerkleTree()
+	mhashes, err = merkleTree.MerkleProof(bucket.Hash())
 	if err != nil {
 		t.Error(err)
 	}
-	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes1, tx1.Header, tx1.Amount, tx1.Fee, tx1.TxCnt, tx1.From, tx1.To, tx1.Data)
+	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
 
 	// Create another transaction that contains SCP
 	tx2, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
 	tx2.Proofs = append(tx2.Proofs, &merkleProof1, &merkleProof)
 	if err := verifySCP(tx2, blocks); err == nil {
-		t.Error("self-contained proof should be invalid (double spending) but verifySCP returns no error")
+		t.Error("self-contained proof should be invalid (insufficient funds) but verifySCP returns no error")
 	}
+
+}
+
+func TestVerifySCPFraudulentProof(t *testing.T) {
+
+}
+
+func TestVerifySCPFalsePositiveProof(t *testing.T) {
 
 }

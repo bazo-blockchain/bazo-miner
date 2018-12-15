@@ -353,45 +353,64 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 }
 
 func verifySCP(tx *protocol.FundsTx, previousBlocks []*protocol.Block) (err error) {
-	blockIndex := 0
 	var verifiedBalance int64 = 0
+	proofIndex := 0
+	sender := tx.From[:]
 
-	for _, proof := range tx.Proofs {
-		for ; blockIndex < len(previousBlocks); blockIndex++ {
-			currentBlock := previousBlocks[blockIndex]
+	for _, currentBlock := range previousBlocks {
+		// Bloom filters never give false-negative, so if it does not contain the sender,
+		// we can easily skip the current block
+		if currentBlock.BloomFilter == nil || !currentBlock.BloomFilter.Test(sender) {
+			continue
+		}
 
-			if currentBlock.BloomFilter == nil {
-				continue
+		if proofIndex >= len(tx.Proofs) {
+			return errors.New(fmt.Sprintf("Bloom filter returned true but Merkle proof missing for block at height %v", currentBlock.Height))
+		}
+
+		currentProof := tx.Proofs[proofIndex]
+		// There must be at least one proof for the current block because the BF returned true
+		if currentProof.Height < currentBlock.Height {
+			return errors.New(fmt.Sprintf("SCP does not contain a prof for block at height %v", currentBlock.Height))
+		}
+
+		for {
+			// Compare the current proof (CP) height with the current block (CB) height
+			// CP.Height < CB.Height -> The current proof is for an earlier block
+			// CP.Height = CB.Height -> The current proof is for the current block
+			// CP.Height > CB.Height -> The current proof is for a later block (should not happen, SCP is out of order)
+			if currentProof.Height < currentBlock.Height {
+				// Get out of the infinite loop
+				break
+			} else if currentProof.Height > currentBlock.Height {
+				return errors.New(fmt.Sprintf("SCP is out of order because height of proof (%v) is greater than height of current block (%v)", currentProof.Height, currentBlock.Height))
 			}
 
-			// Bloomfilter check
-			if currentBlock.BloomFilter.Test(tx.From[:]) && proof.Height != currentBlock.Height {
-				return errors.New(fmt.Sprintf("SCP does not contain a proof for block height %v", currentBlock.Height))
+			merkleRoot, err := currentProof.CalculateMerkleRoot()
+			if err != nil {
+				return err
 			}
 
-			if proof.Height == currentBlock.Height {
-				merkleRoot, err := proof.CalculateMerkleRoot()
-				if err != nil {
-					return err
-				}
+			if currentBlock.MerkleRoot != merkleRoot {
+				return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x", currentBlock.MerkleRoot, merkleRoot))
+			}
 
-				if currentBlock.MerkleRoot != merkleRoot {
-					return errors.New(fmt.Sprintf("Merkle root does not match %x vs. %x", currentBlock.MerkleRoot, merkleRoot))
-				}
+			if currentProof.BucketRelativeBalance == 0 {
+				// False-Positive Proof
+				// TODO @mrmnblm
+			} else if currentProof.BucketAddress == tx.From || currentProof.BucketAddress == tx.To {
+				// Note that currentProof.BucketRelativeBalance can be either positive or negative
+				verifiedBalance += currentProof.BucketRelativeBalance
+			} else if currentBlock.Beneficiary == tx.From {
+				// (Receiver) Beneificiary
+				verifiedBalance += int64(currentBlock.TotalFees)
+			}
 
-				if proof.PFrom == tx.From {
-					// Sender
-					verifiedBalance -= int64(proof.PAmount)
-				} else if proof.PTo == tx.From {
-					// Receipient
-					verifiedBalance += int64(proof.PAmount)
-				} else if currentBlock.Beneficiary == tx.From {
-					// Beneificiary
-					verifiedBalance += int64(currentBlock.TotalFees)
-				}
-
+			proofIndex++
+			if proofIndex >= len(tx.Proofs) {
 				break
 			}
+			currentProof = tx.Proofs[proofIndex]
 		}
 	}
 
