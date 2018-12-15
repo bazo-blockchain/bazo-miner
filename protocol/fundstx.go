@@ -6,8 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 const (
@@ -25,8 +23,11 @@ type FundsTx struct {
 	To     [64]byte
 	Sig    [64]byte
 	Data   []byte
-	MPT_Proof ethdb.MemDatabase
+	//MPT_Proof *ethdb.MemDatabase
+	MPT_Proof
 }
+
+type MPT_Proof map[string][]byte
 
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
@@ -48,10 +49,15 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 	copy(tx.Sig[32-len(r.Bytes()):32], r.Bytes())
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
 
-	stateMPT, _ := BuildMPT(storage.State)
+	//tx.MPT_Proof = nil
+	testMap := make(map[string][]byte)
+	testMap["heyho"] = []byte("testtest")
+	tx.MPT_Proof = testMap
+
+	/*stateMPT, _ := BuildMPT(storage.State)
 
 	//Include MPT proof for the sender address in the transaction
-	tx.MPT_Proof = *createProver(stateMPT,tx.From[:])
+	tx.MPT_Proof = *createProver(stateMPT,tx.From[:])*/
 
 	return tx, nil
 }
@@ -86,6 +92,9 @@ func (tx *FundsTx) Hash() (hash [32]byte) {
 //when we serialize the struct with binary.Write, unexported field get serialized as well, undesired
 //behavior. Therefore, writing own encoder/decoder
 func (tx *FundsTx) Encode() (encodedTx []byte) {
+
+	//gob.Register(&ethdb.MemDatabase{})
+
 	// Encode
 	encodeData := FundsTx{
 		tx.Header,

@@ -42,8 +42,11 @@ func deleteString(trie *trie.Trie, k string) {
 /*
 This function creates a MPT Proof for a given MPT and a key
 */
-func createProver(trie *trie.Trie, key []byte) *ethdb.MemDatabase{
+func createProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
 	proof := ethdb.NewMemDatabase()
-	trie.Prove(key, 0, proof)
-	return proof
+	proofEerror := trie.Prove(key, 0, proof)
+	if proofEerror != nil{
+		return nil, proofEerror
+	}
+	return proof, nil
 }

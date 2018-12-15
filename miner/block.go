@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/trie"
 	"strconv"
 	"time"
 
@@ -208,6 +210,23 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		}
 	}
 
+	/*stateMPT, err := protocol.BuildMPT(storage.State)
+
+	if err != nil{
+		err := fmt.Sprintf("Error while creating MPT of State in Block: %x ", b.Hash)
+		return errors.New(err)
+	}
+
+	//Include MPT proof for the sender address in the transaction
+	mptProof, err := createProver(stateMPT,tx.From[:])
+
+	if err != nil{
+		err := fmt.Sprintf("Error while creating proof for key: %x ", tx.From)
+		return errors.New(err)
+	}
+
+	tx.MPT_Proof = mptProof*/
+
 	//Transaction count need to match the state, preventing replay attacks.
 	if b.StateCopy[tx.From].TxCnt != tx.TxCnt {
 		err := fmt.Sprintf("Sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt)", tx.TxCnt, b.StateCopy[tx.From].TxCnt)
@@ -246,6 +265,15 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
 	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
 	return nil
+}
+
+func createProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
+	proof := ethdb.NewMemDatabase()
+	proofError := trie.Prove(key, 0, proof)
+	if proofError != nil{
+		return nil, proofError
+	}
+	return proof, nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
