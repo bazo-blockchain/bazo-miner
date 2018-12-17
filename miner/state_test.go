@@ -20,7 +20,7 @@ func TestFundsTxStateChange(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
@@ -34,7 +34,7 @@ func TestFundsTxStateChange(t *testing.T) {
 
 	loopMax := int(randVar.Uint32()%testSize + 1)
 	for i := 0; i < loopMax+1; i++ {
-		ftx, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
+		ftx, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccA, nil)
 		if addTx(b, ftx) == nil {
 			funds = append(funds, ftx)
 			balanceA -= ftx.Amount
@@ -43,7 +43,7 @@ func TestFundsTxStateChange(t *testing.T) {
 			balanceB += ftx.Amount
 		}
 
-		ftx2, _ := protocol.ConstrFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
+		ftx2, _ := protocol.NewSignedFundsTx(0x01, randVar.Uint64()%1000+1, randVar.Uint64()%100+1, uint32(i), accA.Address, accB.Address, PrivKeyAccB, nil)
 		if addTx(b, ftx2) == nil {
 			funds = append(funds, ftx2)
 			balanceB -= ftx2.Amount
@@ -79,11 +79,17 @@ func TestAccountOverflow(t *testing.T) {
 
 	accA.Balance = MAX_MONEY
 	accA.TxCnt = 0
-	tx, err := protocol.ConstrFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
-	if !verifyFundsTx(tx) || err != nil {
-		t.Error("Failed to create reasonable fundsTx\n")
+	tx, err := protocol.NewSignedFundsTx(0x01, 1, 1, 0, accB.Address, accA.Address, PrivKeyAccB, nil)
+	if err != nil {
+		t.Error(err)
 		return
 	}
+
+	if err = verifyFundsTx(tx); err != nil {
+		t.Error(err)
+		return
+	}
+
 	accSlice = append(accSlice, tx)
 	err = fundsStateChange(accSlice)
 
@@ -182,7 +188,7 @@ func TestFundsTxNewAccsStateChange(t *testing.T) {
 		rand.Read(fromAddress[:])
 		rand.Read(toAddress[:])
 
-		tx, _ := protocol.ConstrFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
+		tx, _ := protocol.NewSignedFundsTx(0, 0, 0, 0, fromAddress, toAddress, PrivKeyRoot, nil)
 		fundsTxs = append(fundsTxs, tx)
 	}
 
@@ -219,7 +225,7 @@ func TestConfigTxStateChange(t *testing.T) {
 		if err != nil {
 			t.Errorf("ConfigTx Creation failed (%v)\n", err)
 		}
-		if verifyConfigTx(tx) {
+		if verifyConfigTx(tx) == nil {
 			configs = append(configs, tx)
 		}
 	}
@@ -331,7 +337,7 @@ func TestStakeTxStateChange(t *testing.T) {
 
 	randVar := rand.New(rand.NewSource(time.Now().Unix()))
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 	var stake, stake2 []*protocol.StakeTx
 
 	accA.IsStaking = false
@@ -359,4 +365,202 @@ func TestStakeTxStateChange(t *testing.T) {
 		t.Errorf("State update failed: %v != %v", accA.IsStaking, stakingA)
 	}
 
+}
+
+// Test veirifySCP with one transaction per block (sufficient funds)
+func TestVerifySCP1TS(t *testing.T) {
+	cleanAndPrepare()
+
+	// Setup test by transferring 100 coins to account B
+	b := protocol.NewBlock([32]byte{}, 0)
+	tx, _ := protocol.NewSignedFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
+	if err := addTx(b, tx); err != nil {
+		t.Error(err)
+	}
+
+	// Get the transaction bucket of account B and check if it exists
+	bucket, exists := b.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accA.Address[0:8])
+	}
+
+	// Finalize the first block
+	storage.WriteOpenTx(tx)
+	finalizeBlock(b)
+
+	// Get the Merkle proof for the transcaction bucket of account B
+	mhashes, err := b.BuildMerkleTree().MerkleProof(bucket.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	// Create a new Merkle proof for the transaction bucket
+	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
+
+	// Create a new transaction that contains the previous SCP
+	tx1, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx1.Proofs = append(tx1.Proofs, &merkleProof)
+	// Verify if the SCP is valid
+	if err := verifyFundsTransactions([]*protocol.FundsTx{tx1}, []*protocol.Block{b}); err != nil {
+		t.Error(err)
+	}
+
+	// Repeat previous step: Create another new block
+	b1 := protocol.NewBlock(b.Hash, 1)
+	if err := addTx(b1, tx1); err != nil {
+		t.Error(err)
+	}
+
+	bucket, exists = b1.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accB.Address[0:8])
+	}
+
+	storage.WriteOpenTx(tx1)
+	finalizeBlock(b1)
+
+	mhashes, err = b1.BuildMerkleTree().MerkleProof(bucket.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
+
+	// Create another transaction that contains SCP
+	tx2, _ := protocol.NewSignedFundsTx(0x01, 50, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	tx2.Proofs = append(tx2.Proofs, &merkleProof1, &merkleProof)
+	if err := verifyFundsTransactions([]*protocol.FundsTx{tx2}, []*protocol.Block{b1, b}); err == nil {
+		t.Error("self-contained proof should be invalid (insufficient funds) but verifySCP returns no error")
+	}
+}
+
+// Test veirifySCP with a block that contains two transactions in one block (sufficient funds)
+func TestVerifySCP2TS(t *testing.T) {
+	cleanAndPrepare()
+
+	// Setup test by transferring 100 coins to account B
+	b := protocol.NewBlock([32]byte{}, 0)
+	tx, _ := protocol.NewSignedFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
+
+	// Current Balance of Account B: 100
+
+	if err := addTx(b, tx); err != nil {
+		t.Error(err)
+	}
+
+	// Get the transaction bucket of account B and check if it exists
+	bucket, exists := b.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accA.Address[0:8])
+	}
+
+	// Finalize the first block
+	storage.WriteOpenTx(tx)
+	finalizeBlock(b)
+
+	// Get the Merkle proof for the transcaction bucket of account B
+	mhashes, err := b.BuildMerkleTree().MerkleProof(bucket.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	// Create a new Merkle proof for the transaction bucket
+	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
+
+	// Create a new transaction that contains the previous SCP
+	tx1, _ := protocol.NewSignedFundsTx(0x01, 39, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	// Current Balance of Account B: 60
+	tx1.Proofs = append(tx1.Proofs, &merkleProof)
+
+
+	// Create a new transaction that contains the previous SCP
+	tx2, _ := protocol.NewSignedFundsTx(0x01, 39, 1, uint32(1), accB.Address, accA.Address, PrivKeyAccB, nil)
+	// Current Balance of Account B: 20
+	tx2.Proofs = append(tx2.Proofs, &merkleProof)
+
+	// Verify if the SCP is valid
+	if err := verifyFundsTransactions([]*protocol.FundsTx{tx1, tx2}, []*protocol.Block{b}); err != nil {
+		t.Error(err)
+	}
+
+	// Repeat previous step: Create another new block
+	b1 := protocol.NewBlock(b.Hash, 1)
+	if err := addTx(b1, tx1); err != nil {
+		t.Error(err)
+	}
+
+	if err := addTx(b1, tx2); err != nil {
+		t.Error(err)
+	}
+
+	bucket, exists = b1.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accB.Address[0:8])
+	}
+
+	storage.WriteOpenTx(tx1)
+	storage.WriteOpenTx(tx2)
+	finalizeBlock(b1)
+
+	mhashes, err = b1.BuildMerkleTree().MerkleProof(bucket.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	merkleProof1 := protocol.NewMerkleProof(b1.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
+
+	// Create another transaction that contains SCP
+	tx3, _ := protocol.NewSignedFundsTx(0x01, 19, 1, uint32(2), accB.Address, accA.Address, PrivKeyAccB, nil)
+
+	// Current Balance of Account B: 0
+
+	tx3.Proofs = append(tx3.Proofs, &merkleProof1, &merkleProof)
+	if err := verifyFundsTransactions([]*protocol.FundsTx{tx3}, []*protocol.Block{b1, b}); err != nil {
+		t.Errorf("self-contained proof should be valid (sufficient funds) but verifySCP returns error %v", err)
+	}
+}
+
+// Test veirifySCP with a block that contains two transactions in one block (insufficient funds)
+func TestVerifySCP2TI(t *testing.T) {
+	cleanAndPrepare()
+
+	// Setup test by transferring 100 coins to account B
+	b := protocol.NewBlock([32]byte{}, 0)
+	tx, _ := protocol.NewSignedFundsTx(0x01, 100, 1, uint32(0), accA.Address, accB.Address, PrivKeyAccA, nil)
+
+	// Current Balance of Account B: 100
+
+	if err := addTx(b, tx); err != nil {
+		t.Error(err)
+	}
+
+	// Get the transaction bucket of account B and check if it exists
+	bucket, exists := b.TxBuckets[accB.Address]
+	if !exists {
+		t.Errorf("transaction bucket is not part of the block for address %x", accA.Address[0:8])
+	}
+
+	// Finalize the first block
+	storage.WriteOpenTx(tx)
+	finalizeBlock(b)
+
+	// Get the Merkle proof for the transcaction bucket of account B
+	mhashes, err := b.BuildMerkleTree().MerkleProof(bucket.Hash())
+	if err != nil {
+		t.Error(err)
+	}
+	// Create a new Merkle proof for the transaction bucket
+	merkleProof := protocol.NewMerkleProof(b.Height, mhashes, bucket.Address, bucket.RelativeBalance, bucket.CalculateMerkleRoot())
+
+	// Create a new transaction that contains the previous SCP
+	tx1, _ := protocol.NewSignedFundsTx(0x01, 39, 1, uint32(0), accB.Address, accA.Address, PrivKeyAccB, nil)
+	// Current Balance of Account B: 60
+	tx1.Proofs = append(tx1.Proofs, &merkleProof)
+
+
+	// Create a new transaction that contains the previous SCP
+	tx2, _ := protocol.NewSignedFundsTx(0x01, 69, 1, uint32(1), accB.Address, accA.Address, PrivKeyAccB, nil)
+	// Current Balance of Account B: -10 -> SHOULD RETURN ERROR
+	tx2.Proofs = append(tx2.Proofs, &merkleProof)
+
+	// Verify if the SCP is valid (should be not)
+	if err := verifyFundsTransactions([]*protocol.FundsTx{tx1, tx2}, []*protocol.Block{b}); err == nil {
+		t.Error("self-contained proof should be invalid (insufficient funds) but verifySCP returns no error")
+	}
 }

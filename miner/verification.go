@@ -2,6 +2,8 @@ package miner
 
 import (
 	"crypto/ecdsa"
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -12,34 +14,37 @@ import (
 //the verify method. This is because verification depends on the State (e.g., dynamic properties), which
 //should only be of concern to the miner, not to the protocol package. However, this has the disadvantage
 //that we have to do case distinction here.
-func verify(tx protocol.Transaction) bool {
-	var verified bool
+func verify(tx protocol.Transaction) error {
+	//ActiveParameters is a datastructure that stores the current system parameters, gets only changed when
+	//configTxs are broadcast in the network.
+	if tx.TxFee() < activeParameters.Fee_minimum {
+		return errors.New(fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum))
+	}
 
 	switch tx.(type) {
 	case *protocol.FundsTx:
-		verified = verifyFundsTx(tx.(*protocol.FundsTx))
+		return verifyFundsTx(tx.(*protocol.FundsTx))
 	case *protocol.ContractTx:
-		verified = verifyContractTx(tx.(*protocol.ContractTx))
+		return verifyContractTx(tx.(*protocol.ContractTx))
 	case *protocol.ConfigTx:
-		verified = verifyConfigTx(tx.(*protocol.ConfigTx))
+		return verifyConfigTx(tx.(*protocol.ConfigTx))
 	case *protocol.StakeTx:
-		verified = verifyStakeTx(tx.(*protocol.StakeTx))
+		return verifyStakeTx(tx.(*protocol.StakeTx))
 	}
 
-	return verified
+	return errors.New("could not match a transaction type for verification")
 }
 
-func verifyFundsTx(tx *protocol.FundsTx) bool {
+func verifyFundsTx(tx *protocol.FundsTx) error {
 	if tx == nil {
-		return false
+		return errors.New("transaction does not exist")
 	}
 
 	r, s := new(big.Int), new(big.Int)
 
 	//fundsTx only makes sense if amount > 0
 	if tx.Amount == 0 || tx.Amount > MAX_MONEY {
-		logger.Printf("Invalid transaction amount: %v\n", tx.Amount)
-		return false
+		return errors.New(fmt.Sprintf("Invalid transaction amount: %v\n", tx.Amount))
 	}
 
 	accFromHash := protocol.SerializeHashContent(tx.From)
@@ -52,16 +57,15 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 
 	pubKey := crypto.GetPubKeyFromAddress(tx.From)
 	if ecdsa.Verify(pubKey, txHash[:], r, s) && tx.From != tx.To {
-		return true
+		return nil
 	} else {
-		logger.Printf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
-		return false
+		return errors.New(fmt.Sprintf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8]))
 	}
 }
 
-func verifyContractTx(tx *protocol.ContractTx) bool {
+func verifyContractTx(tx *protocol.ContractTx) error {
 	if tx == nil {
-		return false
+		return errors.New("transaction does not exist")
 	}
 
 	r, s := new(big.Int), new(big.Int)
@@ -75,16 +79,16 @@ func verifyContractTx(tx *protocol.ContractTx) bool {
 
 		//Only the hash of the pubkey is hashed and verified here
 		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
-			return true
+			return nil
 		}
 	}
 
-	return false
+	return errors.New("contracttx could not be verified")
 }
 
-func verifyConfigTx(tx *protocol.ConfigTx) bool {
+func verifyConfigTx(tx *protocol.ConfigTx) error {
 	if tx == nil {
-		return false
+		return errors.New("transaction does not exist")
 	}
 
 	//account creation can only be done with a valid priv/pub key which is hard-coded
@@ -97,17 +101,16 @@ func verifyConfigTx(tx *protocol.ConfigTx) bool {
 		pubKey := crypto.GetPubKeyFromAddress(rootAcc.Address)
 		txHash := tx.Hash()
 		if ecdsa.Verify(pubKey, txHash[:], r, s) == true {
-			return true
+			return nil
 		}
 	}
 
-	return false
+	return errors.New("configtx could not be verified")
 }
 
-func verifyStakeTx(tx *protocol.StakeTx) bool {
+func verifyStakeTx(tx *protocol.StakeTx) error {
 	if tx == nil {
-		logger.Println("Transactions does not exist.")
-		return false
+		return errors.New("transaction does not exist")
 	}
 
 	//Check if account is present in the actual state
@@ -130,7 +133,11 @@ func verifyStakeTx(tx *protocol.StakeTx) bool {
 
 	pubKey := crypto.GetPubKeyFromAddress(acc.Address)
 
-	return ecdsa.Verify(pubKey, txHash[:], r, s)
+	if ecdsa.Verify(pubKey, txHash[:], r, s) {
+		return nil
+	}
+
+	return errors.New("staketx could not be verified")
 }
 
 //Returns true if id is in the list of possible ids and rational value for payload parameter.

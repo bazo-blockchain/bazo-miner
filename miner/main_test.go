@@ -202,7 +202,8 @@ func cleanAndPrepare() {
 		crypto.GetBytesFromRSAPubKey(&CommPrivKeyRoot.PublicKey))
 
 	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
-	initialBlock = newBlock(genesis.Hash(), commitmentProof, 0)
+	initialBlock = protocol.NewBlock(genesis.Hash(), 0)
+	initialBlock.CommitmentProof = commitmentProof
 
 	collectStatistics(initialBlock)
 	if err := storage.WriteClosedBlock(initialBlock); err != nil {

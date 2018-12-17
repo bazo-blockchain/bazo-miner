@@ -56,7 +56,7 @@ func Init(dbname string, bootstrapIpport string) error {
 	}
 
 	for _, bucket := range Buckets {
-		err = createBucket(bucket)
+		err = CreateBucket(bucket, db)
 		if err != nil {
 			return err
 		}
@@ -65,9 +65,9 @@ func Init(dbname string, bootstrapIpport string) error {
 	return nil
 }
 
-func createBucket(bucketName string) (err error) {
+func CreateBucket(bucketName string, db *bolt.DB) (err error) {
 	return db.Update(func(tx *bolt.Tx) error {
-		_, err = tx.CreateBucket([]byte(bucketName))
+		_, err = tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return fmt.Errorf(ERROR_MSG + " %s", err)
 		}

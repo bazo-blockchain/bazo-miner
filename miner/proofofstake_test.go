@@ -3,6 +3,7 @@ package miner
 import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -45,7 +46,7 @@ func TestGetLatestProofs(t *testing.T) {
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
 	//Initially we expect only the genesis commitment proof
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := protocol.NewBlock([32]byte{}, 1)
 
 	prevProofs := GetLatestProofs(1, b)
 
@@ -57,21 +58,21 @@ func TestGetLatestProofs(t *testing.T) {
 	}
 
 	//Two new blocks are added with random commitment proofs
-	b1 := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b1 := protocol.NewBlock([32]byte{}, 1)
 	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
 	validate(b1, false)
 
-	b2 := newBlock(b1.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
+	b2 := protocol.NewBlock(b1.Hash, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Error("Error finalizing b2", err)
 	}
 	validate(b2, false)
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
 
-	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
+	b3 := protocol.NewBlock(b2.Hash, b2.Height+1)
 
 	prevProofs = GetLatestProofs(3, b3)
 

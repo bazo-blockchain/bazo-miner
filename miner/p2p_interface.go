@@ -39,12 +39,7 @@ func processBlock(payload []byte) {
 //p2p.BlockOut is a channel whose data get consumed by the p2p package
 func broadcastBlock(block *protocol.Block) {
 	p2p.BlockOut <- block.Encode()
-
-	//Make a deep copy of the block (since it is a pointer and will be saved to db later).
-	//Otherwise the block's bloom filter is initialized on the original block.
-	var blockCopy = *block
-	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
-	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
+	p2p.BlockHeaderOut <- block.EncodeHeader()
 }
 
 func broadcastVerifiedTxs(txs []*protocol.FundsTx) {

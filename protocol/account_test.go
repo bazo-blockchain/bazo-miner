@@ -66,7 +66,7 @@ func TestAccountSerialization(t *testing.T) {
 
 	var compareAcc *Account
 	encodedAcc := accA.Encode()
-	compareAcc = compareAcc.Decode(encodedAcc)
+	compareAcc, _ = compareAcc.Decode(encodedAcc)
 
 	if !reflect.DeepEqual(accA, compareAcc) {
 		t.Error("Account encoding/decoding failed!")

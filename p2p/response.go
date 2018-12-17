@@ -93,12 +93,10 @@ func blockHeaderRes(p *peer, payload []byte) {
 		var blockHash [32]byte
 		copy(blockHash[:], payload[:32])
 		if block := storage.ReadClosedBlock(blockHash); block != nil {
-			block.InitBloomFilter(append(storage.GetTxPubKeys(block)))
 			encodedHeader = block.EncodeHeader()
 		}
 	} else {
 		if block := storage.ReadLastClosedBlock(); block != nil {
-			block.InitBloomFilter(append(storage.GetTxPubKeys(block)))
 			encodedHeader = block.EncodeHeader()
 		}
 	}
@@ -233,9 +231,9 @@ func intermediateNodesRes(p *peer, payload []byte) {
 	copy(blockHash[:], payload[:32])
 	copy(txHash[:], payload[32:64])
 
-	merkleTree := protocol.BuildMerkleTree(storage.ReadClosedBlock(blockHash))
+	merkleTree := storage.ReadClosedBlock(blockHash).BuildMerkleTree()
 
-	if intermediates, _ := protocol.GetIntermediate(protocol.GetLeaf(merkleTree, txHash)); intermediates != nil {
+	if intermediates, _ := protocol.GetIntermediate(merkleTree.GetLeaf(txHash)); intermediates != nil {
 		for _, node := range intermediates {
 			nodeHashes = append(nodeHashes, node.Hash[:])
 		}
