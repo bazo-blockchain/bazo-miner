@@ -49,6 +49,9 @@ const (
 
 	//Used to signal error
 	NOT_FOUND = 110
+
+	STATE_REQ = 120
+	STATE_RES = 121
 )
 
 type Header struct {

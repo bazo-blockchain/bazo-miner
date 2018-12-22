@@ -3,6 +3,7 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -77,6 +78,20 @@ func genesisRes(p *peer, payload []byte) {
 	genesis, err := storage.ReadGenesis()
 	if err == nil && genesis != nil {
 		packet = BuildPacket(GENESIS_RES, genesis.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
+func stateRes(p *peer, payload []byte) {
+	var packet []byte
+	state := storage.ReadState()
+	if state != nil {
+		buffer := new(bytes.Buffer)
+		gob.NewEncoder(buffer).Encode(state)
+		packet = BuildPacket(STATE_RES, buffer.Bytes())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}

@@ -78,6 +78,10 @@ func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 	return txMemPool[hash]
 }
 
+func ReadState() (state map[[64]byte]*protocol.Account){
+	return State
+}
+
 //Needed for the miner to prepare a new block
 func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
 	for key := range txMemPool {
