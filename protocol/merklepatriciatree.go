@@ -1,19 +1,36 @@
 package protocol
 
 import (
+	"bytes"
+	"encoding/gob"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
 )
 
-type MerklePatriciaTree struct {
-	PatriciaRoot *NodePatricia
-	merklePatriciaRoot [32] byte
-	PatriciaLeafs []*Node
+type MPT_Proof map[string][]byte
+
+func (proof *MPT_Proof) Hash() (hash [32]byte) {
+	if proof == nil {
+		return [32]byte{}
+	}
+
+	return SerializeHashContent(proof)
 }
 
-type NodePatricia struct {
+func (proof *MPT_Proof) Encode() (encodedTx []byte) {
+	encodeData := MPT_Proof{}
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encodeData)
+	return buffer.Bytes()
+}
 
+func (proof *MPT_Proof) Decode(encoded []byte) *MPT_Proof {
+	var decoded MPT_Proof
+	buffer := bytes.NewBuffer(encoded)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
 }
 
 func BuildMPT(state map[[64]byte]*Account) (*trie.Trie, error){
@@ -42,7 +59,7 @@ func deleteString(trie *trie.Trie, k string) {
 /*
 This function creates a MPT Proof for a given MPT and a key
 */
-func createProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
+func CreateProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
 	proof := ethdb.NewMemDatabase()
 	proofEerror := trie.Prove(key, 0, proof)
 	if proofEerror != nil{

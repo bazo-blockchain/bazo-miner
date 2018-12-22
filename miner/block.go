@@ -218,7 +218,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	}
 
 	//Include MPT proof for the sender address in the transaction
-	mptProof, err := createProver(stateMPT,tx.From[:])
+	mptProof, err := protocol.CreateProver(stateMPT,tx.From[:])
 
 	if err != nil{
 		err := fmt.Sprintf("Error while creating proof for key: %x ", tx.From)
@@ -283,16 +283,6 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
 	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
 	return nil
-}
-
-func createProver(trie *trie.Trie, key []byte) (ProofNodes *ethdb.MemDatabase,err error) {
-	proofDB := ethdb.NewMemDatabase()
-	proofError := trie.Prove(key, 0, proofDB)
-	if proofError != nil{
-		return nil, proofError
-	}
-
-	return proofDB, nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {

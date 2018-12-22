@@ -27,8 +27,6 @@ type FundsTx struct {
 	MPT_Proof
 }
 
-type MPT_Proof map[string][]byte
-
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
 	tx = new(FundsTx)
 	tx.Header = header
@@ -50,14 +48,6 @@ func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, t
 	copy(tx.Sig[64-len(s.Bytes()):], s.Bytes())
 
 	tx.MPT_Proof = nil
-	/*testMap := make(map[string][]byte)
-	testMap["heyho"] = []byte("testtest")
-	tx.MPT_Proof = testMap*/
-
-	/*stateMPT, _ := BuildMPT(storage.State)
-
-	//Include MPT proof for the sender address in the transaction
-	tx.MPT_Proof = *createProver(stateMPT,tx.From[:])*/
 
 	return tx, nil
 }
