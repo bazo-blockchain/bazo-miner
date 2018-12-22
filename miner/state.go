@@ -85,6 +85,16 @@ func getState() (state string) {
 	return state
 }
 
+func GetState() (state map[[64]byte]*protocol.Account){
+
+	stateMap := make(map[[64]byte]*protocol.Account)
+
+	for _, acc := range storage.State {
+		stateMap[acc.Address] = acc
+	}
+	return stateMap
+}
+
 func getValidatorsCount() (validatorsCount int) {
 	var returnValCounts int
 	returnValCounts = 0

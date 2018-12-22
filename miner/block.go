@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/trie"
 	"strconv"
 	"time"
 
@@ -210,7 +208,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		}
 	}*/
 
-	stateMPT, err := protocol.BuildMPT(storage.State)
+	/*stateMPT, err := protocol.BuildMPT(storage.State)
 
 	if err != nil{
 		err := fmt.Sprintf("Error while creating MPT of State in Block: %x ", b.Hash)
@@ -239,7 +237,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		preliminaryMPTMap[string(key)] = retrievedValue
 	}
 
-	tx.MPT_Proof = preliminaryMPTMap
+	tx.MPT_Proof = preliminaryMPTMap*/
 
 
 	//Verify included MPT

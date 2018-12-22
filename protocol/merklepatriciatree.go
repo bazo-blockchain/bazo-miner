@@ -8,7 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
-type MPT_Proof map[string][]byte
+type MPT_Proof struct {
+	Proofs map[string][]byte
+}
 
 func (proof *MPT_Proof) Hash() (hash [32]byte) {
 	if proof == nil {
