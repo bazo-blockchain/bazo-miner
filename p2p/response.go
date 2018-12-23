@@ -86,11 +86,11 @@ func genesisRes(p *peer, payload []byte) {
 }
 
 func stateRes(p *peer, payload []byte) {
-	//ip := strings.Split(string(payload), ":")[1]
-	port := _pongRes(payload)
+	ipport := strings.Split(string(payload), ":")[1]
+	//port := _pongRes(payload)
 
-	if port != "" {
-		p.listenerPort = port
+	if ipport != "" {
+		p.listenerPort = ipport
 	} else {
 		p.conn.Close()
 		return
@@ -114,9 +114,9 @@ func stateRes(p *peer, payload []byte) {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
 
-	//p.conn.Write(packet)
-
 	sendData(p, packet)
+
+
 	/*if conn := Connect(clientIP); conn != nil {
 		conn.Write(packet)
 
