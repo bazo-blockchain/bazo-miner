@@ -59,4 +59,7 @@ func InitLogging() {
 	LogMapping[103] = "CLIENT_PONG"
 
 	LogMapping[110] = "NOT_FOUND"
+
+	LogMapping[120] = "STATE_REQ"
+	LogMapping[121] = "STATE_RES"
 }

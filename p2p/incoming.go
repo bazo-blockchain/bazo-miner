@@ -33,6 +33,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		blockHeaderRes(p, payload)
 	case ACC_REQ:
 		accRes(p, payload)
+	case STATE_REQ:
+		stateRes(p, payload)
 	case ROOTACC_REQ:
 		rootAccRes(p, payload)
 	case MINER_PING:

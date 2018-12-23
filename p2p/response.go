@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/lisgie/bazo_miner/p2p"
 	"strconv"
 	"strings"
 )
@@ -85,7 +88,10 @@ func genesisRes(p *peer, payload []byte) {
 	sendData(p, packet)
 }
 
-func stateRes(p *peer, payload []byte) {
+func stateRes(p *peer, payload []byte) error {
+	var clientIP string
+	clientIP = string(payload)
+	p.listenerPort = clientIP
 	var packet []byte
 	state := storage.ReadState()
 	if state != nil {
@@ -96,7 +102,19 @@ func stateRes(p *peer, payload []byte) {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
 
-	sendData(p, packet)
+	/*sendData(p, packet)*/
+	if conn := Connect(clientIP); conn != nil {
+		conn.Write(packet)
+
+		header, payload, err := RcvData_(conn)
+		if err != nil || header.TypeID == p2p.NOT_FOUND {
+			err = errors.New(string(payload[:]))
+		}
+		conn.Close()
+
+		return err
+	}
+	return errors.New(fmt.Sprintf("Sending state response failed at: %x.", clientIP))
 }
 
 //Response the requested block SPV header
