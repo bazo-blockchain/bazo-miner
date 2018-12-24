@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
+	"strconv"
 )
 
 type MPT_Proof struct {
@@ -40,7 +41,7 @@ func BuildMPT(state map[[64]byte]*Account) (*trie.Trie, error){
 
 	//loop through state of the blockchain and add nodes to the MPT
 	for _, acc := range state {
-		updateString(Trie,string(acc.Address[:]),string(acc.Balance))
+		updateString(Trie,string(acc.Address[:]),strconv.FormatUint(acc.Balance, 10))
 	}
 
 	return Trie, nil
@@ -68,4 +69,19 @@ func CreateProver(trie *trie.Trie, key []byte) (*ethdb.MemDatabase,error) {
 		return nil, proofEerror
 	}
 	return proof, nil
+}
+
+/*
+This function takes a map[string][]byte and converts it into an equivalent ethdb.Memdatabase, which is needed
+to verify the MPT proof in a received Transaction from the client
+*/
+func MPTMapToMemDB(inputMap map[string][]byte)  (proofDB *ethdb.MemDatabase) {
+	preliminaryMemDb := ethdb.NewMemDatabase()
+
+	//Iterate over map entries and put key and values to the MemDatabase
+	for k, v := range inputMap {
+		preliminaryMemDb.Put([]byte(k),v)
+	}
+
+	return preliminaryMemDb
 }

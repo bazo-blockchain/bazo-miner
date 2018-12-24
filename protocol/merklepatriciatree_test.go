@@ -152,20 +152,20 @@ func TestProofMPTFailValueMismatch(t *testing.T) {
 
 	updateString(Trie,"key1","1")
 	m["key1"] = "1"
-	updateString(Trie,"key2","11")
-	m["key2"] = "11"
+	updateString(Trie,"4f81c9d6a0863305d1df48bc2512be07f5657b20ed1d217881038b3eb022948c","1002")
+	m["key2"] = "1002"
 
 	root := Trie.Hash()
 
 	// test value mismatch for key2
-	proof, err := CreateProver(Trie,[]byte("key2"))
+	proof, err := CreateProver(Trie,[]byte("4f81c9d6a0863305d1df48bc2512be07f5657b20ed1d217881038b3eb022948c"))
 	if proof == nil {
 		t.Fatalf("prover: missing key %x while constructing proof", "key2")
 	}
 
 	updateString(Trie,"key2","newValue")
 
-	val, _, err := trie.VerifyProof(root, []byte("key2"), proof)
+	val, _, err := trie.VerifyProof(root, []byte("4f81c9d6a0863305d1df48bc2512be07f5657b20ed1d217881038b3eb022948c"), proof)
 
 	if err != nil {
 		t.Fatalf("prover: failed to verify proof for key %x: %v\nraw ", "key2","11")
