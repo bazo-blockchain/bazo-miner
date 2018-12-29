@@ -20,6 +20,7 @@ const (
 type Block struct {
 	//Header
 	Header       byte
+	ShardId		 uint8
 	Hash         [32]byte
 	PrevHash     [32]byte
 	NrConfigTx   uint8
@@ -48,7 +49,7 @@ type Block struct {
 	StakeTxData  	[][32]byte
 }
 
-type ShardBlock struct {
+/*type ShardBlock struct {
 	//Header
 	Header 	     byte
 	ShardId      byte
@@ -78,7 +79,7 @@ type ShardBlock struct {
 	FundsTxData  	[][32]byte
 	ConfigTxData 	[][32]byte
 	StakeTxData  	[][32]byte
-}
+}*/
 
 func NewBlock(prevHash [32]byte, height uint32) *Block {
 	newBlock := Block{
@@ -98,6 +99,7 @@ func (block *Block) HashBlock() [32]byte {
 
 	blockHash := struct {
 		prevHash              [32]byte
+		ShardId				  uint8
 		timestamp             int64
 		merkleRoot            [32]byte
 		merklePatriciaRoot	  [32]byte
@@ -108,6 +110,7 @@ func (block *Block) HashBlock() [32]byte {
 		conflictingBlockHash2 [32]byte
 	}{
 		block.PrevHash,
+		block.ShardId,
 		block.Timestamp,
 		block.MerkleRoot,
 		block.MerklePatriciaRoot,
@@ -155,6 +158,7 @@ func (block *Block) Encode() []byte {
 
 	encoded := Block{
 		Header:                block.Header,
+		ShardId:			   block.ShardId,
 		Hash:                  block.Hash,
 		PrevHash:              block.PrevHash,
 		Nonce:                 block.Nonce,
@@ -162,7 +166,7 @@ func (block *Block) Encode() []byte {
 		MerkleRoot:            block.MerkleRoot,
 		MerklePatriciaRoot:    block.MerklePatriciaRoot,
 		Beneficiary:           block.Beneficiary,
-		NrContractTx:               block.NrContractTx,
+		NrContractTx:          block.NrContractTx,
 		NrFundsTx:             block.NrFundsTx,
 		NrConfigTx:            block.NrConfigTx,
 		NrStakeTx:             block.NrStakeTx,
@@ -174,10 +178,10 @@ func (block *Block) Encode() []byte {
 		ConflictingBlockHash1: block.ConflictingBlockHash1,
 		ConflictingBlockHash2: block.ConflictingBlockHash2,
 
-		ContractTxData:    block.ContractTxData,
-		FundsTxData:  block.FundsTxData,
-		ConfigTxData: block.ConfigTxData,
-		StakeTxData:  block.StakeTxData,
+		ContractTxData:        block.ContractTxData,
+		FundsTxData:           block.FundsTxData,
+		ConfigTxData:          block.ConfigTxData,
+		StakeTxData:           block.StakeTxData,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -192,6 +196,7 @@ func (block *Block) EncodeHeader() []byte {
 
 	encoded := Block{
 		Header:       block.Header,
+		ShardId:	  block.ShardId,
 		Hash:         block.Hash,
 		PrevHash:     block.PrevHash,
 		NrConfigTx:   block.NrConfigTx,
@@ -220,6 +225,7 @@ func (block *Block) Decode(encoded []byte) (b *Block) {
 
 func (block Block) String() string {
 	return fmt.Sprintf("\nHash: %x\n"+
+		"Shard Id: %x\n"+
 		"Previous Hash: %x\n"+
 		"Nonce: %x\n"+
 		"Timestamp: %v\n"+
@@ -236,6 +242,7 @@ func (block Block) String() string {
 		"Conflicted Block Hash 1:%x\n"+
 		"Conflicted Block Hash 2:%x\n",
 		block.Hash[0:8],
+		block.ShardId,
 		block.PrevHash[0:8],
 		block.Nonce,
 		block.Timestamp,

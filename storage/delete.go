@@ -20,6 +20,20 @@ func DeleteClosedBlock(hash [32]byte) error {
 	})
 }
 
+func DeleteClosedEpochBlock(hash [32]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(CLOSEDEPOCHBLOCK_BUCKET))
+		return b.Delete(hash[:])
+	})
+}
+
+func DeleteOpenEpochBlock(hash [32]byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(OPENEPOCHBLOCK_BUCKET))
+		return b.Delete(hash[:])
+	})
+}
+
 func DeleteLastClosedBlock(hash [32]byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))

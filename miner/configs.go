@@ -29,6 +29,6 @@ const (
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
 
 	//Parameters for sharding concept
-	EPOCH_LENGTH = 5 // 5 Blocks per Epoch
-	USERS_PER_SHARD = 10
+	EPOCH_LENGTH         = 10 // 5 Blocks per Epoch
+	VALIDATORS_PER_SHARD = 2
 )

@@ -102,3 +102,7 @@ func mining(initialBlock *protocol.Block) {
 		blockValidation.Unlock()
 	}
 }
+
+func DetNumberOfShards() (numberOfShards int) {
+	return GetValidatorsCount() / VALIDATORS_PER_SHARD
+}

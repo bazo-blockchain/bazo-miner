@@ -23,7 +23,6 @@ type FundsTx struct {
 	To     [64]byte
 	Sig    [64]byte
 	Data   []byte
-	//MPT_Proof *ethdb.MemDatabase
 	MPT_Proof
 }
 

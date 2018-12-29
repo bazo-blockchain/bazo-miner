@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 )
@@ -18,6 +17,7 @@ var (
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
 	Buckets			   []string
+	NumberOfShards	   uint8
 )
 
 const (
@@ -30,6 +30,8 @@ const (
 	CLOSEDCONFIGS_BUCKET	= "closedconfigs"
 	LASTCLOSEDBLOCK_BUCKET 	= "lastclosedblock"
 	GENESIS_BUCKET			= "genesis"
+	CLOSEDEPOCHBLOCK_BUCKET = "closedepochblocks"
+	OPENEPOCHBLOCK_BUCKET	= "openepochblock"
 )
 
 //Entry function for the storage package
@@ -46,6 +48,8 @@ func Init(dbname string, bootstrapIpport string) error {
 		CLOSEDCONFIGS_BUCKET,
 		LASTCLOSEDBLOCK_BUCKET,
 		GENESIS_BUCKET,
+		CLOSEDEPOCHBLOCK_BUCKET,
+		OPENEPOCHBLOCK_BUCKET,
 	}
 
 	var err error
