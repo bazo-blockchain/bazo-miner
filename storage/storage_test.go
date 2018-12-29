@@ -292,3 +292,96 @@ func TestReadWriteDeleteBlock(t *testing.T) {
 		t.Error("Failed to delete last closed block from storage.\n")
 	}
 }
+
+func TestReadWriteDeleteEpochBlock(t *testing.T) {
+
+	//No panic
+	DeleteOpenEpochBlock([32]byte{'0'})
+
+	//Initialize epoch blocks
+	b, b2, b3 := new(protocol.EpochBlock), new(protocol.EpochBlock), new(protocol.EpochBlock)
+
+	/*Set characteristics of epoch block 1*/
+	var prevShardHashesEpochBlock1 [][32]byte
+	var heightEpochBlock1 uint32
+	//Assuming that the previous epoch had 2 running shards. Each hashX denotes the hash value of the last shard block
+	hash11 := [32]byte{'0', '1'}
+	hash12 := [32]byte{'0', '1'}
+	prevShardHashesEpochBlock1 = append(prevShardHashesEpochBlock1, hash11)
+	prevShardHashesEpochBlock1 = append(prevShardHashesEpochBlock1, hash12)
+	heightEpochBlock1 = 100
+	b.Hash = [32]byte{'0'}
+	b.PrevShardHashes = prevShardHashesEpochBlock1
+	b.Height = heightEpochBlock1
+
+	/*Set characteristics of epoch block 2*/
+	var prevShardHashesEpochBlock2 [][32]byte
+	var heightEpochBlock2 uint32
+	//Assuming that the previous epoch had 3 running shards. Each hashX denotes the hash value of the last shard block
+	hash21 := [32]byte{'0', '1'}
+	hash22 := [32]byte{'0', '1'}
+	hash23 := [32]byte{'0', '1'}
+	prevShardHashesEpochBlock2 = append(prevShardHashesEpochBlock1, hash21)
+	prevShardHashesEpochBlock2 = append(prevShardHashesEpochBlock1, hash22)
+	prevShardHashesEpochBlock2 = append(prevShardHashesEpochBlock1, hash23)
+	heightEpochBlock2 = 100
+	b2.Hash = [32]byte{'1'}
+	b2.PrevShardHashes = prevShardHashesEpochBlock2
+	b2.Height = heightEpochBlock2
+
+	/*Set characteristics of epoch block 3*/
+	var prevShardHashesEpochBlock3 [][32]byte
+	var heightEpochBlock3 uint32
+	//Assuming that the previous epoch had 3 running shards. Each hashX denotes the hash value of the last shard block
+	hash31 := [32]byte{'0', '1'}
+	hash32 := [32]byte{'0', '1'}
+	hash33 := [32]byte{'0', '1'}
+	hash34 := [32]byte{'0', '1'}
+	prevShardHashesEpochBlock3 = append(prevShardHashesEpochBlock1, hash31)
+	prevShardHashesEpochBlock3 = append(prevShardHashesEpochBlock1, hash32)
+	prevShardHashesEpochBlock3 = append(prevShardHashesEpochBlock1, hash33)
+	prevShardHashesEpochBlock3 = append(prevShardHashesEpochBlock1, hash34)
+	heightEpochBlock3 = 100
+	b3.Hash = [32]byte{'2'}
+	b3.PrevShardHashes = prevShardHashesEpochBlock3
+	b3.Height = heightEpochBlock3
+
+	WriteOpenEpochBlock(b)
+	WriteOpenEpochBlock(b2)
+	WriteOpenEpochBlock(b3)
+
+	if ReadOpenEpochBlock(b.Hash) == nil || ReadOpenEpochBlock(b2.Hash) == nil || ReadOpenEpochBlock(b3.Hash) == nil {
+		t.Error("Failed to write epoch block to open block storage.\n")
+	}
+
+	newb1 := ReadOpenEpochBlock(b.Hash)
+	newb2 := ReadOpenEpochBlock(b2.Hash)
+	newb3 := ReadOpenEpochBlock(b3.Hash)
+
+	DeleteOpenEpochBlock(newb1.Hash)
+	DeleteOpenEpochBlock(newb2.Hash)
+	DeleteOpenEpochBlock(newb3.Hash)
+
+	WriteClosedEpochBlock(newb1)
+	WriteClosedEpochBlock(newb2)
+	WriteClosedEpochBlock(newb3)
+
+	if ReadOpenEpochBlock(newb1.Hash) != nil ||
+		ReadOpenEpochBlock(newb2.Hash) != nil ||
+		ReadOpenEpochBlock(newb3.Hash) != nil ||
+		ReadClosedEpochBlock(b.Hash) == nil ||
+		ReadClosedEpochBlock(b2.Hash) == nil ||
+		ReadClosedEpochBlock(b3.Hash) == nil {
+		t.Error("Failed to write epoch block to closed block storage.\n")
+	}
+
+	DeleteClosedEpochBlock(newb1.Hash)
+	DeleteClosedEpochBlock(newb2.Hash)
+	DeleteClosedEpochBlock(newb3.Hash)
+
+	if ReadClosedEpochBlock(b.Hash) != nil ||
+		ReadClosedEpochBlock(b2.Hash) != nil ||
+		ReadClosedEpochBlock(b3.Hash) != nil {
+		t.Error("Failed to delete block from closed block storage.\n")
+	}
+}

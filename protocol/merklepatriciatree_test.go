@@ -12,12 +12,6 @@ import (
 	"testing"
 )
 
-const (
-	TestDBFileName   = "test.db"
-	TestIpPort       = "127.0.0.1:8000"
-	TestKeyFileName  = "test_root"
-)
-
 func TestMPT(t *testing.T){
 	//storage.DeleteAll()
 	fmt.Printf("Starting testrun...")
