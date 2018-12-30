@@ -30,5 +30,5 @@ const (
 
 	//Parameters for sharding concept
 	EPOCH_LENGTH         = 10 // 5 Blocks per Epoch
-	VALIDATORS_PER_SHARD = 2
+	VALIDATORS_PER_SHARD = 1
 )

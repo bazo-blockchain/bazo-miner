@@ -50,7 +50,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	/*Sharding Utilities*/
 	NumberOfShards = DetNumberOfShards()
-	ValidatorShardMap = AssignValidatorsToShards(NumberOfShards)
+	ValidatorShardMap = AssignValidatorsToShards()
 
 
 	//Start to listen to network inputs (txs and blocks).
@@ -116,8 +116,11 @@ func DetNumberOfShards() (numberOfShards int) {
 	return int(math.Ceil(float64(GetValidatorsCount()) / float64(VALIDATORS_PER_SHARD)))
 }
 
-func AssignValidatorsToShards(shardCount int) map[[64]byte]int {
+func AssignValidatorsToShards() map[[64]byte]int {
 
+	shardCount := NumberOfShards
+
+	/*This map denotes which validator is assigned to which shard index*/
 	validatorShardAssignment := make(map[[64]byte]int)
 
 	/*Fill validatorAssignedMap with the validators of the current state.
@@ -141,6 +144,8 @@ func AssignValidatorsToShards(shardCount int) map[[64]byte]int {
 			if validatorAssignedMap[randomValidator] == false {
 				validatorAssignedMap[randomValidator] = true
 				validatorShardAssignment[randomValidator] = i
+			} else {
+				shardCount += 1
 			}
 		}
 	}
