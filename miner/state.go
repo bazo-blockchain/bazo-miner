@@ -246,6 +246,13 @@ func getInitialBlock(genesis *protocol.Genesis) (initialBlock *protocol.Block, e
 }
 
 func validateClosedBlocks() error {
+
+	/*Initialize file which which stores the hash-prevhash connections of the blockchain. This is just for visualization purposes*/
+	/*file,err := os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}*/
+
 	//Validate all closed blocks and update state
 	for _, blockToValidate := range storage.AllClosedBlocksAsc {
 		//Prepare datastructure to fill tx payloads
@@ -275,11 +282,14 @@ func validateClosedBlocks() error {
 
 		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
 
+		//file.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
+
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate
 	}
 
 	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
+	//file.Close()
 	return nil
 }
 

@@ -5,6 +5,8 @@ import (
 	"crypto/rsa"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"log"
+	"math"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -21,6 +23,8 @@ var (
 	slashingDict        = make(map[[64]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	commPrivKey         *rsa.PrivateKey
+	NumberOfShards	    int
+	ValidatorShardMap	= make(map[[64]byte]int)
 )
 
 //Miner entry point
@@ -43,6 +47,11 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	}
 
 	logger.Printf("Active config params:%v", activeParameters)
+
+	/*Sharding Utilities*/
+	NumberOfShards = DetNumberOfShards()
+	ValidatorShardMap = AssignValidatorsToShards(NumberOfShards)
+
 
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
@@ -104,5 +113,37 @@ func mining(initialBlock *protocol.Block) {
 }
 
 func DetNumberOfShards() (numberOfShards int) {
-	return GetValidatorsCount() / VALIDATORS_PER_SHARD
+	return int(math.Ceil(float64(GetValidatorsCount()) / float64(VALIDATORS_PER_SHARD)))
+}
+
+func AssignValidatorsToShards(shardCount int) map[[64]byte]int {
+
+	validatorShardAssignment := make(map[[64]byte]int)
+
+	/*Fill validatorAssignedMap with the validators of the current state.
+	The bool value indicates whether the validator has been assigned to a shard
+	*/
+	validatorSlices := make([][64]byte, 0)
+	validatorAssignedMap := make(map[[64]byte]bool)
+	for _, acc := range storage.State {
+		if acc.IsStaking {
+			validatorAssignedMap[acc.Address] = false
+			validatorSlices = append(validatorSlices, acc.Address)
+		}
+	}
+
+	/*Itereate over range of shards. At each index, select a random validators
+	from the map above and set is bool 'assigned' to TRUE*/
+	rand.Seed(time.Now().Unix())
+	for j := 1; j <= VALIDATORS_PER_SHARD; j++{
+		for i := 1; i <= shardCount; i++ {
+			randomValidator := validatorSlices[rand.Intn(len(validatorSlices))]
+			if validatorAssignedMap[randomValidator] == false {
+				validatorAssignedMap[randomValidator] = true
+				validatorShardAssignment[randomValidator] = i
+			}
+		}
+	}
+
+	return validatorShardAssignment
 }

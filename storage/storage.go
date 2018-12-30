@@ -17,7 +17,6 @@ var (
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
 	Buckets			   []string
-	NumberOfShards	   uint8
 )
 
 const (
