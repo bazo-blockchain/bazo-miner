@@ -22,6 +22,7 @@ var (
 
 	BlockReqChan 	= make(chan []byte)
 	GenesisReqChan 	= make(chan []byte)
+	EpochBlockReqChan 	= make(chan []byte)
 )
 
 //This is for blocks and txs that the miner successfully validated.
