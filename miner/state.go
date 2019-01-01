@@ -257,7 +257,6 @@ func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protoc
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
 		initialBlock = newBlock(firstEpochBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1) // since first epoch block is at height 0
-
 		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
 			return nil, err

@@ -3,10 +3,12 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"log"
 	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 
@@ -25,6 +27,7 @@ var (
 	commPrivKey         *rsa.PrivateKey
 	NumberOfShards	    int
 	ValidatorShardMap	= make(map[[64]byte]int)
+	FileConnections		*os.File
 )
 
 //Miner entry point
@@ -42,6 +45,9 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	target = append(target, 15)
 
 	initialBlock, err := initState()
+
+	FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",initialBlock.PrevHash[0:15],initialBlock.Hash[0:15]))
+
 	if err != nil {
 		return err
 	}
@@ -55,12 +61,19 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
+
 	mining(initialBlock)
 
 	return nil
 }
 
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	var err error
+	FileConnections,err = os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
 	logger = storage.InitLogger()
 
 	rootAddress := crypto.GetAddressFromPubKey(wallet)
@@ -79,6 +92,8 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	FirstEpochBlock = initialEpochBlock
 	storage.WriteFirstEpochBlock(initialEpochBlock)
 	logger.Printf("Written Epoch Block: %v\n", initialEpochBlock.String())
+
+	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	return Init(wallet, commitment)
 }
@@ -107,6 +122,7 @@ func mining(initialBlock *protocol.Block) {
 			err := validate(currentBlock, false)
 			if err == nil {
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",currentBlock.PrevHash[0:15],currentBlock.Hash[0:15]))
 			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
@@ -122,6 +138,7 @@ func mining(initialBlock *protocol.Block) {
 		prepareBlock(currentBlock)
 		blockValidation.Unlock()
 	}
+
 }
 
 func DetNumberOfShards() (numberOfShards int) {
