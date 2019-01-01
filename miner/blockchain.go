@@ -102,9 +102,29 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
+	processingEpochBlock := false
+
 	currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height+1)
 
 	for {
+		var epochBlock *protocol.EpochBlock
+		//Watch globalBlockCount to check if the next epoch block needs to be created
+		// The new epoch block will be created based on 'currentBlock'
+		if(math.Mod(float64(globalBlockCount),float64(EPOCH_LENGTH + 1)) == 0){
+
+			processingEpochBlock = true
+			epochBlock = protocol.NewEpochBlock([][32]byte{currentBlock.Hash},currentBlock.Height + 1)
+			epochBlock.Hash = epochBlock.HashEpochBlock()
+			storage.WriteClosedEpochBlock(epochBlock)
+			logger.Printf("Inserting EPOCH BLOCK: %v\n",epochBlock)
+
+			for _, prevHash := range epochBlock.PrevShardHashes {
+				FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",prevHash[0:15],epochBlock.Hash[0:15]))
+			}
+		} else {
+			epochBlock = nil
+		}
+
 		_, err := storage.ReadAccount(validatorAccAddress)
 		if err != nil {
 			logger.Printf("%v\n", err)
@@ -134,11 +154,20 @@ func mining(initialBlock *protocol.Block) {
 		//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 		//validated with block validation, so we wait in order to not work on tx data that is already validated
 		//when we finish the block.
-		blockValidation.Lock()
-		nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
-		currentBlock = nextBlock
-		prepareBlock(currentBlock)
-		blockValidation.Unlock()
+		if processingEpochBlock {
+			blockValidation.Lock()
+			nextBlock := newBlock(epochBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+2)
+			currentBlock = nextBlock
+			prepareBlock(currentBlock)
+			blockValidation.Unlock()
+			processingEpochBlock = false
+		} else {
+			blockValidation.Lock()
+			nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
+			currentBlock = nextBlock
+			prepareBlock(currentBlock)
+			blockValidation.Unlock()
+		}
 	}
 
 }
