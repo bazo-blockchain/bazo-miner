@@ -118,6 +118,8 @@ func initState() (initialBlock *protocol.Block, err error) {
 
 	initialEpochBlock, err := initEpochBlock()
 
+	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
+
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +312,7 @@ func validateClosedBlocks() error {
 
 		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
 
-		//file.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
+		FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
 
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate

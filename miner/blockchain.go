@@ -32,6 +32,8 @@ var (
 
 //Miner entry point
 func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	FileConnections,_ = os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
 	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
 	commPrivKey = commitment
 
