@@ -118,14 +118,18 @@ func initState() (initialBlock *protocol.Block, err error) {
 
 	initialEpochBlock, err := initEpochBlock()
 
-	initRootAccounts(genesis)
-
-	err = initClosedBlocks(genesis)
 	if err != nil {
 		return nil, err
 	}
 
-	initialBlock, err = getInitialBlock(genesis)
+	initRootAccounts(genesis)
+
+	err = initClosedBlocks(initialEpochBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	initialBlock, err = getInitialBlock(initialEpochBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +166,9 @@ func initGenesis() (genesis *protocol.Genesis, err error) {
 }
 
 func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
-	initialEpochBlock := storage.ReadClosedEpochBlock(FirstEpochBlock.Hash)
+	if initialEpochBlock, err = storage.ReadFirstEpochBlock(); err != nil {
+		return nil, err
+	}
 
 	if initialEpochBlock == nil {
 		p2p.FirstEpochBlockReq()
@@ -170,16 +176,16 @@ func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
 		// TODO: @rmnblm parallelize this
 		// blocking wait
 		select {
-		case encodedGenesis := <-p2p.GenesisReqChan:
-			genesis = genesis.Decode(encodedGenesis)
-			logger.Printf("Received genesis: %v", genesis.String())
-		case <-time.After(GENESISFETCH_TIMEOUT * time.Second):
-			return nil, errors.New("genesis fetch timeout")
+		case encodedFirstEpochBlock := <-p2p.FirstEpochBlockReqChan:
+			initialEpochBlock = initialEpochBlock.Decode(encodedFirstEpochBlock)
+			logger.Printf("Received first Epoch Block: %v", initialEpochBlock.String())
+		case <-time.After(EPOCHBLOCKFETCH_TIMEOUT* time.Second):
+			return nil, errors.New("epoch block fetch timeout")
 		}
 
-		storage.WriteGenesis(genesis)
+		storage.WriteClosedEpochBlock(initialEpochBlock)
 	}
-	return genesis, nil
+	return initialEpochBlock, nil
 }
 
 func initRootAccounts(genesis *protocol.Genesis) {
@@ -188,7 +194,7 @@ func initRootAccounts(genesis *protocol.Genesis) {
 	storage.RootKeys[genesis.RootAddress] = &rootAcc
 }
 
-func initClosedBlocks(genesis *protocol.Genesis) error {
+func initClosedBlocks(firstEpochBlock *protocol.EpochBlock) error {
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
 		allClosedBlocks = storage.ReadAllClosedBlocks()
@@ -231,8 +237,8 @@ func initClosedBlocks(genesis *protocol.Genesis) error {
 			}
 			fmt.Println("Last block: ", lastBlock.Height)
 			if lastBlock.Height == 0 {
-				if lastBlock.PrevHash != genesis.Hash() {
-					return errors.New("invalid genesis")
+				if lastBlock.PrevHash != firstEpochBlock.HashEpochBlock() {
+					return errors.New("invalid first epoch block")
 				}
 				break
 			}
@@ -245,12 +251,12 @@ func initClosedBlocks(genesis *protocol.Genesis) error {
 	return nil
 }
 
-func getInitialBlock(genesis *protocol.Genesis) (initialBlock *protocol.Block, err error) {
+func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protocol.Block, err error) {
 	if len(storage.AllClosedBlocksAsc) > 0 {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock(genesis.Hash(), [crypto.COMM_PROOF_LENGTH]byte{}, 0)
+		initialBlock = newBlock(firstEpochBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1) // since first epoch block is at height 0
 
 		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {

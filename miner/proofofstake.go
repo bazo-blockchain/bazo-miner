@@ -259,7 +259,7 @@ func LeaderAggregatorElection(diff uint8,
 }
 
 func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][crypto.COMM_PROOF_LENGTH]byte) {
-	for block.Height > 0 && n > 0 {
+	for block.Height > 1 && n > 0 {
 		block = storage.ReadClosedBlock(block.PrevHash)
 		prevProofs = append(prevProofs, block.CommitmentProof)
 		n -= 1

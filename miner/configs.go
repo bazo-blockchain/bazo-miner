@@ -8,6 +8,7 @@ const (
 	TXFETCH_TIMEOUT    		= 5  //Sec
 	BLOCKFETCH_TIMEOUT 		= 40 //Sec
 	GENESISFETCH_TIMEOUT 	= 40 //Sec
+	EPOCHBLOCKFETCH_TIMEOUT 	= 20 //Sec
 
 	//Some prominent programming languages (e.g., Java) have not unsigned integer types
 	//Neglecting MSB simplifies compatibility

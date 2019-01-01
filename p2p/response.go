@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -88,9 +87,10 @@ func genesisRes(p *peer, payload []byte) {
 
 func FirstEpochBlockRes(p *peer, payload []byte) {
 	var packet []byte
-	initialEpochBlock := storage.ReadClosedEpochBlock(miner.FirstEpochBlock.Hash)
-	if initialEpochBlock != nil{
-		packet = BuildPacket(FIRST_EPOCH_BLOCK_RES, initialEpochBlock.Encode())
+	firstEpochBlock, err := storage.ReadFirstEpochBlock()
+
+	if err == nil && firstEpochBlock != nil {
+		packet = BuildPacket(FIRST_EPOCH_BLOCK_RES, firstEpochBlock.Encode())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
