@@ -15,7 +15,7 @@ func WriteOpenBlock(block *protocol.Block) error {
 func WriteOpenEpochBlock(epochBlock *protocol.EpochBlock) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(OPENEPOCHBLOCK_BUCKET))
-		return b.Put(epochBlock.Hash[:], epochBlock.Encode())
+		return b.Put(epochBlock.HashEpochBlock()[:], epochBlock.Encode())
 	})
 }
 
@@ -29,7 +29,7 @@ func WriteClosedBlock(block *protocol.Block) error {
 func WriteClosedEpochBlock(epochBlock *protocol.EpochBlock) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(CLOSEDEPOCHBLOCK_BUCKET))
-		return b.Put(epochBlock.Hash[:], epochBlock.Encode())
+		return b.Put(epochBlock.HashEpochBlock()[:], epochBlock.Encode())
 	})
 }
 

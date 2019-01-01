@@ -116,6 +116,8 @@ func initState() (initialBlock *protocol.Block, err error) {
 		return nil, err
 	}
 
+	initialEpochBlock, err := initEpochBlock()
+
 	initRootAccounts(genesis)
 
 	err = initClosedBlocks(genesis)
@@ -143,6 +145,27 @@ func initGenesis() (genesis *protocol.Genesis, err error) {
 
 	if genesis == nil {
 		p2p.GenesisReq()
+
+		// TODO: @rmnblm parallelize this
+		// blocking wait
+		select {
+		case encodedGenesis := <-p2p.GenesisReqChan:
+			genesis = genesis.Decode(encodedGenesis)
+			logger.Printf("Received genesis: %v", genesis.String())
+		case <-time.After(GENESISFETCH_TIMEOUT * time.Second):
+			return nil, errors.New("genesis fetch timeout")
+		}
+
+		storage.WriteGenesis(genesis)
+	}
+	return genesis, nil
+}
+
+func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
+	initialEpochBlock := storage.ReadClosedEpochBlock(FirstEpochBlock.Hash)
+
+	if initialEpochBlock == nil {
+		p2p.FirstEpochBlockReq()
 
 		// TODO: @rmnblm parallelize this
 		// blocking wait

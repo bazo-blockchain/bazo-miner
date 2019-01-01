@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -81,6 +82,41 @@ func genesisRes(p *peer, payload []byte) {
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
+
+	sendData(p, packet)
+}
+
+func FirstEpochBlockRes(p *peer, payload []byte) {
+	var packet []byte
+	initialEpochBlock := storage.ReadClosedEpochBlock(miner.FirstEpochBlock.Hash)
+	if initialEpochBlock != nil{
+		packet = BuildPacket(FIRST_EPOCH_BLOCK_RES, initialEpochBlock.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
+func EpochBlockRes(p *peer, payload []byte) {
+	var ebHash [32]byte
+	copy(ebHash[:], payload[0:32])
+
+	var eb *protocol.EpochBlock
+	closedEb := storage.ReadClosedEpochBlock(ebHash)
+
+	if closedEb != nil {
+		eb = closedEb
+	}
+
+	if eb == nil {
+		packet := BuildPacket(NOT_FOUND, nil)
+		sendData(p, packet)
+		return
+	}
+
+	var packet []byte
+	packet = BuildPacket(EPOCH_BLOCK_RES, eb.Encode())
 
 	sendData(p, packet)
 }

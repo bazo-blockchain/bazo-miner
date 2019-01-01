@@ -68,6 +68,12 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	genesis := protocol.NewGenesis(rootAddress, rootCommitment)
 	storage.WriteGenesis(&genesis)
+
+	/*Write First Epoch block chained to the genesis block*/
+	initialEpochBlock := protocol.NewEpochBlock([][32]byte{genesis.Hash()},0)
+	firstEpochBlock = initialEpochBlock
+	storage.WriteClosedEpochBlock(initialEpochBlock)
+
 	return Init(wallet, commitment)
 }
 

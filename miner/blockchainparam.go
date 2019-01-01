@@ -13,6 +13,7 @@ var (
 	localBlockCount   = int64(-1)
 	target            []uint8    //Stores the history of target values
 	currentTargetTime *timerange //Corresponds to the active timerange
+	FirstEpochBlock	  *protocol.EpochBlock
 )
 
 //An instance of this datastructure is created whenever system parameters change.

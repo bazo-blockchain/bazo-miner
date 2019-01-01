@@ -50,7 +50,7 @@ func GetStartCommand() cli.Command {
 			cli.StringFlag{
 				Name:  "dataDir, d",
 				Usage: "Data directory for the database and keystore",
-				Value: "NodeA",
+				Value: "NodeA_deprecated",
 			},
 			cli.StringFlag{
 				Name:  "address, a",

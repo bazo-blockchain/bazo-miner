@@ -47,6 +47,10 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		intermediateNodesRes(p, payload)
 	case GENESIS_REQ:
 		genesisRes(p, payload)
+	case FIRST_EPOCH_BLOCK_REQ:
+		FirstEpochBlockRes(p,payload)
+	case EPOCH_BLOCK_REQ:
+		EpochBlockRes(p,payload)
 
 		//RESPONSES
 	case NEIGHBOR_RES:
@@ -63,5 +67,9 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardTxReqToMiner(p, payload, STAKETX_RES)
 	case GENESIS_RES:
 		forwardGenesisReqToMiner(p, payload)
+	case FIRST_EPOCH_BLOCK_RES:
+		forwardFirstEpochBlockToMiner(p,payload)
+	case EPOCH_BLOCK_RES:
+		forwardEpochBlockToMiner(p,payload)
 	}
 }

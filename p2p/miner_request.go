@@ -41,6 +41,28 @@ func GenesisReq() error {
 	return nil
 }
 
+func FirstEpochBlockReq() error {
+	p := peers.getRandomPeer(PEERTYPE_MINER)
+	if p == nil {
+		return errors.New("Couldn't get a connection, request not transmitted.")
+	}
+
+	packet := BuildPacket(FIRST_EPOCH_BLOCK_REQ, nil)
+	sendData(p, packet)
+	return nil
+}
+
+func EpochBlockReq(hash [32]byte) error {
+	p := peers.getRandomPeer(PEERTYPE_MINER)
+	if p == nil {
+		return errors.New("Couldn't get a connection, request not transmitted.")
+	}
+
+	packet := BuildPacket(EPOCH_BLOCK_REQ, hash[:])
+	sendData(p, packet)
+	return nil
+}
+
 //Request specific transaction
 func TxReq(hash [32]byte, reqType uint8) error {
 

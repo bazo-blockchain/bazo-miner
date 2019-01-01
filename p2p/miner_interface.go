@@ -22,6 +22,7 @@ var (
 
 	BlockReqChan 	= make(chan []byte)
 	GenesisReqChan 	= make(chan []byte)
+	FirstEpochBlockReqChan 	= make(chan []byte)
 	EpochBlockReqChan 	= make(chan []byte)
 )
 
@@ -96,6 +97,14 @@ func forwardBlockReqToMiner(p *peer, payload []byte) {
 
 func forwardGenesisReqToMiner(p *peer, payload []byte) {
 	GenesisReqChan <- payload
+}
+
+func forwardFirstEpochBlockToMiner(p *peer, payload []byte) {
+	FirstEpochBlockReqChan <- payload
+}
+
+func forwardEpochBlockToMiner(p *peer, payload []byte) {
+	EpochBlockReqChan <- payload
 }
 
 func ReadSystemTime() int64 {

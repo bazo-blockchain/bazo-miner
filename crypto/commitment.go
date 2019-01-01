@@ -24,6 +24,7 @@ const (
 )
 
 func ExtractRSAKeyFromFile(filename string) (privKey *rsa.PrivateKey, err error) {
+
 	if _, err = os.Stat(filename); os.IsNotExist(err) {
 		err = CreateRSAKeyFile(filename)
 		if err != nil {
