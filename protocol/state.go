@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"sync"
 )
 
@@ -68,7 +67,7 @@ func (state *State) Decode(encoded []byte) (s *State) {
 func (state State) String() string {
 	stateString := ""
 	for _, acc := range state.ActualState {
-		stateString += fmt.Sprintf("Is root: %v, %v\n", storage.IsRootKey(acc.Address), acc)
+		stateString += fmt.Sprintf("Acc: %v\n", acc)
 	}
 	return stateString
 }

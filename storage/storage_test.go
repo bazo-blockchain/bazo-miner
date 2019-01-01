@@ -385,3 +385,25 @@ func TestReadWriteDeleteEpochBlock(t *testing.T) {
 		t.Error("Failed to delete block from closed block storage.\n")
 	}
 }
+
+func TestReadWriteDeleteState(t *testing.T) {
+
+	newState := new(protocol.State)
+	newState.ActualState = State
+
+	WriteState(newState)
+
+	_, err := ReadClosedState()
+
+	if err != nil{
+		t.Error("Failed to write state to closed storage.\n")
+	}
+
+	DeleteState()
+
+	retrievedState, _ := ReadClosedState()
+
+	if retrievedState != nil {
+		t.Error("Failed to delete block from closed block storage.\n")
+	}
+}
