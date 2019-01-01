@@ -82,3 +82,10 @@ func WriteGenesis(genesis *protocol.Genesis) error {
 		return b.Put([]byte("genesis"), genesis.Encode())
 	})
 }
+
+func WriteState(state *protocol.State) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(STATE_BUCKET))
+		return b.Put([]byte("state"), state.Encode())
+	})
+}

@@ -206,3 +206,13 @@ func ReadFirstEpochBlock() (firstEpochBlock *protocol.EpochBlock, err error) {
 	})
 	return firstEpochBlock, err
 }
+
+func ReadClosedState() (state *protocol.State, err error) {
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(STATE_BUCKET))
+		encoded := b.Get([]byte("state"))
+		state = state.Decode(encoded)
+		return nil
+	})
+	return state, err
+}

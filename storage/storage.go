@@ -31,6 +31,7 @@ const (
 	GENESIS_BUCKET			= "genesis"
 	CLOSEDEPOCHBLOCK_BUCKET = "closedepochblocks"
 	OPENEPOCHBLOCK_BUCKET	= "openepochblock"
+	STATE_BUCKET	= "statebucket"
 )
 
 //Entry function for the storage package
@@ -49,6 +50,7 @@ func Init(dbname string, bootstrapIpport string) error {
 		GENESIS_BUCKET,
 		CLOSEDEPOCHBLOCK_BUCKET,
 		OPENEPOCHBLOCK_BUCKET,
+		STATE_BUCKET,
 	}
 
 	var err error
