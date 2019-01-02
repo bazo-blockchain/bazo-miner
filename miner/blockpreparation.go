@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"encoding/binary"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"sort"
@@ -25,17 +26,47 @@ func prepareBlock(block *protocol.Block) {
 	sort.Sort(tmpCopy)
 
 	for _, tx := range opentxs {
-		//Prevent block size to overflow.
-		if block.GetSize()+tx.Size() > activeParameters.Block_size {
-			break
-		}
+		/*When fetching and adding Txs from the MemPool, first check if it belongs to my shard. Only if so, then add tx to the block*/
+		txAssignedShard := assignTransactionToShard(tx)
 
-		err := addTx(block, tx)
-		if err != nil {
-			//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
-			storage.DeleteOpenTx(tx)
+		if txAssignedShard == ValidatorShardMap[validatorAccAddress]{
+			/*Set shard identifier in block*/
+			block.ShardId = uint8(txAssignedShard)
+
+			//Prevent block size to overflow.
+			if block.GetSize()+tx.Size() > activeParameters.Block_size {
+				break
+			}
+
+			err := addTx(block, tx)
+			if err != nil {
+				//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
+				storage.DeleteOpenTx(tx)
+			}
 		}
 	}
+}
+
+func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
+	//Convert Address/Issuer ([64]bytes) included in TX to bigInt for the modulo operation to determine the assigned shard ID.
+	var txSenderAddressInt uint64
+
+	switch transaction.(type) {
+		case *protocol.ContractTx:
+			binary.BigEndian.PutUint64(transaction.(*protocol.ContractTx).Issuer[:], uint64(txSenderAddressInt))
+			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+		case *protocol.FundsTx:
+			binary.BigEndian.PutUint64(transaction.(*protocol.FundsTx).From[:], uint64(txSenderAddressInt))
+			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+		case *protocol.ConfigTx:
+			binary.BigEndian.PutUint64(transaction.(*protocol.ConfigTx).Sig[:], uint64(txSenderAddressInt))
+			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+		case *protocol.StakeTx:
+			binary.BigEndian.PutUint64(transaction.(*protocol.StakeTx).Account[:], uint64(txSenderAddressInt))
+			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+		default:
+			return 1
+		}
 }
 
 //Implement the sort interface

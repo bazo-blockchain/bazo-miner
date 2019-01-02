@@ -11,7 +11,6 @@ import (
 //the tx has already been broadcast before, whether it is a valid tx etc.
 func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	var tx protocol.Transaction
-
 	//Make sure the transaction can be properly decoded, verification is done at a later stage to reduce latency
 	switch brdcstType {
 	case FUNDSTX_BRDCST:

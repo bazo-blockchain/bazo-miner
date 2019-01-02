@@ -294,7 +294,7 @@ func validateClosedBlocks() error {
 
 			err = validateState(blockDataMap[blockToValidate.Hash])
 			if err != nil {
-				return errors.New(fmt.Sprintf("Block (%x) could not be statevalidated: %v\n", blockToValidate.Hash[0:8], err))
+				return errors.New(fmt.Sprintf("Block (%x) could not be state validated: %v\n", blockToValidate.Hash[0:8], err))
 			}
 
 			postValidate(blockDataMap[blockToValidate.Hash], true)

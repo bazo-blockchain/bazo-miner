@@ -209,38 +209,6 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 		}
 	}*/
 
-	/*stateMPT, err := protocol.BuildMPT(storage.State)
-
-	if err != nil{
-		err := fmt.Sprintf("Error while creating MPT of State in Block: %x ", b.Hash)
-		return errors.New(err)
-	}
-
-	//Include MPT proof for the sender address in the transaction
-	mptProof, err := protocol.CreateProver(stateMPT,tx.From[:])
-
-	if err != nil{
-		err := fmt.Sprintf("Error while creating proof for key: %x ", tx.From)
-		return errors.New(err)
-	}
-
-	preliminaryMPTMap := make(map[string][]byte)
-
-	//Iterate over db of proof and append key and values to the map in MPT_Proof
-	for _, key := range mptProof.Keys(){
-		retrievedValue, err := mptProof.Get(key)
-
-		if err != nil {
-			err := fmt.Sprintf("Error while retrieving value for key: %x ", string(key))
-			return errors.New(err)
-		}
-
-		preliminaryMPTMap[string(key)] = retrievedValue
-	}
-
-	tx.MPT_Proof = preliminaryMPTMap*/
-
-
 	/*Verify included MPT Proof with the MPT root hash of the last block*/
 	//Get MPT root hash of last block
 	MPTRootLastBlock := storage.ReadLastClosedBlock().MerklePatriciaRoot

@@ -10,6 +10,7 @@ import (
 var (
 	lastBlock         *protocol.Block
 	globalBlockCount  = int64(-1)
+	globalHeightCount = int64(-1) // Since multiple blocks in shards have same height
 	localBlockCount   = int64(-1)
 	target            []uint8    //Stores the history of target values
 	currentTargetTime *timerange //Corresponds to the active timerange
