@@ -53,16 +53,16 @@ func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 
 	switch transaction.(type) {
 		case *protocol.ContractTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.ContractTx).Issuer[:], uint64(txSenderAddressInt))
+			binary.BigEndian.PutUint64(transaction.(*protocol.ContractTx).Issuer[:8], uint64(txSenderAddressInt))
 			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
 		case *protocol.FundsTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.FundsTx).From[:], uint64(txSenderAddressInt))
+			binary.BigEndian.PutUint64(transaction.(*protocol.FundsTx).From[:8], uint64(txSenderAddressInt))
 			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
 		case *protocol.ConfigTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.ConfigTx).Sig[:], uint64(txSenderAddressInt))
+			binary.BigEndian.PutUint64(transaction.(*protocol.ConfigTx).Sig[:8], uint64(txSenderAddressInt))
 			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
 		case *protocol.StakeTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.StakeTx).Account[:], uint64(txSenderAddressInt))
+			binary.BigEndian.PutUint64(transaction.(*protocol.StakeTx).Account[:8], uint64(txSenderAddressInt))
 			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
 		default:
 			return 1

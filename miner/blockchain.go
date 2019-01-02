@@ -122,7 +122,7 @@ func mining(initialBlock *protocol.Block) {
 
 		if err == nil {
 			broadcastBlock(currentBlock)
-			err := validate(currentBlock, false)
+			err := validate(currentBlock, false) //here, block is written to closed storage
 			if err == nil {
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",currentBlock.PrevHash[0:15],currentBlock.Hash[0:15]))
