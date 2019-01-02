@@ -277,12 +277,6 @@ func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protoc
 
 func validateClosedBlocks() error {
 
-	/*Initialize file which which stores the hash-prevhash connections of the blockchain. This is just for visualization purposes*/
-	/*file,err := os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}*/
-
 	//Validate all closed blocks and update state
 	for _, blockToValidate := range storage.AllClosedBlocksAsc {
 		//Prepare datastructure to fill tx payloads
