@@ -117,7 +117,7 @@ func proofOfStake(diff uint8,
 	for range time.Tick(time.Second) {
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		// block has been validated
-		if prevHash != lastBlock.Hash {
+		if prevHash != lastBlock.Hash && prevBlockIsEpochBlock == false{ // also make sure that the last block is not an epoch block
 			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 		}
 

@@ -108,10 +108,18 @@ func (epochBlock EpochBlock) String() string {
 		"Height: %d\n",
 		epochBlock.Hash[0:8],
 		len(epochBlock.PrevShardHashes),
-		epochBlock.PrevShardHashes,
+		epochBlock.StringPrevHashes(),
 		epochBlock.Timestamp,
 		epochBlock.MerkleRoot[0:8],
 		epochBlock.MerklePatriciaRoot,
 		epochBlock.Height,
 	)
+}
+
+func (epochBlock EpochBlock) StringPrevHashes() (prevHashes string) {
+
+	for _, prevHash := range epochBlock.PrevShardHashes {
+		prevHashes += fmt.Sprintf("%v\n", prevHash)
+	}
+	return prevHashes
 }

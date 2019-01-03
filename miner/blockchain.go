@@ -22,6 +22,7 @@ var (
 	parameterSlice      []Parameters
 	activeParameters    *Parameters
 	uptodate            bool
+	prevBlockIsEpochBlock bool
 	slashingDict        = make(map[[64]byte]SlashingProof)
 	validatorAccAddress [64]byte
 	commPrivKey         *rsa.PrivateKey
@@ -71,44 +72,6 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	return nil
 }
 
-func epochMining(initialBlock *protocol.Block) {
-
-	var epochBlock *protocol.EpochBlock
-	//currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height + 1)
-
-	currentBlock := new(protocol.Block)
-
-	currentBlock.Hash = initialBlock.Hash
-	currentBlock.Height = initialBlock.Height
-
-	/*constantly watch global blockcount for insertion of next epoch block*/
-	for{
-		if((globalBlockCount + 1) % EPOCH_LENGTH == 0){
-			//globalblock count is 1 before the next epoch block. Thus with the last block, create the next epoch block
-
-			//TODO: broadcast hash of lastblock to other validators, this is needed by the epoch block if multiple shards were created
-			/*broadcast my last block to the other validators, because epoch block is chained to all last blocks of the shards
-			broadcastBlock(lastBlock) */
-
-			//TODO: wait for hashes of the other shards to complete epoch block creation
-
-			epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash},lastBlock.Height + 1)
-			epochBlock.Hash = epochBlock.HashEpochBlock()
-			storage.WriteClosedEpochBlock(epochBlock)
-			logger.Printf("Inserting EPOCH BLOCK: %v\n",epochBlock)
-
-			for _, prevHash := range epochBlock.PrevShardHashes {
-				FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",prevHash[0:15],epochBlock.Hash[0:15]))
-			}
-
-			mining(epochBlock.Hash,epochBlock.Height)
-
-		} else {
-			currentBlock = mining(lastBlock.Hash,currentBlock.Height) // if we are currently not creating epoch block, then continue regular mining
-		}
-	}
-}
-
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	var err error
 	FileConnections,err = os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -140,10 +103,64 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	return Init(wallet, commitment)
 }
 
-//Mining is a constant process, trying to come up with a successful PoW.
-func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) (currentUpdatedBlock *protocol.Block) {
+func epochMining(initialBlock *protocol.Block) {
 
-	currentBlock := newBlock(hashPrevBlock, [crypto.COMM_PROOF_LENGTH]byte{}, heightPrevBlock+1)
+	var epochBlock *protocol.EpochBlock
+	//currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height + 1)
+
+	lastBlock = initialBlock
+
+	currentBlock := new(protocol.Block)
+
+	currentBlock.Hash = initialBlock.Hash
+	currentBlock.Height = initialBlock.Height
+
+	/*constantly watch global blockcount for insertion of next epoch block*/
+	for{
+		prevBlockIsEpochBlock = false
+
+		if((globalBlockCount + 1) % EPOCH_LENGTH == 0){
+			//globalblock count is 1 before the next epoch block. Thus with the last block, create the next epoch block
+
+			//TODO: broadcast hash of lastblock to other validators, this is needed by the epoch block if multiple shards were created
+			/*broadcast my last block to the other validators, because epoch block is chained to all last blocks of the shards
+			broadcastBlock(lastBlock) */
+
+			//TODO: wait for hashes of the other shards to complete epoch block creation
+
+			epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash},lastBlock.Height + 1)
+			epochBlock.Hash = epochBlock.HashEpochBlock()
+			storage.WriteClosedEpochBlock(epochBlock)
+			logger.Printf("Inserting EPOCH BLOCK: %v\n",epochBlock.String())
+
+			for _, prevHash := range epochBlock.PrevShardHashes {
+				FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",prevHash[0:15],epochBlock.Hash[0:15]))
+			}
+
+			prevBlockIsEpochBlock = true
+
+			mining(epochBlock.Hash,epochBlock.Height)
+
+		} else {
+			mining(lastBlock.Hash,lastBlock.Height) // if we are currently not creating epoch block, then continue regular mining
+		}
+	}
+}
+
+//Mining is a constant process, trying to come up with a successful PoW.
+func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
+
+	currentBlock := newBlock(hashPrevBlock, [crypto.COMM_PROOF_LENGTH]byte{}, heightPrevBlock + 1)
+
+	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
+	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
+	//validated with block validation, so we wait in order to not work on tx data that is already validated
+	//when we finish the block.
+	blockValidation.Lock()
+	//nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
+	//currentBlock = nextBlock
+	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
+	blockValidation.Unlock()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -169,15 +186,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) (currentUpdatedBlock
 		}
 	}
 
-	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
-	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
-	//validated with block validation, so we wait in order to not work on tx data that is already validated
-	//when we finish the block.
-	blockValidation.Lock()
-	nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
-	currentBlock = nextBlock
-	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
-	blockValidation.Unlock()
 	/*for {
 		_, err := storage.ReadAccount(validatorAccAddress)
 		if err != nil {
@@ -214,8 +222,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) (currentUpdatedBlock
 		prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
 		blockValidation.Unlock()
 	}*/
-
-	return currentBlock
 }
 
 func DetNumberOfShards() (numberOfShards int) {
