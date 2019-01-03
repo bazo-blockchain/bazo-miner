@@ -265,6 +265,8 @@ func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protoc
 		}
 		copy(initialBlock.CommitmentProof[:], commitmentProof[:])
 
+		initialBlock.Hash = initialBlock.HashBlock()
+
 		//Append genesis block to the map and save in storage
 		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
 
@@ -283,7 +285,7 @@ func validateClosedBlocks() error {
 		blockDataMap := make(map[[32]byte]blockData)
 
 		//Do not validate the genesis block, since a lot of properties are set to nil
-		if blockToValidate.Hash != [32]byte{} {
+		if blockToValidate.Hash != [32]byte{} && blockToValidate.Height != uint32(1) {
 			//Fetching payload data from the txs (if necessary, ask other miners)
 			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(blockToValidate, true)
 			if err != nil {
