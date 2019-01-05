@@ -20,7 +20,7 @@ const (
 type Block struct {
 	//Header
 	Header       byte
-	ShardId		 uint8
+	ShardId		 int
 	Hash         [32]byte
 	PrevHash     [32]byte
 	NrConfigTx   uint8
@@ -67,7 +67,7 @@ func (block *Block) HashBlock() [32]byte {
 
 	blockHash := struct {
 		prevHash              [32]byte
-		ShardId				  uint8
+		ShardId				  int
 		timestamp             int64
 		merkleRoot            [32]byte
 		merklePatriciaRoot	  [32]byte

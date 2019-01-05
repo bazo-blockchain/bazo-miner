@@ -117,6 +117,8 @@ func initState() (initialBlock *protocol.Block, err error) {
 	}
 
 	initialEpochBlock, err := initEpochBlock()
+	//Set the initialEpochBlock to the global variable 'LastEpochBlock'. This is needed to abort the POS for doing the validator assignment
+	lastEpochBlock = initialEpochBlock
 
 	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 

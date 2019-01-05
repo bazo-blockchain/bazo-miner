@@ -30,6 +30,12 @@ func processBlock(payload []byte) {
 	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
+
+		if(block.Height == lastBlock.Height + 1){
+			//count blocks received at current height
+			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+		}
+
 		broadcastBlock(block)
 	} else {
 		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)

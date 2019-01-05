@@ -9,8 +9,9 @@ import (
 
 var (
 	lastBlock         *protocol.Block
+	lastEpochBlock	  *protocol.EpochBlock
+	firstEpochOver	  bool
 	globalBlockCount  = int64(-1)
-	globalHeightCount = int64(-1) // Since multiple blocks in shards have same height
 	localBlockCount   = int64(-1)
 	target            []uint8    //Stores the history of target values
 	currentTargetTime *timerange //Corresponds to the active timerange
@@ -34,6 +35,8 @@ type Parameters struct {
 	Slashing_window_size    	uint64 //Number of blocks that a validator cannot vote on two competing chains.
 	Slash_reward            	uint64 //Reward for providing the correct slashing proof.
 	num_included_prev_proofs	int
+	epoch_length				int
+	validators_per_shard		int
 }
 
 func NewDefaultParameters() Parameters {
@@ -50,6 +53,8 @@ func NewDefaultParameters() Parameters {
 		SLASHING_WINDOW_SIZE,
 		SLASH_REWARD,
 		NUM_INCL_PREV_PROOFS,
+		EPOCH_LENGTH,
+		VALIDATORS_PER_SHARD,
 	}
 
 	return newParameters
@@ -166,7 +171,9 @@ func (param Parameters) String() string {
 			"Acceptanced time difference: %v\n"+
 			"Slashing window size: %v\n"+
 			"Slash reward: %v\n"+
-			"Num of previous proofs included in PoS: %v\n",
+			"Num of previous proofs included in PoS: %v\n"+
+			"Epoch Length: %v\n"+
+			"Validators per Shard: %v\n",
 		param.BlockHash[0:8],
 		param.Block_size,
 		param.Diff_interval,
@@ -179,5 +186,7 @@ func (param Parameters) String() string {
 		param.Slashing_window_size,
 		param.Slash_reward,
 		param.num_included_prev_proofs,
+		param.epoch_length,
+		param.validators_per_shard,
 	)
 }

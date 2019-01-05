@@ -29,9 +29,7 @@ func prepareBlock(block *protocol.Block) {
 		/*When fetching and adding Txs from the MemPool, first check if it belongs to my shard. Only if so, then add tx to the block*/
 		txAssignedShard := assignTransactionToShard(tx)
 
-		if txAssignedShard == ValidatorShardMap[validatorAccAddress]{
-			/*Set shard identifier in block*/
-			block.ShardId = uint8(txAssignedShard)
+		if txAssignedShard == ValidatorShardMap.ValMapping[validatorAccAddress]{
 
 			//Prevent block size to overflow.
 			if block.GetSize()+tx.Size() > activeParameters.Block_size {
