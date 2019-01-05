@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 )
 
 type EpochBlock struct {
@@ -17,6 +18,7 @@ type EpochBlock struct {
 	Timestamp             int64
 	MerkleRoot            [32]byte
 	MerklePatriciaRoot    [32]byte
+	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 }
 
 func NewEpochBlock(prevShardHashes [][32]byte, height uint32) *EpochBlock {
@@ -39,12 +41,14 @@ func (epochBlock *EpochBlock) HashEpochBlock() [32]byte {
 		merkleRoot            		  [32]byte
 		merklePatriciaRoot	  		  [32]byte
 		height				  		  uint32
+		commitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 	}{
 		epochBlock.PrevShardHashes,
 		epochBlock.Timestamp,
 		epochBlock.MerkleRoot,
 		epochBlock.MerklePatriciaRoot,
 		epochBlock.Height,
+		epochBlock.CommitmentProof,
 	}
 	return SerializeHashContent(blockHash)
 }
@@ -62,6 +66,7 @@ func (epochBlock *EpochBlock) Encode() []byte {
 		MerkleRoot:            epochBlock.MerkleRoot,
 		MerklePatriciaRoot:    epochBlock.MerklePatriciaRoot,
 		Height:                epochBlock.Height,
+		CommitmentProof:	   epochBlock.CommitmentProof,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -101,11 +106,12 @@ func (epochBlock *EpochBlock) Decode(encoded []byte) (b *EpochBlock) {
 func (epochBlock EpochBlock) String() string {
 	return fmt.Sprintf("\nHash: %x\n"+
 		"Len Previous Shard Hashes: %d\n"+
-		"Prev Shard Hashes: %v\n"+
+		"Prev Shard Hashes: %x\n"+
 		"Timestamp: %v\n"+
 		"MerkleRoot: %x\n"+
 		"MerklePatriciaRoot: %x\n"+
-		"Height: %d\n",
+		"Height: %d\n"+
+		"Commitment Proof: %x\n",
 		epochBlock.Hash[0:8],
 		len(epochBlock.PrevShardHashes),
 		epochBlock.StringPrevHashes(),
@@ -113,13 +119,14 @@ func (epochBlock EpochBlock) String() string {
 		epochBlock.MerkleRoot[0:8],
 		epochBlock.MerklePatriciaRoot,
 		epochBlock.Height,
+		epochBlock.CommitmentProof[0:8],
 	)
 }
 
 func (epochBlock EpochBlock) StringPrevHashes() (prevHashes string) {
 
 	for _, prevHash := range epochBlock.PrevShardHashes {
-		prevHashes += fmt.Sprintf("%v\n", prevHash)
+		prevHashes += fmt.Sprintf("%x\n", prevHash)
 	}
 	return prevHashes
 }

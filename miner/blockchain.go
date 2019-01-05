@@ -30,7 +30,8 @@ var (
 	ThisShardID             int // ID of the shard this validator is assigned to
 	commPrivKey             *rsa.PrivateKey
 	NumberOfShards          int
-	ReceivedBlocksAtHeightX int                       //This counter is used to sync block heights among shards
+	ReceivedBlocksAtHeightX int //This counter is used to sync block heights among shards
+	LastShardHashes         [][32]byte
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
 )
@@ -158,22 +159,42 @@ func epochMining(initialBlock *protocol.Block) {
 
 		//shard height synced with network, now mine next block
 		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
-			if ((globalBlockCount + 1) % EPOCH_LENGTH == 0) {
-				//globalblock count is 1 before the next epoch block. Thus with the last block, create the next epoch block
-
-				//TODO: broadcast hash of lastblock to other validators, this is needed by the epoch block if multiple shards were created
-				/*broadcast my last block to the other validators, because epoch block is chained to all last blocks of the shards
-				broadcastBlock(lastBlock) */
-
-				//TODO: wait for hashes of the other shards to complete epoch block creation
+			if ((globalBlockCount+1)%EPOCH_LENGTH == 0) {
+				//globalblockcount is 1 before the next epoch block. Thus with the last block, create the next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
-				epochBlock.Hash = epochBlock.HashEpochBlock()
-				storage.WriteClosedEpochBlock(epochBlock)
-				logger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
 
-				for _, prevHash := range epochBlock.PrevShardHashes {
-					FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
+				err := finalizeEpochBlock(epochBlock) //in case another epoch block was mined in the meantime, abort PoS here
+				if err != nil {
+					logger.Printf("%v\n", err)
+				} else {
+					logger.Printf("EPOCH BLOCK mined (%x)\n", epochBlock.Hash[0:8])
+				}
+
+				if err == nil {
+					epochBlock.Hash = epochBlock.HashEpochBlock()
+					//Get hashes of last shard blocks from other miners
+					if len(LastShardHashes) == NumberOfShards-1 {
+						epochBlock.PrevShardHashes = LastShardHashes
+						LastShardHashes = nil // empty the slice
+					}
+					broadcastEpochBlock(epochBlock)
+					storage.WriteClosedEpochBlock(epochBlock)
+					logger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
+
+					for _, prevHash := range epochBlock.PrevShardHashes {
+						FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
+					}
+
+					//generate new validator mapping and broadcast mapping to validators
+					ValidatorShardMap.ValMapping = AssignValidatorsToShards()
+					ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+					storage.WriteValidatorMapping(ValidatorShardMap.ValMapping)
+					logger.Printf("Validator Shard Mapping:\n")
+					logger.Printf(ValidatorShardMap.String())
+
+					//broadcast the generated map to the other validators
+					broadcastValidatorShardMapping(ValidatorShardMap)
 				}
 
 				prevBlockIsEpochBlock = true
@@ -183,10 +204,7 @@ func epochMining(initialBlock *protocol.Block) {
 				mining(epochBlock.Hash, epochBlock.Height)
 
 			} else {
-				if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
-					mining(lastBlock.Hash, lastBlock.Height) // if we are currently not creating epoch block, then continue regular mining
-				}
-
+				mining(lastBlock.Hash, lastBlock.Height)
 			}
 		}
 	}

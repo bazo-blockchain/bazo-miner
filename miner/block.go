@@ -102,6 +102,47 @@ func finalizeBlock(block *protocol.Block) error {
 	return nil
 }
 
+func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
+
+	//Add Merkle Patricia Tree hash in the block
+	stateMPT, err := protocol.BuildMPT(storage.State)
+	if err != nil {
+		return err
+	}
+	epochBlock.MerklePatriciaRoot = stateMPT.Hash()
+
+	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
+	if err != nil {
+		return err
+	}
+
+
+	// Cryptographic Sortition for PoS in Bazo
+	// The commitment proof stores a signed message of the Height that this block was created at.
+	commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(epochBlock.Height))
+	if err != nil {
+		return err
+	}
+
+	partialHash := epochBlock.HashEpochBlock()
+
+	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
+	if err != nil {
+		return err
+	}
+
+	var nonceBuf [8]byte
+	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
+	epochBlock.Timestamp = nonce
+
+	//Put pieces together to get the final hash.
+	epochBlock.Hash = sha3.Sum256(append(nonceBuf[:], partialHash[:]...))
+
+	copy(epochBlock.CommitmentProof[0:crypto.COMM_PROOF_LENGTH], commitmentProof[:])
+
+	return nil
+}
+
 //Transaction validation operates on a copy of a tiny subset of the state (all accounts involved in transactions).
 //We do not operate global state because the work might get interrupted by receiving a block that needs validation
 //which is done on the global state.

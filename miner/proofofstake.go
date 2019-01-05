@@ -165,10 +165,9 @@ func proofOfStake(diff uint8,
 	return timestamp, nil
 }
 
-func LeaderAggregatorElection(diff uint8,
-	prevHash [32]byte,
-	prevProofs [][crypto.COMM_PROOF_LENGTH]byte,
-	role uint32, // Leader := 1 and Aggregator := 0
+func proofOfStakeEpoch(diff uint8,
+	prevHashEpochBlock [32]byte,
+	height uint32,
 	balance uint64,
 	commitmentProof [crypto.COMM_PROOF_LENGTH]byte) (int64, error) {
 
@@ -178,7 +177,7 @@ func LeaderAggregatorElection(diff uint8,
 		abort  bool
 
 		timestampBuf [8]byte
-		roleBuf      [1]byte
+		heightBuf    [4]byte
 
 		timestamp int64
 
@@ -186,23 +185,17 @@ func LeaderAggregatorElection(diff uint8,
 	)
 
 	// allocate memory
-	// n * COMM_KEY_LENGTH bytes (prevProofs) + COMM_KEY_LENGTH bytes (localCommPubKey)+ 1 byte (role) + 8 bytes (count)
-	hashArgs = make([]byte, len(prevProofs)*crypto.COMM_PROOF_LENGTH+crypto.COMM_PROOF_LENGTH+1+8)
+	// COMM_KEY_LENGTH bytes (localCommPubKey)+ 1 byte (role) + 8 bytes (count) = 256 + 1 + 8
+	hashArgs = make([]byte, crypto.COMM_PROOF_LENGTH + 4 + 8)
 
-	binary.BigEndian.PutUint32(roleBuf[:], role)
+	binary.BigEndian.PutUint32(heightBuf[:], height)
 
-	// all required parameters are concatenated in the following order:
-	// ([PrevProofs] ⋅ CommitmentProof ⋅ Role ⋅ Seconds)
 	index := 0
-	for _, prevProof := range prevProofs {
-		copy(hashArgs[index:index + crypto.COMM_PROOF_LENGTH], prevProof[:])
-		index += crypto.COMM_PROOF_LENGTH
-	}
 
 	copy(hashArgs[index:index + crypto.COMM_PROOF_LENGTH], commitmentProof[:]) // COMM_KEY_LENGTH bytes
 	index += crypto.COMM_PROOF_LENGTH
-	copy(hashArgs[index:index + 1], roleBuf[:]) // 1 bytes
-	index += 1
+	copy(hashArgs[index:index + 4], heightBuf[:]) 		// 4 bytes
+	index += 4
 
 	timestampBufIndexStart := index
 	timestampBufIndexEnd := index + 8
@@ -210,8 +203,8 @@ func LeaderAggregatorElection(diff uint8,
 	for range time.Tick(time.Second) {
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		// block has been validated
-		if prevHash != lastBlock.Hash {
-			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
+		if prevHashEpochBlock != lastEpochBlock.Hash {
+			return -1, errors.New("Abort mining EPOCH BLOCK, another one has been successfully validated in the meantime")
 		}
 
 		abort = false
@@ -259,7 +252,7 @@ func LeaderAggregatorElection(diff uint8,
 }
 
 func GetLatestProofs(n int, block *protocol.Block) (prevProofs [][crypto.COMM_PROOF_LENGTH]byte) {
-	for block.Height > 1 && n > 0 {
+	for block.Height > lastEpochBlock.Height && n > 0 {
 		block = storage.ReadClosedBlock(block.PrevHash)
 		if(block == nil){
 			return [][256]byte{[256]byte{}}

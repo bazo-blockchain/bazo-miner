@@ -34,6 +34,11 @@ func processBlock(payload []byte) {
 		if(block.Height == lastBlock.Height + 1){
 			//count blocks received at current height
 			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+
+			//save hash of block for later creating epoch block. Make sure to store hashes from block other than my shard
+			if(block.ShardId != ThisShardID){
+				LastShardHashes = append(LastShardHashes, block.Hash)
+			}
 		}
 
 		broadcastBlock(block)
@@ -51,6 +56,10 @@ func broadcastBlock(block *protocol.Block) {
 	var blockCopy = *block
 	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
 	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
+}
+
+func broadcastEpochBlock(epochBlock *protocol.EpochBlock) {
+	p2p.EpochBlockOut <- epochBlock.Encode()
 }
 
 //p2p.ValidatorShardMapChanOut is a channel whose data get consumed by the p2p package

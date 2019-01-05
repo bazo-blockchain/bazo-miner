@@ -9,6 +9,12 @@ var (
 	BlockIn = make(chan []byte)
 	//Block from the miner, to the network
 	BlockOut = make(chan []byte)
+
+	//EpochBlock from the network, to the miner
+	EpochBlockIn = make(chan []byte)
+	//EpochBlock from the miner, to the network
+	EpochBlockOut = make(chan []byte)
+
 	//BlockHeader from the miner, to the clients
 	BlockHeaderOut = make(chan []byte)
 

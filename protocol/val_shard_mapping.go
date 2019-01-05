@@ -65,7 +65,7 @@ func (valMapping *ValShardMapping) Decode(encoded []byte) (valMappingDecoded *Va
 func (valMapping ValShardMapping) String() string {
 	mappingString := ""
 	for k, v := range valMapping.ValMapping {
-		mappingString += fmt.Sprintf("Entry: %v -> %v\n", k[:8],v)
+		mappingString += fmt.Sprintf("Entry: %x -> %v\n", k[:8],v)
 	}
 	return mappingString
 }
