@@ -88,9 +88,13 @@ func genesisRes(p *peer, payload []byte) {
 func valShardRes(p *peer, payload []byte) {
 	var packet []byte
 
-	genesis, err := storage.ReadGenesis()
-	if err == nil && genesis != nil {
-		packet = BuildPacket(GENESIS_RES, genesis.Encode())
+	valMapping,err := storage.ReadValidatorMapping()
+
+	if err == nil && valMapping != nil {
+		newValMapping := protocol.NewMapping()
+		newValMapping.ValMapping = valMapping
+
+		packet = BuildPacket(VALIDATOR_SHARD_RES, newValMapping.Encode())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}

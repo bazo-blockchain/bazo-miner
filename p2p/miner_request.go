@@ -22,9 +22,8 @@ func BlockReq(hash [32]byte) error {
 func ValidatorShardMapRequest() error {
 	p, err := InitiateNewMinerConnection(storage.BootstrapServer)
 
-	p := peers.getRandomPeer(PEERTYPE_MINER)
-	if p == nil {
-		return errors.New("Couldn't get a connection, request not transmitted.")
+	if err != nil {
+		return errors.New("Couldn't get a connection to the bootstrapping node, request not transmitted.")
 	}
 
 	packet := BuildPacket(VALIDATOR_SHARD_REQ, nil)

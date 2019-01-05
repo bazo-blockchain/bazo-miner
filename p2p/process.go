@@ -87,6 +87,10 @@ func processNeighborRes(p *peer, payload []byte) {
 	}
 }
 
+func processValMappingRes(p *peer, payload []byte) {
+	ValidatorShardMapReq <- payload
+}
+
 //Split the processNeighborRes function in two for cleaner testing.
 func _processNeighborRes(payload []byte) (ipportList []string) {
 	index := 0

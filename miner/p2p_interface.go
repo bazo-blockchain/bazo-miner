@@ -1,8 +1,6 @@
 package miner
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -49,13 +47,9 @@ func broadcastBlock(block *protocol.Block) {
 	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
 }
 
-//p2p.BlockOut is a channel whose data get consumed by the p2p package
-func broadcastValidatorShardMapping(valShardMap map[[64]byte]int) {
-
-	buffer := new(bytes.Buffer)
-	gob.NewEncoder(buffer).Encode(valShardMap)
-
-	p2p.ValidatorShardMapChanOut <- buffer.Bytes()
+//p2p.ValidatorShardMapChanOut is a channel whose data get consumed by the p2p package
+func broadcastValidatorShardMapping(mapping *protocol.ValShardMapping) {
+	p2p.ValidatorShardMapChanOut <- mapping.Encode()
 }
 
 func broadcastVerifiedTxs(txs []*protocol.FundsTx) {

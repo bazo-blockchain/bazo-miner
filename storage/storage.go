@@ -32,6 +32,7 @@ const (
 	CLOSEDEPOCHBLOCK_BUCKET = "closedepochblocks"
 	OPENEPOCHBLOCK_BUCKET	= "openepochblock"
 	STATE_BUCKET	= "statebucket"
+	VALIDATOR_SHARD_MAPPING_BUCKET = "valshardmapping"
 )
 
 //Entry function for the storage package
@@ -51,6 +52,7 @@ func Init(dbname string, bootstrapIpport string) error {
 		CLOSEDEPOCHBLOCK_BUCKET,
 		OPENEPOCHBLOCK_BUCKET,
 		STATE_BUCKET,
+		VALIDATOR_SHARD_MAPPING_BUCKET,
 	}
 
 	var err error

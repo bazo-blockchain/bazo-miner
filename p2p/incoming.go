@@ -57,6 +57,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		EpochBlockRes(p,payload)
 
 		//RESPONSES
+	case VALIDATOR_SHARD_RES:
+		processValMappingRes(p, payload)
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:

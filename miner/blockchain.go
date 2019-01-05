@@ -1,10 +1,8 @@
 package miner
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
@@ -31,7 +29,7 @@ var (
 	validatorAccAddress [64]byte
 	commPrivKey         *rsa.PrivateKey
 	NumberOfShards	    int
-	ValidatorShardMap	= make(map[[64]byte]int) // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
+	ValidatorShardMap	*protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections		*os.File
 )
 
@@ -64,10 +62,15 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	/*Sharding Utilities*/
 	NumberOfShards = DetNumberOfShards()
 
-	/*For simplicity, the bootstrapping node assigns the validators to the shards*/
+
+	/*First validator assignment is done by the bootstrapping node, the others will be done based on POS at the end of each epoch*/
 	if (p2p.IsBootstrap()){
-		/*For simplicity, let the bootstrap server assign all validators and send the map to the other validators*/
-		ValidatorShardMap = AssignValidatorsToShards()
+		var validatorShardMapping = protocol.NewMapping()
+		validatorShardMapping.ValMapping = AssignValidatorsToShards()
+		ValidatorShardMap = validatorShardMapping
+		storage.WriteValidatorMapping(ValidatorShardMap.ValMapping)
+		logger.Printf("Validator Shard Mapping:\n")
+		logger.Printf(validatorShardMapping.String())
 
 		//broadcast the generated map to the other validators
 		broadcastValidatorShardMapping(ValidatorShardMap)
@@ -77,17 +80,17 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		//Blocking wait
 		select {
 			case encodedMapping := <-p2p.ValidatorShardMapReq:
-				var decodedValMapping map[[64]byte]int
-				buffer := bytes.NewBuffer(encodedMapping)
-				decoder := gob.NewDecoder(buffer)
-				decoder.Decode(&decodedValMapping)
+				var rvdMapping = protocol.NewMapping()
+				rvdMapping = rvdMapping.Decode(encodedMapping)
+				ValidatorShardMap = rvdMapping
+				logger.Printf("Validator Shard Mapping:\n")
+				logger.Printf(rvdMapping.String())
 
 				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-				return errors.New("block fetch timeout")
+				return errors.New("mapping fetch timeout")
 		}
 	}
-
 
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
