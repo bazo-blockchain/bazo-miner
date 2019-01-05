@@ -11,13 +11,13 @@ func TestInitiateNewMinerConnection(t *testing.T) {
 	//wait until connections are safely opened
 	time.Sleep(time.Second)
 
-	p, err := initiateNewMinerConnection(MINER_IPPORT)
+	p, err := InitiateNewMinerConnection(MINER_IPPORT)
 	if err != nil {
 		t.Errorf("Could not establish connection to the boostrap server\n")
 	}
 
 	//Check that self-connection is not allowed
-	_, err = initiateNewMinerConnection("127.0.0.1:9000")
+	_, err = InitiateNewMinerConnection("127.0.0.1:9000")
 	if err == nil {
 		t.Errorf("Self-connection was not prevented\n")
 	}
@@ -26,7 +26,7 @@ func TestInitiateNewMinerConnection(t *testing.T) {
 	go peerConn(p)
 	time.Sleep(time.Second)
 	//Check that already established connections are recognized
-	_, err = initiateNewMinerConnection("127.0.0.1:8000")
+	_, err = InitiateNewMinerConnection("127.0.0.1:8000")
 	if err == nil {
 		t.Errorf("Connecting to already established connection was not prevented\n")
 	}

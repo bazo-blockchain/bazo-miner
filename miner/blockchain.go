@@ -1,10 +1,14 @@
 package miner
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"encoding/gob"
+	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"log"
 	"math"
 	"math/rand"
@@ -27,7 +31,7 @@ var (
 	validatorAccAddress [64]byte
 	commPrivKey         *rsa.PrivateKey
 	NumberOfShards	    int
-	ValidatorShardMap	= make(map[[64]byte]int)
+	ValidatorShardMap	= make(map[[64]byte]int) // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections		*os.File
 )
 
@@ -47,7 +51,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
 
-	initialBlock, err := initState()
+	initialBlock, err := initState() //From here on, every validator should have the same state representation
 
 	FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",initialBlock.PrevHash[0:15],initialBlock.Hash[0:15]))
 
@@ -59,7 +63,30 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	/*Sharding Utilities*/
 	NumberOfShards = DetNumberOfShards()
-	ValidatorShardMap = AssignValidatorsToShards()
+
+	/*For simplicity, the bootstrapping node assigns the validators to the shards*/
+	if (p2p.IsBootstrap()){
+		/*For simplicity, let the bootstrap server assign all validators and send the map to the other validators*/
+		ValidatorShardMap = AssignValidatorsToShards()
+
+		//broadcast the generated map to the other validators
+		broadcastValidatorShardMapping(ValidatorShardMap)
+	} else {
+		//request the mapping from bootstrapping node
+		p2p.ValidatorShardMapRequest()
+		//Blocking wait
+		select {
+			case encodedMapping := <-p2p.ValidatorShardMapReq:
+				var decodedValMapping map[[64]byte]int
+				buffer := bytes.NewBuffer(encodedMapping)
+				decoder := gob.NewDecoder(buffer)
+				decoder.Decode(&decodedValMapping)
+
+				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+				return errors.New("block fetch timeout")
+		}
+	}
 
 
 	//Start to listen to network inputs (txs and blocks).
@@ -168,7 +195,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		time.Sleep(10 * time.Second)
 	}
 
-	err = finalizeBlock(currentBlock)
+	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
 	if err != nil {
 		logger.Printf("%v\n", err)
 	} else {
@@ -247,7 +274,7 @@ func AssignValidatorsToShards() map[[64]byte]int {
 		}
 	}
 
-	/*Itereate over range of shards. At each index, select a random validators
+	/*Iterate over range of shards. At each index, select a random validators
 	from the map above and set is bool 'assigned' to TRUE*/
 	rand.Seed(time.Now().Unix())
 	for j := 1; j <= VALIDATORS_PER_SHARD; j++{

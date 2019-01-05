@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"errors"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 //Both block and tx requests are handled asymmetricaly, using channels as inter-communication
@@ -14,6 +15,19 @@ func BlockReq(hash [32]byte) error {
 	}
 
 	packet := BuildPacket(BLOCK_REQ, hash[:])
+	sendData(p, packet)
+	return nil
+}
+
+func ValidatorShardMapRequest() error {
+	p, err := InitiateNewMinerConnection(storage.BootstrapServer)
+
+	p := peers.getRandomPeer(PEERTYPE_MINER)
+	if p == nil {
+		return errors.New("Couldn't get a connection, request not transmitted.")
+	}
+
+	packet := BuildPacket(VALIDATOR_SHARD_REQ, nil)
 	sendData(p, packet)
 	return nil
 }

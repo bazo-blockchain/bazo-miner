@@ -24,6 +24,11 @@ var (
 	GenesisReqChan 	= make(chan []byte)
 	FirstEpochBlockReqChan 	= make(chan []byte)
 	EpochBlockReqChan 	= make(chan []byte)
+
+	ValidatorShardMapReq 	= make(chan []byte)
+
+	ValidatorShardMapChanOut = make(chan []byte) // validator assignment out to the miners
+	ValidatorShardMapChanIn = make(chan []byte) // validator assignment received from the bootstrapping node
 )
 
 //This is for blocks and txs that the miner successfully validated.
@@ -31,6 +36,14 @@ func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
+func forwardValidatorShardMappingToMiner() {
+	for {
+		mapping := <- ValidatorShardMapChanOut
+		toBrdcst := BuildPacket(VALIDATOR_SHARD_BRDCST, mapping)
 		minerBrdcstMsg <- toBrdcst
 	}
 }
@@ -51,6 +64,10 @@ func forwardVerifiedTxsToMiner() {
 
 func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
+}
+
+func forwardAssignmentToMiner(p *peer, payload []byte) {
+	ValidatorShardMapChanIn <- payload
 }
 
 //These are transactions the miner specifically requested.

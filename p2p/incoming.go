@@ -15,6 +15,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		processTxBrdcst(p, payload, STAKETX_BRDCST)
 	case BLOCK_BRDCST:
 		forwardBlockToMiner(p, payload)
+	case VALIDATOR_SHARD_BRDCST:
+		forwardAssignmentToMiner(p, payload)
 	case TIME_BRDCST:
 		processTimeRes(p, payload)
 
@@ -29,6 +31,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
 		blockRes(p, payload)
+	case VALIDATOR_SHARD_REQ:
+		valShardRes(p, payload)
 	case BLOCK_HEADER_REQ:
 		blockHeaderRes(p, payload)
 	case ACC_REQ:

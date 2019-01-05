@@ -85,6 +85,19 @@ func genesisRes(p *peer, payload []byte) {
 	sendData(p, packet)
 }
 
+func valShardRes(p *peer, payload []byte) {
+	var packet []byte
+
+	genesis, err := storage.ReadGenesis()
+	if err == nil && genesis != nil {
+		packet = BuildPacket(GENESIS_RES, genesis.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
 func FirstEpochBlockRes(p *peer, payload []byte) {
 	var packet []byte
 	firstEpochBlock, err := storage.ReadFirstEpochBlock()

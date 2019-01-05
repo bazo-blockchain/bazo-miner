@@ -54,7 +54,7 @@ func Init(ipport string) {
 func bootstrap() {
 	//Connect to bootstrap server. To make it more fault-tolerant, we can increase the number of bootstrap servers in
 	//the future. initiateNewMinerConn(...) starts with MINER_PING to perform the initial handshake message
-	p, err := initiateNewMinerConnection(storage.BootstrapServer)
+	p, err := InitiateNewMinerConnection(storage.BootstrapServer)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v", err)
 	}
@@ -62,7 +62,7 @@ func bootstrap() {
 	go peerConn(p)
 }
 
-func initiateNewMinerConnection(dial string) (*peer, error) {
+func InitiateNewMinerConnection(dial string) (*peer, error) {
 	var conn net.Conn
 
 	//Check if we already established a dial with that ip or if the ip belongs to us

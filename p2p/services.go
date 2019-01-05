@@ -49,7 +49,7 @@ func checkHealthService() {
 		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 
 		if Ipport != storage.BootstrapServer && !peers.contains(storage.BootstrapServer, PEERTYPE_MINER) {
-			p, err := initiateNewMinerConnection(storage.BootstrapServer)
+			p, err := InitiateNewMinerConnection(storage.BootstrapServer)
 			if p == nil || err != nil {
 				logger.Printf("%v\n", err)
 			} else {
@@ -67,7 +67,7 @@ func checkHealthService() {
 		select {
 		//iplistChan gets filled with every incoming neighborRes, they're consumed here.
 		case ipaddr := <-iplistChan:
-			p, err := initiateNewMinerConnection(ipaddr)
+			p, err := InitiateNewMinerConnection(ipaddr)
 			if err != nil {
 				logger.Printf("%v\n", err)
 			}
