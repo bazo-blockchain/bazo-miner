@@ -13,6 +13,12 @@ func incomingData() {
 	for {
 		block := <-p2p.BlockIn
 		processBlock(block)
+
+		//check validator assignment
+		validatorMapping := <- p2p.ValidatorShardMapChanIn
+		var valMapping *protocol.ValShardMapping
+		valMapping = valMapping.Decode(validatorMapping)
+		broadcastValidatorShardMapping(valMapping)
 	}
 }
 
@@ -31,14 +37,12 @@ func processBlock(payload []byte) {
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
 
-		if(block.Height == lastBlock.Height + 1){
+		if(block.Height == lastBlock.Height && block.ShardId != ThisShardID){
 			//count blocks received at current height
 			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 
 			//save hash of block for later creating epoch block. Make sure to store hashes from block other than my shard
-			if(block.ShardId != ThisShardID){
-				LastShardHashes = append(LastShardHashes, block.Hash)
-			}
+			LastShardHashes = append(LastShardHashes, block.Hash)
 		}
 
 		broadcastBlock(block)

@@ -46,6 +46,14 @@ func forwardBlockBrdcstToMiner() {
 	}
 }
 
+func forwardEpochBlockBrdcstToMiner() {
+	for {
+		epochBlock := <-EpochBlockOut
+		toBrdcst := BuildPacket(EPOCH_BLOCK_BRDCST, epochBlock)
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
 func forwardValidatorShardMappingToMiner() {
 	for {
 		mapping := <- ValidatorShardMapChanOut

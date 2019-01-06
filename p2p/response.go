@@ -92,7 +92,7 @@ func valShardRes(p *peer, payload []byte) {
 
 	if err == nil && valMapping != nil {
 		newValMapping := protocol.NewMapping()
-		newValMapping.ValMapping = valMapping
+		newValMapping = valMapping
 
 		packet = BuildPacket(VALIDATOR_SHARD_RES, newValMapping.Encode())
 	} else {

@@ -50,7 +50,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
-		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
+		potentialAncestor := storage.ReadClosedBlock(prevBlockHash) // look in closed block storage
 
 		if potentialAncestor != nil {
 			//Found ancestor because it is found in our closed block storage.

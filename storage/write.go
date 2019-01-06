@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
 )
@@ -92,13 +90,10 @@ func WriteState(state *protocol.State) error {
 	})
 }
 
-func WriteValidatorMapping(mapping map[[64]byte]int) error {
-	buffer := new(bytes.Buffer)
-	gob.NewEncoder(buffer).Encode(mapping)
-
+func WriteValidatorMapping(mapping *protocol.ValShardMapping) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(VALIDATOR_SHARD_MAPPING_BUCKET))
-		return b.Put([]byte("valshardmapping"), buffer.Bytes())
+		return b.Put([]byte("valshardmapping"), mapping.Encode())
 	})
 }
 

@@ -106,7 +106,7 @@ func (epochBlock *EpochBlock) Decode(encoded []byte) (b *EpochBlock) {
 func (epochBlock EpochBlock) String() string {
 	return fmt.Sprintf("\nHash: %x\n"+
 		"Len Previous Shard Hashes: %d\n"+
-		"Prev Shard Hashes: %x\n"+
+		"Prev Shard Hashes: %v\n"+
 		"Timestamp: %v\n"+
 		"MerkleRoot: %x\n"+
 		"MerklePatriciaRoot: %x\n"+

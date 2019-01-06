@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -109,7 +107,7 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 		allClosedBlocks = append(allClosedBlocks, nextBlock)
 
 		if nextBlock.Hash != [32]byte{} {
-			for hasNext {
+			for hasNext && nextBlock.Height > 1 {
 				nextBlock = ReadClosedBlock(nextBlock.PrevHash)
 				allClosedBlocks = append(allClosedBlocks, nextBlock)
 				if nextBlock.Hash == [32]byte{} {
@@ -219,15 +217,12 @@ func ReadClosedState() (state *protocol.State, err error) {
 	return state, err
 }
 
-func ReadValidatorMapping() (mapping map[[64]byte]int, err error) {
+func ReadValidatorMapping() (mapping *protocol.ValShardMapping, err error) {
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(VALIDATOR_SHARD_MAPPING_BUCKET))
 		encoded := b.Get([]byte("valshardmapping"))
 
-		var mapping map[[64]byte]int
-		buffer := bytes.NewBuffer(encoded)
-		decoder := gob.NewDecoder(buffer)
-		decoder.Decode(&mapping)
+		mapping = mapping.Decode(encoded)
 		return nil
 	})
 

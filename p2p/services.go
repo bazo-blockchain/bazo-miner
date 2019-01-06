@@ -25,7 +25,7 @@ func broadcastService() {
 		//Broadcasting all messages.
 		case msg := <-minerBrdcstMsg:
 			for p := range peers.minerConns {
-				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away.
+				//Write to the channel, which the peerBroadcast(*peer) running in a separate goroutine consumes right away.
 				p.ch <- msg
 			}
 		case msg := <-clientBrdcstMsg:

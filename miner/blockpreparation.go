@@ -47,23 +47,33 @@ func prepareBlock(block *protocol.Block) {
 
 func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 	//Convert Address/Issuer ([64]bytes) included in TX to bigInt for the modulo operation to determine the assigned shard ID.
-	var txSenderAddressInt uint64
-
 	switch transaction.(type) {
 		case *protocol.ContractTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.ContractTx).Issuer[:8], uint64(txSenderAddressInt))
-			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+			var byteToConvert [64]byte
+			byteToConvert = transaction.(*protocol.ContractTx).Issuer
+			var calculatedInt int
+			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
+			return int((calculatedInt % NumberOfShards) + 1)
 		case *protocol.FundsTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.FundsTx).From[:8], uint64(txSenderAddressInt))
-			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+			var byteToConvert [64]byte
+			byteToConvert = transaction.(*protocol.FundsTx).From
+			var calculatedInt int
+			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
+			return int((calculatedInt % NumberOfShards) + 1)
 		case *protocol.ConfigTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.ConfigTx).Sig[:8], uint64(txSenderAddressInt))
-			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+			var byteToConvert [64]byte
+			byteToConvert = transaction.(*protocol.ConfigTx).Sig
+			var calculatedInt int
+			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
+			return int((calculatedInt % NumberOfShards) + 1)
 		case *protocol.StakeTx:
-			binary.BigEndian.PutUint64(transaction.(*protocol.StakeTx).Account[:8], uint64(txSenderAddressInt))
-			return int((int(txSenderAddressInt) % NumberOfShards) + 1)
+			var byteToConvert [64]byte
+			byteToConvert = transaction.(*protocol.StakeTx).Account
+			var calculatedInt int
+			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
+			return int((calculatedInt % NumberOfShards) + 1)
 		default:
-			return 1
+			return 1 // default shard Nr.
 		}
 }
 

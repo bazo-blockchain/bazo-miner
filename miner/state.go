@@ -240,7 +240,7 @@ func initClosedBlocks(firstEpochBlock *protocol.EpochBlock) error {
 				allClosedBlocks = append(allClosedBlocks, lastBlock)
 			}
 			fmt.Println("Last block: ", lastBlock.Height)
-			if lastBlock.Height == 0 {
+			if lastBlock.Height == 1 {
 				if lastBlock.PrevHash != firstEpochBlock.HashEpochBlock() {
 					return errors.New("invalid first epoch block")
 				}
