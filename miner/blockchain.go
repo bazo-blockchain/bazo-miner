@@ -186,6 +186,9 @@ func epochMining(initialBlock *protocol.Block) {
 						FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
 					}
 
+					/*Determine new number of shards needed based on current state*/
+					NumberOfShards = DetNumberOfShards()
+
 					//generate new validator mapping and broadcast mapping to validators
 					ValidatorShardMap.ValMapping = AssignValidatorsToShards()
 					ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
@@ -253,6 +256,11 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
+				// validateState() and check for error, if not, then continue with postValidate(...)
+				if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
+					logger.Printf("ERROR in validating State of Block: %vState:\n%v", currentBlock, getState())
+					return
+				}
 				postValidate(blockDataMap[currentBlock.Hash], false)
 			}
 
@@ -311,7 +319,7 @@ func DetNumberOfShards() (numberOfShards int) {
 
 func AssignValidatorsToShards() map[[64]byte]int {
 
-	shardCount := NumberOfShards
+	//shardCount := NumberOfShards
 
 	/*This map denotes which validator is assigned to which shard index*/
 	validatorShardAssignment := make(map[[64]byte]int)
@@ -332,13 +340,13 @@ func AssignValidatorsToShards() map[[64]byte]int {
 	from the map above and set is bool 'assigned' to TRUE*/
 	rand.Seed(time.Now().Unix())
 	for j := 1; j <= VALIDATORS_PER_SHARD; j++ {
-		for i := 1; i <= shardCount; i++ {
+		for i := 1; i <= NumberOfShards; i++ {
 			randomValidator := validatorSlices[rand.Intn(len(validatorSlices))]
 			if validatorAssignedMap[randomValidator] == false {
 				validatorAssignedMap[randomValidator] = true
 				validatorShardAssignment[randomValidator] = i
 			} else {
-				shardCount += 1
+				i--
 			}
 		}
 	}

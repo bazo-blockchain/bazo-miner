@@ -343,7 +343,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			return errors.New("transaction amount would lead to balance overflow at the receiver (root) account")
 		}
 
-		//Will not be reached if errors occured
+		//Will not be reached if errors occurred
 		if rootAcc != nil {
 			rootAcc.Balance += tx.Amount
 			rootAcc.Balance += tx.Fee
@@ -475,7 +475,7 @@ func collectTxFees(contractTxSlice []*protocol.ContractTx, fundsTxSlice []*proto
 		}
 
 		if err != nil {
-			//Rollback of all perviously transferred transaction fees to the protocol's account
+			//Rollback of all previously transferred transaction fees to the protocol's account
 			collectTxFeesRollback(tmpContractTx, tmpFundsTx, tmpConfigTx, tmpStakeTx, minerAddress)
 			return err
 		}
