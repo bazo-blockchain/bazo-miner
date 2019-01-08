@@ -253,7 +253,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)
 
 			if(err == nil){
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
 				// validateState() and check for error, if not, then continue with postValidate(...)
@@ -262,6 +261,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					return
 				}
 				postValidate(blockDataMap[currentBlock.Hash], false)
+				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 			}
 
 		} else {
@@ -319,8 +319,6 @@ func DetNumberOfShards() (numberOfShards int) {
 
 func AssignValidatorsToShards() map[[64]byte]int {
 
-	//shardCount := NumberOfShards
-
 	/*This map denotes which validator is assigned to which shard index*/
 	validatorShardAssignment := make(map[[64]byte]int)
 
@@ -339,17 +337,28 @@ func AssignValidatorsToShards() map[[64]byte]int {
 	/*Iterate over range of shards. At each index, select a random validators
 	from the map above and set is bool 'assigned' to TRUE*/
 	rand.Seed(time.Now().Unix())
+
 	for j := 1; j <= VALIDATORS_PER_SHARD; j++ {
 		for i := 1; i <= NumberOfShards; i++ {
-			randomValidator := validatorSlices[rand.Intn(len(validatorSlices))]
-			if validatorAssignedMap[randomValidator] == false {
-				validatorAssignedMap[randomValidator] = true
-				validatorShardAssignment[randomValidator] = i
-			} else {
-				i--
+
+			if len(validatorSlices) == 0{
+				return validatorShardAssignment
 			}
+
+			randomIndex := rand.Intn(len(validatorSlices))
+			randomValidator := validatorSlices[randomIndex]
+
+			//Assign validator to shard ID
+			validatorShardAssignment[randomValidator] = i
+			//Remove assigned validator from active list
+			validatorSlices = removeValidator(validatorSlices,randomIndex)
 		}
 	}
-
 	return validatorShardAssignment
+}
+
+func removeValidator(inputSlice [][64]byte, index int) [][64]byte {
+	inputSlice[index] = inputSlice[len(inputSlice)-1]
+	inputSlice = inputSlice[:len(inputSlice)-1]
+	return inputSlice
 }
