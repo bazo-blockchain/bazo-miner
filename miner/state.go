@@ -131,7 +131,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 			postValidate(blockDataMap[blockToValidate.Hash], true)
 		}
 
-		logger.Printf("Validated block: %vState:\n%v", blockToValidate, getState())
+		logger.Printf("Validated block: %v\n", blockToValidate.Height)
 
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate
