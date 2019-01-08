@@ -82,6 +82,27 @@ func TestEpochBlockSerialization(t *testing.T) {
 	prevShardHashes = append(prevShardHashes, hash5)
 
 	height = 100
+	stateMapping := make(map[[64]byte]*Account)
+
+	acc1 := new(Account)
+	acc1.Address = [64]byte{'1'}
+	acc1.Balance = 1000
+
+	stateMapping[[64]byte{'1'}] = acc1
+
+	acc2 := new(Account)
+	acc2.Address = [64]byte{'2'}
+	acc2.Balance = 2000
+
+	stateMapping[[64]byte{'2'}] = acc2
+
+	acc3 := new(Account)
+	acc3.Address = [64]byte{'3'}
+	acc3.Balance = 3000
+
+	stateMapping[[64]byte{'3'}] = acc3
+
+
 
 	var epochBlock EpochBlock
 
@@ -92,6 +113,7 @@ func TestEpochBlockSerialization(t *testing.T) {
 	epochBlock.MerkleRoot = [32]byte{'0', '1'}
 	epochBlock.MerklePatriciaRoot = [32]byte{'0', '1'}
 	epochBlock.Timestamp = time.Now().Unix()
+	epochBlock.State = stateMapping
 
 	var compareBlock EpochBlock
 	encodedBlock := epochBlock.Encode()
