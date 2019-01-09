@@ -117,23 +117,35 @@ func initState() (initialBlock *protocol.Block, err error) {
 	}
 
 	initialEpochBlock, err := initEpochBlock()
-	//Set the initialEpochBlock to the global variable 'LastEpochBlock'. This is needed to abort the POS for doing the validator assignment
-	lastEpochBlock = initialEpochBlock
+	//Set the initialEpochBlock to the global variable 'lastEpochBlock'. This is needed to abort the POS for doing the validator assignment
 
 	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
-	if err != nil {
-		return nil, err
+	//Request last epoch block from the network
+	if(p2p.IsBootstrap()){
+		var eb *protocol.EpochBlock
+		eb = storage.ReadLastClosedEpochBlock()
+		lastEpochBlock = eb
+		if(lastEpochBlock == nil){
+			lastEpochBlock = initialEpochBlock
+		}
+	} else {
+		lastEpochBlock, err = getLastEpochBlock()
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	initRootAccounts(genesis)
 
-	err = initClosedBlocks(initialEpochBlock)
+	err = initClosedBlocks(lastEpochBlock)
 	if err != nil {
 		return nil, err
 	}
 
-	initialBlock, err = getInitialBlock(initialEpochBlock)
+	initialBlock, err = getInitialBlock(lastEpochBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -177,8 +189,6 @@ func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
 	if initialEpochBlock == nil {
 		p2p.FirstEpochBlockReq()
 
-		// TODO: @rmnblm parallelize this
-		// blocking wait
 		select {
 		case encodedFirstEpochBlock := <-p2p.FirstEpochBlockReqChan:
 			initialEpochBlock = initialEpochBlock.Decode(encodedFirstEpochBlock)
@@ -189,8 +199,34 @@ func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
 
 		initialEpochBlock.State = storage.State
 		storage.WriteClosedEpochBlock(initialEpochBlock)
+
+		storage.DeleteAllLastClosedEpochBlock()
+		storage.WriteLastClosedEpochBlock(initialEpochBlock)
 	}
 	return initialEpochBlock, nil
+}
+
+/*Retrieve last epoch block from the network*/
+func getLastEpochBlock() (lastEpochBlock *protocol.EpochBlock, err error) {
+	p2p.LastEpochBlockReq()
+
+	var eb *protocol.EpochBlock
+
+	select {
+	case encodedLastEpochBlock := <-p2p.LastEpochBlockReqChan:
+		eb = eb.Decode(encodedLastEpochBlock)
+		logger.Printf("Received last Epoch Block: %v", eb.String())
+	case <-time.After(EPOCHBLOCKFETCH_TIMEOUT* time.Second):
+		return nil, errors.New("epoch block fetch timeout")
+	}
+
+
+	storage.WriteClosedEpochBlock(eb)
+
+	storage.DeleteAllLastClosedEpochBlock()
+	storage.WriteLastClosedEpochBlock(eb)
+
+	return eb, nil
 }
 
 func initRootAccounts(genesis *protocol.Genesis) {
@@ -199,10 +235,18 @@ func initRootAccounts(genesis *protocol.Genesis) {
 	storage.RootKeys[genesis.RootAddress] = &rootAcc
 }
 
-func initClosedBlocks(firstEpochBlock *protocol.EpochBlock) error {
+func initClosedBlocks(lastEpochBlock *protocol.EpochBlock) error {
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
-		allClosedBlocks = storage.ReadAllClosedBlocks()
+		/*Get all closed blocks from the last block back to the last epoch block, i.e. all closed blocks from the current epoch*/
+		if nextBlock := storage.ReadLastClosedBlock(); nextBlock != nil {
+
+			allClosedBlocks = append(allClosedBlocks, nextBlock)
+			for nextBlock.Height > lastEpochBlock.Height + 1 {
+				nextBlock = storage.ReadClosedBlock(nextBlock.PrevHash)
+				allClosedBlocks = append(allClosedBlocks, nextBlock)
+			}
+		}
 	} else {
 		p2p.LastBlockReq()
 
@@ -241,9 +285,9 @@ func initClosedBlocks(firstEpochBlock *protocol.EpochBlock) error {
 				allClosedBlocks = append(allClosedBlocks, lastBlock)
 			}
 			fmt.Println("Last block: ", lastBlock.Height)
-			if lastBlock.Height == 1 {
-				if lastBlock.PrevHash != firstEpochBlock.HashEpochBlock() {
-					return errors.New("invalid first epoch block")
+			if lastBlock.Height == lastEpochBlock.Height + 1 {
+				if lastBlock.PrevHash != lastEpochBlock.HashEpochBlock() {
+					return errors.New("invalid last epoch block")
 				}
 				break
 			}
@@ -256,12 +300,12 @@ func initClosedBlocks(firstEpochBlock *protocol.EpochBlock) error {
 	return nil
 }
 
-func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protocol.Block, err error) {
+func getInitialBlock(lastEpochBlock *protocol.EpochBlock) (initialBlock *protocol.Block, err error) {
 	if len(storage.AllClosedBlocksAsc) > 0 {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
-		initialBlock = newBlock(firstEpochBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1) // since first epoch block is at height 0
+		initialBlock = newBlock(lastEpochBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 1) // since first epoch block is at height 0
 		commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(initialBlock.Height))
 		if err != nil {
 			return nil, err
@@ -273,6 +317,7 @@ func getInitialBlock(firstEpochBlock *protocol.EpochBlock) (initialBlock *protoc
 		//Append genesis block to the map and save in storage
 		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
 
+		storage.DeleteAllLastClosedEpochBlock()
 		storage.WriteLastClosedBlock(initialBlock)
 		storage.WriteClosedBlock(initialBlock)
 	}

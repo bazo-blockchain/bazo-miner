@@ -55,6 +55,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		FirstEpochBlockRes(p,payload)
 	case EPOCH_BLOCK_REQ:
 		EpochBlockRes(p,payload)
+	case LAST_EPOCH_BLOCK_REQ:
+		LastEpochBlockRes(p,payload)
 
 		//RESPONSES
 	case VALIDATOR_SHARD_RES:
@@ -77,5 +79,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardFirstEpochBlockToMiner(p,payload)
 	case EPOCH_BLOCK_RES:
 		forwardEpochBlockToMiner(p,payload)
+	case LAST_EPOCH_BLOCK_RES:
+		forwardLastEpochBlockToMiner(p,payload)
 	}
 }

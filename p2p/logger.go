@@ -71,5 +71,7 @@ func InitLogging() {
 	LogMapping[127] = "VALIDATOR_SHARD_REQ"
 	LogMapping[128] = "VALIDATOR_SHARD_RES"
 	LogMapping[129] = "EPOCH_BLOCK_BRDCST"
+	LogMapping[130] = "LAST_EPOCH_BLOCK_REQ"
+	LogMapping[131] = "LAST_EPOCH_BLOCK_RES"
 
 }

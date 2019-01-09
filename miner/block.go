@@ -566,7 +566,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 	blockValidation.Lock()
 	defer blockValidation.Unlock()
 
-	//Prepare datastructure to fill tx payloads.
+	//Prepare data structure to fill tx payloads.
 	blockDataMap := make(map[[32]byte]blockData)
 
 	//Get the right branch, and a list of blocks to rollback (if necessary).

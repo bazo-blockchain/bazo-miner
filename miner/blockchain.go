@@ -133,6 +133,7 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	initialEpochBlock := protocol.NewEpochBlock([][32]byte{genesis.Hash()}, 0)
 	initialEpochBlock.Hash = initialEpochBlock.HashEpochBlock()
 	FirstEpochBlock = initialEpochBlock
+	initialEpochBlock.State = storage.State
 	storage.WriteFirstEpochBlock(initialEpochBlock)
 	logger.Printf("Written Epoch Block: %v\n", initialEpochBlock.String())
 
@@ -147,11 +148,6 @@ func epochMining(initialBlock *protocol.Block) {
 	//currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height + 1)
 
 	lastBlock = initialBlock
-
-	/*currentBlock := new(protocol.Block)
-
-	currentBlock.Hash = initialBlock.Hash
-	currentBlock.Height = initialBlock.Height*/
 
 	/*constantly watch global blockcount for insertion of next epoch block*/
 	for {
@@ -181,6 +177,9 @@ func epochMining(initialBlock *protocol.Block) {
 					epochBlock.State = storage.State
 					broadcastEpochBlock(epochBlock)
 					storage.WriteClosedEpochBlock(epochBlock)
+					storage.DeleteAllLastClosedEpochBlock()
+					storage.WriteLastClosedEpochBlock(epochBlock)
+					lastEpochBlock = epochBlock
 					logger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
 
 					for _, prevHash := range epochBlock.PrevShardHashes {

@@ -115,6 +115,21 @@ func FirstEpochBlockRes(p *peer, payload []byte) {
 	sendData(p, packet)
 }
 
+func LastEpochBlockRes(p *peer, payload []byte) {
+	var packet []byte
+
+	var lastEpochBlock *protocol.EpochBlock
+	lastEpochBlock = storage.ReadLastClosedEpochBlock()
+
+	if lastEpochBlock != nil {
+		packet = BuildPacket(LAST_EPOCH_BLOCK_RES, lastEpochBlock.Encode())
+	} else {
+		packet = BuildPacket(NOT_FOUND, nil)
+	}
+
+	sendData(p, packet)
+}
+
 func EpochBlockRes(p *peer, payload []byte) {
 	var ebHash [32]byte
 	copy(ebHash[:], payload[0:32])

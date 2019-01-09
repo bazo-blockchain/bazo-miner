@@ -65,6 +65,17 @@ func FirstEpochBlockReq() error {
 	return nil
 }
 
+func LastEpochBlockReq() error {
+	p := peers.getRandomPeer(PEERTYPE_MINER)
+	if p == nil {
+		return errors.New("Couldn't get a connection, request not transmitted.")
+	}
+
+	packet := BuildPacket(LAST_EPOCH_BLOCK_REQ, nil)
+	sendData(p, packet)
+	return nil
+}
+
 func EpochBlockReq(hash [32]byte) error {
 	p := peers.getRandomPeer(PEERTYPE_MINER)
 	if p == nil {
