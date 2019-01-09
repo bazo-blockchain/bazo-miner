@@ -38,7 +38,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		return nil, nil, errors.New(fmt.Sprintf("Block belongs to shorter or equally long chain (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
 	} else {
 		//New chain is longer, rollback and validate new chain.
-		logger.Printf("BLOCKROLLBACK Block to roll back: %vState:\n%v", blocksToRollback, getState())
+		logger.Printf("BLOCKROLLBACK Block to roll back")
 		return blocksToRollback, newChain, nil
 	}
 }
