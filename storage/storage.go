@@ -30,6 +30,7 @@ const (
 	LASTCLOSEDBLOCK_BUCKET 	= "lastclosedblock"
 	GENESIS_BUCKET			= "genesis"
 	CLOSEDEPOCHBLOCK_BUCKET = "closedepochblocks"
+	LASTCLOSEDEPOCHBLOCK_BUCKET = "lastclosedepochblocks"
 	OPENEPOCHBLOCK_BUCKET	= "openepochblock"
 	STATE_BUCKET	= "statebucket"
 	VALIDATOR_SHARD_MAPPING_BUCKET = "valshardmapping"
@@ -50,6 +51,7 @@ func Init(dbname string, bootstrapIpport string) error {
 		LASTCLOSEDBLOCK_BUCKET,
 		GENESIS_BUCKET,
 		CLOSEDEPOCHBLOCK_BUCKET,
+		LASTCLOSEDEPOCHBLOCK_BUCKET,
 		OPENEPOCHBLOCK_BUCKET,
 		STATE_BUCKET,
 		VALIDATOR_SHARD_MAPPING_BUCKET,

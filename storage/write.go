@@ -40,6 +40,13 @@ func WriteFirstEpochBlock(epochBlock *protocol.EpochBlock) error {
 	})
 }
 
+func WriteLastClosedEpochBlock(epochBlock *protocol.EpochBlock) (err error) {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(LASTCLOSEDEPOCHBLOCK_BUCKET))
+		return b.Put(epochBlock.Hash[:], epochBlock.Encode())
+	})
+}
+
 func WriteLastClosedBlock(block *protocol.Block) (err error) {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))

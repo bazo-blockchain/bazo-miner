@@ -187,6 +187,7 @@ func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
 			return nil, errors.New("epoch block fetch timeout")
 		}
 
+		initialEpochBlock.State = storage.State
 		storage.WriteClosedEpochBlock(initialEpochBlock)
 	}
 	return initialEpochBlock, nil

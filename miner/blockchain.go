@@ -178,6 +178,7 @@ func epochMining(initialBlock *protocol.Block) {
 
 				if err == nil {
 					epochBlock.Hash = epochBlock.HashEpochBlock()
+					epochBlock.State = storage.State
 					broadcastEpochBlock(epochBlock)
 					storage.WriteClosedEpochBlock(epochBlock)
 					logger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
