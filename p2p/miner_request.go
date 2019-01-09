@@ -9,6 +9,8 @@ import (
 func BlockReq(hash [32]byte) error {
 
 	p := peers.getRandomPeer(PEERTYPE_MINER)
+	logger.Printf("BLOCKREQ to miner %v with IP-Port: %v", p, p.getIPPort())
+
 	if p == nil {
 		return errors.New("Couldn't get a connection, request not transmitted.")
 	}

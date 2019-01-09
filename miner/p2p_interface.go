@@ -12,6 +12,7 @@ import (
 func incomingData() {
 	for {
 		block := <-p2p.BlockIn
+		logger.Printf("New Incoming Block")
 		processBlock(block)
 	}
 }
@@ -30,8 +31,8 @@ func processBlock(payload []byte) {
 	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
-		CalculateBlockchainSize(block.GetSize())
 		broadcastBlock(block)
+		CalculateBlockchainSize(block.GetSize())
 	} else {
 		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 	}

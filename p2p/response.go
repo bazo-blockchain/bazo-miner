@@ -65,8 +65,10 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
+		logger.Printf("BLOCKRES with block: %v and Hash: %v", block, block.Hash)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
+		logger.Printf("BLOCKRES Block not found")
 	}
 
 	sendData(p, packet)
