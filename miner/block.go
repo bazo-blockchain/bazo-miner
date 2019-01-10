@@ -536,7 +536,8 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			if err := rollback(block); err != nil {
 				return err
 			}
-			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
+			//logger.Printf("Rolled back block: %vState:\n%v", block, getState())
+			logger.Printf("Rolled back block: %x", block.Hash[0:8])
 		}
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners).

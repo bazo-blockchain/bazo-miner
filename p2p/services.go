@@ -26,6 +26,7 @@ func broadcastService() {
 		case msg := <-minerBrdcstMsg:
 			for p := range peers.minerConns {
 				//Write to the channel, which the peerBroadcast(*peer) running in a seperate goroutine consumes right away.
+				logger.Printf("BLOCK_MSG Block Broadcast to %v", p.getIPPort())
 				p.ch <- msg
 			}
 		case msg := <-clientBrdcstMsg:
