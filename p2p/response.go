@@ -65,10 +65,10 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
-		logger.Printf("BLOCKRES with block %x to peer with IP-Port %v", block.Hash, p.getIPPort())
+		logger.Printf("BLOCK_RES with block (%x) send to peer %v", block.Hash[0:8], p.getIPPort())
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
-		logger.Printf("BLOCKRES to miner %v -> Block (%x) not found", p.getIPPort(), blockHash)
+		logger.Printf("BLOCK_RES to miner %v -> Block (%x) not found", p.getIPPort(), blockHash[0:8])
 	}
 
 	sendData(p, packet)

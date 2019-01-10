@@ -73,9 +73,13 @@ func mining(initialBlock *protocol.Block) {
 		}
 
 		if err == nil {
-			broadcastBlock(currentBlock)
+			//broadcastBlock(currentBlock)
+			//logger.Printf("BROADCAST of mined block: %x ", currentBlock.Hash[0:8])
 			err := validate(currentBlock, false)
 			if err == nil {
+				broadcastBlock(currentBlock)
+				logger.Printf("BROADCAST of mined & valid block: %x ", currentBlock.Hash[0:8])
+
 				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
 				logger.Printf("Size of Block %x: %v Bytes. --> Header: %v Bytes, Body: %v Bytes " +
 					"--> Body includes %v Bytes of TxData\n",
@@ -83,7 +87,7 @@ func mining(initialBlock *protocol.Block) {
 					currentBlock.GetBodySize(), currentBlock.GetTxDataSize())
 				CalculateBlockchainSize(currentBlock.GetSize())
 			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
+				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
 		}
 

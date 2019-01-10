@@ -38,7 +38,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		return nil, nil, errors.New(fmt.Sprintf("Block belongs to shorter or equally long chain (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
 	} else {
 		//New chain is longer, rollback and validate new chain.
-		logger.Printf("BLOCKROLLBACK Block to roll back")
+		logger.Printf("BLOCK_ROLLBACK %d Block's to roll back --> %x", len(blocksToRollback), blocksToRollback)
 		return blocksToRollback, newChain, nil
 	}
 }
@@ -77,7 +77,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 			newBlock = newBlock.Decode(encodedBlock)
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			logger.Printf("BLOCKFETCH_TIMEOUT occured while fetching block %v from network", prevBlockHash)
+			logger.Printf("BLOCKFETCH_TIMEOUT occured while fetching block (%x) from network -> Return nil nil (Common ancestor probably not found)", prevBlockHash[0:8])
 			return nil, nil
 		}
 	}

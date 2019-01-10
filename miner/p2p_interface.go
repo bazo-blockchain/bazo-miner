@@ -21,6 +21,8 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
+	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
+
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
 		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -31,6 +33,7 @@ func processBlock(payload []byte) {
 	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
+		logger.Printf("BROADCAST received block: %x ", block.Hash[0:8])
 		broadcastBlock(block)
 		CalculateBlockchainSize(block.GetSize())
 	} else {
