@@ -138,6 +138,11 @@ func forwardFirstEpochBlockToMiner(p *peer, payload []byte) {
 func forwardEpochBlockToMiner(p *peer, payload []byte) {
 	EpochBlockReqChan <- payload
 }
+
+func forwardEpochBlockToMinerIn(p *peer, payload []byte) {
+	EpochBlockIn <- payload
+}
+
 func forwardLastEpochBlockToMiner(p *peer, payload []byte)  {
 	LastEpochBlockReqChan <- payload
 }

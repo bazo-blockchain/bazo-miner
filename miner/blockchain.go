@@ -89,6 +89,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 			var rvdMapping = protocol.NewMapping()
 			rvdMapping = rvdMapping.Decode(encodedMapping)
 			ValidatorShardMap = rvdMapping
+			storage.WriteValidatorMapping(ValidatorShardMap)
 			logger.Printf("Validator Shard Mapping:\n")
 			logger.Printf(rvdMapping.String())
 
@@ -154,7 +155,8 @@ func epochMining(initialBlock *protocol.Block) {
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
 		//shard height synced with network, now mine next block
-		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
+		//if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
+		if (true) {
 			if ((globalBlockCount+1)%EPOCH_LENGTH == 0) {
 				//globalblockcount is 1 before the next epoch block. Thus with the last block, create the next epoch block
 

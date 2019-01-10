@@ -743,14 +743,14 @@ func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*p
 		return nil, nil, nil, nil, errors.New("Merkle Root is incorrect.")
 	}
 
-	//Merkle Partirica Tree validation
+	/*//Merkle Partirica Tree validation
 	stateMPT, err := protocol.BuildMPT(storage.State)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if stateMPT.Hash() != block.MerklePatriciaRoot {
-		return nil, nil, nil, nil, errors.New("Merkle Patricia Tree Root is incorrect.")
-	}
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Merkle Patricia Tree Root is incorrect: State MPT: %x - MerklePatriciaRoot: %x \n",stateMPT.Hash().Bytes()[0:8], block.MerklePatriciaRoot[0:8]))
+	}*/
 
 	return contractTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
 }

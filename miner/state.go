@@ -136,6 +136,8 @@ func initState() (initialBlock *protocol.Block, err error) {
 		}
 	}
 
+	storage.State = lastEpochBlock.State
+
 	FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	initRootAccounts(genesis)
@@ -269,6 +271,13 @@ func initClosedBlocks(lastEpochBlock *protocol.EpochBlock) error {
 		}
 
 		for {
+			if lastBlock.Height == lastEpochBlock.Height + 1 {
+				if lastBlock.PrevHash != lastEpochBlock.Hash {
+					return errors.New("invalid last epoch block")
+				}
+				break
+			}
+
 			p2p.BlockReq(lastBlock.PrevHash)
 			select {
 			case encodedBlock := <-p2p.BlockReqChan:
@@ -285,12 +294,6 @@ func initClosedBlocks(lastEpochBlock *protocol.EpochBlock) error {
 				allClosedBlocks = append(allClosedBlocks, lastBlock)
 			}
 			fmt.Println("Last block: ", lastBlock.Height)
-			if lastBlock.Height == lastEpochBlock.Height + 1 {
-				if lastBlock.PrevHash != lastEpochBlock.HashEpochBlock() {
-					return errors.New("invalid last epoch block")
-				}
-				break
-			}
 		}
 	}
 
