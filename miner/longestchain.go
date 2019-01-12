@@ -56,7 +56,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
-		logger.Printf("SEARCHING for Block: %x --> START", prevBlockHash[0:8])
+		logger.Printf("SEARCHING for Block: %x --> START         (%x) is ancestor of (%x)", prevBlockHash[0:8], prevBlockHash[0:8], newBlock.Hash[0:8])
 		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
 
 		if potentialAncestor != nil {
@@ -75,8 +75,21 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 			logger.Printf("SEARCHING for Block: %x --> FOUND in OPEN_BLOCK", prevBlockHash[0:8])
 			continue
 		}
-
 		logger.Printf("SEARCHING for Block: %x --> NOT FOUND in OPEN_BLOCK", prevBlockHash[0:8])
+
+		//Check if block is in received stash
+		logger.Printf("SEARCHING for Block: %x --> Looking into stash", prevBlockHash[0:8])
+		for i, block := range receivedBlockStash {
+			if block.Hash == prevBlockHash {
+				logger.Printf("BLOCK_STASH: Found block %x in the block stash", prevBlockHash[0:8])
+				potentialAncestor = block
+
+				//Delete found node from stash
+				receivedBlockStash = append(receivedBlockStash[:i], receivedBlockStash[i+1:]...)
+				return potentialAncestor, newChain
+			}
+		}
+
 		//TODO Optimize code (duplicated)
 		//Fetch the block we apparently missed from the network.
 

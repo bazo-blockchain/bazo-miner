@@ -6,6 +6,9 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
+var (
+	receivedBlockStash = make([]*protocol.Block, 0)
+)
 //The code in this source file communicates with the p2p package via channels
 
 //Constantly listen to incoming data from the network
@@ -17,17 +20,31 @@ func incomingData() {
 	}
 }
 
+//ReceivedBlockStash is a stash with all Blocks received such that we can prevent forking
 func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
-
-	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
 
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
 		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 		return
 	}
+
+	//Append received Block to stash, keep size at 20
+	receivedBlockStash = append(receivedBlockStash, block)
+	if len(receivedBlockStash) > 40 {
+		receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+	}
+
+	//Print stash
+	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
+	logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
+	for _, block := range receivedBlockStash {
+		logger.Printf("%x", block.Hash[0:8])
+	}
+	logger.Printf("]")
+
 
 	//Start validation process
 	err := validate(block, false)
