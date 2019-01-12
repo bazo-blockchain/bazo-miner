@@ -82,11 +82,11 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		for i, block := range receivedBlockStash {
 			if block.Hash == prevBlockHash {
 				logger.Printf("BLOCK_STASH: Found block %x in the block stash", prevBlockHash[0:8])
-				potentialAncestor = block
+				newBlock = block
 
 				//Delete found node from stash
 				receivedBlockStash = append(receivedBlockStash[:i], receivedBlockStash[i+1:]...)
-				return potentialAncestor, newChain
+				continue
 			}
 		}
 
