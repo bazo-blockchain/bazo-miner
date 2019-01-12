@@ -15,9 +15,18 @@ var (
 func incomingData() {
 	for {
 		block := <-p2p.BlockIn
-		logger.Printf("New Incoming Block")
+		//logger.Printf("New Incoming Block")
 		processBlock(block)
 	}
+}
+
+func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
+	for _, blockInStash := range slice {
+		if blockInStash.Hash == newBlockHash {
+			return true
+		}
+	}
+	return false
 }
 
 //ReceivedBlockStash is a stash with all Blocks received such that we can prevent forking
@@ -31,10 +40,12 @@ func processBlock(payload []byte) {
 		return
 	}
 
-	//Append received Block to stash, keep size at 20
-	receivedBlockStash = append(receivedBlockStash, block)
-	if len(receivedBlockStash) > 40 {
-		receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+	//Append received Block to stash, when it is not there already & keep size at 20
+	if !blockAlreadyInStash(receivedBlockStash, block.Hash) {
+		receivedBlockStash = append(receivedBlockStash, block)
+		if len(receivedBlockStash) > 40 {
+			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+		}
 	}
 
 	//Print stash
@@ -44,7 +55,6 @@ func processBlock(payload []byte) {
 		logger.Printf("%x", block.Hash[0:8])
 	}
 	logger.Printf("]")
-
 
 	//Start validation process
 	err := validate(block, false)

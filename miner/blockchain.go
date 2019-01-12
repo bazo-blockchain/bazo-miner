@@ -73,8 +73,6 @@ func mining(initialBlock *protocol.Block) {
 		}
 
 		if err == nil {
-			//broadcastBlock(currentBlock)
-			//logger.Printf("BROADCAST of mined block: %x ", currentBlock.Hash[0:8])
 			err := validate(currentBlock, false)
 			if err == nil {
 				logger.Printf("BROADCAST of mined & valid block: %x ", currentBlock.Hash[0:8])
@@ -121,5 +119,5 @@ func initRootKey(rootKey *ecdsa.PublicKey) error {
 func CalculateBlockchainSize(currentBlockSize uint64) {
 	blockchainSize = blockchainSize + currentBlockSize
 
-	logger.Printf("Blockchain size is: %v bytes\n", blockchainSize)
+	//logger.Printf("Blockchain size is: %v bytes\n", blockchainSize)
 }

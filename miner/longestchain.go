@@ -51,6 +51,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 //Returns the ancestor from which the split occurs (if a split occurred, if not it's just our last block) and a list
 //of blocks that belong to a new chain.
 func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain []*protocol.Block) {
+	OUTER:
 	for {
 		newChain = append(newChain, newBlock)
 
@@ -77,18 +78,20 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		}
 		logger.Printf("SEARCHING for Block: %x --> NOT FOUND in OPEN_BLOCK", prevBlockHash[0:8])
 
-		//Check if block is in received stash
+		//Check if block is in received stash. When in there, continue outer for-loop, until ancestor is found in closed
+		//block storage. If not in stash, continue with a block request to the network
 		logger.Printf("SEARCHING for Block: %x --> Looking into stash", prevBlockHash[0:8])
 		for i, block := range receivedBlockStash {
 			if block.Hash == prevBlockHash {
-				logger.Printf("BLOCK_STASH: Found block %x in the block stash", prevBlockHash[0:8])
+				logger.Printf("SEARCHING for Block: %x --> FOUND in stash", prevBlockHash[0:8])
 				newBlock = block
 
 				//Delete found node from stash
 				receivedBlockStash = append(receivedBlockStash[:i], receivedBlockStash[i+1:]...)
-				continue
+				continue OUTER
 			}
 		}
+		logger.Printf("SEARCHING for Block: %x --> NOT FOUND in stash", prevBlockHash[0:8])
 
 		//TODO Optimize code (duplicated)
 		//Fetch the block we apparently missed from the network.
@@ -100,10 +103,10 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
 			newBlock = newBlock.Decode(encodedBlock)
-			logger.Printf("RECEIVED_REQ Block: %x for BLOCK_REQ: %x", newBlock.Hash[0:8], prevBlockHash[0:8])
+			logger.Printf("SEARCHING for Block: %x --> RECEIVED Block From Network request", newBlock.Hash[0:8])
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			logger.Printf("BLOCKFETCH_TIMEOUT occured while fetching block (%x) from network -> Return nil nil (Common ancestor probably not found)", prevBlockHash[0:8])
+			logger.Printf("SEARCHING for Block: %x --> BLOCKFETCH_TIMEOUT occured while fetching from network -> Return nil nil (Common ancestor probably not found)", prevBlockHash[0:8])
 			return nil, nil
 		}
 	}
