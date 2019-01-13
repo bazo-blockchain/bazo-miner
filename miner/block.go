@@ -129,7 +129,8 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
+			//logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
+			logger.Printf("Adding fundsTx (%x) failed (%v)",tx.Hash(), err)
 			return err
 		}
 	case *protocol.ConfigTx:
@@ -241,7 +242,8 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
-	logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
+	//logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
+	logger.Printf("Added tx (%x) to the FundsTxData slice", tx.Hash())
 	return nil
 }
 
@@ -346,6 +348,7 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.FundsTxData {
 		var tx protocol.Transaction
+		var invalidTx protocol.Transaction
 		var fundsTx *protocol.FundsTx
 
 		closedTx := storage.ReadClosedTx(txHash)
@@ -362,10 +365,16 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 
 		//TODO Optimize code (duplicated)
 		tx = storage.ReadOpenTx(txHash)
+		invalidTx = storage.ReadOpenINVALIDTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
+		} else if invalidTx != nil{
+			logger.Printf("TX_FETCH %x --> found in openInvalidMempool", invalidTx.Hash())
+			fundsTx = invalidTx.(*protocol.FundsTx)
 		} else {
+			logger.Printf("TX_REQUEST %x", txHash)
 			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
+
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
 				return
@@ -373,7 +382,9 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
+				logger.Printf("TX_REQUEST %x --> Received", fundsTx.Hash())
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
+				logger.Printf("TX_REQUEST %x --> Timed Out", txHash)
 				errChan <- errors.New("FundsTx fetch timed out.")
 				return
 			}
@@ -761,6 +772,7 @@ func postValidate(data blockData, initialSetup bool) {
 		for _, tx := range data.fundsTxSlice {
 			storage.WriteClosedTx(tx)
 			storage.DeleteOpenTx(tx)
+			storage.DeleteOpenINVALIDTx(tx)
 		}
 
 		for _, tx := range data.configTxSlice {

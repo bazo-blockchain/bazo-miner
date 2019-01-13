@@ -13,6 +13,9 @@ import (
 //Covers both cases (if block belongs to the longest chain or not).
 func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToValidate []*protocol.Block, err error) {
 	//Fetch all blocks that are needed to validate.
+
+	logger.Printf("BLOCK_SEQENCE NewBlock %x (shortly received)--> ancestor: Need to be found", newBlock.Hash[0:8])
+
 	ancestor, newChain := getNewChain(newBlock)
 	//Common ancestor not found, discard block.
 	if ancestor == nil {
@@ -57,18 +60,18 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
-		logger.Printf("SEARCHING for Block: %x --> START         (%x) is ancestor of (%x)", prevBlockHash[0:8], prevBlockHash[0:8], newBlock.Hash[0:8])
+		logger.Printf("SEARCHING for Block: %x --> START --> (%x) is ancestor of (%x)", prevBlockHash[0:8], prevBlockHash[0:4], newBlock.Hash[0:4])
 		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
 
 		if potentialAncestor != nil {
 			//Found ancestor because it is found in our closed block storage.
 			//We went back in time, so reverse order.
 			newChain = InvertBlockArray(newChain)
-
+			logger.Printf("SEARCHING for Block: %x --> FOUND in CLOSED_BLOCK", prevBlockHash[0:8])
 			return potentialAncestor, newChain
 		}
 
-		logger.Printf("SEARCHING for Block: %x --> NOT in CLOSED_BLOCK", prevBlockHash[0:8])
+		logger.Printf("SEARCHING for Block: %x --> NOT FOUND in CLOSED_BLOCK", prevBlockHash[0:8])
 
 		//It might be the case that we already started a sync and the block is in the openblock storage.
 		newBlock = storage.ReadOpenBlock(prevBlockHash)
@@ -81,13 +84,15 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		//Check if block is in received stash. When in there, continue outer for-loop, until ancestor is found in closed
 		//block storage. If not in stash, continue with a block request to the network
 		logger.Printf("SEARCHING for Block: %x --> Looking into stash", prevBlockHash[0:8])
-		for i, block := range receivedBlockStash {
+
+		//for i, block := range receivedBlockStash { //Neede if deleting block is needed
+		for _, block := range receivedBlockStash {
 			if block.Hash == prevBlockHash {
 				logger.Printf("SEARCHING for Block: %x --> FOUND in stash", prevBlockHash[0:8])
 				newBlock = block
 
 				//Delete found node from stash
-				receivedBlockStash = append(receivedBlockStash[:i], receivedBlockStash[i+1:]...)
+				//receivedBlockStash = append(receivedBlockStash[:i], receivedBlockStash[i+1:]...)
 				continue OUTER
 			}
 		}

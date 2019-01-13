@@ -34,6 +34,7 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
+	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
 		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -49,7 +50,6 @@ func processBlock(payload []byte) {
 	}
 
 	//Print stash
-	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
 	logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
 	for _, block := range receivedBlockStash {
 		logger.Printf("%x", block.Hash[0:8])

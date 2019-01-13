@@ -80,6 +80,11 @@ func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 	return txMemPool[hash]
 }
 
+func ReadOpenINVALIDTx(hash [32]byte) (transaction protocol.Transaction) {
+
+	return txINVALIDMemPool[hash]
+}
+
 //Needed for the miner to prepare a new block
 func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
 

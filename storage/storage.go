@@ -15,6 +15,7 @@ var (
 	State              = make(map[[32]byte]*protocol.Account)
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
+	txINVALIDMemPool   = make(map[[32]byte]protocol.Transaction)
 	AllClosedBlocksAsc []*protocol.Block
 	Bootstrap_Server   string
 )

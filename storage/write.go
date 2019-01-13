@@ -42,7 +42,15 @@ func WriteLastClosedBlock(block *protocol.Block) (err error) {
 func WriteOpenTx(transaction protocol.Transaction) {
 
 	txMemPool[transaction.Hash()] = transaction
-	PrintMemPoolSize()
+}
+
+func WriteOpenINVALIDTx(transaction protocol.Transaction) {
+
+	txINVALIDMemPool[transaction.Hash()] = transaction
+
+	for _, invalidTX := range txINVALIDMemPool{
+		logger.Printf("Transaction in IINVALIDMemPool: %x", invalidTX.Hash())
+	}
 }
 
 func WriteClosedTx(transaction protocol.Transaction) (err error) {
