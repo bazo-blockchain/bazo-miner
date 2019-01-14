@@ -36,6 +36,11 @@ func LastBlockReq() error {
 func TxReq(hash [32]byte, reqType uint8) error {
 
 	p := peers.getRandomPeer(PEERTYPE_MINER)
+
+	if reqType == FUNDSTX_REQ {
+		logger.Printf("TX_REQ: %x Number of miners: %v, selected: %v", hash, peers.len(PEERTYPE_MINER), p.getIPPort())
+	}
+
 	if p == nil {
 		return errors.New("Couldn't get a connection, request not transmitted.")
 	}
