@@ -45,9 +45,6 @@ func DeleteOpenTx(transaction protocol.Transaction) {
 	delete(txMemPool, transaction.Hash())
 }
 
-func DeleteOpenINVALIDTx(transaction protocol.Transaction) {
-	delete(txINVALIDMemPool, transaction.Hash())
-}
 
 func DeleteClosedTx(transaction protocol.Transaction) {
 	var bucket string

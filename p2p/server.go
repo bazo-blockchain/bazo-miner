@@ -138,7 +138,7 @@ func listener(ipport string) {
 }
 
 func handleNewConn(p *peer) {
-	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
+	//logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
 
 	header, payload, err := RcvData(p)
 	if err != nil {
@@ -153,7 +153,7 @@ func peerConn(p *peer) {
 	if p.peerType == PEERTYPE_MINER {
 		logger.Printf("Adding a new miner: %v\n", p.getIPPort())
 	} else if p.peerType == PEERTYPE_CLIENT {
-		logger.Printf("Adding a new client: %v\n", p.getIPPort())
+	//	logger.Printf("Adding a new client: %v\n", p.getIPPort())
 	}
 
 	//Give the peer a channel
@@ -169,7 +169,7 @@ func peerConn(p *peer) {
 			if p.peerType == PEERTYPE_MINER {
 				logger.Printf("Miner disconnected: %v\n", err)
 			} else if p.peerType == PEERTYPE_CLIENT {
-				logger.Printf("Client disconnected: %v\n", err)
+				//logger.Printf("Client disconnected: %v\n", err)
 			}
 
 			//In case of a comm fail, disconnect cleanly from the broadcast service

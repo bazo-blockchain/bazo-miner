@@ -79,8 +79,7 @@ func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 
 	return txMemPool[hash]
 }
-
-func ReadOpenINVALIDTx(hash [32]byte) (transaction protocol.Transaction) {
+func ReadINVALIDOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 
 	return txINVALIDMemPool[hash]
 }

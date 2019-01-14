@@ -44,13 +44,9 @@ func WriteOpenTx(transaction protocol.Transaction) {
 	txMemPool[transaction.Hash()] = transaction
 }
 
-func WriteOpenINVALIDTx(transaction protocol.Transaction) {
+func WriteINVALIDOpenTx(transaction protocol.Transaction) {
 
 	txINVALIDMemPool[transaction.Hash()] = transaction
-
-	for _, invalidTX := range txINVALIDMemPool{
-		logger.Printf("Transaction in IINVALIDMemPool: %x", invalidTX.Hash())
-	}
 }
 
 func WriteClosedTx(transaction protocol.Transaction) (err error) {

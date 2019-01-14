@@ -348,7 +348,6 @@ func fetchAccTxData(block *protocol.Block, accTxSlice []*protocol.AccTx, initial
 func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, initialSetup bool, errChan chan error) {
 	for cnt, txHash := range block.FundsTxData {
 		var tx protocol.Transaction
-		var invalidTx protocol.Transaction
 		var fundsTx *protocol.FundsTx
 
 		closedTx := storage.ReadClosedTx(txHash)
@@ -363,34 +362,45 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 			}
 		}
 
+
 		//TODO Optimize code (duplicated)
 		tx = storage.ReadOpenTx(txHash)
-		invalidTx = storage.ReadOpenINVALIDTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
-		} else if invalidTx != nil{
-			logger.Printf("TX_FETCH %x --> found in openInvalidMempool", invalidTx.Hash())
-			fundsTx = invalidTx.(*protocol.FundsTx)
 		} else {
-			logger.Printf("TX_REQUEST %x", txHash)
-			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
+			logger.Printf("FETCH_FUNDSTXDATA: TX: %x --> Belongs to Block BLOCK: %x not in open or closed TX", txHash, block.Hash[0:8])
 
+			logger.Printf("FETCH_TX (%x) Start REQUEST", txHash)
+
+			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
 				return
 			}
-
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
-				logger.Printf("TX_REQUEST %x --> Received", fundsTx.Hash())
+				logger.Printf("FETCH_TX TX_REQUEST %x --> Received", fundsTx.Hash())
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				logger.Printf("TX_REQUEST %x --> Timed Out", txHash)
-				errChan <- errors.New("FundsTx fetch timed out.")
-				return
+
+				logger.Printf("FETCH_TX TX_REQUEST %x --> Timed Out", txHash)
+				txINVALID := storage.ReadINVALIDOpenTx(txHash)
+				if txINVALID != nil {
+					logger.Printf("FETCH_TX (%x) found in INVALIDTxMempool", txINVALID.Hash())
+					if verify(txINVALID) {
+						fundsTx = txINVALID.(*protocol.FundsTx)
+						logger.Printf("FETCH_TX (%x) VALID", txINVALID.Hash())
+					} else {
+						logger.Printf("FETCH_TX (%x) INVALID", txINVALID.Hash())
+					}
+				}
+
+				//errChan <- errors.New("FundsTx fetch timed out.")
+				//return
 			}
 			if fundsTx.Hash() != txHash {
 				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
+
 		}
 
 		fundsTxSlice[cnt] = fundsTx
@@ -772,7 +782,6 @@ func postValidate(data blockData, initialSetup bool) {
 		for _, tx := range data.fundsTxSlice {
 			storage.WriteClosedTx(tx)
 			storage.DeleteOpenTx(tx)
-			storage.DeleteOpenINVALIDTx(tx)
 		}
 
 		for _, tx := range data.configTxSlice {
