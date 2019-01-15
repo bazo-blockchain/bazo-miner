@@ -37,11 +37,11 @@ func processBlock(payload []byte) {
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
 
-		if(block.Height == lastBlock.Height && block.ShardId != ThisShardID){
+		if(block.Height == lastBlock.Height && block.ShardId != ThisShardID && HashSliceContains(LastShardHashes,block.Hash) == true){
 			//count blocks received at current height
 			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 
-			//save hash of block for later creating epoch block. Make sure to store hashes from block other than my shard
+			//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
 			LastShardHashes = append(LastShardHashes, block.Hash)
 		}
 
@@ -79,4 +79,13 @@ func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
 	}
 
 	p2p.VerifiedTxsOut <- protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE)
+}
+
+func HashSliceContains(slice [][32]byte, hash [32]byte) bool {
+	for _, a := range slice {
+		if a == hash {
+			return true
+		}
+	}
+	return false
 }

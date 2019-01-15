@@ -34,6 +34,7 @@ var (
 	LastShardHashes         [][32]byte
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
+	validatedTransactions 	[]string
 )
 
 //Miner entry point
@@ -155,15 +156,15 @@ func epochMining(initialBlock *protocol.Block) {
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
 		//shard height synced with network, now mine next block
-		//if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
-		if (true) {
+		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
+		//if (true) {
 			if ((globalBlockCount+1)%EPOCH_LENGTH == 0) {
 				//globalblockcount is 1 before the next epoch block. Thus with the last block, create the next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
 				//Get hashes of last shard blocks from other miners
-				if len(LastShardHashes) == NumberOfShards-1 && NumberOfShards != 1{
-					epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes,LastShardHashes...)
+				if len(LastShardHashes) == NumberOfShards-1 && NumberOfShards != 1 {
+					epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes, LastShardHashes...)
 					LastShardHashes = nil // empty the slice
 				}
 
@@ -241,6 +242,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	}
 
 	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
+
 	if err != nil {
 		logger.Printf("%v\n", err)
 	} else {
@@ -250,11 +252,11 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	if err == nil {
 		broadcastBlock(currentBlock)
 
-		if(prevBlockIsEpochBlock == true){
+		if (prevBlockIsEpochBlock == true) {
 			blockDataMap := make(map[[32]byte]blockData)
 			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)
 
-			if(err == nil){
+			if (err == nil) {
 				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
 				// validateState() and check for error, if not, then continue with postValidate(...)
@@ -343,7 +345,7 @@ func AssignValidatorsToShards() map[[64]byte]int {
 	for j := 1; j <= VALIDATORS_PER_SHARD; j++ {
 		for i := 1; i <= NumberOfShards; i++ {
 
-			if len(validatorSlices) == 0{
+			if len(validatorSlices) == 0 {
 				return validatorShardAssignment
 			}
 
@@ -353,7 +355,7 @@ func AssignValidatorsToShards() map[[64]byte]int {
 			//Assign validator to shard ID
 			validatorShardAssignment[randomValidator] = i
 			//Remove assigned validator from active list
-			validatorSlices = removeValidator(validatorSlices,randomIndex)
+			validatorSlices = removeValidator(validatorSlices, randomIndex)
 		}
 	}
 	return validatorShardAssignment
