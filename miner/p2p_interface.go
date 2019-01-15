@@ -17,15 +17,6 @@ func incomingData() {
 	}
 }
 
-func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
-	for _, blockInStash := range slice {
-		if blockInStash.Hash == newBlockHash {
-			return true
-		}
-	}
-	return false
-}
-
 //ReceivedBlockStash is a stash with all Blocks received such that we can prevent forking
 func processBlock(payload []byte) {
 	var block *protocol.Block
@@ -40,6 +31,7 @@ func processBlock(payload []byte) {
 
 	//Append received Block to stash, when it is not there already & keep size at 20
 	storage.WriteToReceivedStash(block)
+	storage.PrintReceivedStash()
 
 	//Start validation process
 	err := validate(block, false)

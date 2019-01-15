@@ -55,15 +55,16 @@ func WriteToReceivedStash(block *protocol.Block) {
 		if len(receivedBlockStash) > 50 {
 			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
 		}
-
-		//Print stash --> Wil be removed once it works.
-		logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
-		for _, block := range receivedBlockStash {
-			logger.Printf("%x", block.Hash[0:8])
-		}
-		logger.Printf("]")
 	}
+}
 
+func PrintReceivedStash(){
+	//Print stash --> Wil be removed once it works.
+	logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
+	for _, block := range receivedBlockStash {
+		logger.Printf("%x", block.Hash[0:8])
+	}
+	logger.Printf("]")
 }
 
 
