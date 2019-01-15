@@ -369,12 +369,11 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
 		} else if  txINVALID != nil {
-			logger.Printf("FETCH_TX (%x) found in INVALIDMempool", txINVALID.Hash())
 			if verify(txINVALID) {
 				fundsTx = txINVALID.(*protocol.FundsTx)
-				logger.Printf("FETCH_TX (%x) VALID", txINVALID.Hash())
+				logger.Printf("FETCH_TX (%x) found in INVALIDMempool --> VALID", txINVALID.Hash())
 			} else {
-				logger.Printf("FETCH_TX (%x) INVALID", txINVALID.Hash())
+				logger.Printf("FETCH_TX (%x)found in INVALIDMempool --> INVALID", txINVALID.Hash())
 			}
 		} else {
 			logger.Printf("FETCH_TX (%x) Start REQUEST", txHash)
@@ -577,6 +576,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			}
 
 			postValidate(blockDataMap[block.Hash], initialSetup)
+			logger.Printf("Validated block: %x", block.Hash[0:8])
 		}
 	}
 

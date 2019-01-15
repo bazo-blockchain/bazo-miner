@@ -75,6 +75,10 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 	return allClosedBlocks
 }
 
+func ReadReceivedBlockStash() (receivedBlocks []*protocol.Block){
+	return receivedBlockStash
+}
+
 func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 
 	return txMemPool[hash]

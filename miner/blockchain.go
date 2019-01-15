@@ -78,7 +78,7 @@ func mining(initialBlock *protocol.Block) {
 				logger.Printf("BROADCAST of mined & valid block: %x ", currentBlock.Hash[0:8])
 				broadcastBlock(currentBlock)
 
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				logger.Printf("Validated block (mined): %vState:\n%v", currentBlock, getState())
 				logger.Printf("Size of Block %x: %v Bytes. --> Header: %v Bytes, Body: %v Bytes " +
 					"--> Body includes %v Bytes of TxData\n",
 					currentBlock.Hash[0:8], currentBlock.GetSize(), currentBlock.GetHeaderSize(),

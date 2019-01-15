@@ -48,6 +48,33 @@ func WriteINVALIDOpenTx(transaction protocol.Transaction) {
 
 	txINVALIDMemPool[transaction.Hash()] = transaction
 }
+func WriteToReceivedStash(block *protocol.Block) {
+
+	if !blockAlreadyInStash(receivedBlockStash, block.Hash) {
+		receivedBlockStash = append(receivedBlockStash, block)
+		if len(receivedBlockStash) > 50 {
+			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+		}
+
+		//Print stash --> Wil be removed once it works.
+		logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
+		for _, block := range receivedBlockStash {
+			logger.Printf("%x", block.Hash[0:8])
+		}
+		logger.Printf("]")
+	}
+
+}
+
+
+func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
+	for _, blockInStash := range slice {
+		if blockInStash.Hash == newBlockHash {
+			return true
+		}
+	}
+	return false
+}
 
 func WriteClosedTx(transaction protocol.Transaction) (err error) {
 

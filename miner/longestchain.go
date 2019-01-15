@@ -85,8 +85,8 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		//block storage. If not in stash, continue with a block request to the network
 		logger.Printf("SEARCHING for Block: %x --> Looking into stash", prevBlockHash[0:8])
 
-		//for i, block := range receivedBlockStash { //Neede if deleting block is needed
-		for _, block := range receivedBlockStash {
+		//for i, block := range receivedBlockStash { //Needed if deleting block is needed
+		for _, block := range storage.ReadReceivedBlockStash() {
 			if block.Hash == prevBlockHash {
 				logger.Printf("SEARCHING for Block: %x --> FOUND in stash", prevBlockHash[0:8])
 				newBlock = block
@@ -109,6 +109,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		case encodedBlock := <-p2p.BlockReqChan:
 			newBlock = newBlock.Decode(encodedBlock)
 			logger.Printf("SEARCHING for Block: %x --> RECEIVED Block From Network request", newBlock.Hash[0:8])
+			storage.WriteToReceivedStash(newBlock)
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
 			logger.Printf("SEARCHING for Block: %x --> BLOCKFETCH_TIMEOUT occured while fetching from network -> Return nil nil (Common ancestor probably not found)", prevBlockHash[0:8])

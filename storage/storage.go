@@ -16,6 +16,7 @@ var (
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	txINVALIDMemPool          = make(map[[32]byte]protocol.Transaction)
+	receivedBlockStash = make([]*protocol.Block, 0)
 	AllClosedBlocksAsc []*protocol.Block
 	Bootstrap_Server   string
 )
