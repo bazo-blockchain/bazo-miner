@@ -13,12 +13,12 @@ type TransactionPayload struct {
 	StakeTxData  	[][32]byte
 }
 
-func NewTransactionPayload(prevHash [32]byte, height uint32) *TransactionPayload {
+func NewTransactionPayload(contractTx [][32]byte, fundsTx [][32]byte, configTx [][32]byte, stakeTx [][32]byte) *TransactionPayload {
 	newPayload := TransactionPayload{
-		ContractTxData: [][32]byte{},
-		FundsTxData: [][32]byte{},
-		ConfigTxData: [][32]byte{},
-		StakeTxData: [][32]byte{},
+		ContractTxData: 		contractTx,
+		FundsTxData: 			fundsTx,
+		ConfigTxData: 			configTx,
+		StakeTxData: 			stakeTx,
 	}
 
 	return &newPayload
@@ -79,9 +79,11 @@ func (txPayload *TransactionPayload) DecodePayload(encoded []byte) (txP *Transac
 }
 
 func (txPayload TransactionPayload) StringPayload() string {
+	payloadHash := txPayload.HashPayload()
+
 	return fmt.Sprintf("\nHash: %x\n"+
 		"TX Payload Hashes: %v\n",
-		txPayload.HashPayload()[0:8],
+		payloadHash[0:8],
 		txPayload.PayloadToString(),
 	)
 }
