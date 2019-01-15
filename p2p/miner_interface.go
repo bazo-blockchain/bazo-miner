@@ -10,6 +10,12 @@ var (
 	//Block from the miner, to the network
 	BlockOut = make(chan []byte)
 
+	//TX hashes of validated TXs to the network
+	TxPayloadOut = make(chan []byte)
+
+	//TX hashes of validated TXs from the network
+	TxPayloadIn = make(chan []byte)
+
 	//EpochBlock from the network, to the miner
 	EpochBlockIn = make(chan []byte)
 	//EpochBlock from the miner, to the network
@@ -43,6 +49,14 @@ func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
+func forwardTXPayloadBrdcstToMiner() {
+	for {
+		txPayload := <-TxPayloadOut
+		toBrdcst := BuildPacket(TX_PAYLOAD_BRDCST, txPayload)
 		minerBrdcstMsg <- toBrdcst
 	}
 }
@@ -141,6 +155,10 @@ func forwardEpochBlockToMiner(p *peer, payload []byte) {
 
 func forwardEpochBlockToMinerIn(p *peer, payload []byte) {
 	EpochBlockIn <- payload
+}
+
+func forwardTxPayloadToMiner(p *peer, payload []byte) {
+	TxPayloadIn <- payload
 }
 
 func forwardLastEpochBlockToMiner(p *peer, payload []byte)  {

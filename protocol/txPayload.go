@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+/*This struct is a convenient way to broadcast the hashes of the transactions a miner has validated and included in a block.
+These hashes will be consumed by the miners of the other shards, who then check the MemPool and based on the TXs, re-create the global state*/
 type TransactionPayload struct {
 	ContractTxData  [][32]byte
 	FundsTxData  	[][32]byte

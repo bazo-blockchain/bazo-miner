@@ -39,6 +39,7 @@ func Init(ipport string) {
 	go checkHealthService()
 	go timeService()
 	go forwardBlockBrdcstToMiner()
+	go forwardTXPayloadBrdcstToMiner()
 	go forwardEpochBlockBrdcstToMiner()
 	go forwardValidatorShardMappingToMiner()
 	go forwardBlockHeaderBrdcstToMiner()

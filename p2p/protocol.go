@@ -63,6 +63,7 @@ const (
 	EPOCH_BLOCK_BRDCST        = 129
 	LAST_EPOCH_BLOCK_REQ = 130
 	LAST_EPOCH_BLOCK_RES = 131
+	TX_PAYLOAD_BRDCST = 132
 )
 
 type Header struct {

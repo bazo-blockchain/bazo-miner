@@ -34,7 +34,8 @@ var (
 	LastShardHashes         [][32]byte
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
-	validatedTransactions 	[]string
+	TransactionPayloadOut 	*protocol.TransactionPayload
+	TransactionPayloadIn 	*protocol.TransactionPayload
 )
 
 //Miner entry point
@@ -234,6 +235,14 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
 	blockValidation.Unlock()
 
+	//Fill global variable transactionPayload to be broadcasted to the other shards
+	TransactionPayloadOut.ContractTxData = currentBlock.ContractTxData
+	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
+	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
+	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
+
+	broadcastTxPayload()
+
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		logger.Printf("%v\n", err)
@@ -242,6 +251,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	}
 
 	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
+
+	broadcastTxPayload()
 
 	if err != nil {
 		logger.Printf("%v\n", err)

@@ -19,6 +19,12 @@ func incomingData() {
 		var valMapping *protocol.ValShardMapping
 		valMapping = valMapping.Decode(validatorMapping)
 		broadcastValidatorShardMapping(valMapping)
+
+		//TX payload in
+		txPayload := <- p2p.TxPayloadIn
+		var payload *protocol.TransactionPayload
+		payload = payload.DecodePayload(txPayload)
+		TransactionPayloadIn = payload
 	}
 }
 
@@ -60,6 +66,19 @@ func broadcastBlock(block *protocol.Block) {
 	var blockCopy = *block
 	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
 	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
+}
+
+/*Broadcast TX hashes to the network*/
+func broadcastTxPayload() {
+	/*var txPayload *protocol.TransactionPayload
+
+	txPayload.ContractTxData = block.ContractTxData
+	txPayload.FundsTxData = block.FundsTxData
+	txPayload.ConfigTxData = block.ConfigTxData
+	txPayload.StakeTxData = block.StakeTxData*/
+
+
+	p2p.TxPayloadOut <- TransactionPayloadOut.EncodePayload()
 }
 
 func broadcastEpochBlock(epochBlock *protocol.EpochBlock) {
