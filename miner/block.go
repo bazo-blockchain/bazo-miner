@@ -129,8 +129,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			//logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
-			logger.Printf("Adding fundsTx (%x) failed (%v)",tx.Hash(), err)
+			logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
 			return err
 		}
 	case *protocol.ConfigTx:
@@ -242,8 +241,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
-	//logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
-	logger.Printf("Added tx (%x) to the FundsTxData slice", tx.Hash())
+	logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -368,35 +366,24 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 		txINVALID := storage.ReadINVALIDOpenTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
-		} else if  txINVALID != nil {
-			if verify(txINVALID) {
-				fundsTx = txINVALID.(*protocol.FundsTx)
-				logger.Printf("FETCH_TX (%x) found in INVALIDMempool --> VALID", txINVALID.Hash())
-			} else {
-				logger.Printf("FETCH_TX (%x)found in INVALIDMempool --> INVALID", txINVALID.Hash())
-			}
+		} else if  txINVALID != nil && verify(txINVALID) {
+			fundsTx = txINVALID.(*protocol.FundsTx)
 		} else {
-			logger.Printf("FETCH_TX (%x) Start REQUEST", txHash)
-
 			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
 				return
 			}
-
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
-				logger.Printf("FETCH_TX (%x) TX_REQUEST --> Received & Stored in MemPool", fundsTx.Hash())
 				storage.WriteOpenTx(fundsTx)
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				logger.Printf("FETCH_TX (%x) TX_REQUEST --> Timed Out", txHash)
 				errChan <- errors.New("FundsTx fetch timed out")
 				return
 			}
 			if fundsTx.Hash() != txHash {
 				errChan <- errors.New("Received txHash did not correspond to our request.")
 			}
-
 		}
 
 		fundsTxSlice[cnt] = fundsTx
@@ -553,8 +540,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			if err := rollback(block); err != nil {
 				return err
 			}
-			//logger.Printf("Rolled back block: %vState:\n%v", block, getState())
-			logger.Printf("Rolled back block: %x", block.Hash[0:8])
+			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
 		for _, block := range blocksToValidate {
 			//Fetching payload data from the txs (if necessary, ask other miners).
@@ -576,7 +562,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			}
 
 			postValidate(blockDataMap[block.Hash], initialSetup)
-			logger.Printf("Validated block: %x", block.Hash[0:8])
+			logger.Printf("Validated block (after rollback): %x", block.Hash[0:8])
 		}
 	}
 

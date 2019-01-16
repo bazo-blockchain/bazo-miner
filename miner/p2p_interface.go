@@ -12,7 +12,6 @@ import (
 func incomingData() {
 	for {
 		block := <-p2p.BlockIn
-		//logger.Printf("New Incoming Block")
 		processBlock(block)
 	}
 }
@@ -22,22 +21,19 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	logger.Printf("RECEIVED block: %x ", block.Hash[0:8])
 	//Block already confirmed and validated
 	if storage.ReadClosedBlock(block.Hash) != nil {
 		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 		return
 	}
 
-	//Append received Block to stash, when it is not there already & keep size at 20
+	//Append received Block to stash
 	storage.WriteToReceivedStash(block)
-	storage.PrintReceivedStash()
 
 	//Start validation process
 	err := validate(block, false)
 	if err == nil {
 		logger.Printf("Validated block (received): %vState:\n%v", block, getState())
-		logger.Printf("BROADCAST received block: %x ", block.Hash[0:8])
 		broadcastBlock(block)
 		CalculateBlockchainSize(block.GetSize())
 	} else {

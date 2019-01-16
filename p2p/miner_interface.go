@@ -53,7 +53,7 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 }
 
 
-func blockAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
+func txAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
 	for _, txInStash := range slice {
 		if txInStash.Hash() == newTXHash {
 			return true
@@ -75,11 +75,11 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 		if fundsTx == nil {
 			return
 		}
-
-		//If TX is not received with the last 1000 Transaction, send it through the channel to the TX_FETCH.
-		// otherwise send nothing. this means, that teh TX was sent before and we ensure, that only one TX per Broadcast
-		// request is going through ot the FETCH. This should prevent the "Received txHash did not correspond to our request."
-		if !blockAlreadyInStash(receivedTXStash, fundsTx.Hash()) {
+		// If TX is not received with the last 1000 Transaction, send it through the channel to the TX_FETCH.
+		// Otherwise send nothing. This means, that the TX was sent before and we ensure, that only one TX per Broadcast
+		// request is going through to the FETCH Request. This should prevent the "Received txHash did not correspond to
+		// our request." error
+		if !txAlreadyInStash(receivedTXStash, fundsTx.Hash()) {
 			receivedTXStash = append(receivedTXStash, fundsTx)
 			FundsTxChan <- fundsTx
 			if len(receivedTXStash) > 1000 {

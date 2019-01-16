@@ -50,23 +50,16 @@ func WriteINVALIDOpenTx(transaction protocol.Transaction) {
 }
 func WriteToReceivedStash(block *protocol.Block) {
 
+	//Only write it to stash if it is not in there already.
 	if !blockAlreadyInStash(receivedBlockStash, block.Hash) {
 		receivedBlockStash = append(receivedBlockStash, block)
+
+		//When lenght of stash is > 50 --> Remove first added Block
 		if len(receivedBlockStash) > 50 {
 			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
 		}
 	}
 }
-
-func PrintReceivedStash(){
-	//Print stash --> Wil be removed once it works.
-	logger.Printf("RECEIVED_BLOCK_STASH: Length: %v, [", len(receivedBlockStash))
-	for _, block := range receivedBlockStash {
-		logger.Printf("%x", block.Hash[0:8])
-	}
-	logger.Printf("]")
-}
-
 
 func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
 	for _, blockInStash := range slice {

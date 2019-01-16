@@ -65,10 +65,8 @@ func blockRes(p *peer, payload []byte) {
 
 	if block != nil {
 		packet = BuildPacket(BLOCK_RES, block.Encode())
-		logger.Printf("BLOCK_RES to miner %v with block (%x)", p.getIPPort(), block.Hash[0:8])
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
-		logger.Printf("BLOCK_RES to miner %v -> Block (%x) not found --> Not in my chain", p.getIPPort(), blockHash[0:8])
 	}
 
 	sendData(p, packet)
