@@ -117,7 +117,7 @@ func proofOfStake(diff uint8,
 	for range time.Tick(time.Second) {
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		// block has been validated
-		if prevHash != lastBlock.Hash && prevBlockIsEpochBlock == false && lastBlock.ShardId == ThisShardID{ // also make sure that the last block is not an epoch block
+		if prevHash != lastBlock.Hash && prevBlockIsEpochBlock == false && lastBlock.ShardId == ThisShardID{ // also make sure that the last block is not an epoch block and the lastblock belongs to my shard
 			return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 		}
 
@@ -185,7 +185,7 @@ func proofOfStakeEpoch(diff uint8,
 	)
 
 	// allocate memory
-	// COMM_KEY_LENGTH bytes (localCommPubKey)+ 1 byte (role) + 8 bytes (count) = 256 + 1 + 8
+	// COMM_KEY_LENGTH bytes (localCommPubKey) + 8 bytes (count) = 256 + 1 + 8
 	hashArgs = make([]byte, crypto.COMM_PROOF_LENGTH + 4 + 8)
 
 	binary.BigEndian.PutUint32(heightBuf[:], height)

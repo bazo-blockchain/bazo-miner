@@ -36,11 +36,24 @@ func prepareBlock(block *protocol.Block) {
 				break
 			}
 
-			err := addTx(block, tx)
-			if err != nil {
-				//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
-				storage.DeleteOpenTx(tx)
+			switch tx.(type) {
+			case *protocol.StakeTx:
+				//Add StakeTXs only in the last block before the next epoch
+				if ((globalBlockCount+1)%EPOCH_LENGTH == 0) {
+					err := addTx(block, tx)
+					if err != nil {
+						//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
+						storage.DeleteOpenTx(tx)
+					}
+				}
+			case *protocol.ContractTx, *protocol.FundsTx, *protocol.ConfigTx:
+				err := addTx(block, tx)
+				if err != nil {
+					//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
+					storage.DeleteOpenTx(tx)
+				}
 			}
+
 		}
 	}
 }

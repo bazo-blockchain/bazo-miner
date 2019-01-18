@@ -21,11 +21,26 @@ func incomingData() {
 		broadcastValidatorShardMapping(valMapping)
 
 		//TX payload in
+
 		txPayload := <- p2p.TxPayloadIn
 		var payload *protocol.TransactionPayload
 		payload = payload.DecodePayload(txPayload)
 		TransactionPayloadIn = payload
+
+		if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
+			err := processTXPayload(payload)
+			if err != nil{
+				logger.Printf("error while processing transaction payload")
+			} else {
+				processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+			}
+		}
 	}
+}
+
+func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
+	err = updateGlobalState(txPayload)
+	return err
 }
 
 func processBlock(payload []byte) {
@@ -70,14 +85,6 @@ func broadcastBlock(block *protocol.Block) {
 
 /*Broadcast TX hashes to the network*/
 func broadcastTxPayload() {
-	/*var txPayload *protocol.TransactionPayload
-
-	txPayload.ContractTxData = block.ContractTxData
-	txPayload.FundsTxData = block.FundsTxData
-	txPayload.ConfigTxData = block.ConfigTxData
-	txPayload.StakeTxData = block.StakeTxData*/
-
-
 	p2p.TxPayloadOut <- TransactionPayloadOut.EncodePayload()
 }
 
@@ -103,6 +110,15 @@ func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
 func HashSliceContains(slice [][32]byte, hash [32]byte) bool {
 	for _, a := range slice {
 		if a == hash {
+			return true
+		}
+	}
+	return false
+}
+
+func IntSliceContains(slice []int, id int) bool {
+	for _, a := range slice {
+		if a == id {
 			return true
 		}
 	}

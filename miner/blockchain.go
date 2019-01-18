@@ -36,6 +36,7 @@ var (
 	FileConnections         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
 	TransactionPayloadIn 	*protocol.TransactionPayload
+	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
 )
 
 //Miner entry point
@@ -241,8 +242,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
 
-	broadcastTxPayload()
-
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		logger.Printf("%v\n", err)
@@ -252,8 +251,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
 
-	broadcastTxPayload()
-
 	if err != nil {
 		logger.Printf("%v\n", err)
 	} else {
@@ -262,6 +259,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
+		broadcastTxPayload()
+		logger.Printf(TransactionPayloadOut.StringPayload())
 
 		if (prevBlockIsEpochBlock == true) {
 			blockDataMap := make(map[[32]byte]blockData)

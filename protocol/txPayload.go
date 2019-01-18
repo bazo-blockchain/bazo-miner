@@ -9,14 +9,16 @@ import (
 /*This struct is a convenient way to broadcast the hashes of the transactions a miner has validated and included in a block.
 These hashes will be consumed by the miners of the other shards, who then check the MemPool and based on the TXs, re-create the global state*/
 type TransactionPayload struct {
+	ShardID			int
 	ContractTxData  [][32]byte
 	FundsTxData  	[][32]byte
 	ConfigTxData 	[][32]byte
 	StakeTxData  	[][32]byte
 }
 
-func NewTransactionPayload(contractTx [][32]byte, fundsTx [][32]byte, configTx [][32]byte, stakeTx [][32]byte) *TransactionPayload {
+func NewTransactionPayload(shardID int, contractTx [][32]byte, fundsTx [][32]byte, configTx [][32]byte, stakeTx [][32]byte) *TransactionPayload {
 	newPayload := TransactionPayload{
+		ShardID:				shardID,
 		ContractTxData: 		contractTx,
 		FundsTxData: 			fundsTx,
 		ConfigTxData: 			configTx,
@@ -32,11 +34,13 @@ func (txPayload *TransactionPayload) HashPayload() [32]byte {
 	}
 
 	payloadHash := struct {
+		shardID					 int
 		contractTxData           [][32]byte
 		fundsTxData              [][32]byte
 		configTxData             [][32]byte
 		stakeTxData              [][32]byte
 	}{
+		txPayload.ShardID,
 		txPayload.ContractTxData,
 		txPayload.FundsTxData,
 		txPayload.ConfigTxData,
@@ -57,6 +61,7 @@ func (txPayload *TransactionPayload) EncodePayload() []byte {
 	}
 
 	encoded := TransactionPayload{
+		ShardID:			   txPayload.ShardID,
 		ContractTxData:        txPayload.ContractTxData,
 		FundsTxData:           txPayload.FundsTxData,
 		ConfigTxData:          txPayload.ConfigTxData,
@@ -92,28 +97,44 @@ func (txPayload TransactionPayload) StringPayload() string {
 
 func (txPayload TransactionPayload) PayloadToString() (payload string) {
 
-	payload += "=== Contract Tx ==="
+	if(len(txPayload.ContractTxData) == 0){
+		payload += "=== NO Contract Tx ==="
+	} else {
+		payload += "=== Contract Tx ==="
 
-	for _, tx := range txPayload.ContractTxData {
-		payload += fmt.Sprintf("\n%x", tx)
+		for _, tx := range txPayload.ContractTxData {
+			payload += fmt.Sprintf("\n%x", tx[:8])
+		}
 	}
 
-	payload += "\n=== Funds Tx ==="
+	if(len(txPayload.FundsTxData) == 0){
+		payload += "\n=== NO Funds Tx ==="
+	} else {
+		payload += "\n=== Funds Tx ==="
 
-	for _, tx := range txPayload.FundsTxData {
-		payload += fmt.Sprintf("\n%x", tx)
+		for _, tx := range txPayload.FundsTxData {
+			payload += fmt.Sprintf("\n%x", tx[:8])
+		}
 	}
 
-	payload += "\n=== Config Tx ==="
+	if(len(txPayload.ConfigTxData) == 0){
+		payload += "\n=== NO Config Tx ==="
+	} else {
+		payload += "\n=== Config Tx ==="
 
-	for _, tx := range txPayload.ConfigTxData {
-		payload += fmt.Sprintf("\n%x", tx)
+		for _, tx := range txPayload.ConfigTxData {
+			payload += fmt.Sprintf("\n%x", tx[:8])
+		}
 	}
 
-	payload += "\n=== Stake Tx ==="
+	if(len(txPayload.StakeTxData) == 0){
+		payload += "\n=== NO Stake Tx ==="
+	} else {
+		payload += "\n=== Stake Tx ==="
 
-	for _, tx := range txPayload.StakeTxData {
-		payload += fmt.Sprintf("\n%x", tx)
+		for _, tx := range txPayload.StakeTxData {
+			payload += fmt.Sprintf("\n%x", tx[:8])
+		}
 	}
 
 
