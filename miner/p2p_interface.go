@@ -16,30 +16,48 @@ func incomingData() {
 
 		//check validator assignment
 		validatorMapping := <- p2p.ValidatorShardMapChanIn
-		var valMapping *protocol.ValShardMapping
-		valMapping = valMapping.Decode(validatorMapping)
-		broadcastValidatorShardMapping(valMapping)
+		processReceivedValidatorMapping(validatorMapping)
+
+		//receive Epoch Block
+		epochBlock := <-p2p.EpochBlockIn
+		processEpochBlock(epochBlock)
 
 		//TX payload in
-
 		txPayload := <- p2p.TxPayloadIn
-		var payload *protocol.TransactionPayload
-		payload = payload.DecodePayload(txPayload)
-		TransactionPayloadIn = payload
+		processPayload(txPayload)
+	}
+}
+func processReceivedValidatorMapping(vm []byte) {
+	var valMapping *protocol.ValShardMapping
+	valMapping = valMapping.Decode(vm)
+	ValidatorShardMap = valMapping
+	broadcastValidatorShardMapping(valMapping)
+}
+func processPayload(payloadByte []byte) {
+	var payload *protocol.TransactionPayload
+	payload = payload.DecodePayload(payloadByte)
+	TransactionPayloadIn = payload
+	logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
 
-		if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
-			err := processTXPayload(payload)
-			if err != nil{
-				logger.Printf("error while processing transaction payload")
-			} else {
-				processedTXPayloads = append(processedTXPayloads,payload.ShardID)
-			}
+	//Only process TxPayloads from shards which haven't been processed yet
+	if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
+		err := processTXPayload(payload)
+		if err != nil{
+			logger.Printf("error while processing transaction payload: %v\n",err)
+		} else {
+			processedTXPayloads = append(processedTXPayloads,payload.ShardID)
 		}
 	}
 }
+func processEpochBlock(eb []byte) {
+	var epochBlock *protocol.EpochBlock
+	epochBlock = epochBlock.Decode(eb)
+	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
+	lastEpochBlock = epochBlock
+}
 
 func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
-	err = updateGlobalState(txPayload)
+	err = updateGlobalState(txPayload) //This function mimics the txPayload to update the global state in each shard, no Tx validation or storing done, because its done in the other shards
 	return err
 }
 
@@ -58,7 +76,7 @@ func processBlock(payload []byte) {
 	if err == nil {
 		logger.Printf("Validated block: %vState:\n%v", block, getState())
 
-		if(block.Height == lastBlock.Height && block.ShardId != ThisShardID && HashSliceContains(LastShardHashes,block.Hash) == true){
+		if(block.Height == lastBlock.Height + 1 && block.ShardId != ThisShardID && HashSliceContains(LastShardHashes,block.Hash) == false){
 			//count blocks received at current height
 			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 

@@ -141,7 +141,6 @@ func initState() (initialBlock *protocol.Block, err error) {
 	FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	initRootAccounts(genesis)
-
 	err = initClosedBlocks(lastEpochBlock)
 	if err != nil {
 		return nil, err

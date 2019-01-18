@@ -89,8 +89,10 @@ func (txPayload TransactionPayload) StringPayload() string {
 	payloadHash := txPayload.HashPayload()
 
 	return fmt.Sprintf("\nHash: %x\n"+
+		"Shard ID: %v\n" +
 		"TX Payload Hashes: %v\n",
 		payloadHash[0:8],
+		txPayload.ShardID,
 		txPayload.PayloadToString(),
 	)
 }

@@ -3,7 +3,6 @@ package miner
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
@@ -31,7 +30,7 @@ var (
 	commPrivKey             *rsa.PrivateKey
 	NumberOfShards          int
 	ReceivedBlocksAtHeightX int //This counter is used to sync block heights among shards
-	LastShardHashes         [][32]byte
+	LastShardHashes         [][32]byte // This slice stores the hashes of the last blocks from the other shards, needed to create the next epoch block
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
@@ -39,84 +38,9 @@ var (
 	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
 )
 
-//Miner entry point
-func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
-	//this bool indicates whether the first epoch is over. Only in the first epoch, the bootstrapping node is assigning the
-	//validators to the shards and broadcasts this assignment to the other miners
-	firstEpochOver = false
-
-	FileConnections, _ = os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
-	commPrivKey = commitment
-
-	//Set up logger.
-	logger = storage.InitLogger()
-
-	parameterSlice = append(parameterSlice, NewDefaultParameters())
-	activeParameters = &parameterSlice[0]
-
-	currentTargetTime = new(timerange)
-	target = append(target, 15)
-
-	initialBlock, err := initState() //From here on, every validator should have the same state representation
-
-	FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", initialBlock.PrevHash[0:15], initialBlock.Hash[0:15]))
-
-	if err != nil {
-		return err
-	}
-
-	logger.Printf("Active config params:%v", activeParameters)
-
-	/*Sharding Utilities*/
-	NumberOfShards = DetNumberOfShards()
-
-	/*First validator assignment is done by the bootstrapping node, the others will be done based on POS at the end of each epoch*/
-	if (p2p.IsBootstrap()) {
-		var validatorShardMapping = protocol.NewMapping()
-		validatorShardMapping.ValMapping = AssignValidatorsToShards()
-		ValidatorShardMap = validatorShardMapping
-		storage.WriteValidatorMapping(ValidatorShardMap)
-		logger.Printf("Validator Shard Mapping:\n")
-		logger.Printf(validatorShardMapping.String())
-
-		//broadcast the generated map to the other validators
-		broadcastValidatorShardMapping(ValidatorShardMap)
-	} else {
-		//request the mapping from bootstrapping node
-		p2p.ValidatorShardMapRequest()
-		//Blocking wait
-		select {
-		case encodedMapping := <-p2p.ValidatorShardMapReq:
-			var rvdMapping = protocol.NewMapping()
-			rvdMapping = rvdMapping.Decode(encodedMapping)
-			ValidatorShardMap = rvdMapping
-			storage.WriteValidatorMapping(ValidatorShardMap)
-			logger.Printf("Validator Shard Mapping:\n")
-			logger.Printf(rvdMapping.String())
-
-			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			return errors.New("mapping fetch timeout")
-		}
-	}
-
-	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
-
-	//Start to listen to network inputs (txs and blocks).
-	go incomingData()
-
-	epochMining(initialBlock)
-
-	//mining(initialBlock)
-
-	return nil
-}
-
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	var err error
-	FileConnections, err = os.OpenFile("hash-prevhash.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	FileConnections, err = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",p2p.Ipport), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -144,6 +68,115 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n", [32]byte{}, initialEpochBlock.Hash[0:15]))
 
 	return Init(wallet, commitment)
+}
+
+//Miner entry point
+func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
+	//this bool indicates whether the first epoch is over. Only in the first epoch, the bootstrapping node is assigning the
+	//validators to the shards and broadcasts this assignment to the other miners
+	firstEpochOver = false
+
+	FileConnections, _ = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",p2p.Ipport), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
+	commPrivKey = commitment
+
+	//Set up logger.
+	logger = storage.InitLogger()
+
+	parameterSlice = append(parameterSlice, NewDefaultParameters())
+	activeParameters = &parameterSlice[0]
+
+	currentTargetTime = new(timerange)
+	target = append(target, 15)
+
+	var initialBlock *protocol.Block
+	var epochBlockToStart *protocol.EpochBlock
+	var validatorMappingToStart *protocol.ValShardMapping
+	var err error
+
+	//Start to listen to network inputs (txs and blocks).
+	go incomingData()
+
+	//Since new validators only join after the currently running epoch ends, they do no need to download the whole shardchain history,
+	//but can continue with their work after the next epoch block and directly set their state to the global state of the next epoch block
+	if(p2p.IsBootstrap()){
+		initialBlock, err = initState() //From here on, every validator should have the same state representation
+		if err != nil {
+			return err
+		}
+		FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", initialBlock.PrevHash[0:15], initialBlock.Hash[0:15]))
+		lastBlock = initialBlock
+	} else {
+		for{
+			//Wait until I receive the last epoch block as well as the validator assignment
+			// The global variables 'lastEpochBlock' and 'ValidatorShardMap' are being set when they are received by the network
+			if(lastEpochBlock != nil && ValidatorShardMap != nil){
+				epochBlockToStart = lastEpochBlock
+				storage.State = epochBlockToStart.State
+				validatorMappingToStart = ValidatorShardMap
+
+			}
+
+			/*//Wait until the next epoch block and validator-shard mapping is broadcasted, then continue with mining
+			encodedEpochBlockToStart := <-p2p.EpochBlockIn
+			epochBlockToStart = epochBlockToStart.Decode(encodedEpochBlockToStart)
+			logger.Printf("Received first Epoch Block: %v\n", epochBlockToStart.String())
+
+			encodedValidatorMappping := <-p2p.ValidatorShardMapChanIn
+			validatorMappingToStart = validatorMappingToStart.Decode(encodedValidatorMappping)
+			logger.Printf("Received first Validaor Shard Mapping: %v\n", validatorMappingToStart.String())*/
+
+			if (epochBlockToStart != nil && validatorMappingToStart != nil){
+				storage.State = epochBlockToStart.State
+				break
+			}
+		}
+	}
+
+	logger.Printf("Active config params:%v", activeParameters)
+
+	/*Sharding Utilities*/
+	NumberOfShards = DetNumberOfShards()
+
+	/*First validator assignment is done by the bootstrapping node, the others will be done based on POS at the end of each epoch*/
+	if (p2p.IsBootstrap()) {
+		var validatorShardMapping = protocol.NewMapping()
+		validatorShardMapping.ValMapping = AssignValidatorsToShards()
+		ValidatorShardMap = validatorShardMapping
+		storage.WriteValidatorMapping(ValidatorShardMap)
+		logger.Printf("Validator Shard Mapping:\n")
+		logger.Printf(validatorShardMapping.String())
+
+		//broadcast the generated map to the other validators
+		broadcastValidatorShardMapping(ValidatorShardMap)
+	}
+	/*else {
+		//request the mapping from bootstrapping node
+		p2p.ValidatorShardMapRequest()
+		//Blocking wait
+		select {
+		case encodedMapping := <-p2p.ValidatorShardMapReq:
+			var rvdMapping = protocol.NewMapping()
+			rvdMapping = rvdMapping.Decode(encodedMapping)
+			ValidatorShardMap = rvdMapping
+			storage.WriteValidatorMapping(ValidatorShardMap)
+			logger.Printf("Validator Shard Mapping:\n")
+			logger.Printf(rvdMapping.String())
+
+			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+			return errors.New("mapping fetch timeout")
+		}
+	}*/
+
+	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+
+	epochMining(initialBlock)
+
+	//mining(initialBlock)
+
+	return nil
 }
 
 func epochMining(initialBlock *protocol.Block) {
