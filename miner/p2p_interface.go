@@ -36,18 +36,23 @@ func processReceivedValidatorMapping(vm []byte) {
 func processPayload(payloadByte []byte) {
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
-	TransactionPayloadIn = payload
-	logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
 
-	//Only process TxPayloads from shards which haven't been processed yet
-	if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
+	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
+	if(payload.ShardID != ThisShardID && IntSliceContains(processedTXPayloads, payload.ShardID) == false){
+		TransactionPayloadIn = append(TransactionPayloadIn,payload)
+		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+	}
+
+
+	/*if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
 		err := processTXPayload(payload)
 		if err != nil{
 			logger.Printf("error while processing transaction payload: %v\n",err)
 		} else {
 			processedTXPayloads = append(processedTXPayloads,payload.ShardID)
 		}
-	}
+	}*/
 }
 func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
@@ -56,37 +61,40 @@ func processEpochBlock(eb []byte) {
 	lastEpochBlock = epochBlock
 }
 
-func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
+/*func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
 	err = updateGlobalState(txPayload) //This function mimics the txPayload to update the global state in each shard, no Tx validation or storing done, because its done in the other shards
 	return err
-}
+}*/
 
 func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	//Block already confirmed and validated
-	if storage.ReadClosedBlock(block.Hash) != nil {
-		logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
-		return
-	}
-
-	//Start validation process
-	err := validate(block, false)
-	if err == nil {
-		logger.Printf("Validated block: %vState:\n%v", block, getState())
-
-		if(block.Height == lastBlock.Height + 1 && block.ShardId != ThisShardID && HashSliceContains(LastShardHashes,block.Hash) == false){
-			//count blocks received at current height
-			ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
-
-			//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
-			LastShardHashes = append(LastShardHashes, block.Hash)
+	if(block.ShardId == ThisShardID){
+		//Block already confirmed and validated
+		if storage.ReadClosedBlock(block.Hash) != nil {
+			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
+			return
 		}
 
-		broadcastBlock(block)
+		//Start validation process
+		err := validate(block, false)
+		if err == nil {
+			logger.Printf("Validated block: %vState:\n%v", block, getState())
+			broadcastBlock(block)
+		} else {
+			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		}
 	} else {
-		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		if(lastBlock != nil){
+			if(block.Height == lastBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false){
+				//count blocks received at current height
+				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+
+				//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
+				LastShardHashes = append(LastShardHashes, block.Hash)
+			}
+		}
 	}
 }
 

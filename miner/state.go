@@ -240,8 +240,7 @@ func initClosedBlocks(lastEpochBlock *protocol.EpochBlock) error {
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
 		/*Get all closed blocks from the last block back to the last epoch block, i.e. all closed blocks from the current epoch*/
-		if nextBlock := storage.ReadLastClosedBlock(); nextBlock != nil {
-
+		if nextBlock := storage.ReadLastClosedBlock(); nextBlock != nil && nextBlock.Height > lastEpochBlock.Height{
 			allClosedBlocks = append(allClosedBlocks, nextBlock)
 			for nextBlock.Height > lastEpochBlock.Height + 1 {
 				nextBlock = storage.ReadClosedBlock(nextBlock.PrevHash)

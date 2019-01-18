@@ -54,8 +54,17 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	//Process txPayloads from other shards
-	updateGlobalState(TransactionPayloadIn)
+	/*In this step, wait until all TxPayloads from the other shards are received.
+	Once received, update my local state and sync the global state with the other shards*/
+	for{
+		if(len(TransactionPayloadIn) == NumberOfShards - 1){
+			err := updateGlobalState(TransactionPayloadIn)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
 
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
@@ -813,41 +822,45 @@ func validateState(data blockData) (err error) {
 }
 
 /*This function received valiadted and process transactions from other shards and updates the local global state*/
-func updateGlobalState(txPayload *protocol.TransactionPayload) (err error) {
-	var contractTxSlice []*protocol.ContractTx
-	var fundsTxSlice []*protocol.FundsTx
-	var configTxSlice []*protocol.ConfigTx
-	var stakeTxSlice []*protocol.StakeTx
+func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 
-	for _,contractTxHash := range txPayload.ContractTxData{
-		contractTxSlice = append(contractTxSlice,storage.ReadOpenTx(contractTxHash).(*protocol.ContractTx))
+	for _,txPayload := range txPayloads{
+		var contractTxSlice []*protocol.ContractTx
+		var fundsTxSlice []*protocol.FundsTx
+		var configTxSlice []*protocol.ConfigTx
+		var stakeTxSlice []*protocol.StakeTx
+
+		for _,contractTxHash := range txPayload.ContractTxData{
+			contractTxSlice = append(contractTxSlice,storage.ReadOpenTx(contractTxHash).(*protocol.ContractTx))
+		}
+
+		for _, fundsTxHash := range txPayload.FundsTxData{
+			fundsTxSlice = append(fundsTxSlice,storage.ReadOpenTx(fundsTxHash).(*protocol.FundsTx))
+		}
+
+		for _, configTxHash := range txPayload.ConfigTxData{
+			configTxSlice = append(configTxSlice,storage.ReadOpenTx(configTxHash).(*protocol.ConfigTx))
+		}
+
+		for _, stakeTxHash := range txPayload.StakeTxData{
+			stakeTxSlice = append(stakeTxSlice,storage.ReadOpenTx(stakeTxHash).(*protocol.StakeTx))
+		}
+
+		accStateChange(contractTxSlice)
+
+		err = fundsStateChange(fundsTxSlice)
+		if err != nil {
+			accStateChangeRollback(contractTxSlice)
+			return err
+		}
+
+		if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
+			fundsStateChangeRollback(fundsTxSlice)
+			accStateChangeRollback(contractTxSlice)
+			return err
+		}
 	}
 
-	for _, fundsTxHash := range txPayload.FundsTxData{
-		fundsTxSlice = append(fundsTxSlice,storage.ReadOpenTx(fundsTxHash).(*protocol.FundsTx))
-	}
-
-	for _, configTxHash := range txPayload.ConfigTxData{
-		configTxSlice = append(configTxSlice,storage.ReadOpenTx(configTxHash).(*protocol.ConfigTx))
-	}
-
-	for _, stakeTxHash := range txPayload.StakeTxData{
-		stakeTxSlice = append(stakeTxSlice,storage.ReadOpenTx(stakeTxHash).(*protocol.StakeTx))
-	}
-
-	accStateChange(contractTxSlice)
-
-	err = fundsStateChange(fundsTxSlice)
-	if err != nil {
-		accStateChangeRollback(contractTxSlice)
-		return err
-	}
-
-	if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
-		fundsStateChangeRollback(fundsTxSlice)
-		accStateChangeRollback(contractTxSlice)
-		return err
-	}
 	return nil
 }
 

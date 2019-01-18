@@ -10,6 +10,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +25,7 @@ var (
 	activeParameters        *Parameters
 	uptodate                bool
 	prevBlockIsEpochBlock   bool
+	FirstStartAfterEpoch	bool
 	slashingDict            = make(map[[64]byte]SlashingProof)
 	validatorAccAddress     [64]byte
 	ThisShardID             int // ID of the shard this validator is assigned to
@@ -34,13 +36,13 @@ var (
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
-	TransactionPayloadIn 	*protocol.TransactionPayload
+	TransactionPayloadIn 	[]*protocol.TransactionPayload
 	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
 )
 
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	var err error
-	FileConnections, err = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",p2p.Ipport), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	FileConnections, err = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	//validators to the shards and broadcasts this assignment to the other miners
 	firstEpochOver = false
 
-	FileConnections, _ = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",p2p.Ipport), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	FileConnections, _ = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
 	commPrivKey = commitment
@@ -91,8 +93,6 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	target = append(target, 15)
 
 	var initialBlock *protocol.Block
-	var epochBlockToStart *protocol.EpochBlock
-	var validatorMappingToStart *protocol.ValShardMapping
 	var err error
 
 	//Start to listen to network inputs (txs and blocks).
@@ -108,14 +108,26 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", initialBlock.PrevHash[0:15], initialBlock.Hash[0:15]))
 		lastBlock = initialBlock
 	} else {
+		/*//Request last epoch block to check if I am already in the validator set, if so, then no need to wait for the next epoch
+		lastEpochBlock, err = getLastEpochBlock()
+		if err != nil {
+			return err
+		}
+		if acc := lastEpochBlock.State[validatorAccAddress]; acc != nil{
+			if(acc.IsStaking == true){
+				storage.State = lastEpochBlock.State
+			}
+		}*/
+
 		for{
 			//Wait until I receive the last epoch block as well as the validator assignment
 			// The global variables 'lastEpochBlock' and 'ValidatorShardMap' are being set when they are received by the network
 			if(lastEpochBlock != nil && ValidatorShardMap != nil){
-				epochBlockToStart = lastEpochBlock
-				storage.State = epochBlockToStart.State
-				validatorMappingToStart = ValidatorShardMap
-
+				storage.State = lastEpochBlock.State
+				NumberOfShards = DetNumberOfShards()
+				ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
+				FirstStartAfterEpoch = true
+				epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
 			}
 
 			/*//Wait until the next epoch block and validator-shard mapping is broadcasted, then continue with mining
@@ -126,11 +138,11 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 			encodedValidatorMappping := <-p2p.ValidatorShardMapChanIn
 			validatorMappingToStart = validatorMappingToStart.Decode(encodedValidatorMappping)
 			logger.Printf("Received first Validaor Shard Mapping: %v\n", validatorMappingToStart.String())*/
-
+			/*
 			if (epochBlockToStart != nil && validatorMappingToStart != nil){
 				storage.State = epochBlockToStart.State
 				break
-			}
+			}*/
 		}
 	}
 
@@ -172,19 +184,17 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
-	epochMining(initialBlock)
+	epochMining(lastBlock.Hash, lastBlock.Height)
 
 	//mining(initialBlock)
 
 	return nil
 }
 
-func epochMining(initialBlock *protocol.Block) {
+func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	var epochBlock *protocol.EpochBlock
 	//currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height + 1)
-
-	lastBlock = initialBlock
 
 	/*constantly watch global blockcount for insertion of next epoch block*/
 	for {
@@ -193,8 +203,8 @@ func epochMining(initialBlock *protocol.Block) {
 		//shard height synced with network, now mine next block
 		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
 		//if (true) {
-			if ((globalBlockCount+1)%EPOCH_LENGTH == 0) {
-				//globalblockcount is 1 before the next epoch block. Thus with the last block, create the next epoch block
+			if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length) {
+				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
 				//Get hashes of last shard blocks from other miners
@@ -243,8 +253,10 @@ func epochMining(initialBlock *protocol.Block) {
 				firstEpochOver = true
 
 				mining(epochBlock.Hash, epochBlock.Height)
-
 			} else {
+				if(FirstStartAfterEpoch == true){ //Indicate that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
+					mining(hashPrevBlock,heightPrevBlock)
+				}
 				mining(lastBlock.Hash, lastBlock.Height)
 			}
 		}
@@ -253,7 +265,6 @@ func epochMining(initialBlock *protocol.Block) {
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
-
 	currentBlock := newBlock(hashPrevBlock, [crypto.COMM_PROOF_LENGTH]byte{}, heightPrevBlock+1)
 
 	/*Set shard identifier in block*/
@@ -270,10 +281,12 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	blockValidation.Unlock()
 
 	//Fill global variable transactionPayload to be broadcasted to the other shards
+	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID,nil,nil,nil,nil)
 	TransactionPayloadOut.ContractTxData = currentBlock.ContractTxData
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
+	broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -292,15 +305,15 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
-		broadcastTxPayload()
+
 		logger.Printf(TransactionPayloadOut.StringPayload())
 
-		if (prevBlockIsEpochBlock == true) {
+		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			blockDataMap := make(map[[32]byte]blockData)
 			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)
 
 			if (err == nil) {
-				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
+				FileConnections.WriteString(fmt.Sprintf("'EPOCH BLOCK: %x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
 				// validateState() and check for error, if not, then continue with postValidate(...)
 				if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
@@ -321,6 +334,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			}
 		}
 	}
+	FirstStartAfterEpoch = false
 
 	/*for {
 		_, err := storage.ReadAccount(validatorAccAddress)
@@ -361,7 +375,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 }
 
 func DetNumberOfShards() (numberOfShards int) {
-	return int(math.Ceil(float64(GetValidatorsCount()) / float64(VALIDATORS_PER_SHARD)))
+	return int(math.Ceil(float64(GetValidatorsCount()) / float64(activeParameters.validators_per_shard)))
 }
 
 func AssignValidatorsToShards() map[[64]byte]int {
@@ -385,7 +399,7 @@ func AssignValidatorsToShards() map[[64]byte]int {
 	from the map above and set is bool 'assigned' to TRUE*/
 	rand.Seed(time.Now().Unix())
 
-	for j := 1; j <= VALIDATORS_PER_SHARD; j++ {
+	for j := 1; j <= activeParameters.validators_per_shard; j++ {
 		for i := 1; i <= NumberOfShards; i++ {
 
 			if len(validatorSlices) == 0 {

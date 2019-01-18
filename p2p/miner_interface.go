@@ -17,7 +17,7 @@ var (
 	TxPayloadIn = make(chan []byte)
 
 	//EpochBlock from the network, to the miner
-	EpochBlockIn = make(chan []byte)
+	EpochBlockIn = make(chan []byte,2)
 	//EpochBlock from the miner, to the network
 	EpochBlockOut = make(chan []byte)
 
