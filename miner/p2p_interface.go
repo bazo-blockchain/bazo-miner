@@ -23,8 +23,10 @@ func incomingData() {
 		processEpochBlock(epochBlock)
 
 		//TX payload in
-		txPayload := <- p2p.TxPayloadIn
-		processPayload(txPayload)
+		if(blockBeingProcessed != nil){
+			txPayload := <- p2p.TxPayloadIn
+			processPayload(txPayload)
+		}
 	}
 }
 func processReceivedValidatorMapping(vm []byte) {

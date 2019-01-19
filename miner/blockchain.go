@@ -272,6 +272,10 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	/*Set shard identifier in block*/
 	currentBlock.ShardId = ThisShardID
 
+	if(currentBlock.Height == 11){
+		logger.Printf("funny....")
+	}
+
 	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 	//validated with block validation, so we wait in order to not work on tx data that is already validated
