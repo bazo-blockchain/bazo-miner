@@ -23,10 +23,8 @@ func incomingData() {
 		processEpochBlock(epochBlock)
 
 		//TX payload in
-		if(blockBeingProcessed != nil){
-			txPayload := <- p2p.TxPayloadIn
-			processPayload(txPayload)
-		}
+		txPayload := <- p2p.TxPayloadIn
+		processPayload(txPayload)
 	}
 }
 func processReceivedValidatorMapping(vm []byte) {
@@ -39,16 +37,26 @@ func processPayload(payloadByte []byte) {
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
 
-	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
+	TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
+	processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+	logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
 
-	if(blockBeingProcessed != nil){
+	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
+	/*if payload.ShardID != ThisShardID {
+		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
+		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+	}*/
+
+
+	/*if(blockBeingProcessed != nil){
 		if payload.ShardID != ThisShardID && IntSliceContains(processedTXPayloads, payload.ShardID) == false && +
 			payload.Height == int(blockBeingProcessed.Height) {
 			TransactionPayloadIn = append(TransactionPayloadIn,payload)
 			processedTXPayloads = append(processedTXPayloads,payload.ShardID)
 			logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
 		}
-	}
+	}*/
 	/*if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
 		err := processTXPayload(payload)
 		if err != nil{

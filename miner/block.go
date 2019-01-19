@@ -57,6 +57,12 @@ func finalizeBlock(block *protocol.Block) error {
 	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
 	Once received, update my local state and sync the global state with the other shards*/
 	for{
+		for _, pl := range TransactionPayloadReceived {
+			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID){
+				TransactionPayloadIn = append(TransactionPayloadIn, pl)
+			}
+		}
+
 		if(len(TransactionPayloadIn) == NumberOfShards - 1){
 			err := updateGlobalState(TransactionPayloadIn)
 			if err != nil {
@@ -821,7 +827,8 @@ func validateState(data blockData) (err error) {
 	return nil
 }
 
-/*This function received valiadted and process transactions from other shards and updates the local global state*/
+/*This function received validated and process transactions from other shards and updates the local global state
+No transaction validation or storage done at this step*/
 func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 
 	for _,txPayload := range txPayloads{

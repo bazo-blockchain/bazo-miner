@@ -36,6 +36,7 @@ var (
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
 	FileConnections         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
+	TransactionPayloadReceived 	[]*protocol.TransactionPayload
 	TransactionPayloadIn 	[]*protocol.TransactionPayload
 	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
 )
