@@ -54,7 +54,7 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	/*In this step, wait until all TxPayloads from the other shards are received.
+	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
 	Once received, update my local state and sync the global state with the other shards*/
 	for{
 		if(len(TransactionPayloadIn) == NumberOfShards - 1){
@@ -854,10 +854,18 @@ func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 			return err
 		}
 
-		if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
-			fundsStateChangeRollback(fundsTxSlice)
-			accStateChangeRollback(contractTxSlice)
-			return err
+		if(lastBlock == nil){
+			if err := stakeStateChange(stakeTxSlice, lastEpochBlock.Height + 1); err != nil {
+				fundsStateChangeRollback(fundsTxSlice)
+				accStateChangeRollback(contractTxSlice)
+				return err
+			}
+		} else {
+			if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
+				fundsStateChangeRollback(fundsTxSlice)
+				accStateChangeRollback(contractTxSlice)
+				return err
+			}
 		}
 	}
 

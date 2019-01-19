@@ -30,7 +30,7 @@ func TestTxPayloadCreation(t *testing.T) {
 	configTxData = append(configTxData,config1,config2,config3)
 	stakeTxData = append(stakeTxData,stake1,stake2,stake3)
 
-	createdPayload := NewTransactionPayload(3, contractTxData,fundsTxData,configTxData,stakeTxData)
+	createdPayload := NewTransactionPayload(3, 5,contractTxData,fundsTxData,configTxData,stakeTxData)
 
 	if !reflect.DeepEqual(createdPayload.ContractTxData, contractTxData) {
 		t.Errorf("ContractTxData hash does not match the given one: %x vs. %x", createdPayload.ContractTxData, contractTxData)
@@ -74,7 +74,7 @@ func TestTransactionPayloadSerialization(t *testing.T) {
 	configTxData = append(configTxData,config1,config2,config3)
 	stakeTxData = append(stakeTxData,stake1,stake2,stake3)
 
-	createdPayload := NewTransactionPayload(3, contractTxData,fundsTxData,configTxData,stakeTxData)
+	createdPayload := NewTransactionPayload(3, 5,contractTxData,fundsTxData,configTxData,stakeTxData)
 
 
 	var compareTransactionPayload *TransactionPayload

@@ -9,6 +9,7 @@ import (
 
 var (
 	lastBlock         *protocol.Block
+	blockBeingProcessed *protocol.Block
 	lastEpochBlock	  *protocol.EpochBlock
 	firstEpochOver	  bool
 	globalBlockCount  = int64(-1)

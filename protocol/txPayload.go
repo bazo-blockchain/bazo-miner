@@ -10,15 +10,17 @@ import (
 These hashes will be consumed by the miners of the other shards, who then check the MemPool and based on the TXs, re-create the global state*/
 type TransactionPayload struct {
 	ShardID			int
+	Height 			int
 	ContractTxData  [][32]byte
 	FundsTxData  	[][32]byte
 	ConfigTxData 	[][32]byte
 	StakeTxData  	[][32]byte
 }
 
-func NewTransactionPayload(shardID int, contractTx [][32]byte, fundsTx [][32]byte, configTx [][32]byte, stakeTx [][32]byte) *TransactionPayload {
+func NewTransactionPayload(shardID int, height int, contractTx [][32]byte, fundsTx [][32]byte, configTx [][32]byte, stakeTx [][32]byte) *TransactionPayload {
 	newPayload := TransactionPayload{
 		ShardID:				shardID,
+		Height:					height,
 		ContractTxData: 		contractTx,
 		FundsTxData: 			fundsTx,
 		ConfigTxData: 			configTx,
@@ -35,12 +37,14 @@ func (txPayload *TransactionPayload) HashPayload() [32]byte {
 
 	payloadHash := struct {
 		shardID					 int
+		height					 int
 		contractTxData           [][32]byte
 		fundsTxData              [][32]byte
 		configTxData             [][32]byte
 		stakeTxData              [][32]byte
 	}{
 		txPayload.ShardID,
+		txPayload.Height,
 		txPayload.ContractTxData,
 		txPayload.FundsTxData,
 		txPayload.ConfigTxData,
@@ -62,6 +66,7 @@ func (txPayload *TransactionPayload) EncodePayload() []byte {
 
 	encoded := TransactionPayload{
 		ShardID:			   txPayload.ShardID,
+		Height:				   txPayload.Height,
 		ContractTxData:        txPayload.ContractTxData,
 		FundsTxData:           txPayload.FundsTxData,
 		ConfigTxData:          txPayload.ConfigTxData,
@@ -90,9 +95,11 @@ func (txPayload TransactionPayload) StringPayload() string {
 
 	return fmt.Sprintf("\nHash: %x\n"+
 		"Shard ID: %v\n" +
-		"TX Payload Hashes: %v\n",
+		"Height: %v\n" +
+		"TX Payload Hashes: \n%v\n",
 		payloadHash[0:8],
 		txPayload.ShardID,
+		txPayload.Height,
 		txPayload.PayloadToString(),
 	)
 }

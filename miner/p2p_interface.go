@@ -38,13 +38,15 @@ func processPayload(payloadByte []byte) {
 	payload = payload.DecodePayload(payloadByte)
 
 	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
-	if(payload.ShardID != ThisShardID && IntSliceContains(processedTXPayloads, payload.ShardID) == false){
-		TransactionPayloadIn = append(TransactionPayloadIn,payload)
-		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
-		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+
+	if(blockBeingProcessed != nil){
+		if payload.ShardID != ThisShardID && IntSliceContains(processedTXPayloads, payload.ShardID) == false && +
+			payload.Height == int(blockBeingProcessed.Height) {
+			TransactionPayloadIn = append(TransactionPayloadIn,payload)
+			processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+			logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+		}
 	}
-
-
 	/*if (IntSliceContains(processedTXPayloads, payload.ShardID) == false){
 		err := processTXPayload(payload)
 		if err != nil{
@@ -70,7 +72,7 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	if(block.ShardId == ThisShardID){
+	if block.ShardId == ThisShardID {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -86,8 +88,17 @@ func processBlock(payload []byte) {
 			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 		}
 	} else {
-		if(lastBlock != nil){
-			if(block.Height == lastBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false){
+		/*if(lastBlock == nil && lastEpochBlock != nil){
+			if(block.Height == lastEpochBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false){
+				//count blocks received at current height
+				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+
+				//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
+				LastShardHashes = append(LastShardHashes, block.Hash)
+			}
+		} else */
+		if lastBlock != nil {
+			if block.Height == lastBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false {
 				//count blocks received at current height
 				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 

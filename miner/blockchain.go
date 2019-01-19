@@ -200,6 +200,10 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	for {
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
+		if(FirstStartAfterEpoch == true){ //Indicates that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
+			mining(hashPrevBlock,heightPrevBlock)
+		}
+
 		//shard height synced with network, now mine next block
 		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
 		//if (true) {
@@ -207,7 +211,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
-				//Get hashes of last shard blocks from other miners
+				//Get hashes of last shard blocks from other miners and include them in the next epoch block
 				if len(LastShardHashes) == NumberOfShards-1 && NumberOfShards != 1 {
 					epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes, LastShardHashes...)
 					LastShardHashes = nil // empty the slice
@@ -254,12 +258,10 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 				mining(epochBlock.Hash, epochBlock.Height)
 			} else {
-				if(FirstStartAfterEpoch == true){ //Indicate that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
-					mining(hashPrevBlock,heightPrevBlock)
-				}
 				mining(lastBlock.Hash, lastBlock.Height)
 			}
 		}
+		ReceivedBlocksAtHeightX = 0 // reset counter of received blocks from other shards
 	}
 }
 
@@ -280,8 +282,10 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
 	blockValidation.Unlock()
 
+	blockBeingProcessed = currentBlock
+
 	//Fill global variable transactionPayload to be broadcasted to the other shards
-	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID,nil,nil,nil,nil)
+	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID, int(currentBlock.Height),nil,nil,nil,nil)
 	TransactionPayloadOut.ContractTxData = currentBlock.ContractTxData
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
@@ -305,7 +309,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
-
+		logger.Printf("---- TX PAYLOAD ----")
 		logger.Printf(TransactionPayloadOut.StringPayload())
 
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
