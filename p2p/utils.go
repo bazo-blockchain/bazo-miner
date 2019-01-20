@@ -126,6 +126,9 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 
 	header := extractHeader(headerArr[:])
 
+	logger.Print("Header Len: %v",header.Len)
+	logger.Print("Header TypeID: %v",header.TypeID)
+
 	//Check if the type is registered in the protocol.
 	if LogMapping[header.TypeID] == "" {
 		return nil, errors.New("Header: TypeID not found.")

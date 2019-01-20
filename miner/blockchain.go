@@ -98,6 +98,9 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
+	go incomingEpochData()
+	go incomingTxPayloadData()
+	go incomingValShardData()
 
 	//Since new validators only join after the currently running epoch ends, they do no need to download the whole shardchain history,
 	//but can continue with their work after the next epoch block and directly set their state to the global state of the next epoch block
@@ -295,6 +298,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
+	logger.Printf("Sending TX Payload....")
 	broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
@@ -431,4 +435,13 @@ func removeValidator(inputSlice [][64]byte, index int) [][64]byte {
 	inputSlice[index] = inputSlice[len(inputSlice)-1]
 	inputSlice = inputSlice[:len(inputSlice)-1]
 	return inputSlice
+}
+
+func removeTxPayload(payloadSlice []*protocol.TransactionPayload, tp *protocol.TransactionPayload) []*protocol.TransactionPayload {
+	for i, v := range payloadSlice {
+		if v == tp {
+			return append(payloadSlice[:i], payloadSlice[i+1:]...)
+		}
+	}
+	return payloadSlice
 }

@@ -59,8 +59,14 @@ func finalizeBlock(block *protocol.Block) error {
 	for{
 		for _, pl := range TransactionPayloadReceived {
 			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID){
+				logger.Printf("Writing TX Payload into variable 'TransactionPayloadIn'")
 				TransactionPayloadIn = append(TransactionPayloadIn, pl)
+				removeTxPayload(TransactionPayloadReceived,pl)
 			}
+		}
+
+		if(TransactionPayloadIn != nil){
+			logger.Printf("len TransactionPayloadIn: %v",len(TransactionPayloadIn))
 		}
 
 		if(len(TransactionPayloadIn) == NumberOfShards - 1){

@@ -14,7 +14,7 @@ var (
 	TxPayloadOut = make(chan []byte)
 
 	//TX hashes of validated TXs from the network
-	TxPayloadIn = make(chan []byte)
+	TxPayloadIn = make(chan []byte, 5)
 
 	//EpochBlock from the network, to the miner
 	EpochBlockIn = make(chan []byte,2)
@@ -57,6 +57,7 @@ func forwardTXPayloadBrdcstToMiner() {
 	for {
 		txPayload := <-TxPayloadOut
 		toBrdcst := BuildPacket(TX_PAYLOAD_BRDCST, txPayload)
+		logger.Printf("Built packet from tx payload Out....")
 		minerBrdcstMsg <- toBrdcst
 	}
 }

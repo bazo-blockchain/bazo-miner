@@ -13,20 +13,33 @@ func incomingData() {
 	for {
 		block := <-p2p.BlockIn
 		processBlock(block)
+	}
+}
 
-		//check validator assignment
-		validatorMapping := <- p2p.ValidatorShardMapChanIn
-		processReceivedValidatorMapping(validatorMapping)
-
+func incomingEpochData() {
+	for {
 		//receive Epoch Block
 		epochBlock := <-p2p.EpochBlockIn
 		processEpochBlock(epochBlock)
+	}
+}
 
+func incomingValShardData() {
+	for {
+		//check validator assignment
+		validatorMapping := <- p2p.ValidatorShardMapChanIn
+		processReceivedValidatorMapping(validatorMapping)
+	}
+}
+
+func incomingTxPayloadData() {
+	for {
 		//TX payload in
 		txPayload := <- p2p.TxPayloadIn
 		processPayload(txPayload)
 	}
 }
+
 func processReceivedValidatorMapping(vm []byte) {
 	var valMapping *protocol.ValShardMapping
 	valMapping = valMapping.Decode(vm)
@@ -34,6 +47,7 @@ func processReceivedValidatorMapping(vm []byte) {
 	broadcastValidatorShardMapping(valMapping)
 }
 func processPayload(payloadByte []byte) {
+	logger.Printf("Processing TX Payload....")
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
 
@@ -115,6 +129,14 @@ func processBlock(payload []byte) {
 				//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
 				LastShardHashes = append(LastShardHashes, block.Hash)
 			}
+		} else if FirstStartAfterEpoch == true{
+			if block.Height == lastEpochBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false {
+				//count blocks received at current height
+				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+
+				//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
+				LastShardHashes = append(LastShardHashes, block.Hash)
+			}
 		}
 	}
 }
@@ -132,6 +154,7 @@ func broadcastBlock(block *protocol.Block) {
 
 /*Broadcast TX hashes to the network*/
 func broadcastTxPayload() {
+	logger.Printf("Broadcasting TX Payload....")
 	p2p.TxPayloadOut <- TransactionPayloadOut.EncodePayload()
 }
 
