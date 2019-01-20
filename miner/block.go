@@ -56,20 +56,21 @@ func finalizeBlock(block *protocol.Block) error {
 
 	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
 	Once received, update my local state and sync the global state with the other shards*/
+/*
+	for{
+		if (ReceivedBlocksAtHeightX >= NumberOfShards-1) {
+			break
+		}
+	}
+*/
 	for{
 		for _, pl := range TransactionPayloadReceived {
 			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID){
-				logger.Printf("Writing TX Payload into variable 'TransactionPayloadIn'")
 				TransactionPayloadIn = append(TransactionPayloadIn, pl)
-				removeTxPayload(TransactionPayloadReceived,pl)
 			}
 		}
 
-		if(TransactionPayloadIn != nil){
-			logger.Printf("len TransactionPayloadIn: %v",len(TransactionPayloadIn))
-		}
-
-		if(len(TransactionPayloadIn) == NumberOfShards - 1){
+		if(len(TransactionPayloadIn) >= NumberOfShards - 1){
 			err := updateGlobalState(TransactionPayloadIn)
 			if err != nil {
 				return err

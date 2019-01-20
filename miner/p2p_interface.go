@@ -40,20 +40,36 @@ func incomingTxPayloadData() {
 	}
 }
 
+func syncBlockHeight(){
+	for{
+		for _, bl := range blocksReceived{
+			if(blockBeingProcessed != nil){
+				if bl.Height == blockBeingProcessed.Height{
+					ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
+					logger.Printf("Increased ReceivedBlocksAtHeightX: %d",ReceivedBlocksAtHeightX)
+					removeBlock(blocksReceived, bl)
+				}
+			}
+		}
+	}
+}
+
 func processReceivedValidatorMapping(vm []byte) {
 	var valMapping *protocol.ValShardMapping
 	valMapping = valMapping.Decode(vm)
 	ValidatorShardMap = valMapping
-	broadcastValidatorShardMapping(valMapping)
+	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	//broadcastValidatorShardMapping(valMapping)
 }
 func processPayload(payloadByte []byte) {
-	logger.Printf("Processing TX Payload....")
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
 
-	TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
-	processedTXPayloads = append(processedTXPayloads,payload.ShardID)
-	logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+	if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
+		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
+		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+	}
 
 	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
 	/*if payload.ShardID != ThisShardID {
@@ -96,7 +112,12 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	if block.ShardId == ThisShardID {
+	logger.Printf("Incoming block hehe:")
+	logger.Printf("Incoming block Shard ID: %v",block.ShardId)
+	logger.Printf("VS my shard ID: %d",ThisShardID)
+	logger.Printf("Incoming block Height: %v",block.Height)
+
+	if block.ShardId == ThisShardID && block.Height > lastEpochBlock.Height {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -112,6 +133,7 @@ func processBlock(payload []byte) {
 			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 		}
 	} else {
+		//blocksReceived = append(blocksReceived,block) //Received blocks from other shards
 		/*if(lastBlock == nil && lastEpochBlock != nil){
 			if(block.Height == lastEpochBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false){
 				//count blocks received at current height
@@ -121,8 +143,8 @@ func processBlock(payload []byte) {
 				LastShardHashes = append(LastShardHashes, block.Hash)
 			}
 		} else */
-		if lastBlock != nil {
-			if block.Height == lastBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false {
+		/*if blockBeingProcessed != nil {
+			if block.Height == blockBeingProcessed.Height || block.Height == lastEpochBlock.Height + 1{
 				//count blocks received at current height
 				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 
@@ -130,14 +152,14 @@ func processBlock(payload []byte) {
 				LastShardHashes = append(LastShardHashes, block.Hash)
 			}
 		} else if FirstStartAfterEpoch == true{
-			if block.Height == lastEpochBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false {
+			if block.Height == lastEpochBlock.Height + 1{
 				//count blocks received at current height
 				ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
 
 				//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
 				LastShardHashes = append(LastShardHashes, block.Hash)
 			}
-		}
+		}*/
 	}
 }
 
@@ -154,7 +176,6 @@ func broadcastBlock(block *protocol.Block) {
 
 /*Broadcast TX hashes to the network*/
 func broadcastTxPayload() {
-	logger.Printf("Broadcasting TX Payload....")
 	p2p.TxPayloadOut <- TransactionPayloadOut.EncodePayload()
 }
 

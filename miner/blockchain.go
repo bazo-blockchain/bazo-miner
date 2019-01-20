@@ -101,6 +101,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	go incomingEpochData()
 	go incomingTxPayloadData()
 	go incomingValShardData()
+	//go syncBlockHeight()
 
 	//Since new validators only join after the currently running epoch ends, they do no need to download the whole shardchain history,
 	//but can continue with their work after the next epoch block and directly set their state to the global state of the next epoch block
@@ -202,15 +203,15 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	/*constantly watch global blockcount for insertion of next epoch block*/
 	for {
-		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
 		if(FirstStartAfterEpoch == true){ //Indicates that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
 			mining(hashPrevBlock,heightPrevBlock)
 		}
 
+		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
+
 		//shard height synced with network, now mine next block
-		if (ReceivedBlocksAtHeightX == NumberOfShards-1) {
-		//if (true) {
+		if (true) {
 			if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
@@ -276,10 +277,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	/*Set shard identifier in block*/
 	currentBlock.ShardId = ThisShardID
 
-	if(currentBlock.Height == 11){
-		logger.Printf("funny....")
-	}
-
 	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 	//validated with block validation, so we wait in order to not work on tx data that is already validated
@@ -291,14 +288,16 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	blockValidation.Unlock()
 
 	blockBeingProcessed = currentBlock
+	logger.Printf("blockBeingProcessed Height: %v",blockBeingProcessed.Height)
 
-	//Fill global variable transactionPayload to be broadcasted to the other shards
+	//Fill global variable TransactionPayloadOut to be broadcasted to the other shards
 	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID, int(currentBlock.Height),nil,nil,nil,nil)
 	TransactionPayloadOut.ContractTxData = currentBlock.ContractTxData
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
-	logger.Printf("Sending TX Payload....")
+	logger.Printf("---- Sending TX Payload ----")
+	logger.Printf(TransactionPayloadOut.StringPayload())
 	broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
@@ -318,8 +317,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
-		logger.Printf("---- TX PAYLOAD ----")
-		logger.Printf(TransactionPayloadOut.StringPayload())
 
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			blockDataMap := make(map[[32]byte]blockData)
@@ -437,11 +434,20 @@ func removeValidator(inputSlice [][64]byte, index int) [][64]byte {
 	return inputSlice
 }
 
-func removeTxPayload(payloadSlice []*protocol.TransactionPayload, tp *protocol.TransactionPayload) []*protocol.TransactionPayload {
-	for i, v := range payloadSlice {
+func TxPayloadCointained(payloadSlice []*protocol.TransactionPayload, tp *protocol.TransactionPayload) bool {
+	for _, v := range payloadSlice {
 		if v == tp {
-			return append(payloadSlice[:i], payloadSlice[i+1:]...)
+			return true
 		}
 	}
-	return payloadSlice
+	return false
+}
+
+func removeBlock(blockSlice []*protocol.Block, bl *protocol.Block) []*protocol.Block {
+	for i, v := range blockSlice {
+		if v == bl {
+			return append(blockSlice[:i], blockSlice[i+1:]...)
+		}
+	}
+	return blockSlice
 }
