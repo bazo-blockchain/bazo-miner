@@ -361,6 +361,8 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 		}
 
 		//TODO Optimize code (duplicated)
+		//We check if the Transaction is in the invalidOpenTX stash. When it is in there, and it is valid now, we save
+		//it into the fundsTX and continue like usual. This additional stash does lower the amount of network requests. 
 		tx = storage.ReadOpenTx(txHash)
 		txINVALID := storage.ReadINVALIDOpenTx(txHash)
 		if tx != nil {
