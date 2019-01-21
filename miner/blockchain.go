@@ -21,6 +21,7 @@ import (
 var (
 	logger                  *log.Logger
 	blockValidation         = &sync.Mutex{}
+	payloadMap	            = &sync.Mutex{}
 	parameterSlice          []Parameters
 	activeParameters        *Parameters
 	uptodate                bool
@@ -37,6 +38,7 @@ var (
 	FileConnections         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
 	TransactionPayloadReceived 	[]*protocol.TransactionPayload
+	TransactionPayloadReceivedMap 	= make(map[[32]byte]*protocol.TransactionPayload)
 	TransactionPayloadIn 	[]*protocol.TransactionPayload
 	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
 )
@@ -216,11 +218,20 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
+
 				//Get hashes of last shard blocks from other miners and include them in the next epoch block
-				if len(LastShardHashes) == NumberOfShards-1 && NumberOfShards != 1 {
-					epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes, LastShardHashes...)
-					LastShardHashes = nil // empty the slice
+				logger.Printf("Before getting lastshard hashes...")
+				for{
+					if(NumberOfShards == 1){
+						break
+					} else if(len(LastShardHashes) == NumberOfShards - 1 && NumberOfShards != 1){
+						epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes, LastShardHashes...)
+						LastShardHashes = nil // empty the slice
+						break
+					}
 				}
+
+				logger.Printf("After getting lastshard hashes...")
 
 				err := finalizeEpochBlock(epochBlock) //in case another epoch block was mined in the meantime, abort PoS here
 				if err != nil {
@@ -261,7 +272,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 				firstEpochOver = true
 
-				mining(epochBlock.Hash, epochBlock.Height)
+				mining(lastEpochBlock.Hash, lastEpochBlock.Height)
 			} else {
 				mining(lastBlock.Hash, lastBlock.Height)
 			}
@@ -272,6 +283,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
+
 	currentBlock := newBlock(hashPrevBlock, [crypto.COMM_PROOF_LENGTH]byte{}, heightPrevBlock+1)
 
 	/*Set shard identifier in block*/
@@ -296,9 +308,7 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
-	logger.Printf("---- Sending TX Payload ----")
-	logger.Printf(TransactionPayloadOut.StringPayload())
-	broadcastTxPayload()
+	//broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -307,7 +317,9 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		return
 	}
 
+	logger.Printf("---- Before finalizeBlock() ----")
 	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
+	logger.Printf("---- After finalizeBlock() ----")
 
 	if err != nil {
 		logger.Printf("%v\n", err)
@@ -317,6 +329,9 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
+		logger.Printf("---- Sending TX Payload ----")
+		logger.Printf(TransactionPayloadOut.StringPayload())
+		broadcastTxPayload()
 
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			blockDataMap := make(map[[32]byte]blockData)
@@ -344,6 +359,44 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			}
 		}
 	}
+
+	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
+	Once received, update my local state and sync the global state with the other shards*/
+	logger.Printf("Before synching TX Payloads...")
+	for{
+
+		payloadMap.Lock()
+		for _, payload := range TransactionPayloadReceivedMap {
+			if(payload.Height == int(lastBlock.Height) && payload.ShardID != ThisShardID){
+				TransactionPayloadIn = append(TransactionPayloadIn, payload)
+				logger.Printf("Writing into TransactionPayloadIn heiht: %d",payload.Height)
+				logger.Printf("Length of TransactionPayloadIn: %d",len(TransactionPayloadIn))
+			}
+		}
+		payloadMap.Unlock()
+
+		/*for _, pl := range TransactionPayloadReceived {
+			if(pl.Height == int(lastBlock.Height) && pl.ShardID != ThisShardID && TxPayloadCointained(TransactionPayloadIn,pl) == false){
+				TransactionPayloadIn = append(TransactionPayloadIn, pl)
+				logger.Printf("Writing into TransactionPayloadIn heiht: %d",pl.Height)
+				logger.Printf("Length of TransactionPayloadIn: %d",len(TransactionPayloadIn))
+			}
+		}*/
+
+		if(len(TransactionPayloadIn) == NumberOfShards - 1){
+			err := updateGlobalState(TransactionPayloadIn)
+			if err != nil {
+				return
+			}
+			break
+		}
+	}
+
+	logger.Printf("After synching TX Payloads...")
+
+	TransactionPayloadIn = nil // Empty slice
+	//TransactionPayloadReceived = nil
+
 	FirstStartAfterEpoch = false
 
 	/*for {

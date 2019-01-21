@@ -65,11 +65,22 @@ func processPayload(payloadByte []byte) {
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
 
+
+	payloadMap.Lock()
+	TransactionPayloadReceivedMap[payload.HashPayload()] = payload
+	payloadMap.Unlock()
+
 	if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
 		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
 		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
 		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
 	}
+
+	/*if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
+		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
+		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
+		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+	}*/
 
 	/*save TxPayloads from other shards and only process TxPayloads from shards which haven't been processed yet*/
 	/*if payload.ShardID != ThisShardID {
@@ -96,6 +107,8 @@ func processPayload(payloadByte []byte) {
 		}
 	}*/
 }
+
+
 func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
 	epochBlock = epochBlock.Decode(eb)
@@ -133,6 +146,13 @@ func processBlock(payload []byte) {
 			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 		}
 	} else {
+		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
+		if(lastEpochBlock != nil){
+			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length && HashSliceContains(LastShardHashes,block.Hash) == false){
+				LastShardHashes = append(LastShardHashes, block.Hash)
+				logger.Printf("Received lastshard hash for block height: %d",block.Height)
+			}
+		}
 		//blocksReceived = append(blocksReceived,block) //Received blocks from other shards
 		/*if(lastBlock == nil && lastEpochBlock != nil){
 			if(block.Height == lastEpochBlock.Height + 1 && HashSliceContains(LastShardHashes,block.Hash) == false){

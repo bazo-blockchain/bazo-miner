@@ -63,14 +63,14 @@ func finalizeBlock(block *protocol.Block) error {
 		}
 	}
 */
-	for{
+	/*for{
 		for _, pl := range TransactionPayloadReceived {
-			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID){
+			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID && TxPayloadCointained(TransactionPayloadIn,pl) == false){
 				TransactionPayloadIn = append(TransactionPayloadIn, pl)
 			}
 		}
 
-		if(len(TransactionPayloadIn) >= NumberOfShards - 1){
+		if(len(TransactionPayloadIn) == NumberOfShards - 1){
 			err := updateGlobalState(TransactionPayloadIn)
 			if err != nil {
 				return err
@@ -78,6 +78,8 @@ func finalizeBlock(block *protocol.Block) error {
 			break
 		}
 	}
+
+	TransactionPayloadIn = nil // Empty slice*/
 
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
