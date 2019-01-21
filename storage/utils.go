@@ -11,12 +11,13 @@ import (
 
 func InitLogger() *log.Logger {
 
-	performanceLogFile, err := os.OpenFile("PerformanceLoggerMiner.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//Create a Log-file (Logger.Miner.log) and write all logger.printf(...) Statements into it. 
+	LogFile, err := os.OpenFile("LoggerMiner.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 
-	wrt := io.MultiWriter(os.Stdout, performanceLogFile)
+	wrt := io.MultiWriter(os.Stdout, LogFile)
 	log.SetOutput(wrt)
 	return log.New(wrt, "INFO: ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
 }

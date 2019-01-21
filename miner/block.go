@@ -360,7 +360,6 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 			}
 		}
 
-
 		//TODO Optimize code (duplicated)
 		tx = storage.ReadOpenTx(txHash)
 		txINVALID := storage.ReadINVALIDOpenTx(txHash)

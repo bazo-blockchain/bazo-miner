@@ -52,7 +52,7 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
-
+//Checks if Tx Is in the received stash. If true, we received the transaction with a request already.
 func txAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
 	for _, txInStash := range slice {
 		if txInStash.Hash() == newTXHash {

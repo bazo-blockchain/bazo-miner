@@ -14,6 +14,7 @@ import (
 func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToValidate []*protocol.Block, err error) {
 	//Fetch all blocks that are needed to validate.
 	ancestor, newChain := getNewChain(newBlock)
+
 	//Common ancestor not found, discard block.
 	if ancestor == nil {
 		return nil, nil, errors.New("Common ancestor not found.")
@@ -59,7 +60,6 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 			newChain = InvertBlockArray(newChain)
 			return potentialAncestor, newChain
 		}
-
 
 		//It might be the case that we already started a sync and the block is in the openblock storage.
 		newBlock = storage.ReadOpenBlock(prevBlockHash)

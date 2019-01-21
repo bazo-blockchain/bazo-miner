@@ -71,7 +71,7 @@ func TestGetBlockSequences(t *testing.T) {
 	//New Blockchain of longer size: genesis <- c <- c2 <- c3
 	rollback, blocksToValidate, _ = getBlockSequences(c3)
 
-	//Rollback slice needs to include b2 and b (in that order) need to rollback until the genesis block
+	//Rollback slice needs to include b2 and b (in that order)
 	if len(rollback) != 2 ||
 		rollback[0].Hash != b2.Hash ||
 		rollback[1].Hash != b.Hash {
