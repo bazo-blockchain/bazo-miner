@@ -34,13 +34,13 @@ func Init(ipport string) {
 	peers.clientConns = make(map[*peer]bool)
 
 	//Start all services that are running concurrently
+	go peerService()
 	go broadcastService()
 	go checkHealthService()
 	go timeService()
 	go forwardBlockBrdcstToMiner()
 	go forwardBlockHeaderBrdcstToMiner()
 	go forwardVerifiedTxsToMiner()
-	go peerService()
 
 	if !IsBootstrap() {
 		bootstrap()
