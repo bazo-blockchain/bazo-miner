@@ -9,11 +9,13 @@ import (
 type ValShardMapping struct {
 	//Header
 	ValMapping        map[[64]byte]int
+	EpochHeight		  int
 }
 
 func NewMapping() *ValShardMapping {
 	newMapping := new(ValShardMapping)
 	newMapping.ValMapping = make(map[[64]byte]int)
+	newMapping.EpochHeight = 0
 	return newMapping
 }
 
@@ -25,8 +27,10 @@ func (valMapping *ValShardMapping) HashMapping() [32]byte {
 
 	mappingHash := struct {
 		ValMapping				  map[[64]byte]int
+		EpochHeight				  int
 	}{
 		valMapping.ValMapping,
+		valMapping.EpochHeight,
 	}
 	return SerializeHashContent(mappingHash)
 }
@@ -43,6 +47,7 @@ func (valMapping *ValShardMapping) Encode() []byte {
 
 	encoded := ValShardMapping{
 		ValMapping:                valMapping.ValMapping,
+		EpochHeight:			   valMapping.EpochHeight,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -63,9 +68,10 @@ func (valMapping *ValShardMapping) Decode(encoded []byte) (valMappingDecoded *Va
 }
 
 func (valMapping ValShardMapping) String() string {
-	mappingString := ""
+	mappingString := "\n"
 	for k, v := range valMapping.ValMapping {
 		mappingString += fmt.Sprintf("Entry: %x -> %v\n", k[:8],v)
 	}
+	mappingString += fmt.Sprintf("Epoch Height: %d\n", valMapping.EpochHeight)
 	return mappingString
 }

@@ -59,6 +59,8 @@ func processReceivedValidatorMapping(vm []byte) {
 	valMapping = valMapping.Decode(vm)
 	ValidatorShardMap = valMapping
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	logger.Printf("Received Validator Shard Mapping:\n")
+	logger.Printf(ValidatorShardMap.String())
 	//broadcastValidatorShardMapping(valMapping)
 }
 func processPayload(payloadByte []byte) {
