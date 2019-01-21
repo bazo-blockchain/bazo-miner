@@ -54,33 +54,6 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
-	Once received, update my local state and sync the global state with the other shards*/
-/*
-	for{
-		if (ReceivedBlocksAtHeightX >= NumberOfShards-1) {
-			break
-		}
-	}
-*/
-	/*for{
-		for _, pl := range TransactionPayloadReceived {
-			if(pl.Height == int(block.Height) && pl.ShardID != ThisShardID && TxPayloadCointained(TransactionPayloadIn,pl) == false){
-				TransactionPayloadIn = append(TransactionPayloadIn, pl)
-			}
-		}
-
-		if(len(TransactionPayloadIn) == NumberOfShards - 1){
-			err := updateGlobalState(TransactionPayloadIn)
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-
-	TransactionPayloadIn = nil // Empty slice*/
-
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
 	if err != nil {
@@ -769,15 +742,6 @@ func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*p
 	if protocol.BuildMerkleTree(block).MerkleRoot() != block.MerkleRoot {
 		return nil, nil, nil, nil, errors.New("Merkle Root is incorrect.")
 	}
-
-	/*//Merkle Partirica Tree validation
-	stateMPT, err := protocol.BuildMPT(storage.State)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if stateMPT.Hash() != block.MerklePatriciaRoot {
-		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Merkle Patricia Tree Root is incorrect: State MPT: %x - MerklePatriciaRoot: %x \n",stateMPT.Hash().Bytes()[0:8], block.MerklePatriciaRoot[0:8]))
-	}*/
 
 	return contractTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err
 }

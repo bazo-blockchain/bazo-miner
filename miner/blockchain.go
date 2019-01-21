@@ -106,7 +106,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	//go syncBlockHeight()
 
 	//Since new validators only join after the currently running epoch ends, they do no need to download the whole shardchain history,
-	//but can continue with their work after the next epoch block and directly set their state to the global state of the next epoch block
+	//but can continue with their work after the next epoch block and directly set their state to the global state of the first received epoch block
 	if(p2p.IsBootstrap()){
 		initialBlock, err = initState() //From here on, every validator should have the same state representation
 		if err != nil {
@@ -136,20 +136,6 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 				FirstStartAfterEpoch = true
 				epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
 			}
-
-			/*//Wait until the next epoch block and validator-shard mapping is broadcasted, then continue with mining
-			encodedEpochBlockToStart := <-p2p.EpochBlockIn
-			epochBlockToStart = epochBlockToStart.Decode(encodedEpochBlockToStart)
-			logger.Printf("Received first Epoch Block: %v\n", epochBlockToStart.String())
-
-			encodedValidatorMappping := <-p2p.ValidatorShardMapChanIn
-			validatorMappingToStart = validatorMappingToStart.Decode(encodedValidatorMappping)
-			logger.Printf("Received first Validaor Shard Mapping: %v\n", validatorMappingToStart.String())*/
-			/*
-			if (epochBlockToStart != nil && validatorMappingToStart != nil){
-				storage.State = epochBlockToStart.State
-				break
-			}*/
 		}
 	}
 
@@ -171,24 +157,6 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		//broadcast the generated map to the other validators
 		broadcastValidatorShardMapping(ValidatorShardMap)
 	}
-	/*else {
-		//request the mapping from bootstrapping node
-		p2p.ValidatorShardMapRequest()
-		//Blocking wait
-		select {
-		case encodedMapping := <-p2p.ValidatorShardMapReq:
-			var rvdMapping = protocol.NewMapping()
-			rvdMapping = rvdMapping.Decode(encodedMapping)
-			ValidatorShardMap = rvdMapping
-			storage.WriteValidatorMapping(ValidatorShardMap)
-			logger.Printf("Validator Shard Mapping:\n")
-			logger.Printf(rvdMapping.String())
-
-			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			return errors.New("mapping fetch timeout")
-		}
-	}*/
 
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
@@ -202,9 +170,8 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	var epochBlock *protocol.EpochBlock
-	//currentBlock := newBlock(initialBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, initialBlock.Height + 1)
 
-	/*constantly watch global blockcount for insertion of next epoch block*/
+	/*constantly watch height of the lastblock variable for insertion of next epoch block*/
 	for {
 
 		if(FirstStartAfterEpoch == true){ //Indicates that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
@@ -213,7 +180,6 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
-		//shard height synced with network, now mine next block
 		if (true) {
 			if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
@@ -287,7 +253,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				mining(lastBlock.Hash, lastBlock.Height)
 			}
 		}
-		ReceivedBlocksAtHeightX = 0 // reset counter of received blocks from other shards
+		//ReceivedBlocksAtHeightX = 0 // reset counter of received blocks from other shards
 	}
 }
 
@@ -304,8 +270,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	//validated with block validation, so we wait in order to not work on tx data that is already validated
 	//when we finish the block.
 	blockValidation.Lock()
-	//nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
-	//currentBlock = nextBlock
 	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
 	blockValidation.Unlock()
 
@@ -318,7 +282,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
-	//broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -350,7 +313,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			if (err == nil) {
 				FileConnections.WriteString(fmt.Sprintf("'EPOCH BLOCK: %x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
-				// validateState() and check for error, if not, then continue with postValidate(...)
 				if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
 					logger.Printf("ERROR in validating State of Block: %vState:\n%v", currentBlock, getState())
 					return
@@ -374,7 +336,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	Once received, update my local state and sync the global state with the other shards*/
 	logger.Printf("Before synching TX Payloads...")
 	for{
-
 		payloadMap.Lock()
 		for _, payload := range TransactionPayloadReceivedMap {
 			if(payload.Height == int(lastBlock.Height) && payload.ShardID != ThisShardID){
@@ -384,14 +345,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			}
 		}
 		payloadMap.Unlock()
-
-		/*for _, pl := range TransactionPayloadReceived {
-			if(pl.Height == int(lastBlock.Height) && pl.ShardID != ThisShardID && TxPayloadCointained(TransactionPayloadIn,pl) == false){
-				TransactionPayloadIn = append(TransactionPayloadIn, pl)
-				logger.Printf("Writing into TransactionPayloadIn heiht: %d",pl.Height)
-				logger.Printf("Length of TransactionPayloadIn: %d",len(TransactionPayloadIn))
-			}
-		}*/
 
 		if(len(TransactionPayloadIn) == NumberOfShards - 1){
 			err := updateGlobalState(TransactionPayloadIn)
@@ -405,46 +358,10 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	logger.Printf("After synching TX Payloads...")
 
 	TransactionPayloadIn = nil // Empty slice
-	//TransactionPayloadReceived = nil
+	//TODO @Kürsat: Periodically, empty the map 'TransactionPayloadReceivedMap', could rise some memory issues
 
 	FirstStartAfterEpoch = false
 
-	/*for {
-		_, err := storage.ReadAccount(validatorAccAddress)
-		if err != nil {
-			logger.Printf("%v\n", err)
-			time.Sleep(10 * time.Second)
-			continue
-		}
-
-		err = finalizeBlock(currentBlock)
-		if err != nil {
-			logger.Printf("%v\n", err)
-		} else {
-			logger.Printf("Block mined (%x)\n", currentBlock.Hash[0:8])
-		}
-
-		if err == nil {
-			broadcastBlock(currentBlock)
-			err := validate(currentBlock, false) //here, block is written to closed storage
-			if err == nil {
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
-				FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",currentBlock.PrevHash[0:15],currentBlock.Hash[0:15]))
-			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
-			}
-		}
-
-		//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
-		//that before start mining a new block we empty the mempool which contains tx data that is likely to be
-		//validated with block validation, so we wait in order to not work on tx data that is already validated
-		//when we finish the block.
-		blockValidation.Lock()
-		nextBlock := newBlock(lastBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, lastBlock.Height+1)
-		currentBlock = nextBlock
-		prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
-		blockValidation.Unlock()
-	}*/
 }
 
 func DetNumberOfShards() (numberOfShards int) {

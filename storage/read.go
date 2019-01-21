@@ -100,22 +100,6 @@ func ReadLastClosedEpochBlock() (epochBlock *protocol.EpochBlock) {
 	return epochBlock
 }
 
-/*func ReadLastClosedEpochBlock() (epochBlock *protocol.EpochBlock) {
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(CLOSEDEPOCHBLOCK_BUCKET))
-		cb := b.Cursor()
-		_, encodedBlock := cb.Last()
-		epochBlock = epochBlock.Decode(encodedBlock)
-		return nil
-	})
-
-	if epochBlock == nil {
-		return nil
-	}
-
-	return epochBlock
-}
-*/
 func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 	if nextBlock := ReadLastClosedBlock(); nextBlock != nil {
 		hasNext := true
