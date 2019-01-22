@@ -119,7 +119,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 	initialEpochBlock, err := initEpochBlock()
 	//Set the initialEpochBlock to the global variable 'lastEpochBlock'. This is needed to abort the POS for doing the validator assignment
 
-	FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
+	//FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	//Request last epoch block from the network
 	if(p2p.IsBootstrap()){
@@ -138,7 +138,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 
 	storage.State = lastEpochBlock.State
 
-	FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
+	//FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	initRootAccounts(genesis)
 	err = initClosedBlocks(lastEpochBlock)
@@ -357,7 +357,7 @@ func validateClosedBlocks() error {
 
 		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
 
-		FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
+		//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
 
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate

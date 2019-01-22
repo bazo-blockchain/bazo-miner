@@ -54,6 +54,31 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
+	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
+	Once received, update my local state and sync the global state with the other shards*/
+	logger.Printf("Before synching TX Payloads...")
+	for{
+		payloadMap.Lock()
+		for _, payload := range TransactionPayloadReceivedMap {
+			if(payload.Height == int(block.Height) && payload.ShardID != ThisShardID){
+				TransactionPayloadIn = append(TransactionPayloadIn, payload)
+				logger.Printf("Writing into TransactionPayloadIn heiht: %d",payload.Height)
+				logger.Printf("Length of TransactionPayloadIn: %d",len(TransactionPayloadIn))
+			}
+		}
+		payloadMap.Unlock()
+
+		if(len(TransactionPayloadIn) == NumberOfShards - 1){
+			err := updateGlobalState(TransactionPayloadIn)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	logger.Printf("After synching TX Payloads...")
+
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
 	if err != nil {
@@ -125,6 +150,18 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	}
 
 	partialHash := epochBlock.HashEpochBlock()
+
+	/*Determine new number of shards needed based on current state*/
+	NumberOfShards = DetNumberOfShards()
+
+	//generate new validator mapping and attach mappping to the epoch block
+	valMapping := protocol.NewMapping()
+	valMapping.ValMapping = AssignValidatorsToShards()
+	valMapping.EpochHeight = int(epochBlock.Height)
+
+	epochBlock.ValMapping = valMapping
+
+	epochBlock.State = storage.State
 
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {

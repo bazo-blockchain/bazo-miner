@@ -20,6 +20,7 @@ type EpochBlock struct {
 	MerklePatriciaRoot    [32]byte
 	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 	State				  map[[64]byte]*Account
+	ValMapping			  *ValShardMapping
 }
 
 func NewEpochBlock(prevShardHashes [][32]byte, height uint32) *EpochBlock {
@@ -44,6 +45,7 @@ func (epochBlock *EpochBlock) HashEpochBlock() [32]byte {
 		height				  		  uint32
 		commitmentProof       		  [crypto.COMM_PROOF_LENGTH]byte
 		state					      map[[64]byte]*Account
+		valmapping					  *ValShardMapping
 	}{
 		epochBlock.PrevShardHashes,
 		epochBlock.Timestamp,
@@ -52,6 +54,7 @@ func (epochBlock *EpochBlock) HashEpochBlock() [32]byte {
 		epochBlock.Height,
 		epochBlock.CommitmentProof,
 		epochBlock.State,
+		epochBlock.ValMapping,
 	}
 	return SerializeHashContent(blockHash)
 }
@@ -71,6 +74,7 @@ func (epochBlock *EpochBlock) Encode() []byte {
 		Height:                epochBlock.Height,
 		CommitmentProof:	   epochBlock.CommitmentProof,
 		State:				   epochBlock.State,
+		ValMapping:			   epochBlock.ValMapping,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -116,7 +120,8 @@ func (epochBlock EpochBlock) String() string {
 		"MerklePatriciaRoot: %x\n"+
 		"Height: %d\n"+
 		"Commitment Proof: %x\n" +
-		"State: %v\n",
+		"State: \n%v\n" +
+		"Validator Shard Mapping: %s\n",
 		epochBlock.Hash[0:8],
 		len(epochBlock.PrevShardHashes),
 		epochBlock.StringPrevHashes(),
@@ -126,6 +131,7 @@ func (epochBlock EpochBlock) String() string {
 		epochBlock.Height,
 		epochBlock.CommitmentProof[0:8],
 		epochBlock.StringState(),
+		epochBlock.ValMapping.String(),
 	)
 }
 

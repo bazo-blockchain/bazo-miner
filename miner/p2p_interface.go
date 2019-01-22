@@ -84,6 +84,8 @@ func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
 	epochBlock = epochBlock.Decode(eb)
 	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
+	ValidatorShardMap = epochBlock.ValMapping
+	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
 }
 
@@ -96,9 +98,7 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	logger.Printf("Incoming block hehe:")
-	logger.Printf("Incoming block Shard ID: %v",block.ShardId)
-	logger.Printf("VS my shard ID: %d",ThisShardID)
+	logger.Printf("Incoming block Shard ID: %v  VS my shard ID: %v",block.ShardId,ThisShardID)
 	logger.Printf("Incoming block Height: %v",block.Height)
 
 	if block.ShardId == ThisShardID && block.Height > lastEpochBlock.Height {
@@ -119,10 +119,18 @@ func processBlock(payload []byte) {
 	} else {
 		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
 		if(lastEpochBlock != nil){
-			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length && HashSliceContains(LastShardHashes,block.Hash) == false){
-				LastShardHashes = append(LastShardHashes, block.Hash)
+
+			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length){
+				lastShardMutex.Lock()
+				LastShardHashesMap[block.Hash] = block.Hash
+				lastShardMutex.Unlock()
 				logger.Printf("Received lastshard hash for block height: %d",block.Height)
 			}
+
+			/*if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length && HashSliceContains(LastShardHashes,block.Hash) == false){
+				LastShardHashes = append(LastShardHashes, block.Hash)
+				logger.Printf("Received lastshard hash for block height: %d",block.Height)
+			}*/
 		}
 	}
 }

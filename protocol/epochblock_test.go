@@ -25,7 +25,12 @@ func TestEpochBlockCreation(t *testing.T) {
 
 	height = 100
 
+	valMapping := NewMapping()
+	valMapping.ValMapping[[64]byte{'0','1','2','3'}] = 1
+	valMapping.ValMapping[[64]byte{'4','5','6','7'}] = 2
+
 	createdEpochBlock := NewEpochBlock(prevShardHashes, height)
+	createdEpochBlock.ValMapping = valMapping
 
 	if !reflect.DeepEqual(createdEpochBlock.PrevShardHashes, prevShardHashes) {
 		t.Errorf("Previous hash does not match the given one: %x vs. %x", createdEpochBlock.PrevShardHashes, prevShardHashes)
@@ -33,6 +38,10 @@ func TestEpochBlockCreation(t *testing.T) {
 
 	if !reflect.DeepEqual(createdEpochBlock.Height, height) {
 		t.Errorf("Height does not match the given one: %x vs. %x", createdEpochBlock.Height, height)
+	}
+
+	if !reflect.DeepEqual(createdEpochBlock.ValMapping, valMapping) {
+		t.Errorf("Validator Shard Mapping does not match the given one: %s vs. %s", createdEpochBlock.ValMapping.String(), valMapping.String())
 	}
 }
 
@@ -55,7 +64,12 @@ func TestEpochBlockHash(t *testing.T) {
 
 	height = 100
 
+	valMapping := NewMapping()
+	valMapping.ValMapping[[64]byte{'0','1','2','3'}] = 1
+	valMapping.ValMapping[[64]byte{'4','5','6','7'}] = 2
+
 	epochBlock := NewEpochBlock(prevShardHashes, height)
+	epochBlock.ValMapping = valMapping
 
 	hashEpoch := epochBlock.HashEpochBlock()
 
@@ -102,7 +116,9 @@ func TestEpochBlockSerialization(t *testing.T) {
 
 	stateMapping[[64]byte{'3'}] = acc3
 
-
+	valMapping := NewMapping()
+	valMapping.ValMapping[[64]byte{'0','1','2','3'}] = 1
+	valMapping.ValMapping[[64]byte{'4','5','6','7'}] = 2
 
 	var epochBlock EpochBlock
 
@@ -114,6 +130,7 @@ func TestEpochBlockSerialization(t *testing.T) {
 	epochBlock.MerklePatriciaRoot = [32]byte{'0', '1'}
 	epochBlock.Timestamp = time.Now().Unix()
 	epochBlock.State = stateMapping
+	epochBlock.ValMapping = valMapping
 
 	var compareBlock EpochBlock
 	encodedBlock := epochBlock.Encode()
