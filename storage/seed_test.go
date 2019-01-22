@@ -15,13 +15,13 @@ func TestReadWriteJson(t *testing.T) {
 	seed := createRandomSeed()
 	hashedSeed := protocol.SerializeHashContent(seed)
 
-	err := AppendNewSeed("seeds_test.json", SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+	err := AppendNewSeed(TestSeedFileName, SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 	if err != nil {
 		t.Errorf("Writing to JSON file failed.")
 	}
 
-	seedFromFile, err := GetSeed(hashedSeed, "seeds_test.json")
+	seedFromFile, err := GetSeed(hashedSeed, TestSeedFileName)
 
 	if err != nil {
 		t.Errorf("JSON Serialization failed.")

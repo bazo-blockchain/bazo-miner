@@ -2,7 +2,6 @@ package miner
 
 import (
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -38,10 +37,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 	//Initialize root key.
 	//The hashedSeed is necessary since it must be included in the initial block.
-	initRootKey()
-	if err != nil {
-		logger.Printf("Could not create a root account.\n")
-	}
+	initRootAcc()
 
 	currentTargetTime = new(timerange)
 	target = append(target, 15)
@@ -61,7 +57,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
-	currentBlock := newBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
+	currentBlock := protocol.NewBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
@@ -94,8 +90,8 @@ func mining(initialBlock *protocol.Block) {
 }
 
 //At least one root key needs to be set which is allowed to create new accounts.
-func initRootKey() ([32]byte, error) {
-	address, addressHash := storage.GetInitRootPubKey()
+func initRootAcc() {
+	address, addressHash := storage.GetInitRootAddress()
 
 	var seed [32]byte
 	copy(seed[:], storage.INIT_ROOT_SEED[:])
@@ -105,13 +101,11 @@ func initRootKey() ([32]byte, error) {
 
 	err := storage.AppendNewSeed(seedFile, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 	if err != nil {
-		return hashedSeed, errors.New(fmt.Sprintf("Error creating the seed file."))
+		logger.Printf("Error creating the seed file.")
 	}
 
 	//Balance must be greater than the staking minimum.
 	rootAcc := protocol.NewAccount(address, activeParameters.Staking_minimum, true, hashedSeed)
 	storage.State[addressHash] = &rootAcc
 	storage.RootKeys[addressHash] = &rootAcc
-
-	return hashedSeed, nil
 }

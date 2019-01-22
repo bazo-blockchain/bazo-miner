@@ -46,8 +46,8 @@ func GetRootAccount(hash [32]byte) (acc *protocol.Account, err error) {
 	return nil, err
 }
 
-func GetInitRootPubKey() (address [64]byte, addressHash [32]byte) {
-	pubKey, _ := GetPubKeyFromString(INITROOTPUBKEY1, INITROOTPUBKEY2)
+func GetInitRootAddress() (address [64]byte, addressHash [32]byte) {
+	pubKey := GetPubKeyFromString(INITROOTPUBKEY1, INITROOTPUBKEY2)
 	address = GetAddressFromPubKey(&pubKey)
 
 	return address, protocol.SerializeHashContent(address)
@@ -122,7 +122,7 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 		return pubKey, privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
-	pubKey, err = GetPubKeyFromString(strings.Split(pub1, "\n")[0], strings.Split(pub2, "\n")[0])
+	pubKey = GetPubKeyFromString(strings.Split(pub1, "\n")[0], strings.Split(pub2, "\n")[0])
 	if err != nil {
 		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
 	}
@@ -143,26 +143,6 @@ func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	return pubKey, privKey, nil
 }
 
-func ReadFile(filename string) (lines []string) {
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return lines
-}
-
 func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
 	copy(address[:32], pubKey.X.Bytes())
 	copy(address[32:], pubKey.Y.Bytes())
@@ -170,11 +150,12 @@ func GetAddressFromPubKey(pubKey *ecdsa.PublicKey) (address [64]byte) {
 	return address
 }
 
-func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey, err error) {
+func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey) {
 	pub1Int, b := new(big.Int).SetString(pub1, 16)
 	pub2Int, b := new(big.Int).SetString(pub2, 16)
 	if !b {
-		return pubKey, errors.New("Failed to convert the key strings to big.Int.")
+		logger.Print("Failed to convert the key strings to big.Int.")
+		return pubKey
 	}
 
 	pubKey = ecdsa.PublicKey{
@@ -183,5 +164,5 @@ func GetPubKeyFromString(pub1, pub2 string) (pubKey ecdsa.PublicKey, err error) 
 		pub2Int,
 	}
 
-	return pubKey, nil
+	return pubKey
 }

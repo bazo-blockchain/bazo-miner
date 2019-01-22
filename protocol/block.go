@@ -2,16 +2,14 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"github.com/willf/bloom"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
 	HASH_LEN                = 32
 	MIN_BLOCKSIZE           = 318
-	MIN_BLOCKHEADER_SIZE    = 104
 	BLOOM_FILTER_ERROR_RATE = 0.1
 )
 
@@ -46,12 +44,25 @@ type Block struct {
 	StakeTxData  [][32]byte
 }
 
-//Just Hash() conflicts with struct field
-func (b *Block) HashBlock() (hash [32]byte) {
+func NewBlock(prevHash [32]byte, seed [32]byte, hashedSeed [32]byte, height uint32) *Block {
+	newBlock := Block{
+		PrevHash:   prevHash,
+		Seed:       seed,
+		HashedSeed: hashedSeed,
+		Height:     height,
+	}
 
-	var buf bytes.Buffer
+	newBlock.StateCopy = make(map[[32]byte]*Account)
 
-	blockToHash := struct {
+	return &newBlock
+}
+
+func (block *Block) HashBlock() [32]byte {
+	if block == nil {
+		return [32]byte{}
+	}
+
+	blockHash := struct {
 		prevHash              [32]byte
 		timestamp             int64
 		merkleRoot            [32]byte
@@ -62,19 +73,18 @@ func (b *Block) HashBlock() (hash [32]byte) {
 		conflictingBlockHash1 [32]byte
 		conflictingBlockHash2 [32]byte
 	}{
-		b.PrevHash,
-		b.Timestamp,
-		b.MerkleRoot,
-		b.Beneficiary,
-		b.HashedSeed,
-		b.Seed,
-		b.SlashedAddress,
-		b.ConflictingBlockHash1,
-		b.ConflictingBlockHash2,
+		block.PrevHash,
+		block.Timestamp,
+		block.MerkleRoot,
+		block.Beneficiary,
+		block.HashedSeed,
+		block.Seed,
+		block.SlashedAddress,
+		block.ConflictingBlockHash1,
+		block.ConflictingBlockHash2,
 	}
 
-	binary.Write(&buf, binary.BigEndian, blockToHash)
-	return sha3.Sum256(buf.Bytes())
+	return SerializeHashContent(blockHash)
 }
 
 func (b *Block) InitBloomFilter(txPubKeys [][32]byte) {
@@ -105,255 +115,70 @@ func (b *Block) GetSize() uint64 {
 	return uint64(size)
 }
 
-func (b *Block) GetHeaderSize() uint64 {
-	size := MIN_BLOCKHEADER_SIZE
-
-	if b.BloomFilter != nil {
-		encodedBF, _ := b.BloomFilter.GobEncode()
-		size += len(encodedBF)
-	}
-
-	return uint64(size)
-}
-
-func (b *Block) Encode() (encodedBlock []byte) {
+func (b *Block) Encode() []byte {
 	if b == nil {
 		return nil
 	}
 
-	//Making byte array of all non-byte data
-	var timeStamp [8]byte
-	var nrFundsTx, nrAccTx, nrStakeTx, nrElementsBF [2]byte
-	var height [4]byte
+	encoded := Block{
+		Header:                b.Header,
+		Hash:                  b.Hash,
+		PrevHash:              b.PrevHash,
+		Nonce:                 b.Nonce,
+		Timestamp:             b.Timestamp,
+		MerkleRoot:            b.MerkleRoot,
+		Beneficiary:           b.Beneficiary,
+		NrAccTx:               b.NrAccTx,
+		NrFundsTx:             b.NrFundsTx,
+		NrConfigTx:            b.NrConfigTx,
+		NrStakeTx:             b.NrStakeTx,
+		NrElementsBF:          b.NrElementsBF,
+		BloomFilter:           b.BloomFilter,
+		SlashedAddress:        b.SlashedAddress,
+		Seed:                  b.Seed,
+		Height:                b.Height,
+		HashedSeed:            b.HashedSeed,
+		ConflictingBlockHash1: b.ConflictingBlockHash1,
+		ConflictingBlockHash2: b.ConflictingBlockHash2,
 
-	binary.BigEndian.PutUint64(timeStamp[:], uint64(b.Timestamp))
-	binary.BigEndian.PutUint16(nrFundsTx[:], b.NrFundsTx)
-	binary.BigEndian.PutUint16(nrAccTx[:], b.NrAccTx)
-	binary.BigEndian.PutUint16(nrStakeTx[:], b.NrStakeTx)
-	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
-	binary.BigEndian.PutUint32(height[:], b.Height)
-
-	//Allocate memory
-	encodedBlock = make([]byte, b.GetSize())
-
-	encodedBlock[0] = b.Header
-	copy(encodedBlock[1:33], b.Hash[:])
-	copy(encodedBlock[33:65], b.PrevHash[:])
-	copy(encodedBlock[65:73], b.Nonce[:])
-	copy(encodedBlock[73:81], timeStamp[:])
-	copy(encodedBlock[81:113], b.MerkleRoot[:])
-	copy(encodedBlock[113:145], b.Beneficiary[:])
-	copy(encodedBlock[145:147], nrFundsTx[:])
-	copy(encodedBlock[147:149], nrAccTx[:])
-	encodedBlock[149] = byte(b.NrConfigTx)
-	copy(encodedBlock[150:152], nrStakeTx[:])
-	copy(encodedBlock[152:184], b.SlashedAddress[:])
-	copy(encodedBlock[184:186], nrElementsBF[:])
-
-	index := 186
-
-	if b.BloomFilter != nil {
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Serialize BloomFilter
-		copy(encodedBlock[index:index+encodedBFSize], encodedBF)
-		index += encodedBFSize
+		AccTxData:    b.AccTxData,
+		FundsTxData:  b.FundsTxData,
+		ConfigTxData: b.ConfigTxData,
+		StakeTxData:  b.StakeTxData,
 	}
 
-	copy(encodedBlock[index:index+HASH_LEN], b.Seed[:])
-	index += HASH_LEN
-	copy(encodedBlock[index:index+4], height[:])
-	index += 4
-	copy(encodedBlock[index:index+HASH_LEN], b.HashedSeed[:])
-	index += HASH_LEN
-	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash1[:])
-	index += HASH_LEN
-	copy(encodedBlock[index:index+HASH_LEN], b.ConflictingBlockHash2[:])
-	index += HASH_LEN
-
-	//Serialize all tx hashes
-	for _, txHash := range b.FundsTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
-	}
-
-	for _, txHash := range b.AccTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
-	}
-
-	for _, txHash := range b.ConfigTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
-	}
-
-	for _, txHash := range b.StakeTxData {
-		copy(encodedBlock[index:index+HASH_LEN], txHash[:])
-		index += HASH_LEN
-	}
-
-	return encodedBlock
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encoded)
+	return buffer.Bytes()
 }
 
-func (b *Block) EncodeHeader() (encodedHeader []byte) {
+func (b *Block) EncodeHeader() []byte {
 	if b == nil {
 		return nil
 	}
 
-	//Making byte array of all non-byte data
-	var nrElementsBF [2]byte
-	var height [4]byte
-
-	binary.BigEndian.PutUint16(nrElementsBF[:], b.NrElementsBF)
-	binary.BigEndian.PutUint32(height[:], b.Height)
-
-	//Allocate memory
-	encodedHeader = make([]byte, b.GetHeaderSize())
-
-	encodedHeader[0] = b.Header
-	copy(encodedHeader[1:33], b.Hash[:])
-	copy(encodedHeader[33:65], b.PrevHash[:])
-	encodedHeader[65] = byte(b.NrConfigTx)
-	copy(encodedHeader[66:68], nrElementsBF[:])
-	copy(encodedHeader[68:72], height[:])
-	copy(encodedHeader[72:104], b.Beneficiary[:])
-
-	index := MIN_BLOCKHEADER_SIZE
-
-	if b.BloomFilter != nil {
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Serialize BloomFilter
-		copy(encodedHeader[index:index+encodedBFSize], encodedBF)
-		index += encodedBFSize
+	encoded := Block{
+		Header:       b.Header,
+		Hash:         b.Hash,
+		PrevHash:     b.PrevHash,
+		NrConfigTx:   b.NrConfigTx,
+		NrElementsBF: b.NrElementsBF,
+		BloomFilter:  b.BloomFilter,
+		Height:       b.Height,
+		Beneficiary:  b.Beneficiary,
 	}
 
-	return encodedHeader
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encoded)
+	return buffer.Bytes()
 }
 
-func (*Block) Decode(encodedBlock []byte) (b *Block) {
-	b = new(Block)
-
-	if len(encodedBlock) < MIN_BLOCKSIZE {
-		return nil
-	}
-
-	timeStampTmp := binary.BigEndian.Uint64(encodedBlock[73:81])
-	timeStamp := int64(timeStampTmp)
-
-	b.Header = encodedBlock[0]
-	copy(b.Hash[:], encodedBlock[1:33])
-	copy(b.PrevHash[:], encodedBlock[33:65])
-	copy(b.Nonce[:], encodedBlock[65:73])
-	b.Timestamp = timeStamp
-	copy(b.MerkleRoot[:], encodedBlock[81:113])
-	copy(b.Beneficiary[:], encodedBlock[113:145])
-	b.NrFundsTx = binary.BigEndian.Uint16(encodedBlock[145:147])
-	b.NrAccTx = binary.BigEndian.Uint16(encodedBlock[147:149])
-	b.NrConfigTx = uint8(encodedBlock[149])
-	b.NrStakeTx = binary.BigEndian.Uint16(encodedBlock[150:152])
-	copy(b.SlashedAddress[:], encodedBlock[152:184])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedBlock[184:186])
-
-	index := 186
-
-	if b.NrElementsBF > 0 {
-		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
-
-		//Initialize BloomFilter
-		b.BloomFilter = bloom.New(m, k)
-
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedBlock[index : index+encodedBFSize])
-		index += encodedBFSize
-	}
-
-	copy(b.Seed[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-	b.Height = binary.BigEndian.Uint32(encodedBlock[index : index+4])
-	index += 4
-	copy(b.HashedSeed[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-	copy(b.ConflictingBlockHash1[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-	copy(b.ConflictingBlockHash2[:], encodedBlock[index:index+HASH_LEN])
-	index += HASH_LEN
-
-	//Deserialize all tx hashes
-	var hash [32]byte
-	for cnt := 0; cnt < int(b.NrFundsTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
-		b.FundsTxData = append(b.FundsTxData, hash)
-		index += HASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrAccTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
-		b.AccTxData = append(b.AccTxData, hash)
-		index += HASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrConfigTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
-		b.ConfigTxData = append(b.ConfigTxData, hash)
-		index += HASH_LEN
-	}
-
-	for cnt := 0; cnt < int(b.NrStakeTx); cnt++ {
-		copy(hash[:], encodedBlock[index:index+HASH_LEN])
-		b.StakeTxData = append(b.StakeTxData, hash)
-		index += HASH_LEN
-	}
-
-	return b
-}
-
-func (*Block) DecodeHeader(encodedHeader []byte) (b *Block) {
-
-	b = new(Block)
-
-	if len(encodedHeader) < MIN_BLOCKHEADER_SIZE {
-		return nil
-	}
-
-	b.Header = encodedHeader[0]
-	copy(b.Hash[:], encodedHeader[1:33])
-	copy(b.PrevHash[:], encodedHeader[33:65])
-	b.NrConfigTx = uint8(encodedHeader[65])
-	b.NrElementsBF = binary.BigEndian.Uint16(encodedHeader[66:68])
-	b.Height = binary.BigEndian.Uint32(encodedHeader[68:72])
-	copy(b.Beneficiary[:], encodedHeader[72:104])
-
-	index := MIN_BLOCKHEADER_SIZE
-
-	if b.NrElementsBF > 0 {
-		m, k := calculateBloomFilterParams(float64(b.NrElementsBF), BLOOM_FILTER_ERROR_RATE)
-
-		//Initialize BloomFilter
-		b.BloomFilter = bloom.New(m, k)
-
-		//Encode BloomFilter
-		encodedBF, _ := b.BloomFilter.GobEncode()
-
-		encodedBFSize := len(encodedBF)
-
-		//Deserialize BloomFilter
-		b.BloomFilter.GobDecode(encodedHeader[index : index+encodedBFSize])
-		index += encodedBFSize
-	}
-
-	return b
+func (*Block) Decode(encoded []byte) (b *Block) {
+	var decoded Block
+	buffer := bytes.NewBuffer(encoded)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
 }
 
 func (b Block) String() string {
@@ -370,9 +195,9 @@ func (b Block) String() string {
 		"Seed: %x\n"+
 		"Height: %d\n"+
 		"Hashed Seed: %x\n"+
-		"Slashed Address:%x\n"+
-		"Conflicted Block Hash 1:%x\n"+
-		"Conflicted Block Hash 2:%x\n",
+		"Slashed Address: %x\n"+
+		"Conflicted Block Hash 1: %x\n"+
+		"Conflicted Block Hash 2: %x\n",
 		b.Hash[0:8],
 		b.PrevHash[0:8],
 		b.Nonce,

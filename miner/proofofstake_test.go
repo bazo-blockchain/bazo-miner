@@ -40,68 +40,76 @@ func TestProofOfStake(t *testing.T) {
 }
 
 func TestGetLatestSeeds(t *testing.T) {
-	cleanAndPrepare()
-
-	var seeds [][32]byte
+	var testSeeds [][32]byte
 	var genesisSeedSlice [32]byte
 	copy(genesisSeedSlice[:], storage.GENESIS_SEED)
-	seeds = Prepend(seeds, genesisSeedSlice)
-	//Initially we expect only the genesis seed
 
-	b := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
+	b0 := newBlock([32]byte{}, genesisSeedSlice, storage.SerializeHashContent(genesisSeedSlice), 1)
+	finalizeBlock(b0)
+	validate(b0, false)
+	testSeeds = Prepend(testSeeds, genesisSeedSlice)
 
-	prevSeeds := GetLatestSeeds(1, b)
-
-	if !reflect.DeepEqual(prevSeeds[0], genesisSeedSlice) {
-		t.Error("Could not retrieve the genesis seed.", prevSeeds[0], genesisSeedSlice)
-	}
-	if !reflect.DeepEqual(1, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (all seeds).", 1, len(prevSeeds))
-	}
-
-	//Two new blocks are added with random seeds
-	b1 := newBlock([32]byte{}, [32]byte{}, [32]byte{}, 1)
-	if err := finalizeBlock(b1); err != nil {
-		t.Error("Error finalizing b1", err)
-	}
-	seeds = Prepend(seeds, b1.Seed)
+	b1 := newBlock(b0.Hash, [32]byte{}, [32]byte{}, b0.Height+1)
+	finalizeBlock(b1)
 	validate(b1, false)
+	testSeeds = Prepend(testSeeds, b1.Seed)
 
 	b2 := newBlock(b1.Hash, [32]byte{}, [32]byte{}, b1.Height+1)
-	if err := finalizeBlock(b2); err != nil {
-		t.Error("Error finalizing b2", err)
-	}
+	finalizeBlock(b2)
 	validate(b2, false)
-	seeds = Prepend(seeds, b2.Seed)
+	testSeeds = Prepend(testSeeds, b2.Seed)
 
 	b3 := newBlock(b2.Hash, [32]byte{}, [32]byte{}, b2.Height+1)
+	finalizeBlock(b3)
+	validate(b3, false)
+	testSeeds = Prepend(testSeeds, b3.Seed)
 
-	prevSeeds = GetLatestSeeds(3, b3)
+	prevSeeds := GetLatestSeeds(0, b3)
 
-	//Two new blocks are added with random seeds
-	if !reflect.DeepEqual(prevSeeds, seeds) {
-		t.Errorf("Could not retrieve previous seeds correctly (all seeds).\n%v\n%v", prevSeeds, seeds)
+	if !reflect.DeepEqual(len(prevSeeds), 0) {
+		t.Errorf("Could not retrieve the correct amount of previous seeds: %v vs. %v", len(prevSeeds), 0)
 	}
-	if !reflect.DeepEqual(3, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (all seeds).", 3, len(prevSeeds))
+
+	prevSeeds = GetLatestSeeds(1, b3)
+
+	if !reflect.DeepEqual(len(prevSeeds), 1) {
+		t.Errorf("Could not retrieve the correct amount of previous seeds: %v vs. %v", len(prevSeeds), 1)
+	}
+	if !reflect.DeepEqual(prevSeeds[len(prevSeeds)-1], b3.Seed) {
+		t.Errorf("Could not retrieve the b3 seed: %x vs. %x", prevSeeds[len(prevSeeds)-1], b3.Seed)
 	}
 
 	prevSeeds = GetLatestSeeds(2, b3)
 
-	if !reflect.DeepEqual(prevSeeds, seeds[0:2]) {
-		t.Error("Could not retrieve previous seeds correctly (n < block height).", prevSeeds, seeds[0:2])
+	if !reflect.DeepEqual(len(prevSeeds), 2) {
+		t.Errorf("Could not retrieve the correct amount of previous seeds: %v vs. %v", len(prevSeeds), 2)
 	}
-	if !reflect.DeepEqual(2, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds  (n < block height).", 2, len(prevSeeds))
+	if !reflect.DeepEqual(prevSeeds[len(prevSeeds)-2], b2.Seed) {
+		t.Errorf("Could not retrieve the b2 seed: %x vs. %x", prevSeeds[len(prevSeeds)-2], b2.Seed)
 	}
 
-	//5 seeds are expected since only 5 blocks are in the blockchain
+	prevSeeds = GetLatestSeeds(3, b3)
+
+	if !reflect.DeepEqual(len(prevSeeds), 3) {
+		t.Errorf("Could not retrieve the correct amount of previous seeds: %v vs. %v", len(prevSeeds), 3)
+	}
+	if !reflect.DeepEqual(prevSeeds[len(prevSeeds)-3], b1.Seed) {
+		t.Errorf("Could not retrieve the b1 seed: %x vs. %x", prevSeeds[len(prevSeeds)-3], b1.Seed)
+	}
+
+	prevSeeds = GetLatestSeeds(4, b3)
+
+	if !reflect.DeepEqual(len(prevSeeds), 4) {
+		t.Errorf("Could not retrieve the correct amount of previous seeds: %v vs. %v", len(prevSeeds), 4)
+	}
+	if !reflect.DeepEqual(prevSeeds[len(prevSeeds)-4], b0.Seed) {
+		t.Errorf("Could not retrieve the b0 seed: %x vs. %x", prevSeeds[len(prevSeeds)-4], b0.Seed)
+	}
+
+	// Overflow
 	prevSeeds = GetLatestSeeds(5, b3)
 
-	if !reflect.DeepEqual(prevSeeds, seeds[0:3]) {
-		t.Errorf("Could not retrieve previous seeds correctly (all seeds).\n%x\n%x", prevSeeds, seeds[0:3])
-	}
-	if !reflect.DeepEqual(3, len(prevSeeds)) {
-		t.Error("Could not retrieve the correct amount of previous seeds (n > block height).", 3, len(prevSeeds))
+	if !reflect.DeepEqual(len(prevSeeds), 4) {
+		t.Errorf("Retrieving more than %v previous seeds should not be possible", len(prevSeeds))
 	}
 }

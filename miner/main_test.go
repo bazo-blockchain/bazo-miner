@@ -46,7 +46,7 @@ const (
 var (
 	accA, accB, validatorAcc, multiSigAcc, rootAcc         *protocol.Account
 	PrivKeyAccA, PrivKeyAccB, PrivKeyMultiSig, PrivKeyRoot ecdsa.PrivateKey
-	genesisBlock *protocol.Block
+	genesisBlock                                           *protocol.Block
 )
 
 //Create some accounts that are used by the tests
@@ -88,7 +88,7 @@ func addTestingAccounts() {
 	hashAccB := protocol.SerializeHashContent(accB.Address)
 
 	privMultiSig, _ := new(big.Int).SetString(MultiSigPriv, 16)
-	pubKeyMultiSig, _ := storage.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
+	pubKeyMultiSig := storage.GetPubKeyFromString(MultiSigPub1, MultiSigPub2)
 	PrivKeyMultiSig = ecdsa.PrivateKey{
 		pubKeyMultiSig,
 		privMultiSig,
@@ -157,7 +157,6 @@ func addRootAccounts() {
 	//Create and store an initial seed for the root account.
 	seed := protocol.CreateRandomSeed()
 	hashedSeed = protocol.SerializeHashContent(seed)
-	storage.AppendNewSeed(TestSeedFileName, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 	rootAcc.HashedSeed = hashedSeed
 	rootAcc.Balance = activeParameters.Staking_minimum
@@ -232,8 +231,7 @@ func TestMain(m *testing.M) {
 	p2p.Init(TestIpPort)
 
 	cleanAndPrepare()
-	addTestingAccounts()
-	addRootAccounts()
+
 	//We don't want logging msgs when testing, we have designated messages
 	logger = log.New(nil, "", 0)
 	logger.SetOutput(ioutil.Discard)
@@ -242,5 +240,7 @@ func TestMain(m *testing.M) {
 	//Teardown
 	storage.TearDown()
 	os.Remove(TestDBFileName)
+	os.Remove(TestKeyFileName)
+	os.Remove(TestSeedFileName)
 	os.Exit(retCode)
 }

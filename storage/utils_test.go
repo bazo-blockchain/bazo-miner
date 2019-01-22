@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -54,5 +56,38 @@ func TestGetRootAccount(t *testing.T) {
 
 	if root != nil {
 		t.Errorf("Error fetching account from state: %x\n", nilHash)
+	}
+}
+
+func TestGetFundsTxPubKeys(t *testing.T) {
+
+}
+
+func TestExtractKeyFromFile(t *testing.T) {
+	pubKey, privKey, _ := ExtractKeyFromFile(TestKeyFileName)
+	expectedPubKey := GetPubKeyFromString(PubRoot1, PubRoot2)
+	privInt, _ := new(big.Int).SetString(strings.Split(PrivRoot, "\n")[0], 16)
+
+	if !reflect.DeepEqual(pubKey, expectedPubKey) {
+		t.Errorf("Extracting public key from file %v failed: %v%v vs. %v%v\n", TestKeyFileName, pubKey.X, pubKey.Y, expectedPubKey.X, expectedPubKey.Y)
+	}
+	if !reflect.DeepEqual(privKey.D, privInt) {
+		t.Errorf("Extracting private key from file %v failed: %v vs. %v\n", TestKeyFileName, privKey.D, privInt)
+	}
+
+}
+
+func TestGetInitRootAddress(t *testing.T) {
+	address, addressHash := GetInitRootAddress()
+	pubKey := GetPubKeyFromString(INITROOTPUBKEY1, INITROOTPUBKEY2)
+	expected := GetAddressFromPubKey(&pubKey)
+	expectedHash := SerializeHashContent(expected)
+
+	if !reflect.DeepEqual(address, expected) {
+		t.Errorf("Getting address for init root failed: %x vs. %x\n", address, expected)
+	}
+
+	if !reflect.DeepEqual(addressHash, expectedHash) {
+		t.Errorf("Getting addressHash for init root failed: %x vs. %x\n", addressHash, expected)
 	}
 }

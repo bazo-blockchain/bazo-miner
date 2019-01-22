@@ -142,17 +142,12 @@ func proofOfStake(diff uint8, prevHash [32]byte, prevSeeds [][32]byte, height ui
 	return timestamp, nil
 }
 
-func GetLatestSeeds(n int, block *protocol.Block) (prevSeeds [][32]byte) {
-	b := storage.ReadClosedBlock(block.PrevHash)
-	cnt := 0
-	for n > 0 {
-		prevSeeds = append(prevSeeds, b.Seed)
+func GetLatestSeeds(n int, block *protocol.Block) [][32]byte {
+	var prevSeeds [][32]byte
+	for block.Height > 0 && n > 0 {
+		block = storage.ReadClosedBlock(block.PrevHash)
+		prevSeeds = append(prevSeeds, block.Seed)
 		n -= 1
-		cnt += 1
-		if b.Height == 0 {
-			return prevSeeds
-		}
-		b = storage.ReadClosedBlock(b.PrevHash)
 	}
 	return prevSeeds
 }
