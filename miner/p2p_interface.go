@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -61,22 +62,27 @@ func processReceivedValidatorMapping(vm []byte) {
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	logger.Printf("Received Validator Shard Mapping:\n")
 	logger.Printf(ValidatorShardMap.String())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Received Validator Shard Mapping:\n"))
+	FileConnectionsLog.WriteString(fmt.Sprintf(ValidatorShardMap.String()+"\n"))
 	//broadcastValidatorShardMapping(valMapping)
 }
 func processPayload(payloadByte []byte) {
 	var payload *protocol.TransactionPayload
 	payload = payload.DecodePayload(payloadByte)
 
-
 	payloadMap.Lock()
 	TransactionPayloadReceivedMap[payload.HashPayload()] = payload
+	logger.Printf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID)
+	FileConnectionsLog.WriteString(fmt.Sprintf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID))
 	payloadMap.Unlock()
 
-	if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
+	/*if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
 		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
 		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
-		logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
-	}
+		//logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
+		logger.Printf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID)
+		FileConnectionsLog.WriteString(fmt.Sprintf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID))
+	}*/
 }
 
 
@@ -84,9 +90,11 @@ func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
 	epochBlock = epochBlock.Decode(eb)
 	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Received Epoch Block: %v\n", epochBlock.String()))
 	ValidatorShardMap = epochBlock.ValMapping
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
+	broadcastEpochBlock(lastEpochBlock)
 }
 
 /*func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
@@ -98,23 +106,26 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	logger.Printf("Incoming block Shard ID: %v  VS my shard ID: %v",block.ShardId,ThisShardID)
-	logger.Printf("Incoming block Height: %v",block.Height)
+	logger.Printf("Incoming block Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Incoming block Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
 
 	if block.ShardId == ThisShardID && block.Height > lastEpochBlock.Height {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
+			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) has already been validated.\n", block.Hash[0:8]))
 			return
 		}
 
 		//Start validation process
 		err := validate(block, false)
 		if err == nil {
-			logger.Printf("Validated block: %vState:\n%v", block, getState())
+			logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+			FileConnectionsLog.WriteString(fmt.Sprintf("Received Validated block: %vState:\n%v\n", block, getState()))
 			broadcastBlock(block)
 		} else {
 			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err))
 		}
 	} else {
 		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
@@ -124,7 +135,8 @@ func processBlock(payload []byte) {
 				lastShardMutex.Lock()
 				LastShardHashesMap[block.Hash] = block.Hash
 				lastShardMutex.Unlock()
-				logger.Printf("Received lastshard hash for block height: %d",block.Height)
+				logger.Printf("Received lastshard hash for block height: %d\n",block.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Received lastshard hash for block height: %d\n",block.Height))
 			}
 
 			/*if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length && HashSliceContains(LastShardHashes,block.Hash) == false){

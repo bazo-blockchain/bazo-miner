@@ -1,17 +1,22 @@
 package p2p
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
+	"os"
+	"strings"
 )
 
 var (
 	LogMapping map[uint8]string
 	logger     *log.Logger
+	FileConnectionsLog         *os.File
 )
 
 func InitLogging() {
 	logger = storage.InitLogger()
+	FileConnectionsLog, _ = os.OpenFile(fmt.Sprintf("hlog-for-%v.txt",strings.Split(Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	//Instead of logging just the integer, we log the corresponding semantic meaning, makes scrolling through
 	//the log file more comfortable

@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -51,15 +52,18 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 
 	if storage.ReadOpenTx(tx.Hash()) != nil {
 		logger.Printf("Received transaction (%x) already in the mempool.\n", tx.Hash())
+		FileConnectionsLog.WriteString(fmt.Sprintf("Received transaction (%x) already in the mempool.\n", tx.Hash()))
 		return
 	}
 	if storage.ReadClosedTx(tx.Hash()) != nil {
 		logger.Printf("Received transaction (%x) already validated.\n", tx.Hash())
+		FileConnectionsLog.WriteString(fmt.Sprintf("Received transaction (%x) already validated.\n", tx.Hash()))
 		return
 	}
 
 	//Write to mempool and rebroadcast
 	logger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction (%x) in the mempool.\n", tx.Hash()))
 	storage.WriteOpenTx(tx)
 	toBrdcst := BuildPacket(brdcstType, payload)
 	minerBrdcstMsg <- toBrdcst
@@ -82,6 +86,7 @@ func processNeighborRes(p *peer, payload []byte) {
 
 	for _, ipportIter := range ipportList {
 		logger.Printf("IP/Port received: %v\n", ipportIter)
+		FileConnectionsLog.WriteString(fmt.Sprintf("IP/Port received: %v\n", ipportIter))
 		//iplistChan is a buffered channel to handle ips asynchronously.
 		iplistChan <- ipportIter
 	}

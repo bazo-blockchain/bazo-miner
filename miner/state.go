@@ -173,6 +173,7 @@ func initGenesis() (genesis *protocol.Genesis, err error) {
 		case encodedGenesis := <-p2p.GenesisReqChan:
 			genesis = genesis.Decode(encodedGenesis)
 			logger.Printf("Received genesis: %v", genesis.String())
+			FileConnectionsLog.WriteString(fmt.Sprintf("Received genesis: %v", genesis.String()))
 		case <-time.After(GENESISFETCH_TIMEOUT * time.Second):
 			return nil, errors.New("genesis fetch timeout")
 		}
@@ -193,7 +194,8 @@ func initEpochBlock() (initialEpochBlock *protocol.EpochBlock, err error) {
 		select {
 		case encodedFirstEpochBlock := <-p2p.FirstEpochBlockReqChan:
 			initialEpochBlock = initialEpochBlock.Decode(encodedFirstEpochBlock)
-			logger.Printf("Received first Epoch Block: %v", initialEpochBlock.String())
+			logger.Printf("Received first Epoch Block: %v\n", initialEpochBlock.String())
+			FileConnectionsLog.WriteString(fmt.Sprintf("Received first Epoch Block: %v\n", initialEpochBlock.String()))
 		case <-time.After(EPOCHBLOCKFETCH_TIMEOUT* time.Second):
 			return nil, errors.New("epoch block fetch timeout")
 		}
@@ -216,7 +218,8 @@ func getLastEpochBlock() (lastEpochBlock *protocol.EpochBlock, err error) {
 	select {
 	case encodedLastEpochBlock := <-p2p.LastEpochBlockReqChan:
 		eb = eb.Decode(encodedLastEpochBlock)
-		logger.Printf("Received last Epoch Block: %v", eb.String())
+		logger.Printf("Received last Epoch Block: %v\n", eb.String())
+		FileConnectionsLog.WriteString(fmt.Sprintf("Received last Epoch Block: %v\n", eb.String()))
 	case <-time.After(EPOCHBLOCKFETCH_TIMEOUT* time.Second):
 		return nil, errors.New("epoch block fetch timeout")
 	}
@@ -356,14 +359,15 @@ func validateClosedBlocks() error {
 		}
 
 		logger.Printf("Validated block with height %v\n", blockToValidate.Height)
-
+		FileConnectionsLog.WriteString(fmt.Sprintf("Validated block with height %v\n", blockToValidate.Height))
 		//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n",blockToValidate.PrevHash[0:15],blockToValidate.Hash[0:15]))
 
 		//Set the last validated block as the lastBlock
 		lastBlock = blockToValidate
 	}
 
-	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
+	logger.Printf("%v block(s) validated. Chain good to go.\n", len(storage.AllClosedBlocksAsc))
+	FileConnectionsLog.WriteString(fmt.Sprintf("%v block(s) validated. Chain good to go.\n", len(storage.AllClosedBlocksAsc)))
 	//file.Close()
 	return nil
 }
@@ -466,7 +470,8 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 		newParameters.BlockHash = blockHash
 		parameterSlice = append(parameterSlice, newParameters)
 		activeParameters = &parameterSlice[len(parameterSlice)-1]
-		logger.Printf("Config parameters changed. New configuration: %v", *activeParameters)
+		logger.Printf("Config parameters changed. New configuration: %v\n", *activeParameters)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Config parameters changed. New configuration: %v\n", *activeParameters))
 	}
 }
 

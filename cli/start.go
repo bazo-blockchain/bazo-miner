@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"os"
 
@@ -89,7 +90,17 @@ func Start(args *startArgs) error {
 	storage.Init(args.dataDirectory+"/" + database, args.bootstrapNodeAddress)
 	p2p.Init(args.myNodeAddress)
 
-	validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
+	var validatorPubKey *ecdsa.PublicKey
+	var err error
+
+	if(p2p.IsBootstrap()){
+		validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
+	} else {
+		validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
+	}
+
+	//validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
+	//validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
 	if err != nil {
 		return err
 	}

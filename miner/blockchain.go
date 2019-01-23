@@ -37,7 +37,8 @@ var (
 	LastShardHashes         [][32]byte // This slice stores the hashes of the last blocks from the other shards, needed to create the next epoch block
 	LastShardHashesMap 		= make(map[[32]byte][32]byte)
 	ValidatorShardMap       *protocol.ValShardMapping // This map keeps track of the validator assignment to the shards; int: shard ID; [64]byte: validator address
-	FileConnections         *os.File
+	FileConnections   	       *os.File
+	FileConnectionsLog         *os.File
 	TransactionPayloadOut 	*protocol.TransactionPayload
 	TransactionPayloadReceived 	[]*protocol.TransactionPayload
 	TransactionPayloadReceivedMap 	= make(map[[32]byte]*protocol.TransactionPayload)
@@ -48,6 +49,7 @@ var (
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	var err error
 	FileConnections, err = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	FileConnectionsLog, err = os.OpenFile(fmt.Sprintf("hlog-for-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -63,6 +65,7 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	storage.WriteGenesis(&genesis)
 
 	logger.Printf("Written Genesis Block: %v\n", genesis.String())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Written Genesis Block: %v\n", genesis.String()))
 
 	/*Write First Epoch block chained to the genesis block*/
 	initialEpochBlock := protocol.NewEpochBlock([][32]byte{genesis.Hash()}, 0)
@@ -73,6 +76,7 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	firstValMapping := protocol.NewMapping()
 	initialEpochBlock.ValMapping = firstValMapping
 	logger.Printf("Written Epoch Block: %v\n", initialEpochBlock.String())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Written Epoch Block: %v\n", initialEpochBlock.String()))
 
 	//FileConnections.WriteString(fmt.Sprintf("'GENESIS: %x' -> 'EPOCH BLOCK: %x'\n", [32]byte{}, initialEpochBlock.Hash[0:15]))
 	hashGenesis := [32]byte{}
@@ -90,7 +94,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	firstEpochOver = false
 
 	FileConnections, _ = os.OpenFile(fmt.Sprintf("hash-prevhash-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
+	FileConnectionsLog, _ = os.OpenFile(fmt.Sprintf("hlog-for-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	validatorAccAddress = crypto.GetAddressFromPubKey(wallet)
 	commPrivKey = commitment
 
@@ -148,7 +152,8 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		}
 	}
 
-	logger.Printf("Active config params:%v", activeParameters)
+	logger.Printf("Active config params:%v\n", activeParameters)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Active config params:%v\n", activeParameters))
 
 	/*Sharding Utilities*/
 	NumberOfShards = DetNumberOfShards()
@@ -162,7 +167,8 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		storage.WriteValidatorMapping(ValidatorShardMap)
 		logger.Printf("Validator Shard Mapping:\n")
 		logger.Printf(validatorShardMapping.String())
-
+		FileConnectionsLog.WriteString(fmt.Sprintf("Validator Shard Mapping:\n"))
+		FileConnectionsLog.WriteString(fmt.Sprintf(validatorShardMapping.String()+"\n"))
 		//broadcast the generated map to the other validators
 		broadcastValidatorShardMapping(ValidatorShardMap)
 	}
@@ -189,6 +195,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
+		//TODO: @Kürsat: remove if clause
 		if (true) {
 			if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
@@ -196,12 +203,15 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
 
 				//Get hashes of last shard blocks from other miners and include them in the next epoch block
-				logger.Printf("Before getting lastshard hashes...")
-				logger.Printf("Size of lastshard hashes...: %d", len(LastShardHashesMap))
+				logger.Printf("Before getting lastshard hashes for Epoch Height: %d\n",epochBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Before getting lastshard hashes for Epoch Height: %d\n",epochBlock.Height))
+				logger.Printf("Size of lastshard hashes: %d for Epoch Height: %d\n",len(LastShardHashesMap),epochBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Size of lastshard hashes: %d for Epoch Height: %d\n",len(LastShardHashesMap),epochBlock.Height))
 				for{
 					/*Abort mining epoch block if one is received from the network*/
 					if(lastEpochBlock.Height >= lastBlock.Height){
-						logger.Printf("Abort creating epoch block, another miner has successfully mined one in the meantime")
+						logger.Printf("Abort creating epoch block, another miner has successfully mined one in the meantime\n")
+						FileConnectionsLog.WriteString(fmt.Sprintf("Abort creating epoch block, another miner has successfully mined one in the meantime\n"))
 						prevBlockIsEpochBlock = true
 						mining(lastEpochBlock.Hash,lastEpochBlock.Height)
 					}
@@ -209,7 +219,8 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 						break
 					} else if(len(LastShardHashesMap) == NumberOfShards - 1 && NumberOfShards != 1){
 						lastShardMutex.Lock()
-						logger.Printf("Appending last shard hashes to the epoch block")
+						logger.Printf("Appending last shard hashes to the epoch block\n")
+						FileConnectionsLog.WriteString(fmt.Sprintf("Appending last shard hashes to the epoch block\n"))
 						for key, _ := range LastShardHashesMap {
 							epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes,key)
 						}
@@ -222,17 +233,21 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					}
 				}
 
-				logger.Printf("After getting lastshard hashes...")
-
-				logger.Printf("before finalizeEpochBlock()")
+				logger.Printf("After getting lastshard hashes for Epoch Height: %d\n",epochBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("After getting lastshard hashes for Epoch Height: %d\n",epochBlock.Height))
+				logger.Printf("before finalizeEpochBlock() ---- Height: %d\n",epochBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("before finalizeEpochBlock() ---- Height: %d\n",epochBlock.Height))
 
 				//Include validator-shard mapping in the epoch block
 				err := finalizeEpochBlock(epochBlock) //in case another epoch block was mined in the meantime, abort PoS here
-				logger.Printf("after finalizeEpochBlock()")
+				logger.Printf("after finalizeEpochBlock() ---- Height: %d\n",epochBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("after finalizeEpochBlock() ---- Height: %d\n",epochBlock.Height))
 				if err != nil {
 					logger.Printf("%v\n", err)
+					FileConnectionsLog.WriteString(fmt.Sprintf("%v\n", err))
 				} else {
 					logger.Printf("EPOCH BLOCK mined (%x)\n", epochBlock.Hash[0:8])
+					FileConnectionsLog.WriteString(fmt.Sprintf("EPOCH BLOCK mined (%x)\n", epochBlock.Hash[0:8]))
 				}
 
 				if err == nil {
@@ -241,7 +256,8 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 					//broadcast the generated map to the other validators
 					/*broadcastValidatorShardMapping(ValidatorShardMap)*/
-
+					logger.Printf("Broadcast epoch block (%x)\n", epochBlock.Hash[0:8])
+					FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast epoch block (%x)\n", epochBlock.Hash[0:8]))
 					broadcastEpochBlock(epochBlock)
 					storage.WriteClosedEpochBlock(epochBlock)
 					storage.DeleteAllLastClosedEpochBlock()
@@ -250,9 +266,12 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					ValidatorShardMap = epochBlock.ValMapping
 					ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 					storage.WriteValidatorMapping(ValidatorShardMap)
-					logger.Printf("Validator Shard Mapping :")
+					logger.Printf("Created Validator Shard Mapping :\n")
 					logger.Printf(ValidatorShardMap.String())
 					logger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
+					FileConnectionsLog.WriteString(fmt.Sprintf("Created Validator Shard Mapping :\n"))
+					FileConnectionsLog.WriteString(fmt.Sprintf(ValidatorShardMap.String()+"\n"))
+					FileConnectionsLog.WriteString(fmt.Sprintf("Inserting EPOCH BLOCK: %v\n", epochBlock.String()))
 
 					for _, prevHash := range epochBlock.PrevShardHashes {
 						//FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
@@ -298,7 +317,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	blockValidation.Unlock()
 
 	blockBeingProcessed = currentBlock
-	logger.Printf("blockBeingProcessed Height: %v",blockBeingProcessed.Height)
+	logger.Printf("blockBeingProcessed Height: %v\n",blockBeingProcessed.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("blockBeingProcessed Height: %v\n",blockBeingProcessed.Height))
 
 	//Fill global variable TransactionPayloadOut to be broadcasted to the other shards
 	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID, int(currentBlock.Height),nil,nil,nil,nil)
@@ -306,25 +326,31 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	TransactionPayloadOut.FundsTxData = currentBlock.FundsTxData
 	TransactionPayloadOut.ConfigTxData = currentBlock.ConfigTxData
 	TransactionPayloadOut.StakeTxData = currentBlock.StakeTxData
-	logger.Printf("---- Sending TX Payload ----")
-	logger.Printf(TransactionPayloadOut.StringPayload())
+	logger.Printf("---- Sending TX Payload ----: Height: %d -- Shard: %d \n",currentBlock.Height,ThisShardID)
+	FileConnectionsLog.WriteString(fmt.Sprintf("---- Sending TX Payload ----: Height: %d -- Shard: %d \n",currentBlock.Height,ThisShardID))
+	//logger.Printf(TransactionPayloadOut.StringPayload())
 	broadcastTxPayload()
 
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		logger.Printf("%v\n", err)
+		FileConnectionsLog.WriteString(fmt.Sprintf("%v\n", err))
 		time.Sleep(10 * time.Second)
 		return
 	}
 
-	logger.Printf("---- Before finalizeBlock() ----")
+	logger.Printf("---- Before finalizeBlock() ---- Height: %d\n",currentBlock.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("---- Before finalizeBlock() ---- Height: %d\n",currentBlock.Height))
 	err = finalizeBlock(currentBlock) //in case another block was mined in the meantime, abort PoS here
-	logger.Printf("---- After finalizeBlock() ----")
+	logger.Printf("---- After finalizeBlock() ---- Height: %d\n",currentBlock.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("---- After finalizeBlock() ---- Height: %d\n",currentBlock.Height))
 
 	if err != nil {
 		logger.Printf("%v\n", err)
+		FileConnectionsLog.WriteString(fmt.Sprintf("%v\n", err))
 	} else {
 		logger.Printf("Block mined (%x)\n", currentBlock.Hash[0:8])
+		FileConnectionsLog.WriteString(fmt.Sprintf("Block mined (%x)\n", currentBlock.Hash[0:8]))
 	}
 
 	if err == nil {
@@ -339,25 +365,30 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:15],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:15]))
 				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
 				if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
-					logger.Printf("ERROR in validating State of Block: %vState:\n%v", currentBlock, getState())
+					logger.Printf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState())
+					FileConnectionsLog.WriteString(fmt.Sprintf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState()))
 					return
 				}
 				postValidate(blockDataMap[currentBlock.Hash], false)
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
 			}
 
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
 				//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:15],currentBlock.Height-1,currentBlock.Hash[0:15],currentBlock.Height))
 			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
+				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err))
 			}
 		}
 	}
-
+	logger.Printf("resetting TransactionPayloadIn\n")
+	FileConnectionsLog.WriteString(fmt.Sprintf("resetting TransactionPayloadIn\n"))
 	TransactionPayloadIn = nil // Empty slice
 	//TODO @Kürsat: Periodically, empty the map 'TransactionPayloadReceivedMap', could raise some memory issues
 

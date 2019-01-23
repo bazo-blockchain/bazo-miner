@@ -2,6 +2,7 @@ package miner
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -39,6 +40,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 	//fundsTx only makes sense if amount > 0
 	if tx.Amount == 0 || tx.Amount > MAX_MONEY {
 		logger.Printf("Invalid transaction amount: %v\n", tx.Amount)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Invalid transaction amount: %v\n", tx.Amount))
 		return false
 	}
 
@@ -55,6 +57,7 @@ func verifyFundsTx(tx *protocol.FundsTx) bool {
 		return true
 	} else {
 		logger.Printf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8])
+		FileConnectionsLog.WriteString(fmt.Sprintf("Sig invalid. FromHash: %x\nToHash: %x\n", accFromHash[0:8], accToHash[0:8]))
 		return false
 	}
 }

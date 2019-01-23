@@ -88,7 +88,8 @@ func collectStatistics(b *protocol.Block) {
 
 		targetTimes = append(targetTimes, *currentTargetTime)
 
-		logger.Printf("Target changed, new target: %v", target[len(target)-1])
+		logger.Printf("Target changed, new target: %v\n", target[len(target)-1])
+		FileConnectionsLog.WriteString(fmt.Sprintf("Target changed, new target: %v\n", target[len(target)-1]))
 		localBlockCount = 0
 		currentTargetTime = new(timerange)
 		currentTargetTime.first = b.Timestamp

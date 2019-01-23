@@ -56,29 +56,35 @@ func finalizeBlock(block *protocol.Block) error {
 
 	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
 	Once received, update my local state and sync the global state with the other shards*/
-	logger.Printf("Before synching TX Payloads...")
+	logger.Printf("Before synching TX Payloads for block Height: %d\n",block.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Before synching TX Payloads for block Height: %d\n",block.Height))
 	for{
 		payloadMap.Lock()
 		for _, payload := range TransactionPayloadReceivedMap {
 			if(payload.Height == int(block.Height) && payload.ShardID != ThisShardID){
 				TransactionPayloadIn = append(TransactionPayloadIn, payload)
-				logger.Printf("Writing into TransactionPayloadIn heiht: %d",payload.Height)
-				logger.Printf("Length of TransactionPayloadIn: %d",len(TransactionPayloadIn))
+				logger.Printf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height)
+				logger.Printf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn))
+				FileConnectionsLog.WriteString(fmt.Sprintf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height))
+				FileConnectionsLog.WriteString(fmt.Sprintf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn)))
+				FileConnectionsLog.WriteString(fmt.Sprintf("TransactionPayloadIn Hash: %x\n",payload.HashPayload()))
 			}
 		}
 		payloadMap.Unlock()
 
-		if(len(TransactionPayloadIn) == NumberOfShards - 1){
-			err := updateGlobalState(TransactionPayloadIn)
-			if err != nil {
-				return err
-			}
+		if(len(TransactionPayloadIn) >= NumberOfShards - 1){
 			break
 		}
 	}
 
-	logger.Printf("After synching TX Payloads...")
+	//Sync state with the other shards
+	err := updateGlobalState(TransactionPayloadIn)
+	if err != nil {
+		return err
+	}
 
+	logger.Printf("After synching TX Payloads for block Height: %d\n",block.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("After synching TX Payloads for block Height: %d\n",block.Height))
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
 	if err != nil {
@@ -102,11 +108,14 @@ func finalizeBlock(block *protocol.Block) error {
 
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
-
+	logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Before Block proofofstake for height: %d\n",block.Height))
 	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
+	logger.Printf("After proofofstake for height: %d\n",block.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("After proofofstake for height: %d\n",block.Height))
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -162,11 +171,14 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	epochBlock.ValMapping = valMapping
 
 	epochBlock.State = storage.State
-
+	logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height))
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
+	logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height))
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -184,10 +196,15 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 //We do not operate global state because the work might get interrupted by receiving a block that needs validation
 //which is done on the global state.
 func addTx(b *protocol.Block, tx protocol.Transaction) error {
+
+	logger.Printf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height))
+
 	//ActiveParameters is a datastructure that stores the current system parameters, gets only changed when
 	//configTxs are broadcast in the network.
 	if tx.TxFee() < activeParameters.Fee_minimum {
 		logger.Printf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum))
 		err := fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
 		return errors.New(err)
 	}
@@ -199,7 +216,8 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	//So the trade-off is effectively clean abstraction vs. tx size. Everything related to fundsTx is postponed because
 	//the txs depend on each other.
 	if !verify(tx) {
-		logger.Printf("Transaction could not be verified: %v", tx)
+		logger.Printf("Transaction could not be verified: %v\n", tx)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Transaction could not be verified: %v\n", tx))
 		return errors.New("Transaction could not be verified.")
 	}
 
@@ -208,24 +226,28 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 		err := addContractTx(b, tx.(*protocol.ContractTx))
 		if err != nil {
 			logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
+			FileConnectionsLog.WriteString(fmt.Sprintf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx)))
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
 			logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
+			FileConnectionsLog.WriteString(fmt.Sprintf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx)))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
 			logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
+			FileConnectionsLog.WriteString(fmt.Sprintf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx)))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
 			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			FileConnectionsLog.WriteString(fmt.Sprintf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx)))
 			return err
 		}
 	default:
@@ -246,7 +268,8 @@ func addContractTx(b *protocol.Block, tx *protocol.ContractTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.ContractTxData = append(b.ContractTxData, tx.Hash())
-	logger.Printf("Added tx to the ContractTxData slice: %v", *tx)
+	logger.Printf("Added tx to the ContractTxData slice: %v\n", *tx)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the ContractTxData slice: %v\n", *tx))
 	return nil
 }
 
@@ -355,14 +378,16 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
-	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
+	logger.Printf("Added tx to the FundsTxData slice: %v\n", *tx)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the FundsTxData slice: %v\n", *tx))
 	return nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
 	//No further checks needed, static checks were already done with verify().
 	b.ConfigTxData = append(b.ConfigTxData, tx.Hash())
-	logger.Printf("Added tx to the ConfigTxData slice: %v", *tx)
+	logger.Printf("Added tx to the ConfigTxData slice: %v\n", *tx)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the ConfigTxData slice: %v\n", *tx))
 	return nil
 }
 
@@ -402,7 +427,8 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 
 	//No further checks needed, static checks were already done with verify().
 	b.StakeTxData = append(b.StakeTxData, tx.Hash())
-	logger.Printf("Added tx to the StakeTxData slice: %v", *tx)
+	logger.Printf("Added tx to the StakeTxData slice: %v\n", *tx)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the StakeTxData slice: %v\n", *tx))
 	return nil
 }
 
@@ -628,6 +654,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
+			FileConnectionsLog.WriteString(fmt.Sprintf("Rolled back block: %vState:\n%v", block, getState()))
 		}
 	}
 
