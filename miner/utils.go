@@ -2,6 +2,7 @@ package miner
 
 import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"runtime"
 )
 
 func InvertBlockArray(array []*protocol.Block) []*protocol.Block {
@@ -17,4 +18,8 @@ func InvertEpochBlockArray(array []*protocol.EpochBlock) []*protocol.EpochBlock 
 	}
 
 	return array
+}
+// get the count of number of go routines in the system.
+func countGoRoutines() int {
+	return runtime.NumGoroutine()
 }

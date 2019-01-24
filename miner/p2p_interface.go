@@ -94,7 +94,8 @@ func processEpochBlock(eb []byte) {
 	ValidatorShardMap = epochBlock.ValMapping
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
-	broadcastEpochBlock(lastEpochBlock)
+	//broadcastEpochBlock(lastEpochBlock)
+	//p2p.EpochBlockOut <- eb
 }
 
 /*func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {

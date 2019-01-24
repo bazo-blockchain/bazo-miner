@@ -905,6 +905,7 @@ func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 				return err
 			}
 		} else {
+
 			if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
 				fundsStateChangeRollback(fundsTxSlice)
 				accStateChangeRollback(contractTxSlice)

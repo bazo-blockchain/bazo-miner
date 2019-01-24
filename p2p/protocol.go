@@ -2,7 +2,7 @@ package p2p
 
 import "fmt"
 
-const HEADER_LEN = 10
+const HEADER_LEN = 5
 
 //Mapping constants, used to parse incoming messages
 const (

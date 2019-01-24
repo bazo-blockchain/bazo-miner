@@ -188,10 +188,15 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	/*constantly watch height of the lastblock variable for insertion of next epoch block*/
 	for {
+		logger.Printf("Number of GoRoutines: %d\n",countGoRoutines())
+		FileConnectionsLog.WriteString(fmt.Sprintf("Number of GoRoutines: %d\n",countGoRoutines()))
 
 		if(FirstStartAfterEpoch == true){ //Indicates that a validator newly joined Bazo after the current epoch, thus his 'lastBlock' variable is nil
 			mining(hashPrevBlock,heightPrevBlock)
 		}
+
+		logger.Printf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID))
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
@@ -308,17 +313,22 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	/*Set shard identifier in block*/
 	currentBlock.ShardId = ThisShardID
 
+	logger.Printf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID)
+	FileConnectionsLog.WriteString(fmt.Sprintf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID))
 	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 	//validated with block validation, so we wait in order to not work on tx data that is already validated
 	//when we finish the block.
 	blockValidation.Lock()
+	FileConnectionsLog.WriteString(fmt.Sprintf("before preparing Block Height: %v\n",currentBlock.Height))
+	logger.Printf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID)
 	prepareBlock(currentBlock) // In this step, filter tx from mem pool to check if they belong to my shard
+	FileConnectionsLog.WriteString(fmt.Sprintf("After preparing Block Height: %v\n",currentBlock.Height))
+	logger.Printf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID)
 	blockValidation.Unlock()
 
 	blockBeingProcessed = currentBlock
-	logger.Printf("blockBeingProcessed Height: %v\n",blockBeingProcessed.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("blockBeingProcessed Height: %v\n",blockBeingProcessed.Height))
+
 
 	//Fill global variable TransactionPayloadOut to be broadcasted to the other shards
 	TransactionPayloadOut = protocol.NewTransactionPayload(ThisShardID, int(currentBlock.Height),nil,nil,nil,nil)

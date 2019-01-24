@@ -3,11 +3,14 @@ package main
 import (
 	"github.com/bazo-blockchain/bazo-miner/cli"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"github.com/pkg/profile"
 	cli2 "github.com/urfave/cli"
 	"os"
 )
 
 func main() {
+
+	defer profile.Start().Stop()
 
 	// test commit for new sharding branch
 	app := cli2.NewApp()
