@@ -14,6 +14,7 @@ var (
 	State              = make(map[[64]byte]*protocol.Account)
 	RootKeys           = make(map[[64]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
+	ReceivedBlockStash = protocol.NewBlockStash()
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
 	Buckets			   []string

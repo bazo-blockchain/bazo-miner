@@ -228,3 +228,7 @@ func ReadValidatorMapping() (mapping *protocol.ValShardMapping, err error) {
 
 	return mapping, err
 }
+
+func ReadReceivedBlockStash() (*protocol.BlockStash){
+	return ReceivedBlockStash
+}

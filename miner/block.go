@@ -56,35 +56,29 @@ func finalizeBlock(block *protocol.Block) error {
 
 	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
 	Once received, update my local state and sync the global state with the other shards*/
-	logger.Printf("Before synching TX Payloads for block Height: %d\n",block.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Before synching TX Payloads for block Height: %d\n",block.Height))
-	for{
-		payloadMap.Lock()
-		for _, payload := range TransactionPayloadReceivedMap {
-			if(payload.Height == int(block.Height) && payload.ShardID != ThisShardID){
-				TransactionPayloadIn = append(TransactionPayloadIn, payload)
-				logger.Printf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height)
-				logger.Printf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn))
-				FileConnectionsLog.WriteString(fmt.Sprintf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height))
-				FileConnectionsLog.WriteString(fmt.Sprintf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn)))
-				FileConnectionsLog.WriteString(fmt.Sprintf("TransactionPayloadIn Hash: %x\n",payload.HashPayload()))
-			}
-		}
-		payloadMap.Unlock()
+	//logger.Printf("Before synching TX Payloads for block Height: %d\n",block.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Before synching TX Payloads for block Height: %d\n",block.Height))
+	//for{
+	//	payloadMap.Lock()
+	//	for _, payload := range TransactionPayloadReceivedMap {
+	//		if(payload.Height == int(block.Height) && payload.ShardID != ThisShardID){
+	//			TransactionPayloadIn = append(TransactionPayloadIn, payload)
+	//			logger.Printf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height)
+	//			logger.Printf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn))
+	//			FileConnectionsLog.WriteString(fmt.Sprintf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height))
+	//			FileConnectionsLog.WriteString(fmt.Sprintf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn)))
+	//			FileConnectionsLog.WriteString(fmt.Sprintf("TransactionPayloadIn Hash: %x\n",payload.HashPayload()))
+	//		}
+	//	}
+	//	payloadMap.Unlock()
+	//
+	//	if(len(TransactionPayloadIn) >= NumberOfShards - 1){
+	//		break
+	//	}
+	//}
 
-		if(len(TransactionPayloadIn) >= NumberOfShards - 1){
-			break
-		}
-	}
-
-	//Sync state with the other shards
-	err := updateGlobalState(TransactionPayloadIn)
-	if err != nil {
-		return err
-	}
-
-	logger.Printf("After synching TX Payloads for block Height: %d\n",block.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("After synching TX Payloads for block Height: %d\n",block.Height))
+	//logger.Printf("After synching TX Payloads for block Height: %d\n",block.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("After synching TX Payloads for block Height: %d\n",block.Height))
 	//Add Merkle Patricia Tree hash in the block
 	stateMPT, err := protocol.BuildMPT(storage.State)
 	if err != nil {
@@ -169,6 +163,9 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	valMapping.EpochHeight = int(epochBlock.Height)
 
 	epochBlock.ValMapping = valMapping
+
+	ValidatorShardMap = epochBlock.ValMapping
+	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	epochBlock.State = storage.State
 	logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)

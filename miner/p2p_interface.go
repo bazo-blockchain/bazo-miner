@@ -129,9 +129,17 @@ func processBlock(payload []byte) {
 			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err))
 		}
 	} else {
+		if(lastBlock != nil){
+			if(block.Height >= lastBlock.Height){
+				storage.ReceivedBlockStash.Set(block.Hash,block)
+			}
+		} else if(lastEpochBlock != nil) {
+			if(block.Height >= lastEpochBlock.Height){
+				storage.ReceivedBlockStash.Set(block.Hash,block)
+			}
+		}
 		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
-		if(lastEpochBlock != nil){
-
+		/*if(lastEpochBlock != nil){
 			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length){
 				lastShardMutex.Lock()
 				LastShardHashesMap[block.Hash] = block.Hash
@@ -139,12 +147,7 @@ func processBlock(payload []byte) {
 				logger.Printf("Received lastshard hash for block height: %d\n",block.Height)
 				FileConnectionsLog.WriteString(fmt.Sprintf("Received lastshard hash for block height: %d\n",block.Height))
 			}
-
-			/*if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length && HashSliceContains(LastShardHashes,block.Hash) == false){
-				LastShardHashes = append(LastShardHashes, block.Hash)
-				logger.Printf("Received lastshard hash for block height: %d",block.Height)
-			}*/
-		}
+		}*/
 	}
 }
 
