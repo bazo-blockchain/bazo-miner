@@ -23,7 +23,6 @@ type FundsTx struct {
 	To     [64]byte
 	Sig    [64]byte
 	Data   []byte
-	MPT_Proof
 }
 
 func ConstrFundsTx(header byte, amount uint64, fee uint64, txCnt uint32, from, to [64]byte, sigKey *ecdsa.PrivateKey, data []byte) (tx *FundsTx, err error) {
@@ -92,7 +91,6 @@ func (tx *FundsTx) Encode() (encodedTx []byte) {
 		tx.To,
 		tx.Sig,
 		tx.Data,
-		tx.MPT_Proof,
 	}
 	buffer := new(bytes.Buffer)
 	gob.NewEncoder(buffer).Encode(encodeData)
