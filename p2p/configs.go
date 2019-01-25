@@ -4,7 +4,7 @@ package p2p
 const (
 	//MIN_MINERS is a lower bound of connections. If there are less, the system actively requests miner peers
 	//from neighbors and establishes connections to them
-	MIN_MINERS = 2
+	MIN_MINERS = 5
 	//MAX_MINERS is an upper bound of connections. Miner handshakes are rejected if the amount of connections
 	//grows above this number. Client connections are always accepted
 	MAX_MINERS = 20

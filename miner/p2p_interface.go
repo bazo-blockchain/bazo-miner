@@ -107,9 +107,6 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	logger.Printf("Incoming block Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Incoming block Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
-
 	if block.ShardId == ThisShardID && block.Height > lastEpochBlock.Height {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
@@ -129,15 +126,19 @@ func processBlock(payload []byte) {
 			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err))
 		}
 	} else {
-		if(lastBlock != nil){
-			if(block.Height >= lastBlock.Height){
-				storage.ReceivedBlockStash.Set(block.Hash,block)
-			}
-		} else if(lastEpochBlock != nil) {
-			if(block.Height >= lastEpochBlock.Height){
-				storage.ReceivedBlockStash.Set(block.Hash,block)
-			}
-		}
+		//broadcastBlock(block)
+		storage.ReceivedBlockStash.Set(block.Hash,block)
+		logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
+		//if(lastBlock != nil){
+		//	if(block.Height >= lastBlock.Height){
+		//		storage.ReceivedBlockStash.Set(block.Hash,block)
+		//	}
+		//} else if(lastEpochBlock != nil) {
+		//	if(block.Height >= lastEpochBlock.Height){
+		//		storage.ReceivedBlockStash.Set(block.Hash,block)
+		//	}
+		//}
 		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
 		/*if(lastEpochBlock != nil){
 			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length){

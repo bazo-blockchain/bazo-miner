@@ -407,6 +407,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		broadcastBlock(currentBlock)
+		logger.Printf("Sending Block Height: %d", currentBlock.Height)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Sending Block Height: %d", currentBlock.Height))
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			blockDataMap := make(map[[32]byte]blockData)
 			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)

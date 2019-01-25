@@ -1,6 +1,8 @@
 package protocol
 
-import "sync"
+import (
+	"sync"
+)
 
 //TODO: @Kürsat - Write tests for this datastructure
 
@@ -95,4 +97,18 @@ func ReturnTxPayloadForHeight(blockstash *BlockStash, height uint32) (txpayload 
 		}
 	}
 	return payloadSlice
+}
+
+/*This function extracts the item at some position*/
+func ReturnItemForPosition(blockstash *BlockStash, position int) (blockHash [32]byte, block *Block) {
+	stashMutex.Lock()
+	defer stashMutex.Unlock()
+
+	if(position > len(blockstash.keys)-1){
+		return [32]byte{}, nil
+	}
+
+	blockHashPos := blockstash.keys[position]
+
+	return blockHashPos, blockstash.m[blockHashPos]
 }
