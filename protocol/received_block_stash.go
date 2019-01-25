@@ -41,10 +41,10 @@ func (m *BlockStash) Set(k Key, v Value) {
 	}
 }
 
-/*This function includes a key and tracks its order in the slice*/
+/*This function includes a key and tracks its order in the slice. No need to put the lock because it is used from the calling function*/
 func (m *BlockStash) DeleteFirstEntry() {
-	stashMutex.Lock()
-	defer stashMutex.Unlock()
+	/*stashMutex.Lock()
+	defer stashMutex.Unlock()*/
 	firstBlockHash := m.keys[0]
 
 	if _, ok := m.m[firstBlockHash]; !ok {
