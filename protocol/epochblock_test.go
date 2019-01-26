@@ -24,6 +24,7 @@ func TestEpochBlockCreation(t *testing.T) {
 	prevShardHashes = append(prevShardHashes, hash5)
 
 	height = 100
+	numberofshards := 2
 
 	valMapping := NewMapping()
 	valMapping.ValMapping[[64]byte{'0','1','2','3'}] = 1
@@ -31,6 +32,7 @@ func TestEpochBlockCreation(t *testing.T) {
 
 	createdEpochBlock := NewEpochBlock(prevShardHashes, height)
 	createdEpochBlock.ValMapping = valMapping
+	createdEpochBlock.NofShards = numberofshards
 
 	if !reflect.DeepEqual(createdEpochBlock.PrevShardHashes, prevShardHashes) {
 		t.Errorf("Previous hash does not match the given one: %x vs. %x", createdEpochBlock.PrevShardHashes, prevShardHashes)
@@ -42,6 +44,10 @@ func TestEpochBlockCreation(t *testing.T) {
 
 	if !reflect.DeepEqual(createdEpochBlock.ValMapping, valMapping) {
 		t.Errorf("Validator Shard Mapping does not match the given one: %s vs. %s", createdEpochBlock.ValMapping.String(), valMapping.String())
+	}
+
+	if !reflect.DeepEqual(createdEpochBlock.NofShards, numberofshards) {
+		t.Errorf("Number of Shards does not match the given one: %s vs. %s", createdEpochBlock.ValMapping.String(), valMapping.String())
 	}
 }
 
@@ -63,6 +69,7 @@ func TestEpochBlockHash(t *testing.T) {
 	prevShardHashes = append(prevShardHashes, hash5)
 
 	height = 100
+	numberofshards := 2
 
 	valMapping := NewMapping()
 	valMapping.ValMapping[[64]byte{'0','1','2','3'}] = 1
@@ -70,6 +77,7 @@ func TestEpochBlockHash(t *testing.T) {
 
 	epochBlock := NewEpochBlock(prevShardHashes, height)
 	epochBlock.ValMapping = valMapping
+	epochBlock.NofShards = numberofshards
 
 	hashEpoch := epochBlock.HashEpochBlock()
 
@@ -96,6 +104,7 @@ func TestEpochBlockSerialization(t *testing.T) {
 	prevShardHashes = append(prevShardHashes, hash5)
 
 	height = 100
+	numberofshards := 2
 	stateMapping := make(map[[64]byte]*Account)
 
 	acc1 := new(Account)
@@ -131,6 +140,7 @@ func TestEpochBlockSerialization(t *testing.T) {
 	epochBlock.Timestamp = time.Now().Unix()
 	epochBlock.State = stateMapping
 	epochBlock.ValMapping = valMapping
+	epochBlock.NofShards = numberofshards
 
 	var compareBlock EpochBlock
 	encodedBlock := epochBlock.Encode()

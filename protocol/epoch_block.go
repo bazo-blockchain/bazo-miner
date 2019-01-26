@@ -21,6 +21,7 @@ type EpochBlock struct {
 	CommitmentProof       [crypto.COMM_PROOF_LENGTH]byte
 	State				  map[[64]byte]*Account
 	ValMapping			  *ValShardMapping
+	NofShards			  int
 }
 
 func NewEpochBlock(prevShardHashes [][32]byte, height uint32) *EpochBlock {
@@ -46,6 +47,7 @@ func (epochBlock *EpochBlock) HashEpochBlock() [32]byte {
 		commitmentProof       		  [crypto.COMM_PROOF_LENGTH]byte
 		state					      map[[64]byte]*Account
 		valmapping					  *ValShardMapping
+		noshards					  int
 	}{
 		epochBlock.PrevShardHashes,
 		epochBlock.Timestamp,
@@ -55,6 +57,7 @@ func (epochBlock *EpochBlock) HashEpochBlock() [32]byte {
 		epochBlock.CommitmentProof,
 		epochBlock.State,
 		epochBlock.ValMapping,
+		epochBlock.NofShards,
 	}
 	return SerializeHashContent(blockHash)
 }
@@ -75,6 +78,7 @@ func (epochBlock *EpochBlock) Encode() []byte {
 		CommitmentProof:	   epochBlock.CommitmentProof,
 		State:				   epochBlock.State,
 		ValMapping:			   epochBlock.ValMapping,
+		NofShards:			   epochBlock.NofShards,
 	}
 
 	buffer := new(bytes.Buffer)
@@ -121,7 +125,8 @@ func (epochBlock EpochBlock) String() string {
 		"Height: %d\n"+
 		"Commitment Proof: %x\n" +
 		"State: \n%v\n" +
-		"Validator Shard Mapping: %s\n",
+		"Validator Shard Mapping: %s\n" +
+		"Number of Shards: %d\n",
 		epochBlock.Hash[0:8],
 		len(epochBlock.PrevShardHashes),
 		epochBlock.StringPrevHashes(),
@@ -132,6 +137,7 @@ func (epochBlock EpochBlock) String() string {
 		epochBlock.CommitmentProof[0:8],
 		epochBlock.StringState(),
 		epochBlock.ValMapping.String(),
+		epochBlock.NofShards,
 	)
 }
 
