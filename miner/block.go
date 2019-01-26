@@ -859,10 +859,7 @@ func validateState(data blockData) (err error) {
 
 	return nil
 }
-
-/*This function received validated and process transactions from other shards and updates the local global state
-No transaction validation or storage done at this step*/
-func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
+/*func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 
 	for _,txPayload := range txPayloads{
 		var contractTxSlice []*protocol.ContractTx
@@ -908,6 +905,51 @@ func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 				return err
 			}
 		}
+	}
+
+	return nil
+}*/
+
+/*This function received validated and process transactions from other shards and updates the local global state
+No transaction validation or storage done at this step*/
+func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
+
+	for _,txPayload := range txPayloads{
+		var contractTxSlice []*protocol.ContractTx
+		var fundsTxSlice []*protocol.FundsTx
+		var configTxSlice []*protocol.ConfigTx
+		var stakeTxSlice []*protocol.StakeTx
+
+		for _,contractTxHash := range txPayload.ContractTxData{
+			contractTxSlice = append(contractTxSlice,storage.ReadOpenTx(contractTxHash).(*protocol.ContractTx))
+		}
+
+		for _, fundsTxHash := range txPayload.FundsTxData{
+			fundsTxSlice = append(fundsTxSlice,storage.ReadOpenTx(fundsTxHash).(*protocol.FundsTx))
+		}
+
+		for _, configTxHash := range txPayload.ConfigTxData{
+			configTxSlice = append(configTxSlice,storage.ReadOpenTx(configTxHash).(*protocol.ConfigTx))
+		}
+
+		for _, stakeTxHash := range txPayload.StakeTxData{
+			stakeTxSlice = append(stakeTxSlice,storage.ReadOpenTx(stakeTxHash).(*protocol.StakeTx))
+		}
+
+		//Add new accounts if necessary
+		accStateChange(contractTxSlice)
+
+		applyFundsChange(fundsTxSlice)
+
+		applyConfigChange(configTxSlice)
+
+		if(lastBlock == nil){
+			applyStakeChange(stakeTxSlice, lastEpochBlock.Height + 1)
+		} else {
+			applyStakeChange(stakeTxSlice, lastBlock.Height + 1)
+		}
+
+
 	}
 
 	return nil

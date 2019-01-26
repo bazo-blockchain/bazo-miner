@@ -44,6 +44,7 @@ var (
 	TransactionPayloadReceivedMap 	= make(map[[32]byte]*protocol.TransactionPayload)
 	TransactionPayloadIn 	[]*protocol.TransactionPayload
 	processedTXPayloads		[]int //This slice keeps track of the tx payloads processed from a certain shard
+
 )
 
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
@@ -234,7 +235,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 		//TODO: @Kürsat: lol, remove if clause
 		if (true) {
-			if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length) {
+			if (lastBlock.Height == uint32(lastEpochBlock.Height) + uint32(activeParameters.epoch_length)) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
@@ -474,7 +475,7 @@ func AssignValidatorsToShards() map[[64]byte]int {
 	from the map above and set is bool 'assigned' to TRUE*/
 	rand.Seed(time.Now().Unix())
 
-	for j := 1; j <= activeParameters.validators_per_shard; j++ {
+	for j := 1; j <= int(activeParameters.validators_per_shard); j++ {
 		for i := 1; i <= NumberOfShards; i++ {
 
 			if len(validatorSlices) == 0 {

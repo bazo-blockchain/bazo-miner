@@ -37,8 +37,8 @@ type Parameters struct {
 	Slashing_window_size    	uint64 //Number of blocks that a validator cannot vote on two competing chains.
 	Slash_reward            	uint64 //Reward for providing the correct slashing proof.
 	num_included_prev_proofs	int
-	epoch_length				int
-	validators_per_shard		int
+	epoch_length				uint64
+	validators_per_shard		uint64
 }
 
 func NewDefaultParameters() Parameters {

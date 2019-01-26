@@ -39,7 +39,7 @@ func prepareBlock(block *protocol.Block) {
 			switch tx.(type) {
 			case *protocol.StakeTx:
 				//Add StakeTXs only when preparing the last block before the next epoch block
-				if (int(lastBlock.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length - 1) {
+				if (int(lastBlock.Height) == int(lastEpochBlock.Height) + int(activeParameters.epoch_length) - 1) {
 					err := addTx(block, tx)
 					if err != nil {
 						//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
