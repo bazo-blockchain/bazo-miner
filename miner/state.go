@@ -244,7 +244,8 @@ func getLastEpochBlock() (lastEpochBlock *protocol.EpochBlock, err error) {
 }
 
 func initRootAccounts(genesis *protocol.Genesis) {
-	rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, activeParameters.Staking_minimum, true, genesis.RootCommitment, nil, nil)
+	//rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, activeParameters.Staking_minimum, true, genesis.RootCommitment, nil, nil)
+	rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, 20000, true, genesis.RootCommitment, nil, nil)
 	storage.State[genesis.RootAddress] = &rootAcc
 	storage.RootKeys[genesis.RootAddress] = &rootAcc
 }
@@ -429,7 +430,6 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			err = errors.New(fmt.Sprintf("sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt)", tx.TxCnt, accSender.TxCnt))
 		}
 
-		//TODO @Kürsat: Replace this check with the included MPT proof of the transaction
 		//Check sender balance
 		if (tx.Amount + tx.Fee) > accSender.Balance {
 			err = errors.New(fmt.Sprintf("sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v", accSender.Balance, tx.Amount, tx.Fee))

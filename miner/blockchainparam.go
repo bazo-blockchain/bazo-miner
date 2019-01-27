@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math"
+	"time"
 )
 
 var (
@@ -72,8 +73,36 @@ type timerange struct {
 var targetTimes []timerange
 
 func collectStatistics(b *protocol.Block) {
+	logger.Printf("--- BLOCK STATISTICS FOR BLOCK (%x) AT HEIGHT: %d ---\n", b.Hash[0:8],b.Height)
+	FileConnectionsLog.WriteString(fmt.Sprintf("--- BLOCK STATISTICS FOR BLOCK (%x) AT HEIGHT: %d ---\n", b.Hash[0:8],b.Height))
+
+	blockEndTime = time.Now().Unix()
+
 	globalBlockCount++
 	localBlockCount++
+	totalTransactionsInBlock := b.NrFundsTx + uint16(b.NrConfigTx) + b.NrContractTx + b.NrStakeTx
+	validatedTXCount = validatedTXCount + int(totalTransactionsInBlock)
+	validatedBlockCount = validatedBlockCount + 1
+
+	logger.Printf("Number of transactions in block (%x): %d\n", b.Hash[0:8],totalTransactionsInBlock)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Number of transactions in block (%x): %d\n", b.Hash[0:8],totalTransactionsInBlock))
+
+	logger.Printf("Validated Transaction count: %d\n", validatedTXCount)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Transaction count: %d\n", validatedTXCount))
+
+	logger.Printf("Validated Block count: %d\n", validatedBlockCount)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Transaction count: %d\n", validatedTXCount))
+
+	logger.Printf("Block done at time: %d\n", time.Now().Unix())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Block done at time: %d\n", time.Now().Unix()))
+
+	logger.Printf("Block duratoin: %d seconds\n",blockEndTime - blockStartTime)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Block duratoin: %d seconds\n",blockEndTime - blockStartTime))
+
+	var blockTPS = float64(totalTransactionsInBlock) / float64(blockEndTime-blockStartTime)
+
+	logger.Printf("Block TPS: %v TX/Sec\n", blockTPS)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Block TPS: %v TX/Sec\n", blockTPS))
 
 	if localBlockCount == int64(activeParameters.Diff_interval) {
 		currentTargetTime.last = b.Timestamp

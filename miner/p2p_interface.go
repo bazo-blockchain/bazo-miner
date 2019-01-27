@@ -92,6 +92,7 @@ func processEpochBlock(eb []byte) {
 	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Received Epoch Block: %v\n", epochBlock.String()))
 	ValidatorShardMap = epochBlock.ValMapping
+	NumberOfShards = epochBlock.NofShards
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
 	//broadcastEpochBlock(lastEpochBlock)

@@ -46,6 +46,7 @@ func peerBroadcast(p *peer) {
 //Single goroutine that makes sure the system is well connected.
 func checkHealthService() {
 	for {
+		//logger.Printf("before checking health service")
 		time.Sleep(HEALTH_CHECK_INTERVAL * time.Second)
 
 		if Ipport != storage.BootstrapServer && !peers.contains(storage.BootstrapServer, PEERTYPE_MINER) {
@@ -78,6 +79,7 @@ func checkHealthService() {
 			break
 		default:
 			//In case we don't have any ip addresses in the channel left, make a request to the network.
+			logger.Printf("doing neighbor request...")
 			neighborReq()
 			break
 		}

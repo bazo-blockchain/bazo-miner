@@ -17,18 +17,18 @@ const (
 	//Default Block params
 	//TODO @simibac How can I assure that only every min. a block will be mined?
 	BLOCKHASH_SIZE       = 32      //Byte
-	FEE_MINIMUM          = 1       //Coins
-	BLOCK_SIZE           = 5000000 //Byte
-	DIFF_INTERVAL        = 50    //Blocks
-	BLOCK_INTERVAL       = 30      //Sec
+	FEE_MINIMUM          = 0       //Coins
+	BLOCK_SIZE           = 20000 //Byte
+	DIFF_INTERVAL        = 20    //Blocks
+	BLOCK_INTERVAL       = 15      //Sec
 	BLOCK_REWARD         = 0       //Coins
 	STAKING_MINIMUM      = 1000    //Coins
 	WAITING_MINIMUM      = 0       //Blocks
 	ACCEPTED_TIME_DIFF   = 60      //Sec
 	SLASHING_WINDOW_SIZE = 100     //Blocks
-	SLASH_REWARD         = 2       //Coins
+	SLASH_REWARD         = 0       //Coins
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
 	//Parameters for sharding concept
-	EPOCH_LENGTH         = 4
-	VALIDATORS_PER_SHARD = 1
+	EPOCH_LENGTH         = 9 //blocks
+	VALIDATORS_PER_SHARD = 1 //validators
 )

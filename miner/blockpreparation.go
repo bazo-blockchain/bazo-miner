@@ -2,6 +2,7 @@ package miner
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"sort"
@@ -25,14 +26,20 @@ func prepareBlock(block *protocol.Block) {
 
 	sort.Sort(tmpCopy)
 
-	for _, tx := range opentxs {
+	for i, tx := range opentxs {
 		/*When fetching and adding Txs from the MemPool, first check if it belongs to my shard. Only if so, then add tx to the block*/
 		txAssignedShard := assignTransactionToShard(tx)
+		txAssignedShardAbs := Abs(int32(txAssignedShard))
 
-		if txAssignedShard == ValidatorShardMap.ValMapping[validatorAccAddress]{
-
+		if int(txAssignedShardAbs) == ValidatorShardMap.ValMapping[validatorAccAddress]{
+			logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
+			FileConnectionsLog.WriteString(fmt.Sprintf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs))
 			//Prevent block size to overflow.
-			if block.GetSize()+tx.Size() > activeParameters.Block_size {
+			//if block.GetSize()+tx.Size() > activeParameters.Block_size {
+			//	break
+			//}
+			//Prevent block size to overflow. +10 Because of the bloomFilter
+			if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 				break
 			}
 
@@ -88,6 +95,13 @@ func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 		default:
 			return 1 // default shard Nr.
 		}
+}
+
+func Abs(x int32) int32 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 //Implement the sort interface

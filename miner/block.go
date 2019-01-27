@@ -79,11 +79,11 @@ func finalizeBlock(block *protocol.Block) error {
 	//logger.Printf("After synching TX Payloads for block Height: %d\n",block.Height)
 	//FileConnectionsLog.WriteString(fmt.Sprintf("After synching TX Payloads for block Height: %d\n",block.Height))
 	//Add Merkle Patricia Tree hash in the block
-	stateMPT, err := protocol.BuildMPT(storage.State)
-	if err != nil {
-		return err
-	}
-	block.MerklePatriciaRoot = stateMPT.Hash()
+	//stateMPT, err := protocol.BuildMPT(storage.State)
+	//if err != nil {
+	//	return err
+	//}
+	//block.MerklePatriciaRoot = stateMPT.Hash()
 
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -132,11 +132,11 @@ func finalizeBlock(block *protocol.Block) error {
 func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 
 	//Add Merkle Patricia Tree hash in the block
-	stateMPT, err := protocol.BuildMPT(storage.State)
-	if err != nil {
-		return err
-	}
-	epochBlock.MerklePatriciaRoot = stateMPT.Hash()
+	//stateMPT, err := protocol.BuildMPT(storage.State)
+	//if err != nil {
+	//	return err
+	//}
+	//epochBlock.MerklePatriciaRoot = stateMPT.Hash()
 
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -162,17 +162,20 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	valMapping.EpochHeight = int(epochBlock.Height)
 
 	epochBlock.ValMapping = valMapping
-
 	ValidatorShardMap = epochBlock.ValMapping
+	epochBlock.NofShards = DetNumberOfShards()
+
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	epochBlock.State = storage.State
 	logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 	FileConnectionsLog.WriteString(fmt.Sprintf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height))
+
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
+
 	logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 	FileConnectionsLog.WriteString(fmt.Sprintf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height))
 
@@ -193,8 +196,8 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 //which is done on the global state.
 func addTx(b *protocol.Block, tx protocol.Transaction) error {
 
-	logger.Printf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height))
+	//logger.Printf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height))
 
 	//ActiveParameters is a datastructure that stores the current system parameters, gets only changed when
 	//configTxs are broadcast in the network.

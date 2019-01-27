@@ -6,6 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
+	"time"
 )
 
 //Process tx broadcasts from other miners. We can't broadcast incoming messages directly, first check if
@@ -64,6 +65,9 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	//Write to mempool and rebroadcast
 	logger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction (%x) in the mempool.\n", tx.Hash()))
+	logger.Printf("Writing transaction at time: %d\n", time.Now().Unix())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction at time: %d\n", time.Now().Unix()))
+
 	storage.WriteOpenTx(tx)
 	toBrdcst := BuildPacket(brdcstType, payload)
 	minerBrdcstMsg <- toBrdcst
@@ -85,8 +89,8 @@ func processNeighborRes(p *peer, payload []byte) {
 	ipportList := _processNeighborRes(payload)
 
 	for _, ipportIter := range ipportList {
-		logger.Printf("IP/Port received: %v\n", ipportIter)
-		FileConnectionsLog.WriteString(fmt.Sprintf("IP/Port received: %v\n", ipportIter))
+		//logger.Printf("IP/Port received: %v\n", ipportIter)
+		//FileConnectionsLog.WriteString(fmt.Sprintf("IP/Port received: %v\n", ipportIter))
 		//iplistChan is a buffered channel to handle ips asynchronously.
 		iplistChan <- ipportIter
 	}
