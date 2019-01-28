@@ -20,7 +20,7 @@ const (
 	FEE_MINIMUM          = 0       //Coins
 	BLOCK_SIZE           = 20000 //Byte
 	DIFF_INTERVAL        = 20    //Blocks
-	BLOCK_INTERVAL       = 15      //Sec
+	BLOCK_INTERVAL       = 60      //Sec
 	BLOCK_REWARD         = 0       //Coins
 	STAKING_MINIMUM      = 1000    //Coins
 	WAITING_MINIMUM      = 0       //Blocks
@@ -29,6 +29,6 @@ const (
 	SLASH_REWARD         = 0       //Coins
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
 	//Parameters for sharding concept
-	EPOCH_LENGTH         = 9 //blocks
+	EPOCH_LENGTH         = 49 //blocks
 	VALIDATORS_PER_SHARD = 1 //validators
 )

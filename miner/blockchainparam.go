@@ -91,7 +91,7 @@ func collectStatistics(b *protocol.Block) {
 	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Transaction count: %d\n", validatedTXCount))
 
 	logger.Printf("Validated Block count: %d\n", validatedBlockCount)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Transaction count: %d\n", validatedTXCount))
+	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Block count: %d\n", validatedBlockCount))
 
 	logger.Printf("Block done at time: %d\n", time.Now().Unix())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Block done at time: %d\n", time.Now().Unix()))

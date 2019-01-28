@@ -69,6 +69,10 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction at time: %d\n", time.Now().Unix()))
 
 	storage.WriteOpenTx(tx)
+
+	logger.Printf("MemPool Size: %d\n", storage.GetMemPoolSize())
+	FileConnectionsLog.WriteString(fmt.Sprintf("MemPool Size: %d\n", storage.GetMemPoolSize()))
+
 	toBrdcst := BuildPacket(brdcstType, payload)
 	minerBrdcstMsg <- toBrdcst
 }

@@ -415,23 +415,31 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		/*logger.Printf("Sending Block Height: %d", currentBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Sending Block Height: %d", currentBlock.Height))*/
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
-			blockDataMap := make(map[[32]byte]blockData)
-			contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)
-
-			if (err == nil) {
-				//FileConnections.WriteString(fmt.Sprintf("'EPOCH BLOCK: %x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
+			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+			if err != nil{
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
-				blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
-				if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
-					logger.Printf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState())
-					FileConnectionsLog.WriteString(fmt.Sprintf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState()))
-					return
-				}
-				postValidate(blockDataMap[currentBlock.Hash], false)
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
 			}
+			//
+			//blockDataMap := make(map[[32]byte]blockData)
+			//contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(currentBlock, false)
+			//
+			//if (err == nil) {
+			//	//FileConnections.WriteString(fmt.Sprintf("'EPOCH BLOCK: %x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
+			//	FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
+			//	FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
+			//	blockDataMap[currentBlock.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, currentBlock}
+			//	if err := validateState(blockDataMap[currentBlock.Hash]); err != nil {
+			//		logger.Printf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState())
+			//		FileConnectionsLog.WriteString(fmt.Sprintf("ERROR in validating State of Block: %vState:\n%v\n", currentBlock, getState()))
+			//		return
+			//	}
+			//	postValidate(blockDataMap[currentBlock.Hash], false)
+			//	logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+			//	FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
+			//}
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
@@ -445,10 +453,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			}
 		}
 	}
-	/*logger.Printf("resetting TransactionPayloadIn\n")
-	FileConnectionsLog.WriteString(fmt.Sprintf("resetting TransactionPayloadIn\n"))
-	TransactionPayloadIn = nil // Empty slice*/
-	//TODO @Kürsat: Periodically, empty the map 'TransactionPayloadReceivedMap', could raise some memory issues
 
 	FirstStartAfterEpoch = false
 

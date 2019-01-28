@@ -124,6 +124,10 @@ func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 	return txMemPool[hash]
 }
 
+func GetMemPoolSize() int {
+	return len(txMemPool)
+}
+
 func ReadState() (state map[[64]byte]*protocol.Account){
 	return State
 }

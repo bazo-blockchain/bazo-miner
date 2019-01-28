@@ -687,6 +687,34 @@ func validate(b *protocol.Block, initialSetup bool) error {
 	return nil
 }
 
+func validateAfterEpoch(b *protocol.Block, initialSetup bool) error {
+	//This mutex is necessary that own-mined blocks and received blocks from the network are not
+	//validated concurrently.
+	blockValidation.Lock()
+	defer blockValidation.Unlock()
+
+	//Prepare data structure to fill tx payloads.
+	blockDataMap := make(map[[32]byte]blockData)
+
+	contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(b, false)
+	if(err != nil){
+		return err
+	}
+	blockDataMap[b.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, b}
+
+	if err := validateState(blockDataMap[b.Hash]); err != nil {
+		return err
+	}
+	postValidate(blockDataMap[b.Hash], false)
+
+	err = deleteZeroBalanceAccounts()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //Doesn't involve any state changes.
 func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*protocol.ContractTx, fundsTxSlice []*protocol.FundsTx, configTxSlice []*protocol.ConfigTx, stakeTxSlice []*protocol.StakeTx, err error) {
 	//This dynamic check is only done if we're up-to-date with syncing, otherwise timestamp is not checked.
