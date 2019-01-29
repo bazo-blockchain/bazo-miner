@@ -210,18 +210,13 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			}
 
 			if(protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
-				//logger.Printf("Block heights synchronized for height: %d",lastBlock.Height)
-				//FileConnectionsLog.WriteString(fmt.Sprintf("Block heights synchronized for height: %d",lastBlock.Height))
-
-				/*Sync state with other shards*/
-				//logger.Printf("Before synchronizing global state for height: %d",lastBlock.Height)
-				//FileConnectionsLog.WriteString(fmt.Sprintf("Before synchronizing global state for height: %d",lastBlock.Height))
-
 				TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
 				//Sync state with the other shards
 				err := updateGlobalState(TransactionPayloadIn)
 				if err != nil {
-					return
+					//return
+					logger.Printf("error in updating state: %s",err.Error())
+					FileConnectionsLog.WriteString(fmt.Sprintf("error in updating state: %s",err.Error()))
 				}
 				//logger.Printf("After synchronizing global state for height: %d",lastBlock.Height)
 				//FileConnectionsLog.WriteString(fmt.Sprintf("After synchronizing global state for height: %d",lastBlock.Height))
@@ -411,16 +406,19 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	}
 
 	if err == nil {
-		broadcastBlock(currentBlock)
 		/*logger.Printf("Sending Block Height: %d", currentBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Sending Block Height: %d", currentBlock.Height))*/
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
-			if err != nil{
+			if err == nil{
+				broadcastBlock(currentBlock)
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
+			} else {
+				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+				FileConnectionsLog.WriteString(fmt.Sprintf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error()))
 			}
 			//
 			//blockDataMap := make(map[[32]byte]blockData)
@@ -443,13 +441,14 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
+				broadcastBlock(currentBlock)
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
 				//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],currentBlock.Height-1,currentBlock.Hash[0:8],currentBlock.Height))
 			} else {
-				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err))
+				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+				FileConnectionsLog.WriteString(fmt.Sprintf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error()))
 			}
 		}
 	}

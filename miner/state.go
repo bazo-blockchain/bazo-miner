@@ -245,7 +245,7 @@ func getLastEpochBlock() (lastEpochBlock *protocol.EpochBlock, err error) {
 
 func initRootAccounts(genesis *protocol.Genesis) {
 	//rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, activeParameters.Staking_minimum, true, genesis.RootCommitment, nil, nil)
-	rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, 20000, true, genesis.RootCommitment, nil, nil)
+	rootAcc := protocol.NewAccount(genesis.RootAddress, [64]byte{}, 4000, true, genesis.RootCommitment, nil, nil)
 	storage.State[genesis.RootAddress] = &rootAcc
 	storage.RootKeys[genesis.RootAddress] = &rootAcc
 }

@@ -32,7 +32,7 @@ func prepareBlock(block *protocol.Block) {
 		txAssignedShardAbs := Abs(int32(txAssignedShard))
 
 		if int(txAssignedShardAbs) == ValidatorShardMap.ValMapping[validatorAccAddress]{
-			logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
+			//logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
 			FileConnectionsLog.WriteString(fmt.Sprintf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs))
 			//Prevent block size to overflow.
 			//if block.GetSize()+tx.Size() > activeParameters.Block_size {

@@ -96,8 +96,8 @@ func collectStatistics(b *protocol.Block) {
 	logger.Printf("Block done at time: %d\n", time.Now().Unix())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Block done at time: %d\n", time.Now().Unix()))
 
-	logger.Printf("Block duratoin: %d seconds\n",blockEndTime - blockStartTime)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Block duratoin: %d seconds\n",blockEndTime - blockStartTime))
+	logger.Printf("Block duration: %d seconds\n",blockEndTime - blockStartTime)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Block duration: %d seconds\n",blockEndTime - blockStartTime))
 
 	var blockTPS = float64(totalTransactionsInBlock) / float64(blockEndTime-blockStartTime)
 
