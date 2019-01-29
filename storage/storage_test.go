@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"math"
 	"math/rand"
 	"reflect"
@@ -405,5 +406,87 @@ func TestReadWriteDeleteState(t *testing.T) {
 
 	if retrievedState != nil {
 		t.Error("Failed to delete block from closed block storage.\n")
+	}
+}
+
+func TestRelativeStateTransition(t *testing.T) {
+	var statePrev = make(map[[64]byte]*protocol.Account)
+	var stateNow = make(map[[64]byte]*protocol.Account)
+	var stateRelative = make(map[[64]byte]*protocol.RelativeAccount)
+
+	//Account information in the previous state
+	accAPrevState := protocol.NewAccount([64]byte{'0'},[64]byte{},100,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accAPrevState.TxCnt = 1
+	accAPrevState.StakingBlockHeight = 5
+	statePrev[[64]byte{'0'}] = &accAPrevState
+
+	accBPrevState := protocol.NewAccount([64]byte{'1'},[64]byte{},100,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accBPrevState.TxCnt = 1
+	accBPrevState.StakingBlockHeight = 5
+	statePrev[[64]byte{'1'}] = &accBPrevState
+
+	accCPrevState := protocol.NewAccount([64]byte{'2'},[64]byte{},100,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accCPrevState.TxCnt = 1
+	accCPrevState.StakingBlockHeight = 5
+	statePrev[[64]byte{'2'}] = &accCPrevState
+
+	//Account information in the state after block validation
+	accANowState := protocol.NewAccount([64]byte{'0'},[64]byte{},90,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accANowState.TxCnt = 10
+	accANowState.StakingBlockHeight = 15
+	stateNow[[64]byte{'0'}] = &accANowState
+
+	accBNowState := protocol.NewAccount([64]byte{'1'},[64]byte{},110,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accBNowState.TxCnt = 10
+	accBNowState.StakingBlockHeight = 15
+	stateNow[[64]byte{'1'}] = &accBNowState
+
+	accCNowState := protocol.NewAccount([64]byte{'2'},[64]byte{},100,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accCNowState.TxCnt = 10
+	accCNowState.StakingBlockHeight = 15
+	stateNow[[64]byte{'2'}] = &accCNowState
+
+	accDNowState := protocol.NewAccount([64]byte{'3'},[64]byte{},50,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accDNowState.TxCnt = 1
+	accDNowState.StakingBlockHeight = 15
+	stateNow[[64]byte{'3'}] = &accDNowState
+
+
+	//Account information in the relative state
+	accARelState := protocol.NewRelativeAccount([64]byte{'0'},[64]byte{},-10,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accARelState.TxCnt = 9
+	accARelState.StakingBlockHeight = 10
+	stateRelative[[64]byte{'0'}] = &accARelState
+
+	accBRelState := protocol.NewRelativeAccount([64]byte{'1'},[64]byte{},10,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accBRelState.TxCnt = 9
+	accBRelState.StakingBlockHeight = 10
+	stateRelative[[64]byte{'1'}] = &accBRelState
+
+	accCRelState := protocol.NewRelativeAccount([64]byte{'2'},[64]byte{},0,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accCRelState.TxCnt = 9
+	accCRelState.StakingBlockHeight = 10
+	stateRelative[[64]byte{'2'}] = &accCRelState
+
+	accDRelState := protocol.NewRelativeAccount([64]byte{'3'},[64]byte{},50,true,[crypto.COMM_KEY_LENGTH]byte{},nil,nil)
+	accDRelState.TxCnt = 1
+	accDRelState.StakingBlockHeight = 15
+	stateRelative[[64]byte{'3'}] = &accDRelState
+
+	var stateRelativeExpected = make(map[[64]byte]*protocol.RelativeAccount)
+
+	stateRelativeExpected = GetRelativeState(statePrev,stateNow)
+
+	for k, _ := range stateRelative {
+		if _, ok := stateRelativeExpected[k]; !ok {
+			t.Errorf("new account not existing in relative state")
+		} else {
+			var accRelative = stateRelative[k]
+			var accRelativeExpected = stateRelativeExpected[k]
+
+			if !reflect.DeepEqual(accRelative, accRelativeExpected){
+				t.Errorf("expected and retrieved relative account information do not match")
+			}
+		}
 	}
 }

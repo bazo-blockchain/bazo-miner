@@ -389,6 +389,7 @@ func accStateChange(txSlice []*protocol.ContractTx) {
 		if acc == nil {
 			newAcc := protocol.NewAccount(tx.PubKey, tx.Issuer, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, tx.Contract, tx.ContractVariables)
 			storage.WriteAccount(&newAcc)
+			//RelativeStateBalance[acc.Address] = 0
 		}
 	}
 }
@@ -416,6 +417,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
 			accSender = &newFromAcc
 			storage.WriteAccount(accSender)
+			//RelativeStateBalance[accSender.Address] = 0
 		}
 
 		accReceiver, _ := storage.ReadAccount(tx.To)
@@ -423,6 +425,7 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
 			accReceiver = &newToAcc
 			storage.WriteAccount(accReceiver)
+			//RelativeStateBalance[accSender.Address] = 0
 		}
 
 		//Check transaction counter
