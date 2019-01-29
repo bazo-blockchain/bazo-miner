@@ -7,6 +7,12 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 )
 
+type StateTransition struct {
+	RelativeStateChange			map[[64]byte]*RelativeAccount
+	Height						int
+	ShardID						int
+}
+
 type RelativeAccount struct {
 	Address            [64]byte              // 64 Byte
 	Issuer             [64]byte              // 64 Byte
@@ -17,6 +23,16 @@ type RelativeAccount struct {
 	StakingBlockHeight int32                // 4 Byte
 	Contract           []byte                // Arbitrary length
 	ContractVariables  []ByteArray           // Arbitrary length
+}
+
+func NewStateTransition(stateChange map[[64]byte]*RelativeAccount, height int, shardid int) StateTransition {
+	newTransition := StateTransition{
+		stateChange,
+		height,
+		shardid,
+	}
+
+	return newTransition
 }
 
 func NewRelativeAccount(address [64]byte,
@@ -50,6 +66,30 @@ func (acc *RelativeAccount) Hash() [32]byte {
 	return SerializeHashContent(acc.Address)
 }
 
+func (st *StateTransition) EncodeTransition() []byte {
+	if st == nil {
+		return nil
+	}
+
+	encoded := StateTransition{
+		RelativeStateChange:		st.RelativeStateChange,
+		Height:						st.Height,
+		ShardID:					st.ShardID,
+	}
+
+	buffer := new(bytes.Buffer)
+	gob.NewEncoder(buffer).Encode(encoded)
+	return buffer.Bytes()
+}
+
+func (*StateTransition) DecodeTransition(encoded []byte) (st *StateTransition) {
+	var decoded StateTransition
+	buffer := bytes.NewBuffer(encoded)
+	decoder := gob.NewDecoder(buffer)
+	decoder.Decode(&decoded)
+	return &decoded
+}
+
 func (acc *RelativeAccount) Encode() []byte {
 	if acc == nil {
 		return nil
@@ -72,8 +112,8 @@ func (acc *RelativeAccount) Encode() []byte {
 	return buffer.Bytes()
 }
 
-func (*RelativeAccount) Decode(encoded []byte) (acc *Account) {
-	var decoded Account
+func (*RelativeAccount) Decode(encoded []byte) (acc *RelativeAccount) {
+	var decoded RelativeAccount
 	buffer := bytes.NewBuffer(encoded)
 	decoder := gob.NewDecoder(buffer)
 	decoder.Decode(&decoded)
