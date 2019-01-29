@@ -86,3 +86,24 @@ func GetRelativeState(statePrev map[[64]byte]*protocol.Account, stateNow map[[64
 	}
 	return stateRelative
 }
+
+func ApplyRelativeState(statePrev map[[64]byte]*protocol.Account, stateRel map[[64]byte]*protocol.RelativeAccount) (stateUpdated map[[64]byte]*protocol.Account) {
+	for krel, _ := range stateRel {
+		if _, ok := statePrev[krel]; !ok {
+			accNewRel := stateRel[krel]
+			accNew := protocol.NewAccount(krel,[64]byte{},uint64(accNewRel.Balance),accNewRel.IsStaking,accNewRel.CommitmentKey,accNewRel.Contract,accNewRel.ContractVariables)
+			accNew.TxCnt = uint32(accNewRel.TxCnt)
+			accNew.StakingBlockHeight = uint32(accNewRel.StakingBlockHeight)
+			statePrev[krel] = &accNew
+		} else {
+			accPrev := statePrev[krel]
+			accRel := stateRel[krel]
+
+			//Adjust the account information
+			accPrev.Balance = accPrev.Balance + uint64(accRel.Balance)
+			accPrev.TxCnt = accPrev.TxCnt + uint32(accRel.TxCnt)
+			accPrev.StakingBlockHeight = accPrev.StakingBlockHeight + uint32(accRel.StakingBlockHeight)
+		}
+	}
+	return statePrev
+}

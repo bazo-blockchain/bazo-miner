@@ -489,4 +489,21 @@ func TestRelativeStateTransition(t *testing.T) {
 			}
 		}
 	}
+
+
+	//Test Apply relativeState
+	var stateNowExpected = ApplyRelativeState(statePrev,stateRelative)
+
+	for k, _ := range stateNow {
+		if _, ok := stateNowExpected[k]; !ok {
+			t.Errorf("new account not existing in updated state")
+		} else {
+			var accNow = stateNow[k]
+			var accNowExpected = stateNowExpected[k]
+
+			if !reflect.DeepEqual(accNow, accNowExpected){
+				t.Errorf("expected and retrieved relative account information do not match")
+			}
+		}
+	}
 }
