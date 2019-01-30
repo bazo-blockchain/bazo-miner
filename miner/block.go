@@ -672,8 +672,18 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		}
 
 		blockDataMap[block.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, block}
+		//Save state before and after validateState() in order to generate state transition which is sent to the other shards
+		var previousStateCopy = CopyState(storage.State)
+
 		if err := validateState(blockDataMap[block.Hash]); err != nil {
 			return err
+		}
+
+		storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
+		for k, v := range storage.RelativeState {
+			logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
+			FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
+			fmt.Println("k:", k, "v:", v)
 		}
 
 		postValidate(blockDataMap[block.Hash], initialSetup)
@@ -685,6 +695,17 @@ func validate(b *protocol.Block, initialSetup bool) error {
 	}
 
 	return nil
+}
+
+func CopyState(state map[[64]byte]*protocol.Account) map[[64]byte]protocol.Account {
+
+	var copyState = make(map[[64]byte]protocol.Account)
+
+	for k, v := range state {
+		copyState[k] = *v
+	}
+
+	return copyState
 }
 
 func validateAfterEpoch(b *protocol.Block, initialSetup bool) error {
@@ -702,9 +723,22 @@ func validateAfterEpoch(b *protocol.Block, initialSetup bool) error {
 	}
 	blockDataMap[b.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, b}
 
+	//Save state before and after validateState() in order to generate state transition which is sent to the other shards
+	var previousStateCopy = CopyState(storage.State)
+	//storage.PreviousState = storage.State
+
 	if err := validateState(blockDataMap[b.Hash]); err != nil {
 		return err
 	}
+
+	storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
+
+	for k, v := range storage.RelativeState {
+		logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
+		FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
+		fmt.Println("k:", k, "v:", v)
+	}
+
 	postValidate(blockDataMap[b.Hash], false)
 
 	err = deleteZeroBalanceAccounts()

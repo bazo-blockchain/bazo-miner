@@ -29,11 +29,10 @@ func prepareBlock(block *protocol.Block) {
 	for i, tx := range opentxs {
 		/*When fetching and adding Txs from the MemPool, first check if it belongs to my shard. Only if so, then add tx to the block*/
 		txAssignedShard := assignTransactionToShard(tx)
-		txAssignedShardAbs := Abs(int32(txAssignedShard))
 
-		if int(txAssignedShardAbs) == ValidatorShardMap.ValMapping[validatorAccAddress]{
+		if int(txAssignedShard) == ValidatorShardMap.ValMapping[validatorAccAddress]{
 			//logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
-			FileConnectionsLog.WriteString(fmt.Sprintf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs))
+			FileConnectionsLog.WriteString(fmt.Sprintf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShard))
 			//Prevent block size to overflow.
 			//if block.GetSize()+tx.Size() > activeParameters.Block_size {
 			//	break
@@ -73,25 +72,25 @@ func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 			byteToConvert = transaction.(*protocol.ContractTx).Issuer
 			var calculatedInt int
 			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
-			return int((calculatedInt % NumberOfShards) + 1)
+			return int((Abs(int32(calculatedInt)) % int32(NumberOfShards)) + 1)
 		case *protocol.FundsTx:
 			var byteToConvert [64]byte
 			byteToConvert = transaction.(*protocol.FundsTx).From
 			var calculatedInt int
 			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
-			return int((calculatedInt % NumberOfShards) + 1)
+			return int((Abs(int32(calculatedInt)) % int32(NumberOfShards)) + 1)
 		case *protocol.ConfigTx:
 			var byteToConvert [64]byte
 			byteToConvert = transaction.(*protocol.ConfigTx).Sig
 			var calculatedInt int
 			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
-			return int((calculatedInt % NumberOfShards) + 1)
+			return int((Abs(int32(calculatedInt)) % int32(NumberOfShards)) + 1)
 		case *protocol.StakeTx:
 			var byteToConvert [64]byte
 			byteToConvert = transaction.(*protocol.StakeTx).Account
 			var calculatedInt int
 			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
-			return int((calculatedInt % NumberOfShards) + 1)
+			return int((Abs(int32(calculatedInt)) % int32(NumberOfShards)) + 1)
 		default:
 			return 1 // default shard Nr.
 		}

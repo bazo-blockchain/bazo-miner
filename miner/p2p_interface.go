@@ -17,6 +17,13 @@ func incomingData() {
 	}
 }
 
+func incomingStateData(){
+	for{
+		stateTransition := <- p2p.StateTransitionIn
+		processStateData(stateTransition)
+	}
+}
+
 func incomingEpochData() {
 	for {
 		//receive Epoch Block
@@ -104,6 +111,19 @@ func processEpochBlock(eb []byte) {
 	return err
 }*/
 
+func processStateData(payload []byte) {
+	var stateTransition *protocol.StateTransition
+	stateTransition = stateTransition.DecodeTransition(payload)
+
+	if(lastEpochBlock != nil){
+		if (stateTransition.ShardID != ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
+			storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
+			logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
+			FileConnectionsLog.WriteString(fmt.Sprintf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height))
+		}
+	}
+}
+
 func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
@@ -131,6 +151,9 @@ func processBlock(payload []byte) {
 		storage.ReceivedBlockStash.Set(block.Hash,block)
 		logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
+
+
+
 		//if(lastBlock != nil){
 		//	if(block.Height >= lastBlock.Height){
 		//		storage.ReceivedBlockStash.Set(block.Hash,block)
@@ -162,6 +185,10 @@ func broadcastBlock(block *protocol.Block) {
 	var blockCopy = *block
 	blockCopy.InitBloomFilter(append(storage.GetTxPubKeys(&blockCopy)))
 	p2p.BlockHeaderOut <- blockCopy.EncodeHeader()
+}
+
+func broadcastStateTransition(st *protocol.StateTransition) {
+	p2p.StateTransitionOut <- st.EncodeTransition()
 }
 
 /*Broadcast TX hashes to the network*/

@@ -121,6 +121,8 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 }
 
 func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
+	memPoolMutex.Lock()
+	defer memPoolMutex.Unlock()
 	return txMemPool[hash]
 }
 

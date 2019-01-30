@@ -69,7 +69,7 @@ func TestStateStashSetMethod(t *testing.T) {
 	var expectedHeightCountForHeight10 = 1
 	var retrievedHeightCounetForHeight10 = CheckForHeightStateTransition(sampleStash,10)
 	if !reflect.DeepEqual(expectedHeightCountForHeight10, retrievedHeightCounetForHeight10){
-		t.Errorf("Error check for height 40 in state stash - retrieved: %d",retrievedHeightCounetForHeight10)
+		t.Errorf("Error check for height 10 in state stash - retrieved: %d",retrievedHeightCounetForHeight10)
 	}
 
 	var expectedHeightCountForHeight20 = 1
@@ -84,6 +84,25 @@ func TestStateStashSetMethod(t *testing.T) {
 		t.Errorf("Error check for height 30 in state stash - retrieved: %d",retrievedHeightCounetForHeight30)
 	}
 
+
+	//Check retrieving state transitions for height
+	var expectedStateTransitionCountForHeight10 = 1
+	var retrievedStateTransitionCountForHeight10 = ReturnStateTransitionForHeight(sampleStash,10)
+	if !reflect.DeepEqual(len(retrievedStateTransitionCountForHeight10), expectedStateTransitionCountForHeight10){
+		t.Errorf("Error retrieval of state transition for height 10 in state stash - retrieved: %d",retrievedStateTransitionCountForHeight10)
+	}
+
+	var expectedStateTransitionCountForHeight20 = 1
+	var retrievedStateTransitionCountForHeight20 = ReturnStateTransitionForHeight(sampleStash,20)
+	if !reflect.DeepEqual(len(retrievedStateTransitionCountForHeight20), expectedStateTransitionCountForHeight20){
+		t.Errorf("Error retrieval of state transition for height 20 in state stash - retrieved: %d",retrievedStateTransitionCountForHeight20)
+	}
+
+	var expectedStateTransitionCountForHeight30 = 1
+	var retrievedStateTransitionCountForHeight30 = ReturnStateTransitionForHeight(sampleStash,30)
+	if !reflect.DeepEqual(len(retrievedStateTransitionCountForHeight30), expectedStateTransitionCountForHeight30){
+		t.Errorf("Error retrieval of state transition for height 20 in state stash - retrieved: %d",retrievedStateTransitionCountForHeight30)
+	}
 }
 
 //func TestCheckHeightCharacteristics(t *testing.T) {

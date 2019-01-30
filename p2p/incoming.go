@@ -19,6 +19,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardTxPayloadToMiner(p, payload)
 	case EPOCH_BLOCK_BRDCST:
 		forwardEpochBlockToMinerIn(p, payload)
+	case STATE_TRANSITION_BRDCST:
+		forwardStateTransitionToMiner(p,payload)
 	case VALIDATOR_SHARD_BRDCST:
 		forwardAssignmentToMiner(p, payload)
 	case TIME_BRDCST:

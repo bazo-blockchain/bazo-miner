@@ -61,7 +61,7 @@ func GetFundsTxPubKeys(fundsTxData [][32]byte) (fundsTxPubKeys [][64]byte) {
 	return fundsTxPubKeys
 }
 
-func GetRelativeState(statePrev map[[64]byte]*protocol.Account, stateNow map[[64]byte]*protocol.Account) (stateRel map[[64]byte]*protocol.RelativeAccount) {
+func GetRelativeState(statePrev map[[64]byte]protocol.Account, stateNow map[[64]byte]*protocol.Account) (stateRel map[[64]byte]*protocol.RelativeAccount) {
 	var stateRelative = make(map[[64]byte]*protocol.RelativeAccount)
 
 	for know, _ := range stateNow {

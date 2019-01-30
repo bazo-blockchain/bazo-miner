@@ -10,6 +10,12 @@ var (
 	//Block from the miner, to the network
 	BlockOut = make(chan []byte)
 
+	//State transition from the miner to the network
+	StateTransitionOut = make(chan []byte)
+
+	//State transition from the network to the miner
+	StateTransitionIn = make(chan []byte)
+
 	//TX hashes of validated TXs to the network
 	TxPayloadOut = make(chan []byte)
 
@@ -49,6 +55,14 @@ func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
+func forwardStateTransitionBrdcstToMiner()  {
+	for {
+		st := <-StateTransitionOut
+		toBrdcst := BuildPacket(STATE_TRANSITION_BRDCST, st)
 		minerBrdcstMsg <- toBrdcst
 	}
 }
@@ -155,6 +169,10 @@ func forwardEpochBlockToMiner(p *peer, payload []byte) {
 
 func forwardEpochBlockToMinerIn(p *peer, payload []byte) {
 	EpochBlockIn <- payload
+}
+
+func forwardStateTransitionToMiner(p *peer, payload []byte) () {
+	StateTransitionIn <- payload
 }
 
 func forwardTxPayloadToMiner(p *peer, payload []byte) {

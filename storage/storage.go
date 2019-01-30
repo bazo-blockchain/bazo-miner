@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/boltdb/bolt"
@@ -18,9 +19,11 @@ var (
 	RootKeys           = make(map[[64]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	ReceivedBlockStash = protocol.NewBlockStash()
+	ReceivedStateStash = protocol.NewStateStash()
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
 	Buckets			   []string
+	memPoolMutex	   = &sync.Mutex{}
 )
 
 const (

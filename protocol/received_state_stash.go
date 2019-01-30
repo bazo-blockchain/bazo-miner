@@ -52,8 +52,8 @@ func (m *StateStash) DeleteFirstEntry() {
 
 /*This function counts how many state transisitions in the stash have some predefined height*/
 func CheckForHeightStateTransition(statestash *StateStash, height uint32) int {
-	stashMutex.Lock()
-	defer stashMutex.Unlock()
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
 	numberOfStateTransisionsAtHeight := 0
 	for _,stateTransision := range statestash.m {
 		if(stateTransision.Height == int(height)){
@@ -61,6 +61,21 @@ func CheckForHeightStateTransition(statestash *StateStash, height uint32) int {
 		}
 	}
 	return numberOfStateTransisionsAtHeight
+}
+
+func ReturnStateTransitionForHeight(statestash *StateStash, height uint32) [] *StateTransition {
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
+
+	stateTransitionSlice := []*StateTransition{}
+
+	for _,st := range statestash.m {
+		if(st.Height == int(height)){
+			stateTransitionSlice = append(stateTransitionSlice,st)
+		}
+	}
+
+	return stateTransitionSlice
 }
 
 ///*This function returns the hashes of the blocks for some height*/

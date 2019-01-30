@@ -117,6 +117,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	//Start to listen to network inputs (txs and blocks).
 	go incomingData()
 	go incomingEpochData()
+	go incomingStateData()
 	//go incomingTxPayloadData()
 	//go incomingValShardData()
 	//go syncBlockHeight()
@@ -231,29 +232,24 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		//FileConnectionsLog.WriteString(fmt.Sprintf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID))
 
 		/*This is how it is done with state transition*/
-		logger.Printf("Before checking my blockStash for lastblock height: %d",lastBlock.Height)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my blockStash for lastblock height: %d",lastBlock.Height))
+		logger.Printf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height))
 		for{
-			if(NumberOfShards == 1 || storage.ReceivedBlockStash == nil){
+			if(NumberOfShards == 1){
 				break
 			}
 
-			if(protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
-				TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
-				//Sync state with the other shards
-				err := updateGlobalState(TransactionPayloadIn)
-				if err != nil {
-					//return
-					logger.Printf("error in updating state: %s",err.Error())
-					FileConnectionsLog.WriteString(fmt.Sprintf("error in updating state: %s",err.Error()))
+			if(protocol.CheckForHeightStateTransition(storage.ReceivedStateStash,lastBlock.Height) == NumberOfShards-1){
+				stateTransitionSlice := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
+				//Apply relative state transitions from other shards
+				for _, st := range stateTransitionSlice {
+					storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
 				}
-				//logger.Printf("After synchronizing global state for height: %d",lastBlock.Height)
-				//FileConnectionsLog.WriteString(fmt.Sprintf("After synchronizing global state for height: %d",lastBlock.Height))
 				break
 			}
 		}
-		logger.Printf("After checking my blockStash for lastblock height: %d",lastBlock.Height)
-		FileConnectionsLog.WriteString(fmt.Sprintf("After checking my blockStash for lastblock height: %d",lastBlock.Height))
+		logger.Printf("After checking my state stash for lastblock height: %d\n",lastBlock.Height)
+		FileConnectionsLog.WriteString(fmt.Sprintf("After checking my state stash for lastblock height: %d\n",lastBlock.Height))
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
@@ -437,6 +433,10 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil{
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
+				logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				broadcastStateTransition(stateTransition)
 				broadcastBlock(currentBlock)
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
@@ -467,6 +467,10 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
+				logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				broadcastStateTransition(stateTransition)
 				broadcastBlock(currentBlock)
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))

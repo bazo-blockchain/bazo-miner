@@ -79,5 +79,5 @@ func InitLogging() {
 	LogMapping[130] = "LAST_EPOCH_BLOCK_REQ"
 	LogMapping[131] = "LAST_EPOCH_BLOCK_RES"
 	LogMapping[132] = "TX_PAYLOAD_BRDCST"
-
+	LogMapping[133] = "STATE_TRANSITION_BRDCST"
 }
