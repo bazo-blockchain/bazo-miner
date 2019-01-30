@@ -3,9 +3,6 @@ package protocol
 import (
 	"sync"
 )
-
-//TODO: @Kürsat - Write tests for this datastructure
-
 /*This datastructe maintains a map of the form [32]byte - *Block. It stores the block received from other shards.
 This datastructure will be queried at every blockheight to check if we can continue mining the next block.
 Because we need to remove the first element of this datastructure and map access is random in Go, we additionally have a slice datastructure

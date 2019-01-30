@@ -25,14 +25,14 @@ type RelativeAccount struct {
 	ContractVariables  []ByteArray           // Arbitrary length
 }
 
-func NewStateTransition(stateChange map[[64]byte]*RelativeAccount, height int, shardid int) StateTransition {
+func NewStateTransition(stateChange map[[64]byte]*RelativeAccount, height int, shardid int) *StateTransition {
 	newTransition := StateTransition{
 		stateChange,
 		height,
 		shardid,
 	}
 
-	return newTransition
+	return &newTransition
 }
 
 func NewRelativeAccount(address [64]byte,
@@ -57,6 +57,24 @@ func NewRelativeAccount(address [64]byte,
 
 	return newAcc
 }
+
+func (st *StateTransition) HashTransition() [32]byte {
+	if st == nil {
+		return [32]byte{}
+	}
+
+	stHash := struct {
+		RelativeStateChange				  map[[64]byte]*RelativeAccount
+		Height				  			  int
+		ShardID							  int
+	}{
+		st.RelativeStateChange,
+		st.Height,
+		st.ShardID,
+	}
+	return SerializeHashContent(stHash)
+}
+
 
 func (acc *RelativeAccount) Hash() [32]byte {
 	if acc == nil {

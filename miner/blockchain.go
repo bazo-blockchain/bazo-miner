@@ -201,7 +201,36 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			mining(hashPrevBlock,heightPrevBlock)
 		}
 
+		/*This is how it is done currently*/
 		/*Wait until block heights of the shards are synched, i.e. until I received all the blocks with the height of my lastblock*/
+		//logger.Printf("Before checking my blockStash for lastblock height: %d",lastBlock.Height)
+		//FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my blockStash for lastblock height: %d",lastBlock.Height))
+		//for{
+		//	if(NumberOfShards == 1 || storage.ReceivedBlockStash == nil){
+		//		break
+		//	}
+		//
+		//	if(protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
+		//		TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
+		//		//Sync state with the other shards
+		//		err := updateGlobalState(TransactionPayloadIn)
+		//		if err != nil {
+		//			//return
+		//			logger.Printf("error in updating state: %s",err.Error())
+		//			FileConnectionsLog.WriteString(fmt.Sprintf("error in updating state: %s",err.Error()))
+		//		}
+		//		//logger.Printf("After synchronizing global state for height: %d",lastBlock.Height)
+		//		//FileConnectionsLog.WriteString(fmt.Sprintf("After synchronizing global state for height: %d",lastBlock.Height))
+		//		break
+		//	}
+		//}
+		//logger.Printf("After checking my blockStash for lastblock height: %d",lastBlock.Height)
+		//FileConnectionsLog.WriteString(fmt.Sprintf("After checking my blockStash for lastblock height: %d",lastBlock.Height))
+		//
+		//logger.Printf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID)
+		//FileConnectionsLog.WriteString(fmt.Sprintf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID))
+
+		/*This is how it is done with state transition*/
 		logger.Printf("Before checking my blockStash for lastblock height: %d",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my blockStash for lastblock height: %d",lastBlock.Height))
 		for{
@@ -225,9 +254,6 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		}
 		logger.Printf("After checking my blockStash for lastblock height: %d",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("After checking my blockStash for lastblock height: %d",lastBlock.Height))
-		//
-		//logger.Printf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID)
-		//FileConnectionsLog.WriteString(fmt.Sprintf("Within overall for-loop Height: %d - MyShardID: %d\n",lastBlock.Height,ThisShardID))
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
