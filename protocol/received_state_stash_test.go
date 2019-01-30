@@ -49,8 +49,8 @@ func TestStateStashSetMethod(t *testing.T) {
 	var stateTransision3 = NewStateTransition(relAccounts3,30,1)
 
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision1)
-	sampleStash.Set(stateTransision2.HashTransition(),stateTransision1)
-	sampleStash.Set(stateTransision3.HashTransition(),stateTransision1)
+	sampleStash.Set(stateTransision2.HashTransition(),stateTransision2)
+	sampleStash.Set(stateTransision3.HashTransition(),stateTransision3)
 
 	if !reflect.DeepEqual(3, len(sampleStash.m)) && !reflect.DeepEqual(3, len(sampleStash.keys)){
 		t.Errorf("Stash size does not equal 3")
@@ -63,6 +63,27 @@ func TestStateStashSetMethod(t *testing.T) {
 	if !reflect.DeepEqual(3, len(sampleStash.m)) && !reflect.DeepEqual(3, len(sampleStash.keys)){
 		t.Errorf("Stash included a duplicate state transition")
 	}
+
+
+	//Test CheckforHeight
+	var expectedHeightCountForHeight10 = 1
+	var retrievedHeightCounetForHeight10 = CheckForHeightStateTransition(sampleStash,10)
+	if !reflect.DeepEqual(expectedHeightCountForHeight10, retrievedHeightCounetForHeight10){
+		t.Errorf("Error check for height 40 in state stash - retrieved: %d",retrievedHeightCounetForHeight10)
+	}
+
+	var expectedHeightCountForHeight20 = 1
+	var retrievedHeightCounetForHeight20 = CheckForHeightStateTransition(sampleStash,20)
+	if !reflect.DeepEqual(expectedHeightCountForHeight20, retrievedHeightCounetForHeight20){
+		t.Errorf("Error check for height 20 in state stash - retrieved: %d",retrievedHeightCounetForHeight20)
+	}
+
+	var expectedHeightCountForHeight30 = 1
+	var retrievedHeightCounetForHeight30 = CheckForHeightStateTransition(sampleStash,30)
+	if !reflect.DeepEqual(expectedHeightCountForHeight30, retrievedHeightCounetForHeight30){
+		t.Errorf("Error check for height 30 in state stash - retrieved: %d",retrievedHeightCounetForHeight30)
+	}
+
 }
 
 //func TestCheckHeightCharacteristics(t *testing.T) {

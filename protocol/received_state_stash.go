@@ -50,8 +50,8 @@ func (m *StateStash) DeleteFirstEntry() {
 	m.keys = append(m.keys[:0], m.keys[1:]...)
 }
 
-/*This function counts how many blocks in the stash have some predefined height*/
-func CheckForHeightState(statestash *StateStash, height uint32) int {
+/*This function counts how many state transisitions in the stash have some predefined height*/
+func CheckForHeightStateTransition(statestash *StateStash, height uint32) int {
 	stashMutex.Lock()
 	defer stashMutex.Unlock()
 	numberOfStateTransisionsAtHeight := 0
