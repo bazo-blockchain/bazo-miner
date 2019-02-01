@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -185,4 +186,116 @@ func TestEpochBlockHeaderSerialization(t *testing.T) {
 	if !reflect.DeepEqual(epochBlockHeader, compareEpochBlockHeader) {
 		t.Error("Block encoding/decoding failed!")
 	}
+}
+
+func TestValidatorShardAssignment(t *testing.T) {
+
+	//Int values of the validators
+	minerA := 7076709494514296622
+	minerB := -5792227536373707137
+	minerC := -2069733853603621859
+	minerD := -5950487042809319484
+	minerE := 4049418945178417089
+	minerF := -8588276547143327147
+	minerG := -6646190410742499119
+	minerH := -7289242113092823196
+	minerI := 4178447941013997305
+	minerJ := -3885344446679922789
+
+	fmt.Printf("=== 1 Shard ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(1)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(1)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(1)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(1)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(1)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(1)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(1)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(1)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(1)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(1)) + 1))
+
+
+	fmt.Printf("=== 2 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(2)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(2)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(2)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(2)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(2)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(2)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(2)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(2)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(2)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(2)) + 1))
+
+	//Get Shard Assignment with 1 shard
+	fmt.Printf("=== 3 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(3)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(3)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(3)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(3)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(3)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(3)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(3)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(3)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(3)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(3)) + 1))
+
+	//Get Shard Assignment with 1 shard
+	fmt.Printf("=== 4 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(4)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(4)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(4)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(4)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(4)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(4)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(4)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(4)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(4)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(4)) + 1))
+
+	//Get Shard Assignment with 1 shard
+	fmt.Printf("=== 5 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(5)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(5)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(5)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(5)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(5)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(5)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(5)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(5)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(5)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(5)) + 1))
+
+	//Get Shard Assignment with 1 shard
+	fmt.Printf("=== 6 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(6)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(6)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(6)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(6)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(6)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(6)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(6)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(6)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(6)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(6)) + 1))
+
+	//Get Shard Assignment with 1 shard
+	fmt.Printf("=== 7 Shards ===\n")
+	fmt.Printf("MinerA: %d\n", int((Abs(int32(minerA)) % int32(7)) + 1))
+	fmt.Printf("MinerB: %d\n", int((Abs(int32(minerB)) % int32(7)) + 1))
+	fmt.Printf("MinerC: %d\n", int((Abs(int32(minerC)) % int32(7)) + 1))
+	fmt.Printf("MinerD: %d\n", int((Abs(int32(minerD)) % int32(7)) + 1))
+	fmt.Printf("MinerE: %d\n", int((Abs(int32(minerE)) % int32(7)) + 1))
+	fmt.Printf("MinerF: %d\n", int((Abs(int32(minerF)) % int32(7)) + 1))
+	fmt.Printf("MinerG: %d\n", int((Abs(int32(minerG)) % int32(7)) + 1))
+	fmt.Printf("MinerH: %d\n", int((Abs(int32(minerH)) % int32(7)) + 1))
+	fmt.Printf("MinerI: %d\n", int((Abs(int32(minerI)) % int32(7)) + 1))
+	fmt.Printf("MinerJ: %d\n", int((Abs(int32(minerJ)) % int32(7)) + 1))
+}
+
+func Abs(x int32) int32 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

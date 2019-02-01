@@ -101,14 +101,14 @@ func finalizeBlock(block *protocol.Block) error {
 
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
-	logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Before Block proofofstake for height: %d\n",block.Height))
+	//logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Before Block proofofstake for height: %d\n",block.Height))
 	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
-	logger.Printf("After proofofstake for height: %d\n",block.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("After proofofstake for height: %d\n",block.Height))
+	//logger.Printf("After proofofstake for height: %d\n",block.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("After proofofstake for height: %d\n",block.Height))
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -168,16 +168,16 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	epochBlock.State = storage.State
-	logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height))
+	//logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height))
 
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
 
-	logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
-	FileConnectionsLog.WriteString(fmt.Sprintf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height))
+	//logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
+	//FileConnectionsLog.WriteString(fmt.Sprintf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height))
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -224,28 +224,28 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.ContractTx:
 		err := addContractTx(b, tx.(*protocol.ContractTx))
 		if err != nil {
-			logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
+			//logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
 			FileConnectionsLog.WriteString(fmt.Sprintf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx)))
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
+			//logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
 			FileConnectionsLog.WriteString(fmt.Sprintf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx)))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
-			logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
+			//logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
 			FileConnectionsLog.WriteString(fmt.Sprintf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx)))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			//logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			FileConnectionsLog.WriteString(fmt.Sprintf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx)))
 			return err
 		}
@@ -680,11 +680,11 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		}
 
 		storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
-		for k, v := range storage.RelativeState {
-			logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
-			FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
-			fmt.Println("k:", k, "v:", v)
-		}
+		//for k, v := range storage.RelativeState {
+		//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
+		//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
+		//	fmt.Println("k:", k, "v:", v)
+		//}
 
 		postValidate(blockDataMap[block.Hash], initialSetup)
 	}
@@ -733,11 +733,11 @@ func validateAfterEpoch(b *protocol.Block, initialSetup bool) error {
 
 	storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
 
-	for k, v := range storage.RelativeState {
-		logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
-		FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
-		fmt.Println("k:", k, "v:", v)
-	}
+	//for k, v := range storage.RelativeState {
+	//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
+	//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
+	//	fmt.Println("k:", k, "v:", v)
+	//}
 
 	postValidate(blockDataMap[b.Hash], false)
 

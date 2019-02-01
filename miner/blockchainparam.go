@@ -77,6 +77,7 @@ func collectStatistics(b *protocol.Block) {
 	FileConnectionsLog.WriteString(fmt.Sprintf("--- BLOCK STATISTICS FOR BLOCK (%x) AT HEIGHT: %d ---\n", b.Hash[0:8],b.Height))
 
 	blockEndTime = time.Now().Unix()
+	var blockDuration = blockEndTime - blockStartTime
 
 	globalBlockCount++
 	localBlockCount++
@@ -85,7 +86,7 @@ func collectStatistics(b *protocol.Block) {
 	validatedBlockCount = validatedBlockCount + 1
 
 	logger.Printf("Number of transactions in block (%x): %d\n", b.Hash[0:8],totalTransactionsInBlock)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Number of transactions in block (%x): %d\n", b.Hash[0:8],totalTransactionsInBlock))
+	FileConnectionsLog.WriteString(fmt.Sprintf("Number of transactions in block: %d\n", totalTransactionsInBlock))
 
 	logger.Printf("Validated Transaction count: %d\n", validatedTXCount)
 	FileConnectionsLog.WriteString(fmt.Sprintf("Validated Transaction count: %d\n", validatedTXCount))
@@ -96,13 +97,16 @@ func collectStatistics(b *protocol.Block) {
 	logger.Printf("Block done at time: %d\n", time.Now().Unix())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Block done at time: %d\n", time.Now().Unix()))
 
-	logger.Printf("Block duration: %d seconds\n",blockEndTime - blockStartTime)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Block duration: %d seconds\n",blockEndTime - blockStartTime))
+	logger.Printf("Block duration: %d seconds\n",blockDuration)
+	FileConnectionsLog.WriteString(fmt.Sprintf("Block duration: %d seconds\n",blockDuration))
 
 	var blockTPS = float64(totalTransactionsInBlock) / float64(blockEndTime-blockStartTime)
 
 	logger.Printf("Block TPS: %v TX/Sec\n", blockTPS)
 	FileConnectionsLog.WriteString(fmt.Sprintf("Block TPS: %v TX/Sec\n", blockTPS))
+
+	logger.Printf("MemPool Size: %d\n", storage.GetMemPoolSize())
+	FileConnectionsLog.WriteString(fmt.Sprintf("MemPool Size: %d\n", storage.GetMemPoolSize()))
 
 	if localBlockCount == int64(activeParameters.Diff_interval) {
 		currentTargetTime.last = b.Timestamp

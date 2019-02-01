@@ -46,7 +46,7 @@ func RcvData(p *peer) (header *Header, payload []byte, err error) {
 	}
 
 	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
-	FileConnectionsLog.WriteString(fmt.Sprintf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload)))
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload)))
 	return header, payload, nil
 }
 
@@ -72,7 +72,7 @@ func RcvData_(c net.Conn) (header *Header, payload []byte, err error) {
 
 func sendData(p *peer, payload []byte) {
 	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN))
+	//FileConnectionsLog.WriteString(fmt.Sprintf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN))
 	p.l.Lock()
 	p.conn.Write(payload)
 	p.l.Unlock()

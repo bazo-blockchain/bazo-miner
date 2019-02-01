@@ -61,7 +61,7 @@ func bootstrap() {
 	p, err := InitiateNewMinerConnection(storage.BootstrapServer)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v\n", err)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Initiating new miner connection failed: %v\n", err))
+		//FileConnectionsLog.WriteString(fmt.Sprintf("Initiating new miner connection failed: %v\n", err))
 	}
 
 	go peerConn(p)

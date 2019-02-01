@@ -47,7 +47,10 @@ var (
 	validatedTXCount		int
 	validatedBlockCount		int
 	blockStartTime			int64
+	syncStartTime			int64
 	blockEndTime			int64
+	totalSyncTime			int64
+	totalBlockTIme			int64
 )
 
 func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
@@ -234,22 +237,34 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		/*This is how it is done with state transition*/
 		logger.Printf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height))
+		syncStartTime = time.Now().Unix()
 		for{
 			if(NumberOfShards == 1){
 				break
 			}
 
-			if(protocol.CheckForHeightStateTransition(storage.ReceivedStateStash,lastBlock.Height) == NumberOfShards-1){
+			if(protocol.CheckForHeightStateTransition(storage.ReceivedStateStash,lastBlock.Height) == NumberOfShards-1 &&
+				protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
 				stateTransitionSlice := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
 				//Apply relative state transitions from other shards
 				for _, st := range stateTransitionSlice {
 					storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
 				}
+
+				//Delete transactions from mempool, which were validated by the other shards
+				//TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
+				//DeleteTransactionFromMempool(TransactionPayloadIn)
 				break
 			}
 		}
 		logger.Printf("After checking my state stash for lastblock height: %d\n",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("After checking my state stash for lastblock height: %d\n",lastBlock.Height))
+
+		var syncEndTime = time.Now().Unix()
+		var syncDuration = syncEndTime - syncStartTime
+		totalSyncTime += syncDuration
+		FileConnectionsLog.WriteString(fmt.Sprintf("Synchronisation duration for lastblock height: %d - %d seconds\n",lastBlock.Height,syncDuration))
+		FileConnectionsLog.WriteString(fmt.Sprintf("Total Synchronisation duration for lastblock height: %d - %d seconds\n",lastBlock.Height,totalSyncTime))
 
 		prevBlockIsEpochBlock = false // this boolean indicates whether the previous block is an epoch block
 
@@ -434,8 +449,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil{
 				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
-				logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+				//FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)
 				broadcastBlock(currentBlock)
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
@@ -468,8 +483,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
 				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
-				logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+				//FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)
 				broadcastBlock(currentBlock)
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())

@@ -56,8 +56,8 @@ func WriteLastClosedBlock(block *protocol.Block) (err error) {
 
 //Changing the "tx" shortcut here and using "transaction" to distinguish between bolt's transactions
 func WriteOpenTx(transaction protocol.Transaction) {
-	memPoolMutex.Lock()
-	defer memPoolMutex.Unlock()
+	//memPoolMutex.Lock()
+	//defer memPoolMutex.Unlock()
 	txMemPool[transaction.Hash()] = transaction
 }
 

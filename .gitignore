@@ -28,7 +28,7 @@
 # to others into the folder tmp.
 Node*/
 bazo-miner
-
+PerformanceLogs/
 out.dot
 import_dependencies_miner.png
 hash-prevhash-*.txt

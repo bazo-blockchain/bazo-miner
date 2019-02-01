@@ -71,6 +71,13 @@ func Init(dbname string, bootstrapIpport string) error {
 		return err
 	}
 
+	//for _, bucket := range Buckets{
+	//	err = DeleteBucket(bucket,db)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+
 	for _, bucket := range Buckets {
 		err = CreateBucket(bucket, db)
 		if err != nil {
@@ -84,6 +91,16 @@ func Init(dbname string, bootstrapIpport string) error {
 func CreateBucket(bucketName string, db *bolt.DB) (err error) {
 	return db.Update(func(tx *bolt.Tx) error {
 		_, err = tx.CreateBucket([]byte(bucketName))
+		if err != nil {
+			return fmt.Errorf(ERROR_MSG + " %s", err)
+		}
+		return nil
+	})
+}
+
+func DeleteBucket(bucketName string, db *bolt.DB) (err error) {
+	return db.Update(func(tx *bolt.Tx) error {
+		err = tx.DeleteBucket([]byte(bucketName))
 		if err != nil {
 			return fmt.Errorf(ERROR_MSG + " %s", err)
 		}

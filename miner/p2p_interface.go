@@ -119,7 +119,7 @@ func processStateData(payload []byte) {
 		if (stateTransition.ShardID != ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
 			storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
 			logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
-			FileConnectionsLog.WriteString(fmt.Sprintf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height))
+			//FileConnectionsLog.WriteString(fmt.Sprintf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height))
 		}
 	}
 }
@@ -150,7 +150,7 @@ func processBlock(payload []byte) {
 		//broadcastBlock(block)
 		storage.ReceivedBlockStash.Set(block.Hash,block)
 		logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
+		//FileConnectionsLog.WriteString(fmt.Sprintf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
 
 
 

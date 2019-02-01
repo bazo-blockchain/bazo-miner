@@ -67,6 +67,8 @@ func DeleteAllLastClosedEpochBlock() error {
 }
 
 func DeleteOpenTx(transaction protocol.Transaction) {
+	//memPoolMutex.Lock()
+	//defer memPoolMutex.Unlock()
 	delete(txMemPool, transaction.Hash())
 }
 
