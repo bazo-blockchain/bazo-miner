@@ -44,6 +44,32 @@ func WriteOpenTx(transaction protocol.Transaction) {
 	txMemPool[transaction.Hash()] = transaction
 }
 
+func WriteINVALIDOpenTx(transaction protocol.Transaction) {
+
+	txINVALIDMemPool[transaction.Hash()] = transaction
+}
+func WriteToReceivedStash(block *protocol.Block) {
+
+	//Only write it to stash if it is not in there already.
+	if !blockAlreadyInStash(receivedBlockStash, block.Hash) {
+		receivedBlockStash = append(receivedBlockStash, block)
+
+		//When lenght of stash is > 50 --> Remove first added Block
+		if len(receivedBlockStash) > 50 {
+			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+		}
+	}
+}
+
+func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
+	for _, blockInStash := range slice {
+		if blockInStash.Hash == newBlockHash {
+			return true
+		}
+	}
+	return false
+}
+
 func WriteClosedTx(transaction protocol.Transaction) (err error) {
 
 	var bucket string
@@ -65,5 +91,6 @@ func WriteClosedTx(transaction protocol.Transaction) (err error) {
 		return err
 	})
 
+	PrintMemPoolSize()
 	return err
 }

@@ -4,11 +4,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
-	"log"
-	"sync"
-
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"log"
+	"sync"
 )
 
 var (
@@ -21,6 +20,7 @@ var (
 	validatorAccAddress 			[64]byte
 	multisigPubKey      			*ecdsa.PublicKey
 	commPrivKey, rootCommPrivKey	*rsa.PrivateKey
+	blockchainSize uint64			= 0
 )
 
 //Miner entry point
@@ -73,12 +73,18 @@ func mining(initialBlock *protocol.Block) {
 		}
 
 		if err == nil {
-			broadcastBlock(currentBlock)
 			err := validate(currentBlock, false)
 			if err == nil {
-				logger.Printf("Validated block: %vState:\n%v", currentBlock, getState())
+				//Only broadcast the block if it is valid.
+				broadcastBlock(currentBlock)
+				logger.Printf("Validated block (mined): %vState:\n%v", currentBlock, getState())
+				logger.Printf("Size of Block %x: %v Bytes. --> Header: %v Bytes, Body: %v Bytes " +
+					"--> Body includes %v Bytes of TxData\n",
+					currentBlock.Hash[0:8], currentBlock.GetSize(), currentBlock.GetHeaderSize(),
+					currentBlock.GetBodySize(), currentBlock.GetTxDataSize())
+				CalculateBlockchainSize(currentBlock.GetSize())
 			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
+				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err)
 			}
 		}
 
@@ -107,4 +113,9 @@ func initRootKey(rootKey *ecdsa.PublicKey) error {
 	storage.RootKeys[addressHash] = &rootAcc
 
 	return nil
+}
+
+func CalculateBlockchainSize(currentBlockSize uint64) {
+	blockchainSize = blockchainSize + currentBlockSize
+	logger.Printf("Blockchain size is: %v bytes\n", blockchainSize)
 }

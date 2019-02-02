@@ -28,6 +28,7 @@ func TestGetBlockSequences(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	logger.Printf("b3: %v", b3)
 
 	rollback, blocksToValidate, _ := getBlockSequences(b3)
 

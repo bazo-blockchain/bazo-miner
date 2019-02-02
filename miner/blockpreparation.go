@@ -33,6 +33,7 @@ func prepareBlock(block *protocol.Block) {
 		err := addTx(block, tx)
 		if err != nil {
 			//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
+			storage.WriteINVALIDOpenTx(tx)
 			storage.DeleteOpenTx(tx)
 		}
 	}

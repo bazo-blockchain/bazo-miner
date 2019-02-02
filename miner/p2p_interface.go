@@ -16,6 +16,7 @@ func incomingData() {
 	}
 }
 
+//ReceivedBlockStash is a stash with all Blocks received such that we can prevent forking
 func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
@@ -26,11 +27,15 @@ func processBlock(payload []byte) {
 		return
 	}
 
+	//Append received Block to stash
+	storage.WriteToReceivedStash(block)
+
 	//Start validation process
 	err := validate(block, false)
 	if err == nil {
-		logger.Printf("Validated block: %vState:\n%v", block, getState())
+		logger.Printf("Validated block (received): %vState:\n%v", block, getState())
 		broadcastBlock(block)
+		CalculateBlockchainSize(block.GetSize())
 	} else {
 		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 	}

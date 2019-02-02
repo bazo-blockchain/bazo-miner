@@ -35,7 +35,7 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 	//Compare current length with new chain length.
 	if len(blocksToRollback) >= len(newChain) {
 		//Current chain length is longer or equal (our consensus protocol states that in this case we reject the block).
-		return nil, nil, errors.New(fmt.Sprintf("Block belongs to shorter or equally long chain (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
+		return nil, nil, errors.New(fmt.Sprintf("Block belongs to shorter or equally long chain --> NO ROLLBACK (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
 	} else {
 		//New chain is longer, rollback and validate new chain.
 		return blocksToRollback, newChain, nil
@@ -45,18 +45,19 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 //Returns the ancestor from which the split occurs (if a split occurred, if not it's just our last block) and a list
 //of blocks that belong to a new chain.
 func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain []*protocol.Block) {
+	OUTER:
 	for {
 		newChain = append(newChain, newBlock)
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
-		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
 
+		//Search in closed (Validated) blocks first
+		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
 		if potentialAncestor != nil {
 			//Found ancestor because it is found in our closed block storage.
 			//We went back in time, so reverse order.
 			newChain = InvertBlockArray(newChain)
-
 			return potentialAncestor, newChain
 		}
 
@@ -64,6 +65,17 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		newBlock = storage.ReadOpenBlock(prevBlockHash)
 		if newBlock != nil {
 			continue
+		}
+
+		// Check if block is in received stash. When in there, continue outer for-loop (Sorry for GO-TO), until ancestor
+		// is found in closed block storage. The blocks from the stash will be validated in the normal validation process
+		// after the rollback. (Similar like when in open storage) If not in stash, continue with a block request to
+		// the network. Keep block in stash in case of multiple rollbacks (Very rare)
+		for _, block := range storage.ReadReceivedBlockStash() {
+			if block.Hash == prevBlockHash {
+				newBlock = block
+				continue OUTER
+			}
 		}
 
 		//TODO Optimize code (duplicated)
@@ -74,7 +86,8 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
 			newBlock = newBlock.Decode(encodedBlock)
-			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+			storage.WriteToReceivedStash(newBlock)
+		//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
 			return nil, nil
 		}

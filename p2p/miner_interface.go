@@ -21,6 +21,8 @@ var (
 	StakeTxChan  = make(chan *protocol.StakeTx)
 
 	BlockReqChan = make(chan []byte)
+
+	receivedTXStash = make([]*protocol.FundsTx, 0)
 )
 
 //This is for blocks and txs that the miner successfully validated.
@@ -50,6 +52,16 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
+//Checks if Tx Is in the received stash. If true, we received the transaction with a request already.
+func txAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
+	for _, txInStash := range slice {
+		if txInStash.Hash() == newTXHash {
+			return true
+		}
+	}
+	return false
+}
+
 //These are transactions the miner specifically requested.
 func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 	if payload == nil {
@@ -63,7 +75,17 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 		if fundsTx == nil {
 			return
 		}
-		FundsTxChan <- fundsTx
+		// If TX is not received with the last 1000 Transaction, send it through the channel to the TX_FETCH.
+		// Otherwise send nothing. This means, that the TX was sent before and we ensure, that only one TX per Broadcast
+		// request is going through to the FETCH Request. This should prevent the "Received txHash did not correspond to
+		// our request." error
+		if !txAlreadyInStash(receivedTXStash, fundsTx.Hash()) {
+			receivedTXStash = append(receivedTXStash, fundsTx)
+			FundsTxChan <- fundsTx
+			if len(receivedTXStash) > 1000 {
+				receivedTXStash = append(receivedTXStash[:0], receivedTXStash[1:]...)
+			}
+		}
 	case ACCTX_RES:
 		var accTx *protocol.AccTx
 		accTx = accTx.Decode(payload)

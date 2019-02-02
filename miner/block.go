@@ -122,25 +122,26 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.AccTx:
 		err := addAccTx(b, tx.(*protocol.AccTx))
 		if err != nil {
-			logger.Printf("Adding accTx tx failed (%v): %v\n", err, tx.(*protocol.AccTx))
+			logger.Printf("Adding accTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.AccTx))
+
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
+			logger.Printf("Adding fundsTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.FundsTx))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
-			logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
+			logger.Printf("Adding configTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.ConfigTx))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
+			logger.Printf("Adding stakeTx (%x) failed (%v): %v\n",tx.Hash(), err, tx.(*protocol.StakeTx))
 			return err
 		}
 	default:
@@ -162,7 +163,7 @@ func addAccTx(b *protocol.Block, tx *protocol.AccTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.AccTxData = append(b.AccTxData, tx.Hash())
-	logger.Printf("Added tx to the AccTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the AccTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -240,14 +241,14 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
-	logger.Printf("Added tx to the FundsTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the FundsTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
 func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
 	//No further checks needed, static checks were already done with verify().
 	b.ConfigTxData = append(b.ConfigTxData, tx.Hash())
-	logger.Printf("Added tx to the ConfigTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the ConfigTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -287,7 +288,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 
 	//No further checks needed, static checks were already done with verify().
 	b.StakeTxData = append(b.StakeTxData, tx.Hash())
-	logger.Printf("Added tx to the StakeTxData slice: %v", *tx)
+	logger.Printf("Added tx (%x) to the StakeTxData slice: %v", tx.Hash(), *tx)
 	return nil
 }
 
@@ -360,20 +361,25 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 		}
 
 		//TODO Optimize code (duplicated)
+		//We check if the Transaction is in the invalidOpenTX stash. When it is in there, and it is valid now, we save
+		//it into the fundsTX and continue like usual. This additional stash does lower the amount of network requests. 
 		tx = storage.ReadOpenTx(txHash)
+		txINVALID := storage.ReadINVALIDOpenTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
+		} else if  txINVALID != nil && verify(txINVALID) {
+			fundsTx = txINVALID.(*protocol.FundsTx)
 		} else {
 			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
 				return
 			}
-
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
+				storage.WriteOpenTx(fundsTx)
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("FundsTx fetch timed out.")
+				errChan <- errors.New("FundsTx fetch timed out")
 				return
 			}
 			if fundsTx.Hash() != txHash {
@@ -557,6 +563,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			}
 
 			postValidate(blockDataMap[block.Hash], initialSetup)
+			logger.Printf("Validated block (after rollback): %x", block.Hash[0:8])
 		}
 	}
 
@@ -759,6 +766,7 @@ func postValidate(data blockData, initialSetup bool) {
 		for _, tx := range data.fundsTxSlice {
 			storage.WriteClosedTx(tx)
 			storage.DeleteOpenTx(tx)
+			storage.DeleteINVALIDOpenTx(tx)
 		}
 
 		for _, tx := range data.configTxSlice {

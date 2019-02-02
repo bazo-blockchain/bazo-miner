@@ -15,6 +15,8 @@ var (
 	State              = make(map[[32]byte]*protocol.Account)
 	RootKeys           = make(map[[32]byte]*protocol.Account)
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
+	txINVALIDMemPool          = make(map[[32]byte]protocol.Transaction)
+	receivedBlockStash = make([]*protocol.Block, 0)
 	AllClosedBlocksAsc []*protocol.Block
 	Bootstrap_Server   string
 )
@@ -107,4 +109,8 @@ func Init(dbname string, bootstrapIpport string) {
 
 func TearDown() {
 	db.Close()
+}
+
+func PrintMemPoolSize(){
+	// logger.Printf("Number of transactions in the Mempool: %v \n", len(txMemPool))
 }
