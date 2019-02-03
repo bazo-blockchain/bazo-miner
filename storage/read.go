@@ -121,14 +121,14 @@ func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 }
 
 func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
-	//memPoolMutex.Lock()
-	//defer memPoolMutex.Unlock()
+	memPoolMutex.Lock()
+	defer memPoolMutex.Unlock()
 	return txMemPool[hash]
 }
 
 func GetMemPoolSize() int {
-	//memPoolMutex.Lock()
-	//defer memPoolMutex.Unlock()
+	memPoolMutex.Lock()
+	defer memPoolMutex.Unlock()
 	return len(txMemPool)
 }
 
@@ -239,4 +239,24 @@ func ReadValidatorMapping() (mapping *protocol.ValShardMapping, err error) {
 
 func ReadReceivedBlockStash() (*protocol.BlockStash){
 	return ReceivedBlockStash
+}
+
+func ReadBlockFromOwnStash(height int) *protocol.Block {
+	for _, block := range OwnBlockStash {
+		if(int(block.Height) == height){
+			return block
+		}
+	}
+
+	return nil
+}
+
+func ReadStateTransitionFromOwnStash(height int) *protocol.StateTransition {
+	for _, st := range OwnStateTransitionStash {
+		if(int(st.Height) == height){
+			return st
+		}
+	}
+
+	return nil
 }

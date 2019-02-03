@@ -66,7 +66,7 @@ func processReceivedValidatorMapping(vm []byte) {
 	var valMapping *protocol.ValShardMapping
 	valMapping = valMapping.Decode(vm)
 	ValidatorShardMap = valMapping
-	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	logger.Printf("Received Validator Shard Mapping:\n")
 	logger.Printf(ValidatorShardMap.String())
 	FileConnectionsLog.WriteString(fmt.Sprintf("Received Validator Shard Mapping:\n"))
@@ -100,7 +100,7 @@ func processEpochBlock(eb []byte) {
 	FileConnectionsLog.WriteString(fmt.Sprintf("Received Epoch Block: %v\n", epochBlock.String()))
 	ValidatorShardMap = epochBlock.ValMapping
 	NumberOfShards = epochBlock.NofShards
-	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
 	//broadcastEpochBlock(lastEpochBlock)
 	//p2p.EpochBlockOut <- eb
@@ -116,10 +116,12 @@ func processStateData(payload []byte) {
 	stateTransition = stateTransition.DecodeTransition(payload)
 
 	if(lastEpochBlock != nil){
-		if (stateTransition.ShardID != ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
+		if (stateTransition.ShardID != storage.ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
+			FileConnectionsLog.WriteString(fmt.Sprintf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height))
 			storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
-			logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
-			//FileConnectionsLog.WriteString(fmt.Sprintf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height))
+			//logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
+			FileConnectionsLog.WriteString(fmt.Sprintf("Length state stash map: %d\n",len(storage.ReceivedStateStash.M)))
+			FileConnectionsLog.WriteString(fmt.Sprintf("Length state stash keys: %d\n",len(storage.ReceivedStateStash.Keys)))
 		}
 	}
 }
@@ -128,7 +130,7 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
-	if block.ShardId == ThisShardID && block.Height > lastEpochBlock.Height {
+	if block.ShardId == storage.ThisShardID && block.Height > lastEpochBlock.Height {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -147,10 +149,11 @@ func processBlock(payload []byte) {
 			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err))
 		}
 	} else {
+		FileConnectionsLog.WriteString(fmt.Sprintf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height))
 		//broadcastBlock(block)
 		storage.ReceivedBlockStash.Set(block.Hash,block)
-		logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
-		//FileConnectionsLog.WriteString(fmt.Sprintf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height))
+		//logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
+		FileConnectionsLog.WriteString(fmt.Sprintf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M)))
 
 
 

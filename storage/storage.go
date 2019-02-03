@@ -20,10 +20,13 @@ var (
 	txMemPool          = make(map[[32]byte]protocol.Transaction)
 	ReceivedBlockStash = protocol.NewBlockStash()
 	ReceivedStateStash = protocol.NewStateStash()
+	OwnBlockStash 	   []*protocol.Block
+	OwnStateTransitionStash	[]*protocol.StateTransition
 	AllClosedBlocksAsc []*protocol.Block
 	BootstrapServer    string
 	Buckets			   []string
 	memPoolMutex	   = &sync.Mutex{}
+	ThisShardID             int // ID of the shard this validator is assigned to
 )
 
 const (
@@ -79,9 +82,25 @@ func Init(dbname string, bootstrapIpport string) error {
 	//}
 
 	for _, bucket := range Buckets {
-		err = CreateBucket(bucket, db)
-		if err != nil {
-			return err
+		err = db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(bucket))
+			if b == nil {
+				return fmt.Errorf("Bucket not found")
+			}
+			return nil
+		})
+
+		if(err == nil){
+			err = clearBucket(bucket)
+			logger.Printf("Bucket cleared: %v", bucket)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = CreateBucket(bucket, db)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

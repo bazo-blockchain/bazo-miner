@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
@@ -27,6 +28,8 @@ var (
 	//EpochBlock from the miner, to the network
 	EpochBlockOut = make(chan []byte)
 
+
+
 	//BlockHeader from the miner, to the clients
 	BlockHeaderOut = make(chan []byte)
 
@@ -39,6 +42,9 @@ var (
 	StakeTxChan  = make(chan *protocol.StakeTx)
 
 	BlockReqChan 	= make(chan []byte)
+	StateTransitionShardReqChan 	= make(chan []byte)
+	StateTransitionShardOut 		= make(chan []byte)
+
 	GenesisReqChan 	= make(chan []byte)
 	FirstEpochBlockReqChan 	= make(chan []byte)
 	EpochBlockReqChan 	= make(chan []byte)
@@ -55,6 +61,15 @@ func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
+		minerBrdcstMsg <- toBrdcst
+	}
+}
+
+func forwardStateTransitionShardToMiner(){
+	for {
+		st := <- StateTransitionShardOut
+		FileConnectionsLog.WriteString(fmt.Sprintf("Building state transition request packet\n"))
+		toBrdcst := BuildPacket(STATE_TRANSITION_REQ, st)
 		minerBrdcstMsg <- toBrdcst
 	}
 }
@@ -153,6 +168,11 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 
 func forwardBlockReqToMiner(p *peer, payload []byte) {
 	BlockReqChan <- payload
+}
+
+func forwardStateTransitionShardReqToMiner(p *peer, payload []byte) {
+	FileConnectionsLog.WriteString(fmt.Sprintf("received state transition response for heigh\n"))
+	StateTransitionShardReqChan <- payload
 }
 
 func forwardGenesisReqToMiner(p *peer, payload []byte) {

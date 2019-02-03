@@ -37,6 +37,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		txRes(p, payload, STAKETX_REQ)
 	case BLOCK_REQ:
 		blockRes(p, payload)
+	case STATE_TRANSITION_REQ:
+		stateTransitionRes(p,payload)
 	case VALIDATOR_SHARD_REQ:
 		valShardRes(p, payload)
 	case BLOCK_HEADER_REQ:
@@ -71,6 +73,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
 		forwardBlockReqToMiner(p, payload)
+	case STATE_TRANSITION_RES:
+		forwardStateTransitionShardReqToMiner(p,payload)
 	case FUNDSTX_RES:
 		forwardTxReqToMiner(p, payload, FUNDSTX_RES)
 	case CONTRACTTX_RES:

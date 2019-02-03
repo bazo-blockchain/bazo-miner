@@ -38,7 +38,7 @@ func prepareBlock(block *protocol.Block) {
 			//	break
 			//}
 			//Prevent block size to overflow. +10 Because of the bloomFilter
-			FileConnectionsLog.WriteString(fmt.Sprintf("current block size: %d\n", int(block.GetSize())))
+			//FileConnectionsLog.WriteString(fmt.Sprintf("current block size: %d\n", int(block.GetSize())))
 			//if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 			if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 				//FileConnectionsLog.WriteString(fmt.Sprintf("break - cannot add transaction - block size: %d - block size param: %d\n", int(block.GetSize()+10)+(int(len(tx.Hash()))), int(activeParameters.Block_size)))
@@ -59,7 +59,7 @@ func prepareBlock(block *protocol.Block) {
 				err := addTx(block, tx)
 				if err != nil {
 					//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
-					storage.DeleteOpenTx(tx)
+					//storage.DeleteOpenTx(tx)
 				}
 			}
 

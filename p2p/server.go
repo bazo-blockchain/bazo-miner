@@ -39,6 +39,7 @@ func Init(ipport string) {
 	go checkHealthService()
 	go timeService()
 	go forwardBlockBrdcstToMiner()
+	go forwardStateTransitionShardToMiner()
 	go forwardStateTransitionBrdcstToMiner()
 	//go forwardTXPayloadBrdcstToMiner()
 	go forwardEpochBlockBrdcstToMiner()
@@ -154,8 +155,8 @@ func listener(ipport string) {
 }
 
 func handleNewConn(p *peer) {
-	logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
-	FileConnectionsLog.WriteString(fmt.Sprintf("New incoming connection: %v\n", p.conn.RemoteAddr().String()))
+	//logger.Printf("New incoming connection: %v\n", p.conn.RemoteAddr().String())
+	//FileConnectionsLog.WriteString(fmt.Sprintf("New incoming connection: %v\n", p.conn.RemoteAddr().String()))
 
 	header, payload, err := RcvData(p)
 	if err != nil {
@@ -172,8 +173,8 @@ func peerConn(p *peer) {
 		logger.Printf("Adding a new miner: %v\n", p.getIPPort())
 		FileConnectionsLog.WriteString(fmt.Sprintf("Adding a new miner: %v\n", p.getIPPort()))
 	} else if p.peerType == PEERTYPE_CLIENT {
-		logger.Printf("Adding a new client: %v\n", p.getIPPort())
-		FileConnectionsLog.WriteString(fmt.Sprintf("Adding a new client: %v\n", p.getIPPort()))
+		//logger.Printf("Adding a new client: %v\n", p.getIPPort())
+		//FileConnectionsLog.WriteString(fmt.Sprintf("Adding a new client: %v\n", p.getIPPort()))
 	}
 
 	//Give the peer a channel
@@ -190,8 +191,8 @@ func peerConn(p *peer) {
 				logger.Printf("Miner disconnected: %v\n", err)
 				FileConnectionsLog.WriteString(fmt.Sprintf("Miner disconnected: %v\n", err))
 			} else if p.peerType == PEERTYPE_CLIENT {
-				logger.Printf("Client disconnected: %v\n", err)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Client disconnected: %v\n", err))
+				//logger.Printf("Client disconnected: %v\n", err)
+				//FileConnectionsLog.WriteString(fmt.Sprintf("Client disconnected: %v\n", err))
 			}
 
 			//In case of a comm fail, disconnect cleanly from the broadcast service

@@ -56,8 +56,8 @@ func WriteLastClosedBlock(block *protocol.Block) (err error) {
 
 //Changing the "tx" shortcut here and using "transaction" to distinguish between bolt's transactions
 func WriteOpenTx(transaction protocol.Transaction) {
-	//memPoolMutex.Lock()
-	//defer memPoolMutex.Unlock()
+	memPoolMutex.Lock()
+	defer memPoolMutex.Unlock()
 	txMemPool[transaction.Hash()] = transaction
 }
 
@@ -104,5 +104,21 @@ func WriteValidatorMapping(mapping *protocol.ValShardMapping) error {
 		b := tx.Bucket([]byte(VALIDATOR_SHARD_MAPPING_BUCKET))
 		return b.Put([]byte("valshardmapping"), mapping.Encode())
 	})
+}
+
+func WriteToOwnBlockStash(block *protocol.Block) {
+	OwnBlockStash = append(OwnBlockStash,block)
+
+	if(len(OwnBlockStash) > 20){
+		OwnBlockStash = append(OwnBlockStash[:0], OwnBlockStash[1:]...)
+	}
+}
+
+func WriteToOwnStateTransitionkStash(st *protocol.StateTransition) {
+	OwnStateTransitionStash = append(OwnStateTransitionStash,st)
+
+	if(len(OwnStateTransitionStash) > 20){
+		OwnStateTransitionStash = append(OwnStateTransitionStash[:0], OwnStateTransitionStash[1:]...)
+	}
 }
 

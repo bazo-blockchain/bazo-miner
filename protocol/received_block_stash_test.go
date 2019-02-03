@@ -32,7 +32,7 @@ func TestStashSetMethod(t *testing.T) {
 	sampleStash.Set(blockHash5,block5)
 	sampleStash.Set(blockHash6,block6)
 
-	if !reflect.DeepEqual(6, len(sampleStash.m)) && !reflect.DeepEqual(6, len(sampleStash.keys)){
+	if !reflect.DeepEqual(6, len(sampleStash.M)) && !reflect.DeepEqual(6, len(sampleStash.keys)){
 		t.Errorf("Stash size does not equal 6")
 	}
 
@@ -42,7 +42,7 @@ func TestStashSetMethod(t *testing.T) {
 
 	sampleStash.Set(blockHash6b,block6b)
 
-	if !reflect.DeepEqual(6, len(sampleStash.m)) && !reflect.DeepEqual(6, len(sampleStash.keys)){
+	if !reflect.DeepEqual(6, len(sampleStash.M)) && !reflect.DeepEqual(6, len(sampleStash.keys)){
 		t.Errorf("Stash included a duplicate block")
 	}
 }
@@ -61,8 +61,8 @@ func TestStashSetWhenSizeOver50Entries(t *testing.T) {
 		sampleStash.Set(blockHash,block)
 	}
 
-	if !reflect.DeepEqual(50, len(sampleStash.m)) && !reflect.DeepEqual(50, len(sampleStash.keys)){
-		t.Errorf("Error in filling the stash: Length should be: %d - Lenght is actually: %d",50,len(sampleStash.m))
+	if !reflect.DeepEqual(50, len(sampleStash.M)) && !reflect.DeepEqual(50, len(sampleStash.keys)){
+		t.Errorf("Error in filling the stash: Length should be: %d - Lenght is actually: %d",50,len(sampleStash.M))
 	}
 
 	//Keep track of first entry in the stash, this one should be deleted

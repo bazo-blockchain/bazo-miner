@@ -12,14 +12,14 @@ type Key [32]byte   // Key: Hash of the block
 type Value *Block // Value: Block
 
 type BlockStash struct {
-	m    map[Key]Value
+	M    map[Key]Value
 	keys []Key
 }
 
 var stashMutex			= &sync.Mutex{}
 
 func NewBlockStash() *BlockStash {
-	return &BlockStash{m: make(map[Key]Value)}
+	return &BlockStash{M: make(map[Key]Value)}
 }
 
 /*This function includes a key and tracks its order in the slice*/
@@ -27,13 +27,13 @@ func (m *BlockStash) Set(k Key, v Value) {
 	stashMutex.Lock()
 	defer stashMutex.Unlock()
 	/*Check if the map does not contain the key*/
-	if _, ok := m.m[k]; !ok {
+	if _, ok := m.M[k]; !ok {
 		m.keys = append(m.keys, k)
-		m.m[k] = v
+		m.M[k] = v
 	}
 
 	/*When lenght of stash is > 50 --> Remove first added Block*/
-	if(len(m.m) > 50){
+	if(len(m.M) > 50){
 		m.DeleteFirstEntry()
 	}
 }
@@ -44,8 +44,8 @@ func (m *BlockStash) DeleteFirstEntry() {
 	defer stashMutex.Unlock()*/
 	firstBlockHash := m.keys[0]
 
-	if _, ok := m.m[firstBlockHash]; !ok {
-		delete(m.m,firstBlockHash)
+	if _, ok := m.M[firstBlockHash]; ok {
+		delete(m.M,firstBlockHash)
 	}
 	m.keys = append(m.keys[:0], m.keys[1:]...)
 }
@@ -55,7 +55,7 @@ func CheckForHeight(blockstash *BlockStash, height uint32) int {
 	stashMutex.Lock()
 	defer stashMutex.Unlock()
 	numberOfBlocksAtHeight := 0
-	for _,block := range blockstash.m {
+	for _,block := range blockstash.M {
 		if(block.Height == height){
 			numberOfBlocksAtHeight = numberOfBlocksAtHeight + 1
 		}
@@ -69,7 +69,7 @@ func ReturnHashesForHeight(blockstash *BlockStash, height uint32) (hashes [][32]
 	defer stashMutex.Unlock()
 	var blockHashes [][32]byte
 
-	for _,block := range blockstash.m {
+	for _,block := range blockstash.M {
 		if(block.Height == height){
 			blockHashes = append(blockHashes,block.Hash)
 		}
@@ -83,7 +83,7 @@ func ReturnTxPayloadForHeight(blockstash *BlockStash, height uint32) (txpayload 
 	defer stashMutex.Unlock()
 	payloadSlice := []*TransactionPayload{}
 
-	for _,block := range blockstash.m {
+	for _,block := range blockstash.M {
 		if(block.Height == height){
 			payload := NewTransactionPayload(block.ShardId,int(block.Height),nil,nil,nil,nil)
 			payload.StakeTxData = block.StakeTxData
@@ -107,5 +107,5 @@ func ReturnItemForPosition(blockstash *BlockStash, position int) (blockHash [32]
 
 	blockHashPos := blockstash.keys[position]
 
-	return blockHashPos, blockstash.m[blockHashPos]
+	return blockHashPos, blockstash.M[blockHashPos]
 }

@@ -30,7 +30,6 @@ var (
 	FirstStartAfterEpoch	bool
 	slashingDict            = make(map[[64]byte]SlashingProof)
 	validatorAccAddress     [64]byte
-	ThisShardID             int // ID of the shard this validator is assigned to
 	commPrivKey             *rsa.PrivateKey
 	NumberOfShards          int
 	ReceivedBlocksAtHeightX int //This counter is used to sync block heights among shards
@@ -153,7 +152,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 			if(lastEpochBlock != nil && ValidatorShardMap != nil){
 				storage.State = lastEpochBlock.State
 				NumberOfShards = lastEpochBlock.NofShards
-				ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
+				storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
 				FirstStartAfterEpoch = true
 				epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
 			}
@@ -181,7 +180,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		//broadcastValidatorShardMapping(ValidatorShardMap)
 	}
 
-	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	//logger.Printf("Entering epoch mining for the first time...")
 	//FileConnectionsLog.WriteString(fmt.Sprintf("Entering epoch mining for the first time..."))
@@ -238,24 +237,81 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		logger.Printf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("Before checking my state stash for lastblock height: %d\n",lastBlock.Height))
 		syncStartTime = time.Now().Unix()
+
+		shardIDs := makeRange(1,NumberOfShards) // get all shard ids from the current epoch
+		shardIDStateBoolMap := make(map[int]bool) // check whether state transition of shard X has been processed
+		for k, _ := range shardIDStateBoolMap {
+			shardIDStateBoolMap[k] = false
+		}
+		//shardIDBlockBoolMap := make(map[int]bool) // check whether block of shard X has been received
+		//for k, _ := range shardIDBlockBoolMap {
+		//	shardIDBlockBoolMap[k] = false
+		//}
+
 		for{
+
+			time.Sleep(5 * time.Second)
+
 			if(NumberOfShards == 1){
 				break
 			}
 
-			if(protocol.CheckForHeightStateTransition(storage.ReceivedStateStash,lastBlock.Height) == NumberOfShards-1 &&
-				protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
-				stateTransitionSlice := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
-				//Apply relative state transitions from other shards
-				for _, st := range stateTransitionSlice {
-					storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
+			stateStashForHeight := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
+
+			if(len(stateStashForHeight) != 0){
+				//iterate through state transitions and apply them to local state, keep track of processed shards
+				for _,st := range stateStashForHeight{
+					if(shardIDStateBoolMap[st.ShardID] == false){
+						storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
+						shardIDStateBoolMap[st.ShardID] = true
+					}
 				}
 
-				//Delete transactions from mempool, which were validated by the other shards
-				//TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
-				//DeleteTransactionFromMempool(TransactionPayloadIn)
-				break
+				if (len(stateStashForHeight) == NumberOfShards-1){
+					break
+				}
 			}
+
+			//Iterate over shard IDs to check which ones are still missing
+			for _,id := range shardIDs{
+				if(id != storage.ThisShardID && shardIDStateBoolMap[id] == false){
+					var stateTransition *protocol.StateTransition
+
+					FileConnectionsLog.WriteString(fmt.Sprintf("requesting state transition for lastblock height: %d\n",lastBlock.Height))
+
+					p2p.StateTransitionReqShard(id,int(lastBlock.Height))
+					//Blocking wait
+					select {
+					case encodedStateTransition := <-p2p.StateTransitionShardReqChan:
+						stateTransition = stateTransition.DecodeTransition(encodedStateTransition)
+
+						storage.State = storage.ApplyRelativeState(storage.State,stateTransition.RelativeStateChange)
+						shardIDStateBoolMap[stateTransition.ShardID] = true
+
+						FileConnectionsLog.WriteString(fmt.Sprintf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height))
+						storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
+
+						//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
+					case <-time.After(5 * time.Second):
+						FileConnectionsLog.WriteString(fmt.Sprintf("have been waiting for 10 seconds for lastblock height: %d\n",lastBlock.Height))
+						continue
+					}
+				}
+			}
+
+			//if(protocol.CheckForHeightStateTransition(storage.ReceivedStateStash,lastBlock.Height) == NumberOfShards-1 &&
+			//	protocol.CheckForHeight(storage.ReceivedBlockStash,lastBlock.Height) == NumberOfShards-1){
+			//	stateTransitionSlice := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
+			//	//Apply relative state transitions from other shards
+			//	for _, st := range stateTransitionSlice {
+			//		storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
+			//	}
+			//
+			//	//Delete transactions from mempool, which were validated by the other shards
+			//	TransactionPayloadIn = protocol.ReturnTxPayloadForHeight(storage.ReceivedBlockStash,lastBlock.Height)
+			//	DeleteTransactionFromMempool(TransactionPayloadIn)
+			//	break
+			//}
 		}
 		logger.Printf("After checking my state stash for lastblock height: %d\n",lastBlock.Height)
 		FileConnectionsLog.WriteString(fmt.Sprintf("After checking my state stash for lastblock height: %d\n",lastBlock.Height))
@@ -274,6 +330,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				//The variable 'lastblock' is one before the next epoch block, thus with the lastblock, crete next epoch block
 
 				epochBlock = protocol.NewEpochBlock([][32]byte{lastBlock.Hash}, lastBlock.Height+1)
+				FileConnectionsLog.WriteString(fmt.Sprintf("epochblock beingprocessed height: %d\n",epochBlock.Height))
 
 				////Get hashes of last shard blocks from other miners and include them in the next epoch block
 				//logger.Printf("Before getting lastshard hashes for Epoch Height: %d\n",epochBlock.Height)
@@ -313,7 +370,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 				if(NumberOfShards != 1 || storage.ReceivedBlockStash != nil){
 					/*Extract the hashes of the last block of the other shards, needed to create the epoch block*/
-					LastShardHashes = protocol.ReturnHashesForHeight(storage.ReceivedBlockStash,lastBlock.Height)
+					LastShardHashes = protocol.ReturnShardHashesForHeight(storage.ReceivedStateStash,lastBlock.Height)
 					epochBlock.PrevShardHashes = append(epochBlock.PrevShardHashes,LastShardHashes...)
 				}
 
@@ -366,19 +423,13 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 				firstEpochOver = true
 
-				/*Wait until new validator-shard mapping is either created by me, or received from the network, then continue mining*/
-				/*for{
-					if(ValidatorShardMap.EpochHeight >= int(lastEpochBlock.Height)){
-						break
-					}
-				}*/
-
 				mining(lastEpochBlock.Hash, lastEpochBlock.Height)
+			} else if(lastEpochBlock.Height == lastBlock.Height+1){
+				mining(lastEpochBlock.Hash, lastEpochBlock.Height) //lastblock was received before we started creation of next epoch block
 			} else {
 				mining(lastBlock.Hash, lastBlock.Height)
 			}
 		}
-		//ReceivedBlocksAtHeightX = 0 // reset counter of received blocks from other shards
 	}
 }
 
@@ -389,11 +440,11 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	currentBlock := newBlock(hashPrevBlock, [crypto.COMM_PROOF_LENGTH]byte{}, heightPrevBlock+1)
 
 	/*Set shard identifier in block*/
-	currentBlock.ShardId = ThisShardID
+	currentBlock.ShardId = storage.ThisShardID
 	blockBeingProcessed = currentBlock
 
-	logger.Printf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID)
-	FileConnectionsLog.WriteString(fmt.Sprintf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,ThisShardID))
+	logger.Printf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,storage.ThisShardID)
+	FileConnectionsLog.WriteString(fmt.Sprintf("blockBeingProcessed Height: %v - MyShardID: %d\n",currentBlock.Height,storage.ThisShardID))
 	//This is the same mutex that is claimed at the beginning of a block validation. The reason we do this is
 	//that before start mining a new block we empty the mempool which contains tx data that is likely to be
 	//validated with block validation, so we wait in order to not work on tx data that is already validated
@@ -448,10 +499,13 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil{
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash)
 				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				//FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)
+				storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast block for height %d\n", currentBlock.Height))
 				broadcastBlock(currentBlock)
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
@@ -482,10 +536,12 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),ThisShardID)
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash)
 				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				//FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)
+				storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast block for height %d\n", currentBlock.Height))
 				broadcastBlock(currentBlock)
 				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 				FileConnectionsLog.WriteString(fmt.Sprintf("Validated block: %vState:\n%v\n", currentBlock, getState()))
@@ -568,4 +624,12 @@ func removeBlock(blockSlice []*protocol.Block, bl *protocol.Block) []*protocol.B
 		}
 	}
 	return blockSlice
+}
+
+func makeRange(min, max int) []int {
+	a := make([]int, max-min+1)
+	for i := range a {
+		a[i] = min + i
+	}
+	return a
 }

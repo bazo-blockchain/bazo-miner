@@ -165,7 +165,7 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	ValidatorShardMap = epochBlock.ValMapping
 	epochBlock.NofShards = DetNumberOfShards()
 
-	ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	epochBlock.State = storage.State
 	//logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)

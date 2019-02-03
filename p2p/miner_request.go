@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"errors"
+	"strconv"
 )
 
 //Both block and tx requests are handled asymmetricaly, using channels as inter-communication
@@ -16,6 +17,18 @@ func BlockReq(hash [32]byte) error {
 	packet := BuildPacket(BLOCK_REQ, hash[:])
 	sendData(p, packet)
 	return nil
+}
+
+func StateTransitionReqShard(shardID int,height int) {
+	strShardID := strconv.Itoa(shardID)
+	strHeight := strconv.Itoa(height)
+
+	strRequest := ""
+	strRequest += strShardID
+	strRequest += ":"
+	strRequest += strHeight
+
+	StateTransitionShardOut <- []byte(strRequest)
 }
 
 func ValidatorShardMapRequest() error {

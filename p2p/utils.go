@@ -45,7 +45,7 @@ func RcvData(p *peer) (header *Header, payload []byte, err error) {
 		}
 	}
 
-	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
+	//logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
 	//FileConnectionsLog.WriteString(fmt.Sprintf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload)))
 	return header, payload, nil
 }
@@ -71,7 +71,7 @@ func RcvData_(c net.Conn) (header *Header, payload []byte, err error) {
 }
 
 func sendData(p *peer, payload []byte) {
-	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN)
+	//logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN)
 	//FileConnectionsLog.WriteString(fmt.Sprintf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[payload[4]], len(payload)-HEADER_LEN))
 	p.l.Lock()
 	p.conn.Write(payload)
@@ -132,10 +132,10 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	}
 
 	header := extractHeader(headerArr[:])
-	/*logger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID))*/
+	//logger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
 	//Check if the type is registered in the protocol.
 	if LogMapping[header.TypeID] == "" {
+		FileConnectionsLog.WriteString(fmt.Sprintf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID))
 		return nil, errors.New("Header: TypeID not found.")
 	}
 

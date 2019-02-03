@@ -129,6 +129,7 @@ func collectStatistics(b *protocol.Block) {
 	}
 
 	lastBlock = b
+	storage.OwnBlockStash = append(storage.OwnBlockStash,b)
 }
 
 func collectStatisticsRollback(b *protocol.Block) {

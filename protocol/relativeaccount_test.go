@@ -30,7 +30,7 @@ func TestStateTransition(t *testing.T) {
 	accDRelState.StakingBlockHeight = 15
 	stateRelative[[64]byte{'3'}] = &accDRelState
 
-	var stateTransition = NewStateTransition(stateRelative,10,3)
+	var stateTransition = NewStateTransition(stateRelative,10,3,[32]byte{'0','1','2'})
 
 	var compareTransition *StateTransition
 	encodedAcc := stateTransition.EncodeTransition()
@@ -42,6 +42,10 @@ func TestStateTransition(t *testing.T) {
 
 	if !reflect.DeepEqual(stateTransition.ShardID, compareTransition.ShardID) {
 		t.Error("State Transition encoding/decoding failed: ShardID does not match!")
+	}
+
+	if !reflect.DeepEqual(stateTransition.BlockHash, compareTransition.BlockHash) {
+		t.Error("State Transition encoding/decoding failed: Block Hash does not match!")
 	}
 
 	for k, _ := range stateTransition.RelativeStateChange {
