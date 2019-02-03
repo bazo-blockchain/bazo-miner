@@ -425,6 +425,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 				mining(lastEpochBlock.Hash, lastEpochBlock.Height)
 			} else if(lastEpochBlock.Height == lastBlock.Height+1){
+				prevBlockIsEpochBlock = true
 				mining(lastEpochBlock.Hash, lastEpochBlock.Height) //lastblock was received before we started creation of next epoch block
 			} else {
 				mining(lastBlock.Hash, lastBlock.Height)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"time"
 
@@ -119,6 +120,7 @@ func proofOfStake(diff uint8,
 		// block has been validated
 		if(lastBlock != nil){
 			if prevHash != lastBlock.Hash && prevBlockIsEpochBlock == false && lastBlock.ShardId == storage.ThisShardID{ // also make sure that the last block is not an epoch block and the lastblock belongs to my shard
+				FileConnectionsLog.WriteString(fmt.Sprintf("Abort mining, another block has been successfully validated in the meantime"))
 				return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 			}
 		}
@@ -206,6 +208,7 @@ func proofOfStakeEpoch(diff uint8,
 		// lastBlock is a global variable which points to the last block. This check makes sure we abort if another
 		// block has been validated
 		if prevHashEpochBlock != lastEpochBlock.Hash {
+			FileConnectionsLog.WriteString(fmt.Sprintf("Abort mining EPOCH BLOCK, another one has been successfully validated in the meantime"))
 			return -1, errors.New("Abort mining EPOCH BLOCK, another one has been successfully validated in the meantime")
 		}
 
