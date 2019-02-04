@@ -263,6 +263,9 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				for _,st := range stateStashForHeight{
 					if(shardIDStateBoolMap[st.ShardID] == false){
 						storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
+						//Delete transactions from mempool, which were validated by the other shards
+						DeleteTransactionFromMempool(st.ContractTxData,st.FundsTxData,st.ConfigTxData,st.StakeTxData)
+
 						shardIDStateBoolMap[st.ShardID] = true
 					}
 				}
@@ -288,12 +291,12 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 						storage.State = storage.ApplyRelativeState(storage.State,stateTransition.RelativeStateChange)
 						shardIDStateBoolMap[stateTransition.ShardID] = true
 
-						FileConnectionsLog.WriteString(fmt.Sprintf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height))
+						FileConnectionsLog.WriteString(fmt.Sprintf("Writing state back to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height))
 						storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
 
 						//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-					case <-time.After(5 * time.Second):
-						FileConnectionsLog.WriteString(fmt.Sprintf("have been waiting for 10 seconds for lastblock height: %d\n",lastBlock.Height))
+					case <-time.After(3 * time.Second):
+						FileConnectionsLog.WriteString(fmt.Sprintf("have been waiting for 3 seconds for lastblock height: %d\n",lastBlock.Height))
 						continue
 					}
 				}
@@ -500,7 +503,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil{
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash)
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
+					currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
 				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
 				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)
@@ -537,7 +541,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		} else {
 			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil {
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash)
+				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
+					currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
 				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
 				FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast state transition for height %d\n", currentBlock.Height))
 				broadcastStateTransition(stateTransition)

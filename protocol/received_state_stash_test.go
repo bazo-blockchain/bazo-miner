@@ -44,9 +44,9 @@ func TestStateStashSetMethod(t *testing.T) {
 	accFRelState.StakingBlockHeight = 11
 	relAccounts3[[64]byte{'3'}] = &accFRelState
 
-	var stateTransision1 = NewStateTransition(relAccounts1,10,3,[32]byte{'1'})
-	var stateTransision2 = NewStateTransition(relAccounts2,20,4,[32]byte{'2'})
-	var stateTransision3 = NewStateTransition(relAccounts3,30,1,[32]byte{'3'})
+	var stateTransision1 = NewStateTransition(relAccounts1,10,3,[32]byte{'1'},nil,nil,nil,nil)
+	var stateTransision2 = NewStateTransition(relAccounts2,20,4,[32]byte{'2'},nil,nil,nil,nil)
+	var stateTransision3 = NewStateTransition(relAccounts3,30,1,[32]byte{'3'},nil,nil,nil,nil)
 
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision1)
 	sampleStash.Set(stateTransision2.HashTransition(),stateTransision2)
@@ -57,7 +57,7 @@ func TestStateStashSetMethod(t *testing.T) {
 	}
 
 	var duplicateHash = stateTransision1.HashTransition()
-	stateTransision4 := NewStateTransition(relAccounts3,40,5,[32]byte{'4'})
+	stateTransision4 := NewStateTransition(relAccounts3,40,5,[32]byte{'4'},nil,nil,nil,nil)
 	sampleStash.Set(duplicateHash,stateTransision4)
 
 	if !reflect.DeepEqual(3, len(sampleStash.M)) && !reflect.DeepEqual(3, len(sampleStash.Keys)){
@@ -194,7 +194,7 @@ func TestStateStashSetWhenSizeOver50Entries(t *testing.T) {
 
 	/*Fill the stash with 50 state transitions*/
 	for i := 0; i < 50; i++ {
-		var stateTransision1 = NewStateTransition(relAccounts1,i,3,[32]byte{'1'})
+		var stateTransision1 = NewStateTransition(relAccounts1,i,3,[32]byte{'1'},nil,nil,nil,nil)
 
 		sampleStash.Set(stateTransision1.HashTransition(),stateTransision1)
 	}
@@ -225,7 +225,7 @@ func TestStateStashSetWhenSizeOver50Entries(t *testing.T) {
 	}
 
 	/*Add another block to the stash and thus, delete first entry*/
-	var stateTransision1 = NewStateTransition(relAccounts1,50,3,[32]byte{'1'})
+	var stateTransision1 = NewStateTransition(relAccounts1,50,3,[32]byte{'1'},nil,nil,nil,nil)
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision1)
 
 	firstHash,firstST = ReturnStateTransitionForPosition(sampleStash,0)
@@ -233,16 +233,16 @@ func TestStateStashSetWhenSizeOver50Entries(t *testing.T) {
 		t.Errorf("Error deleting first entryof the stash")
 	}
 
-	var stateTransision2 = NewStateTransition(relAccounts1,51,3,[32]byte{'1'})
+	var stateTransision2 = NewStateTransition(relAccounts1,51,3,[32]byte{'1'},nil,nil,nil,nil)
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision2)
 
-	var stateTransision3 = NewStateTransition(relAccounts1,52,3,[32]byte{'1'})
+	var stateTransision3 = NewStateTransition(relAccounts1,52,3,[32]byte{'1'},nil,nil,nil,nil)
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision3)
 
-	var stateTransision4 = NewStateTransition(relAccounts1,53,3,[32]byte{'1'})
+	var stateTransision4 = NewStateTransition(relAccounts1,53,3,[32]byte{'1'},nil,nil,nil,nil)
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision4)
 
-	var stateTransision5 = NewStateTransition(relAccounts1,54,3,[32]byte{'1'})
+	var stateTransision5 = NewStateTransition(relAccounts1,54,3,[32]byte{'1'},nil,nil,nil,nil)
 	sampleStash.Set(stateTransision1.HashTransition(),stateTransision5)
 
 	if !reflect.DeepEqual(50, len(sampleStash.M)) && !reflect.DeepEqual(50, len(sampleStash.Keys)){

@@ -30,7 +30,25 @@ func TestStateTransition(t *testing.T) {
 	accDRelState.StakingBlockHeight = 15
 	stateRelative[[64]byte{'3'}] = &accDRelState
 
-	var stateTransition = NewStateTransition(stateRelative,10,3,[32]byte{'0','1','2'})
+	var hashFundsSlice [][32]byte
+	hashFundsSlice = append(hashFundsSlice,[32]byte{'0'})
+	hashFundsSlice = append(hashFundsSlice,[32]byte{'1'})
+
+	var hashAccSlice [][32]byte
+	hashAccSlice = append(hashAccSlice,[32]byte{'1'})
+	hashAccSlice = append(hashAccSlice,[32]byte{'2'})
+
+	var hashConfigSlice [][32]byte
+	hashConfigSlice = append(hashConfigSlice,[32]byte{'3'})
+	hashConfigSlice = append(hashConfigSlice,[32]byte{'4'})
+
+	var hashStakeSlice [][32]byte
+	hashStakeSlice = append(hashStakeSlice,[32]byte{'5'})
+	hashStakeSlice = append(hashStakeSlice,[32]byte{'6'})
+
+
+	var stateTransition = NewStateTransition(stateRelative,10,3,[32]byte{'0','1','2'},hashAccSlice,hashFundsSlice,
+		hashConfigSlice,hashStakeSlice)
 
 	var compareTransition *StateTransition
 	encodedAcc := stateTransition.EncodeTransition()
@@ -46,6 +64,22 @@ func TestStateTransition(t *testing.T) {
 
 	if !reflect.DeepEqual(stateTransition.BlockHash, compareTransition.BlockHash) {
 		t.Error("State Transition encoding/decoding failed: Block Hash does not match!")
+	}
+
+	if !reflect.DeepEqual(stateTransition.ContractTxData, compareTransition.ContractTxData) {
+		t.Error("State Transition encoding/decoding failed: ContractTX not serialized!")
+	}
+
+	if !reflect.DeepEqual(stateTransition.FundsTxData, compareTransition.FundsTxData) {
+		t.Error("State Transition encoding/decoding failed: FundsTX not serialized!")
+	}
+
+	if !reflect.DeepEqual(stateTransition.ConfigTxData, compareTransition.ConfigTxData) {
+		t.Error("State Transition encoding/decoding failed: ConfigTX not serialized!")
+	}
+
+	if !reflect.DeepEqual(stateTransition.StakeTxData, compareTransition.StakeTxData) {
+		t.Error("State Transition encoding/decoding failed: StakeTX not serialized!")
 	}
 
 	for k, _ := range stateTransition.RelativeStateChange {

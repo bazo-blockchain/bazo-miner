@@ -142,33 +142,31 @@ func (f openTxs) Less(i, j int) bool {
 	return f[i].(*protocol.FundsTx).TxCnt < f[j].(*protocol.FundsTx).TxCnt
 }
 
-func DeleteTransactionFromMempool(txPayloads []*protocol.TransactionPayload) {
-	for _,txPayload := range txPayloads{
-		for _,fundsTX := range txPayload.FundsTxData{
-			if(storage.ReadOpenTx(fundsTX) != nil){
-				storage.DeleteOpenTx(storage.ReadOpenTx(fundsTX))
-			}
+func DeleteTransactionFromMempool(contractData [][32]byte, fundsData [][32]byte, configData [][32]byte, stakeData [][32]byte) {
+	for _,fundsTX := range fundsData{
+		if(storage.ReadOpenTx(fundsTX) != nil){
+			storage.DeleteOpenTx(storage.ReadOpenTx(fundsTX))
 		}
-
-		for _,configTX := range txPayload.ConfigTxData{
-			if(storage.ReadOpenTx(configTX) != nil){
-				storage.DeleteOpenTx(storage.ReadOpenTx(configTX))
-			}
-		}
-
-		for _,stakeTX := range txPayload.StakeTxData{
-			if(storage.ReadOpenTx(stakeTX) != nil){
-				storage.DeleteOpenTx(storage.ReadOpenTx(stakeTX))
-			}
-		}
-
-		for _,contractTX := range txPayload.ContractTxData{
-			if(storage.ReadOpenTx(contractTX) != nil){
-				storage.DeleteOpenTx(storage.ReadOpenTx(contractTX))
-			}
-		}
-
-		//logger.Printf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize())
-		//FileConnectionsLog.WriteString(fmt.Sprintf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize()))
 	}
+
+	for _,configTX := range configData{
+		if(storage.ReadOpenTx(configTX) != nil){
+			storage.DeleteOpenTx(storage.ReadOpenTx(configTX))
+		}
+	}
+
+	for _,stakeTX := range stakeData{
+		if(storage.ReadOpenTx(stakeTX) != nil){
+			storage.DeleteOpenTx(storage.ReadOpenTx(stakeTX))
+		}
+	}
+
+	for _,contractTX := range contractData{
+		if(storage.ReadOpenTx(contractTX) != nil){
+			storage.DeleteOpenTx(storage.ReadOpenTx(contractTX))
+		}
+	}
+
+	//logger.Printf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize())
+	FileConnectionsLog.WriteString(fmt.Sprintf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize()))
 }
