@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
@@ -68,7 +67,7 @@ func forwardBlockBrdcstToMiner() {
 func forwardStateTransitionShardToMiner(){
 	for {
 		st := <- StateTransitionShardOut
-		FileConnectionsLog.WriteString(fmt.Sprintf("Building state transition request packet\n"))
+		FileLogger.Printf("Building state transition request packet\n")
 		toBrdcst := BuildPacket(STATE_TRANSITION_REQ, st)
 		minerBrdcstMsg <- toBrdcst
 	}
@@ -171,7 +170,7 @@ func forwardBlockReqToMiner(p *peer, payload []byte) {
 }
 
 func forwardStateTransitionShardReqToMiner(p *peer, payload []byte) {
-	FileConnectionsLog.WriteString(fmt.Sprintf("received state transition response for heigh\n"))
+	FileLogger.Printf("received state transition response for heigh\n")
 	StateTransitionShardReqChan <- payload
 }
 

@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -53,20 +52,20 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 
 	if storage.ReadOpenTx(tx.Hash()) != nil {
 		logger.Printf("Received transaction (%x) already in the mempool.\n", tx.Hash())
-		FileConnectionsLog.WriteString(fmt.Sprintf("Received transaction (%x) already in the mempool.\n", tx.Hash()))
+		FileLogger.Printf("Received transaction (%x) already in the mempool.\n", tx.Hash())
 		return
 	}
 	if storage.ReadClosedTx(tx.Hash()) != nil {
 		logger.Printf("Received transaction (%x) already validated.\n", tx.Hash())
-		FileConnectionsLog.WriteString(fmt.Sprintf("Received transaction (%x) already validated.\n", tx.Hash()))
+		FileLogger.Printf("Received transaction (%x) already validated.\n", tx.Hash())
 		return
 	}
 
 	//Write to mempool and rebroadcast
 	logger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
-	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction (%x) in the mempool.\n", tx.Hash()))
+	FileLogger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
 	logger.Printf("Writing transaction at time: %d\n", time.Now().Unix())
-	FileConnectionsLog.WriteString(fmt.Sprintf("Writing transaction at time: %d\n", time.Now().Unix()))
+	FileLogger.Printf("Writing transaction at time: %d\n", time.Now().Unix())
 
 	storage.WriteOpenTx(tx)
 

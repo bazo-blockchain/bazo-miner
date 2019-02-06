@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -83,16 +82,16 @@ func stateTransitionRes(p *peer, payload []byte) {
 
 	height,_ := strconv.ParseInt(strings.Split(strPayload,":")[1],10,64)
 
-	FileConnectionsLog.WriteString(fmt.Sprintf("responding state transition request for height: %d\n",height))
+	FileLogger.Printf("responding state transition request for height: %d\n",height)
 
 	if(shardID == int64(storage.ThisShardID)){
 		st = storage.ReadStateTransitionFromOwnStash(int(height))
 		if(st != nil){
 			packet = BuildPacket(STATE_TRANSITION_RES,st.EncodeTransition())
-			FileConnectionsLog.WriteString(fmt.Sprintf("sent state transition response for height: %d\n",height))
+			FileLogger.Printf("sent state transition response for height: %d\n",height)
 		} else {
 			packet = BuildPacket(NOT_FOUND,nil)
-			FileConnectionsLog.WriteString(fmt.Sprintf("state transition was nil.\n",height))
+			FileLogger.Printf("state transition was nil.\n",height)
 		}
 	} else {
 		packet = BuildPacket(NOT_FOUND,nil)

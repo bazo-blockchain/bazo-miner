@@ -10,6 +10,10 @@ func InitLogger() *log.Logger {
 	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
+func InitFileLogger() *log.Logger {
+	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 func IsRootKey(pubKey [64]byte) bool {
 	_, exists := RootKeys[pubKey]
 	return exists

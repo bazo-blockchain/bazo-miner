@@ -62,7 +62,7 @@ func bootstrap() {
 	p, err := InitiateNewMinerConnection(storage.BootstrapServer)
 	if err != nil {
 		logger.Printf("Initiating new miner connection failed: %v\n", err)
-		//FileConnectionsLog.WriteString(fmt.Sprintf("Initiating new miner connection failed: %v\n", err))
+		FileLogger.Printf("Initiating new miner connection failed: %v\n", err)
 	}
 
 	go peerConn(p)
@@ -133,7 +133,7 @@ func listener(ipport string) {
 	listener, err := net.Listen("tcp", ":"+strings.Split(ipport, ":")[1])
 	if err != nil {
 		logger.Printf("%v\n", err)
-		FileConnectionsLog.WriteString(fmt.Sprintf("%v\n", err))
+		FileLogger.Printf("%v\n", err)
 		return
 	}
 
@@ -145,7 +145,7 @@ func listener(ipport string) {
 
 		if err != nil {
 			logger.Printf("%v\n", err)
-			FileConnectionsLog.WriteString(fmt.Sprintf("%v\n", err))
+			FileLogger.Printf("%v\n", err)
 			continue
 		}
 
@@ -161,7 +161,7 @@ func handleNewConn(p *peer) {
 	header, payload, err := RcvData(p)
 	if err != nil {
 		logger.Printf("Failed to handle incoming connection: %v\n", err)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Failed to handle incoming connection: %v\n", err))
+		FileLogger.Printf("Failed to handle incoming connection: %v\n", err)
 		return
 	}
 
@@ -171,7 +171,7 @@ func handleNewConn(p *peer) {
 func peerConn(p *peer) {
 	if p.peerType == PEERTYPE_MINER {
 		logger.Printf("Adding a new miner: %v\n", p.getIPPort())
-		FileConnectionsLog.WriteString(fmt.Sprintf("Adding a new miner: %v\n", p.getIPPort()))
+		FileLogger.Printf("Adding a new miner: %v\n", p.getIPPort())
 	} else if p.peerType == PEERTYPE_CLIENT {
 		//logger.Printf("Adding a new client: %v\n", p.getIPPort())
 		//FileConnectionsLog.WriteString(fmt.Sprintf("Adding a new client: %v\n", p.getIPPort()))
@@ -189,7 +189,7 @@ func peerConn(p *peer) {
 		if err != nil {
 			if p.peerType == PEERTYPE_MINER {
 				logger.Printf("Miner disconnected: %v\n", err)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Miner disconnected: %v\n", err))
+				FileLogger.Printf("Miner disconnected: %v\n", err)
 			} else if p.peerType == PEERTYPE_CLIENT {
 				//logger.Printf("Client disconnected: %v\n", err)
 				//FileConnectionsLog.WriteString(fmt.Sprintf("Client disconnected: %v\n", err))

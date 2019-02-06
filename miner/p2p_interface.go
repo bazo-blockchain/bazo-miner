@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -32,84 +31,19 @@ func incomingEpochData() {
 	}
 }
 
-func incomingValShardData() {
-	for {
-		//check validator assignment
-		validatorMapping := <- p2p.ValidatorShardMapChanIn
-		processReceivedValidatorMapping(validatorMapping)
-	}
-}
-
-func incomingTxPayloadData() {
-	for {
-		//TX payload in
-		txPayload := <- p2p.TxPayloadIn
-		processPayload(txPayload)
-	}
-}
-
-func syncBlockHeight(){
-	for{
-		for _, bl := range blocksReceived{
-			if(blockBeingProcessed != nil){
-				if bl.Height == blockBeingProcessed.Height{
-					ReceivedBlocksAtHeightX = ReceivedBlocksAtHeightX + 1
-					logger.Printf("Increased ReceivedBlocksAtHeightX: %d",ReceivedBlocksAtHeightX)
-					removeBlock(blocksReceived, bl)
-				}
-			}
-		}
-	}
-}
-
-func processReceivedValidatorMapping(vm []byte) {
-	var valMapping *protocol.ValShardMapping
-	valMapping = valMapping.Decode(vm)
-	ValidatorShardMap = valMapping
-	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
-	logger.Printf("Received Validator Shard Mapping:\n")
-	logger.Printf(ValidatorShardMap.String())
-	FileConnectionsLog.WriteString(fmt.Sprintf("Received Validator Shard Mapping:\n"))
-	FileConnectionsLog.WriteString(fmt.Sprintf(ValidatorShardMap.String()+"\n"))
-	//broadcastValidatorShardMapping(valMapping)
-}
-func processPayload(payloadByte []byte) {
-	var payload *protocol.TransactionPayload
-	payload = payload.DecodePayload(payloadByte)
-
-	payloadMap.Lock()
-	TransactionPayloadReceivedMap[payload.HashPayload()] = payload
-	logger.Printf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID)
-	FileConnectionsLog.WriteString(fmt.Sprintf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID))
-	payloadMap.Unlock()
-
-	/*if(TxPayloadCointained(TransactionPayloadReceived,payload) == false){
-		TransactionPayloadReceived = append(TransactionPayloadReceived,payload)
-		processedTXPayloads = append(processedTXPayloads,payload.ShardID)
-		//logger.Printf("Received Transaction Payload: %v\n", payload.StringPayload())
-		logger.Printf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID)
-		FileConnectionsLog.WriteString(fmt.Sprintf("---- Received TX Payload ----: Height: %d -- Shard: %d \n", payload.Height, payload.ShardID))
-	}*/
-}
-
 
 func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
 	epochBlock = epochBlock.Decode(eb)
 	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
-	FileConnectionsLog.WriteString(fmt.Sprintf("Received Epoch Block: %v\n", epochBlock.String()))
+	FileLogger.Printf("Received Epoch Block: %v\n", epochBlock.String())
 	ValidatorShardMap = epochBlock.ValMapping
 	NumberOfShards = epochBlock.NofShards
 	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 	lastEpochBlock = epochBlock
-	//broadcastEpochBlock(lastEpochBlock)
+	broadcastEpochBlock(lastEpochBlock)
 	//p2p.EpochBlockOut <- eb
 }
-
-/*func processTXPayload(txPayload *protocol.TransactionPayload) (err error) {
-	err = updateGlobalState(txPayload) //This function mimics the txPayload to update the global state in each shard, no Tx validation or storing done, because its done in the other shards
-	return err
-}*/
 
 func processStateData(payload []byte) {
 	var stateTransition *protocol.StateTransition
@@ -117,11 +51,14 @@ func processStateData(payload []byte) {
 
 	if(lastEpochBlock != nil){
 		if (stateTransition.ShardID != storage.ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
-			FileConnectionsLog.WriteString(fmt.Sprintf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height))
-			storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
+			stateHash := stateTransition.HashTransition()
+			FileLogger.Printf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d - Hash: %x\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height,stateHash[0:8])
+			storage.ReceivedStateStash.Set(stateHash,stateTransition)
 			//logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
-			FileConnectionsLog.WriteString(fmt.Sprintf("Length state stash map: %d\n",len(storage.ReceivedStateStash.M)))
-			FileConnectionsLog.WriteString(fmt.Sprintf("Length state stash keys: %d\n",len(storage.ReceivedStateStash.Keys)))
+			FileLogger.Printf("Length state stash map: %d\n",len(storage.ReceivedStateStash.M))
+			FileLogger.Printf("Length state stash keys: %d\n",len(storage.ReceivedStateStash.Keys))
+			FileLogger.Printf("Redistributing state transition\n")
+			broadcastStateTransition(stateTransition)
 		}
 	}
 }
@@ -134,7 +71,7 @@ func processBlock(payload []byte) {
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
-			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) has already been validated.\n", block.Hash[0:8]))
+			FileLogger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 			return
 		}
 
@@ -142,40 +79,18 @@ func processBlock(payload []byte) {
 		err := validate(block, false)
 		if err == nil {
 			logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			FileConnectionsLog.WriteString(fmt.Sprintf("Received Validated block: %vState:\n%v\n", block, getState()))
+			FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
 			broadcastBlock(block)
 		} else {
 			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			FileConnectionsLog.WriteString(fmt.Sprintf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err))
+			FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 		}
 	} else {
-		FileConnectionsLog.WriteString(fmt.Sprintf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height))
+		FileLogger.Printf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height)
 		//broadcastBlock(block)
 		storage.ReceivedBlockStash.Set(block.Hash,block)
-		//logger.Printf("Written block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,ThisShardID,block.Height)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M)))
-
-
-
-		//if(lastBlock != nil){
-		//	if(block.Height >= lastBlock.Height){
-		//		storage.ReceivedBlockStash.Set(block.Hash,block)
-		//	}
-		//} else if(lastEpochBlock != nil) {
-		//	if(block.Height >= lastEpochBlock.Height){
-		//		storage.ReceivedBlockStash.Set(block.Hash,block)
-		//	}
-		//}
-		//save hash of block for later creating epoch block. Make sure to store hashes from blocks other than my shard
-		/*if(lastEpochBlock != nil){
-			if(int(block.Height) == int(lastEpochBlock.Height) + activeParameters.epoch_length){
-				lastShardMutex.Lock()
-				LastShardHashesMap[block.Hash] = block.Hash
-				lastShardMutex.Unlock()
-				logger.Printf("Received lastshard hash for block height: %d\n",block.Height)
-				FileConnectionsLog.WriteString(fmt.Sprintf("Received lastshard hash for block height: %d\n",block.Height))
-			}
-		}*/
+		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M))
+		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M))
 	}
 }
 

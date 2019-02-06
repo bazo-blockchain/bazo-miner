@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 )
@@ -48,7 +47,7 @@ func configStateChangeRollback(txSlice []*protocol.ConfigTx, blockHash [32]byte)
 	parameterSlice = parameterSlice[:len(parameterSlice)-1]
 	activeParameters = &parameterSlice[len(parameterSlice)-1]
 	logger.Printf("Config parameters rolled back. New configuration: %v\n", *activeParameters)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Config parameters rolled back. New configuration: %v\n", *activeParameters))
+	FileLogger.Printf("Config parameters rolled back. New configuration: %v\n", *activeParameters)
 }
 
 func stakeStateChangeRollback(txSlice []*protocol.StakeTx) {

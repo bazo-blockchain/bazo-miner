@@ -2,7 +2,6 @@ package miner
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"sort"
@@ -32,7 +31,7 @@ func prepareBlock(block *protocol.Block) {
 
 		if int(txAssignedShard) == ValidatorShardMap.ValMapping[validatorAccAddress]{
 			//logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
-			FileConnectionsLog.WriteString(fmt.Sprintf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShard))
+			FileLogger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShard)
 			//Prevent block size to overflow.
 			//if block.GetSize()+tx.Size() > activeParameters.Block_size {
 			//	break
@@ -168,5 +167,5 @@ func DeleteTransactionFromMempool(contractData [][32]byte, fundsData [][32]byte,
 	}
 
 	//logger.Printf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize())
-	FileConnectionsLog.WriteString(fmt.Sprintf("Deleted transaction count: %d - New Mempool Size: %d\n",len(txPayload.FundsTxData)+len(txPayload.StakeTxData)+len(txPayload.ContractTxData)+ len(txPayload.ConfigTxData),storage.GetMemPoolSize()))
+	FileLogger.Printf("Deleted transaction count: %d - New Mempool Size: %d\n",len(contractData)+len(fundsData)+len(configData)+ len(stakeData),storage.GetMemPoolSize())
 }

@@ -102,13 +102,13 @@ func finalizeBlock(block *protocol.Block) error {
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 	//logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("Before Block proofofstake for height: %d\n",block.Height))
+	FileLogger.Printf("Before Block proofofstake for height: %d\n",block.Height)
 	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
 	//logger.Printf("After proofofstake for height: %d\n",block.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("After proofofstake for height: %d\n",block.Height))
+	FileLogger.Printf("After proofofstake for height: %d\n",block.Height)
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -169,7 +169,7 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 
 	epochBlock.State = storage.State
 	//logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height))
+	FileLogger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
@@ -177,7 +177,7 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	}
 
 	//logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height))
+	FileLogger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 
 	var nonceBuf [8]byte
 	binary.BigEndian.PutUint64(nonceBuf[:], uint64(nonce))
@@ -203,7 +203,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	//configTxs are broadcast in the network.
 	if tx.TxFee() < activeParameters.Fee_minimum {
 		logger.Printf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum))
+		FileLogger.Printf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
 		err := fmt.Sprintf("Transaction fee too low: %v (minimum is: %v)\n", tx.TxFee(), activeParameters.Fee_minimum)
 		return errors.New(err)
 	}
@@ -216,7 +216,7 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	//the txs depend on each other.
 	if !verify(tx) {
 		logger.Printf("Transaction could not be verified: %v\n", tx)
-		FileConnectionsLog.WriteString(fmt.Sprintf("Transaction could not be verified: %v\n", tx))
+		FileLogger.Printf("Transaction could not be verified: %v\n", tx)
 		return errors.New("Transaction could not be verified.")
 	}
 
@@ -225,28 +225,28 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 		err := addContractTx(b, tx.(*protocol.ContractTx))
 		if err != nil {
 			//logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
-			FileConnectionsLog.WriteString(fmt.Sprintf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx)))
+			FileLogger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
 			//logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
-			FileConnectionsLog.WriteString(fmt.Sprintf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx)))
+			FileLogger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
 			//logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
-			FileConnectionsLog.WriteString(fmt.Sprintf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx)))
+			FileLogger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
 			//logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
-			FileConnectionsLog.WriteString(fmt.Sprintf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx)))
+			FileLogger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			return err
 		}
 	default:
@@ -268,7 +268,7 @@ func addContractTx(b *protocol.Block, tx *protocol.ContractTx) error {
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.ContractTxData = append(b.ContractTxData, tx.Hash())
 	logger.Printf("Added tx to the ContractTxData slice: %v\n", *tx)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the ContractTxData slice: %v\n", *tx))
+	FileLogger.Printf("Added tx to the ContractTxData slice: %v\n", *tx)
 	return nil
 }
 
@@ -378,7 +378,7 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 	//Add the tx hash to the block header and write it to open storage (non-validated transactions).
 	b.FundsTxData = append(b.FundsTxData, tx.Hash())
 	logger.Printf("Added tx to the FundsTxData slice: %v\n", *tx)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the FundsTxData slice: %v\n", *tx))
+	FileLogger.Printf("Added tx to the FundsTxData slice: %v\n", *tx)
 	return nil
 }
 
@@ -386,7 +386,7 @@ func addConfigTx(b *protocol.Block, tx *protocol.ConfigTx) error {
 	//No further checks needed, static checks were already done with verify().
 	b.ConfigTxData = append(b.ConfigTxData, tx.Hash())
 	logger.Printf("Added tx to the ConfigTxData slice: %v\n", *tx)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the ConfigTxData slice: %v\n", *tx))
+	FileLogger.Printf("Added tx to the ConfigTxData slice: %v\n", *tx)
 	return nil
 }
 
@@ -427,7 +427,7 @@ func addStakeTx(b *protocol.Block, tx *protocol.StakeTx) error {
 	//No further checks needed, static checks were already done with verify().
 	b.StakeTxData = append(b.StakeTxData, tx.Hash())
 	logger.Printf("Added tx to the StakeTxData slice: %v\n", *tx)
-	FileConnectionsLog.WriteString(fmt.Sprintf("Added tx to the StakeTxData slice: %v\n", *tx))
+	FileLogger.Printf("Added tx to the StakeTxData slice: %v\n", *tx)
 	return nil
 }
 
@@ -653,7 +653,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
-			FileConnectionsLog.WriteString(fmt.Sprintf("Rolled back block: %vState:\n%v", block, getState()))
+			FileLogger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
 	}
 
@@ -924,101 +924,7 @@ func validateState(data blockData) (err error) {
 
 	return nil
 }
-/*func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
 
-	for _,txPayload := range txPayloads{
-		var contractTxSlice []*protocol.ContractTx
-		var fundsTxSlice []*protocol.FundsTx
-		var configTxSlice []*protocol.ConfigTx
-		var stakeTxSlice []*protocol.StakeTx
-
-		for _,contractTxHash := range txPayload.ContractTxData{
-			contractTxSlice = append(contractTxSlice,storage.ReadOpenTx(contractTxHash).(*protocol.ContractTx))
-		}
-
-		for _, fundsTxHash := range txPayload.FundsTxData{
-			fundsTxSlice = append(fundsTxSlice,storage.ReadOpenTx(fundsTxHash).(*protocol.FundsTx))
-		}
-
-		for _, configTxHash := range txPayload.ConfigTxData{
-			configTxSlice = append(configTxSlice,storage.ReadOpenTx(configTxHash).(*protocol.ConfigTx))
-		}
-
-		for _, stakeTxHash := range txPayload.StakeTxData{
-			stakeTxSlice = append(stakeTxSlice,storage.ReadOpenTx(stakeTxHash).(*protocol.StakeTx))
-		}
-
-		accStateChange(contractTxSlice)
-
-		err = fundsStateChange(fundsTxSlice)
-		if err != nil {
-			accStateChangeRollback(contractTxSlice)
-			return err
-		}
-
-		if(lastBlock == nil){
-			if err := stakeStateChange(stakeTxSlice, lastEpochBlock.Height + 1); err != nil {
-				fundsStateChangeRollback(fundsTxSlice)
-				accStateChangeRollback(contractTxSlice)
-				return err
-			}
-		} else {
-
-			if err := stakeStateChange(stakeTxSlice, lastBlock.Height + 1); err != nil {
-				fundsStateChangeRollback(fundsTxSlice)
-				accStateChangeRollback(contractTxSlice)
-				return err
-			}
-		}
-	}
-
-	return nil
-}*/
-
-/*This function received validated and process transactions from other shards and updates the local global state
-No transaction validation or storage done at this step*/
-func updateGlobalState(txPayloads []*protocol.TransactionPayload) (err error) {
-
-	for _,txPayload := range txPayloads{
-		var contractTxSlice []*protocol.ContractTx
-		var fundsTxSlice []*protocol.FundsTx
-		var configTxSlice []*protocol.ConfigTx
-		var stakeTxSlice []*protocol.StakeTx
-
-		for _,contractTxHash := range txPayload.ContractTxData{
-			contractTxSlice = append(contractTxSlice,storage.ReadOpenTx(contractTxHash).(*protocol.ContractTx))
-		}
-
-		for _, fundsTxHash := range txPayload.FundsTxData{
-			fundsTxSlice = append(fundsTxSlice,storage.ReadOpenTx(fundsTxHash).(*protocol.FundsTx))
-		}
-
-		for _, configTxHash := range txPayload.ConfigTxData{
-			configTxSlice = append(configTxSlice,storage.ReadOpenTx(configTxHash).(*protocol.ConfigTx))
-		}
-
-		for _, stakeTxHash := range txPayload.StakeTxData{
-			stakeTxSlice = append(stakeTxSlice,storage.ReadOpenTx(stakeTxHash).(*protocol.StakeTx))
-		}
-
-		//Add new accounts if necessary
-		accStateChange(contractTxSlice)
-
-		applyFundsChange(fundsTxSlice)
-
-		applyConfigChange(configTxSlice)
-
-		if(lastBlock == nil){
-			applyStakeChange(stakeTxSlice, lastEpochBlock.Height + 1)
-		} else {
-			applyStakeChange(stakeTxSlice, lastBlock.Height + 1)
-		}
-
-
-	}
-
-	return nil
-}
 
 func postValidate(data blockData, initialSetup bool) {
 	//The new system parameters get active if the block was successfully validated

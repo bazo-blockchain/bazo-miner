@@ -106,13 +106,6 @@ func BuildPacket(typeID uint8, payload []byte) (packet []byte) {
 	packet[4] = byte(typeID)
 	copy(packet[5:], payload)
 
-	//if(typeID == EPOCH_BLOCK_BRDCST){
-	//	FileConnectionsLog.WriteString(fmt.Sprintf("building header typeid: %d",typeID))
-	//	FileConnectionsLog.WriteString(fmt.Sprintf("building payload length: %d",len(payload)))
-	//	FileConnectionsLog.WriteString(fmt.Sprintf("building packet length: %d",len(packet)))
-	//	FileConnectionsLog.WriteString(fmt.Sprintf("Epoch Block Packet: \n %v",packet))
-	//}
-
 	return packet
 }
 
@@ -135,7 +128,7 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	//logger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
 	//Check if the type is registered in the protocol.
 	if LogMapping[header.TypeID] == "" {
-		FileConnectionsLog.WriteString(fmt.Sprintf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID))
+		FileLogger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
 		return nil, errors.New("Header: TypeID not found.")
 	}
 
