@@ -1,6 +1,7 @@
 package miner
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -79,13 +80,17 @@ func processBlock(payload []byte) {
 			return
 		}
 
-		//Start validation process
+		//Append received Block to stash
+		storage.WriteToReceivedStash(block)
 
+		//Start validation process
 		if(block.Height == lastEpochBlock.Height +1){
 			err := validateAfterEpoch(block, false)
 			if err == nil {
 				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
 				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],block.Hash[0:8],block.Height))
+				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
 				broadcastBlock(block)
 			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
@@ -96,6 +101,7 @@ func processBlock(payload []byte) {
 			if err == nil {
 				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
 				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
 				broadcastBlock(block)
 			} else {
 				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
@@ -105,9 +111,9 @@ func processBlock(payload []byte) {
 	} else {
 		FileLogger.Printf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height)
 		//broadcastBlock(block)
-		storage.ReceivedBlockStash.Set(block.Hash,block)
-		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M))
-		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStash.M))
+		storage.ReceivedBlockStashFromOtherShards.Set(block.Hash,block)
+		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
+		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
 	}
 }
 
@@ -126,19 +132,10 @@ func broadcastStateTransition(st *protocol.StateTransition) {
 	p2p.StateTransitionOut <- st.EncodeTransition()
 }
 
-/*Broadcast TX hashes to the network*/
-func broadcastTxPayload() {
-	p2p.TxPayloadOut <- TransactionPayloadOut.EncodePayload()
-}
-
 func broadcastEpochBlock(epochBlock *protocol.EpochBlock) {
 	p2p.EpochBlockOut <- epochBlock.Encode()
 }
 
-//p2p.ValidatorShardMapChanOut is a channel whose data get consumed by the p2p package
-func broadcastValidatorShardMapping(mapping *protocol.ValShardMapping) {
-	p2p.ValidatorShardMapChanOut <- mapping.Encode()
-}
 
 func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
 	var verifiedTxs [][]byte

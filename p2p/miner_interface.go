@@ -53,6 +53,8 @@ var (
 
 	ValidatorShardMapChanOut = make(chan []byte) // validator assignment out to the miners
 	ValidatorShardMapChanIn = make(chan []byte) // validator assignment received from the bootstrapping node
+
+	receivedTXStash = make([]*protocol.FundsTx, 0)
 )
 
 //This is for blocks and txs that the miner successfully validated.
@@ -81,26 +83,11 @@ func forwardStateTransitionBrdcstToMiner()  {
 	}
 }
 
-func forwardTXPayloadBrdcstToMiner() {
-	for {
-		txPayload := <-TxPayloadOut
-		toBrdcst := BuildPacket(TX_PAYLOAD_BRDCST, txPayload)
-		minerBrdcstMsg <- toBrdcst
-	}
-}
-
 func forwardEpochBlockBrdcstToMiner() {
 	for {
 		epochBlock := <-EpochBlockOut
 		toBrdcst := BuildPacket(EPOCH_BLOCK_BRDCST, epochBlock)
-		minerBrdcstMsg <- toBrdcst
-	}
-}
-
-func forwardValidatorShardMappingToMiner() {
-	for {
-		mapping := <- ValidatorShardMapChanOut
-		toBrdcst := BuildPacket(VALIDATOR_SHARD_BRDCST, mapping)
+		FileLogger.Printf("Build Epoch Block Brdcst Packet...\n")
 		minerBrdcstMsg <- toBrdcst
 	}
 }
@@ -123,6 +110,15 @@ func forwardBlockToMiner(p *peer, payload []byte) {
 	BlockIn <- payload
 }
 
+func txAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
+	for _, txInStash := range slice {
+		if txInStash.Hash() == newTXHash {
+			return true
+		}
+	}
+	return false
+}
+
 func forwardAssignmentToMiner(p *peer, payload []byte) {
 	ValidatorShardMapChanIn <- payload
 }
@@ -140,7 +136,20 @@ func forwardTxReqToMiner(p *peer, payload []byte, txType uint8) {
 		if fundsTx == nil {
 			return
 		}
-		FundsTxChan <- fundsTx
+		/*My version: fundstx_res*/
+		//FundsTxChan <- fundsTx
+
+		// If TX is not received with the last 1000 Transaction, send it through the channel to the TX_FETCH.
+		// Otherwise send nothing. This means, that the TX was sent before and we ensure, that only one TX per Broadcast
+		// request is going through to the FETCH Request. This should prevent the "Received txHash did not correspond to
+		// our request." error
+		if !txAlreadyInStash(receivedTXStash, fundsTx.Hash()) {
+			receivedTXStash = append(receivedTXStash, fundsTx)
+			FundsTxChan <- fundsTx
+			if len(receivedTXStash) > 1000 {
+				receivedTXStash = append(receivedTXStash[:0], receivedTXStash[1:]...)
+			}
+		}
 	case CONTRACTTX_RES:
 		var contractTx *protocol.ContractTx
 		contractTx = contractTx.Decode(payload)

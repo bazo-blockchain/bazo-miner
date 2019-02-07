@@ -40,6 +40,30 @@ func WriteFirstEpochBlock(epochBlock *protocol.EpochBlock) error {
 	})
 }
 
+func WriteINVALIDOpenTx(transaction protocol.Transaction) {
+	txINVALIDMemPool[transaction.Hash()] = transaction
+}
+
+func WriteToReceivedStash(block *protocol.Block) {
+	//Only write it to stash if it is not in there already.
+	if !blockAlreadyInStash(receivedBlockStash, block.Hash) {
+		receivedBlockStash = append(receivedBlockStash, block)
+		//When lenght of stash is > 50 --> Remove first added Block
+		if len(receivedBlockStash) > 50 {
+			receivedBlockStash = append(receivedBlockStash[:0], receivedBlockStash[1:]...)
+		}
+	}
+}
+
+func blockAlreadyInStash(slice []*protocol.Block, newBlockHash [32]byte) bool {
+	for _, blockInStash := range slice {
+		if blockInStash.Hash == newBlockHash {
+			return true
+		}
+	}
+	return false
+}
+
 func WriteLastClosedEpochBlock(epochBlock *protocol.EpochBlock) (err error) {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(LASTCLOSEDEPOCHBLOCK_BUCKET))

@@ -100,6 +100,15 @@ func ReadLastClosedEpochBlock() (epochBlock *protocol.EpochBlock) {
 	return epochBlock
 }
 
+func ReadReceivedBlockStash() (receivedBlocks []*protocol.Block){
+	return receivedBlockStash
+}
+
+func ReadINVALIDOpenTx(hash [32]byte) (transaction protocol.Transaction) {
+
+	return txINVALIDMemPool[hash]
+}
+
 func ReadAllClosedBlocks() (allClosedBlocks []*protocol.Block) {
 	if nextBlock := ReadLastClosedBlock(); nextBlock != nil {
 		hasNext := true
@@ -238,8 +247,8 @@ func ReadValidatorMapping() (mapping *protocol.ValShardMapping, err error) {
 	return mapping, err
 }
 
-func ReadReceivedBlockStash() (*protocol.BlockStash){
-	return ReceivedBlockStash
+func ReadReceivedBlockStashFromOtherShards() (*protocol.BlockStash){
+	return ReceivedBlockStashFromOtherShards
 }
 
 func ReadBlockFromOwnStash(height int) *protocol.Block {

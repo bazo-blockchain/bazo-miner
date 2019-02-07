@@ -14,19 +14,21 @@ var (
 	logger             *log.Logger
 	State              = make(map[[64]byte]*protocol.Account)
 	//This map keeps track of the relative account adjustments within a shard, such as balance, txcount and stakingheight
-	PreviousState				= make(map[[64]byte]*protocol.Account)
-	RelativeState				= make(map[[64]byte]*protocol.RelativeAccount)
-	RootKeys           = make(map[[64]byte]*protocol.Account)
-	txMemPool          = make(map[[32]byte]protocol.Transaction)
-	ReceivedBlockStash = protocol.NewBlockStash()
-	ReceivedStateStash = protocol.NewStateStash()
-	OwnBlockStash 	   []*protocol.Block
-	OwnStateTransitionStash	[]*protocol.StateTransition
-	AllClosedBlocksAsc []*protocol.Block
-	BootstrapServer    string
-	Buckets			   []string
-	memPoolMutex	   = &sync.Mutex{}
-	ThisShardID             int // ID of the shard this validator is assigned to
+	PreviousState                     = make(map[[64]byte]*protocol.Account)
+	RelativeState                     = make(map[[64]byte]*protocol.RelativeAccount)
+	RootKeys                          = make(map[[64]byte]*protocol.Account)
+	txMemPool                         = make(map[[32]byte]protocol.Transaction)
+	ReceivedBlockStashFromOtherShards = protocol.NewBlockStash()
+	ReceivedStateStash                = protocol.NewStateStash()
+	OwnBlockStash                     []*protocol.Block
+	OwnStateTransitionStash           []*protocol.StateTransition
+	AllClosedBlocksAsc                []*protocol.Block
+	BootstrapServer                   string
+	Buckets                           []string
+	memPoolMutex                      	   = &sync.Mutex{}
+	ThisShardID                       int // ID of the shard this validator is assigned to
+	txINVALIDMemPool          = make(map[[32]byte]protocol.Transaction)
+	receivedBlockStash = make([]*protocol.Block, 0)
 )
 
 const (

@@ -124,7 +124,7 @@ func proofOfStake(diff uint8,
 		//	}
 		//}
 
-		if (prevBlockIsEpochBlock == true){
+		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch == true){
 			if(lastBlock.Height == lastEpochBlock.Height + 1 && lastBlock.ShardId == storage.ThisShardID){
 				FileLogger.Printf("Abort mining after epoch block, another block has been successfully validated in the meantime")
 				return -1, errors.New("Abort mining after epoch block, another block has been successfully validated in the meantime")

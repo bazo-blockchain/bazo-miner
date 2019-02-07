@@ -53,38 +53,6 @@ func finalizeBlock(block *protocol.Block) error {
 	//Merkle tree includes the hashes of all txs.
 	block.MerkleRoot = protocol.BuildMerkleTree(block).MerkleRoot()
 
-	/*In this step, wait until all TxPayloads from the other shards are received for the current block height.
-	Once received, update my local state and sync the global state with the other shards*/
-	//logger.Printf("Before synching TX Payloads for block Height: %d\n",block.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("Before synching TX Payloads for block Height: %d\n",block.Height))
-	//for{
-	//	payloadMap.Lock()
-	//	for _, payload := range TransactionPayloadReceivedMap {
-	//		if(payload.Height == int(block.Height) && payload.ShardID != ThisShardID){
-	//			TransactionPayloadIn = append(TransactionPayloadIn, payload)
-	//			logger.Printf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height)
-	//			logger.Printf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn))
-	//			FileConnectionsLog.WriteString(fmt.Sprintf("Writing into TransactionPayloadIn heiht: %d\n",payload.Height))
-	//			FileConnectionsLog.WriteString(fmt.Sprintf("Length of TransactionPayloadIn: %d\n",len(TransactionPayloadIn)))
-	//			FileConnectionsLog.WriteString(fmt.Sprintf("TransactionPayloadIn Hash: %x\n",payload.HashPayload()))
-	//		}
-	//	}
-	//	payloadMap.Unlock()
-	//
-	//	if(len(TransactionPayloadIn) >= NumberOfShards - 1){
-	//		break
-	//	}
-	//}
-
-	//logger.Printf("After synching TX Payloads for block Height: %d\n",block.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("After synching TX Payloads for block Height: %d\n",block.Height))
-	//Add Merkle Patricia Tree hash in the block
-	//stateMPT, err := protocol.BuildMPT(storage.State)
-	//if err != nil {
-	//	return err
-	//}
-	//block.MerklePatriciaRoot = stateMPT.Hash()
-
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		return err
@@ -499,21 +467,48 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 			}
 		}
 
+		////TODO Optimize code (duplicated)
+		/*My version: read open tx*/
+		//tx = storage.ReadOpenTx(txHash)
+		//if tx != nil {
+		//	fundsTx = tx.(*protocol.FundsTx)
+		//} else {
+		//	err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
+		//	if err != nil {
+		//		errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
+		//		return
+		//	}
+		//
+		//	select {
+		//	case fundsTx = <-p2p.FundsTxChan:
+		//	case <-time.After(TXFETCH_TIMEOUT * time.Second):
+		//		errChan <- errors.New("FundsTx fetch timed out.")
+		//		return
+		//	}
+		//	if fundsTx.Hash() != txHash {
+		//		errChan <- errors.New("Received txHash did not correspond to our request.")
+		//	}
+		//}
+		//
+		//fundsTxSlice[cnt] = fundsTx
 		//TODO Optimize code (duplicated)
 		tx = storage.ReadOpenTx(txHash)
+		txINVALID := storage.ReadINVALIDOpenTx(txHash)
 		if tx != nil {
 			fundsTx = tx.(*protocol.FundsTx)
+		} else if  txINVALID != nil && verify(txINVALID) {
+			fundsTx = txINVALID.(*protocol.FundsTx)
 		} else {
 			err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
 			if err != nil {
 				errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
 				return
 			}
-
 			select {
 			case fundsTx = <-p2p.FundsTxChan:
+				storage.WriteOpenTx(fundsTx)
 			case <-time.After(TXFETCH_TIMEOUT * time.Second):
-				errChan <- errors.New("FundsTx fetch timed out.")
+				errChan <- errors.New("FundsTx fetch timed out")
 				return
 			}
 			if fundsTx.Hash() != txHash {
@@ -647,47 +642,112 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		uptodate = true
 	}
 
-	if len(blocksToRollback) > 0 {
+	//No rollback needed, just a new block to validate.
+	if len(blocksToRollback) == 0 {
+		for _, block := range blocksToValidate {
+			//Fetching payload data from the txs (if necessary, ask other miners).
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
+
+			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
+			//The proof will be stored in the global slashing dictionary.
+			if block.Height > 0 {
+				seekSlashingProof(block)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
+			//Save state before and after validateState() in order to generate state transition which is sent to the other shards
+			var previousStateCopy = CopyState(storage.State)
+
+			if err := validateState(blockDataMap[block.Hash]); err != nil {
+				return err
+			}
+
+			storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
+
+
+			postValidate(blockDataMap[block.Hash], initialSetup)
+		}
+	} else {
 		for _, block := range blocksToRollback {
 			if err := rollback(block); err != nil {
 				return err
 			}
 			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
-			FileLogger.Printf("Rolled back block: %vState:\n%v", block, getState())
+		}
+		for _, block := range blocksToValidate {
+			//Fetching payload data from the txs (if necessary, ask other miners).
+			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
+
+			//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
+			//The proof will be stored in the global slashing dictionary.
+			if block.Height > 0 {
+				seekSlashingProof(block)
+			}
+
+			if err != nil {
+				return err
+			}
+
+			blockDataMap[block.Hash] = blockData{accTxs, fundsTxs, configTxs, stakeTxs, block}
+			//Save state before and after validateState() in order to generate state transition which is sent to the other shards
+			var previousStateCopy = CopyState(storage.State)
+
+			if err := validateState(blockDataMap[block.Hash]); err != nil {
+				return err
+			}
+
+			storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
+
+			postValidate(blockDataMap[block.Hash], initialSetup)
+			logger.Printf("Validated block (after rollback): %x", block.Hash[0:8])
 		}
 	}
 
-	for _, block := range blocksToValidate {
-		//Fetching payload data from the txs (if necessary, ask other miners).
-		contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
-
-		//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-		//The proof will be stored in the global slashing dictionary.
-		if block.Height > 0 {
-			seekSlashingProof(block)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		blockDataMap[block.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, block}
-		//Save state before and after validateState() in order to generate state transition which is sent to the other shards
-		var previousStateCopy = CopyState(storage.State)
-
-		if err := validateState(blockDataMap[block.Hash]); err != nil {
-			return err
-		}
-
-		storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
-		//for k, v := range storage.RelativeState {
-		//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
-		//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
-		//	fmt.Println("k:", k, "v:", v)
-		//}
-
-		postValidate(blockDataMap[block.Hash], initialSetup)
-	}
+	/*My version: validate*/
+	//if len(blocksToRollback) > 0 {
+	//	for _, block := range blocksToRollback {
+	//		if err := rollback(block); err != nil {
+	//			return err
+	//		}
+	//		logger.Printf("Rolled back block: %vState:\n%v", block, getState())
+	//		FileLogger.Printf("Rolled back block: %vState:\n%v", block, getState())
+	//	}
+	//}
+	//for _, block := range blocksToValidate {
+	//	//Fetching payload data from the txs (if necessary, ask other miners).
+	//	contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
+	//
+	//	//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
+	//	//The proof will be stored in the global slashing dictionary.
+	//	if block.Height > 0 {
+	//		seekSlashingProof(block)
+	//	}
+	//
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	blockDataMap[block.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, block}
+	//	//Save state before and after validateState() in order to generate state transition which is sent to the other shards
+	//	var previousStateCopy = CopyState(storage.State)
+	//
+	//	if err := validateState(blockDataMap[block.Hash]); err != nil {
+	//		return err
+	//	}
+	//
+	//	storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
+	//	//for k, v := range storage.RelativeState {
+	//	//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
+	//	//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
+	//	//	fmt.Println("k:", k, "v:", v)
+	//	//}
+	//
+	//	postValidate(blockDataMap[block.Hash], initialSetup)
+	//}
 
 	err = deleteZeroBalanceAccounts()
 	if err != nil {

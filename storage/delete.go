@@ -41,6 +41,10 @@ func DeleteOpenEpochBlock(hash [32]byte) error {
 	})
 }
 
+func DeleteINVALIDOpenTx(transaction protocol.Transaction) {
+	delete(txINVALIDMemPool, transaction.Hash())
+}
+
 func DeleteLastClosedBlock(hash [32]byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(LASTCLOSEDBLOCK_BUCKET))
