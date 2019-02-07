@@ -126,6 +126,7 @@ func ReadOpenTx(hash [32]byte) (transaction protocol.Transaction) {
 	return txMemPool[hash]
 }
 
+
 func GetMemPoolSize() int {
 	memPoolMutex.Lock()
 	defer memPoolMutex.Unlock()

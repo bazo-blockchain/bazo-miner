@@ -38,10 +38,19 @@ func (m *StateStash) Set(k KeyState, v ValueState) {
 	}
 }
 
+func (m *StateStash) StateTransitionIncluded(k KeyState) bool {
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
+	/*Check if the map does not contain the key*/
+	if _, ok := m.M[k]; !ok {
+		return false
+	} else {
+		return true
+	}
+}
+
 /*This function includes a key and tracks its order in the slice. No need to put the lock because it is used from the calling function*/
 func (m *StateStash) DeleteFirstEntry() {
-	/*stashMutex.Lock()
-	defer stashMutex.Unlock()*/
 	firstStateTransitionHash := m.Keys[0]
 
 	if _, ok := m.M[firstStateTransitionHash]; ok {

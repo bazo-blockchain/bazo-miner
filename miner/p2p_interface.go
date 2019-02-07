@@ -52,13 +52,17 @@ func processStateData(payload []byte) {
 	if(lastEpochBlock != nil){
 		if (stateTransition.ShardID != storage.ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
 			stateHash := stateTransition.HashTransition()
-			FileLogger.Printf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d - Hash: %x\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height,stateHash[0:8])
-			storage.ReceivedStateStash.Set(stateHash,stateTransition)
-			//logger.Printf("Written state to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,ThisShardID,stateTransition.Height)
-			FileLogger.Printf("Length state stash map: %d\n",len(storage.ReceivedStateStash.M))
-			FileLogger.Printf("Length state stash keys: %d\n",len(storage.ReceivedStateStash.Keys))
-			FileLogger.Printf("Redistributing state transition\n")
-			broadcastStateTransition(stateTransition)
+			if (storage.ReceivedStateStash.StateTransitionIncluded(stateHash) == false){
+				FileLogger.Printf("Writing state to stash Shard ID: %v  VS my shard ID: %v - Height: %d - Hash: %x\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height,stateHash[0:8])
+				storage.ReceivedStateStash.Set(stateHash,stateTransition)
+				FileLogger.Printf("Length state stash map: %d\n",len(storage.ReceivedStateStash.M))
+				FileLogger.Printf("Length state stash keys: %d\n",len(storage.ReceivedStateStash.Keys))
+				FileLogger.Printf("Redistributing state transition\n")
+				broadcastStateTransition(stateTransition)
+			} else {
+				FileLogger.Printf("Received state transition already included: Shard ID: %v  VS my shard ID: %v - Height: %d - Hash: %x\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height,stateHash[0:8])
+				return
+			}
 		}
 	}
 }
@@ -76,14 +80,27 @@ func processBlock(payload []byte) {
 		}
 
 		//Start validation process
-		err := validate(block, false)
-		if err == nil {
-			logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			broadcastBlock(block)
+
+		if(block.Height == lastEpochBlock.Height +1){
+			err := validateAfterEpoch(block, false)
+			if err == nil {
+				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				broadcastBlock(block)
+			} else {
+				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+				FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+			}
 		} else {
-			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+			err := validate(block, false)
+			if err == nil {
+				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+				broadcastBlock(block)
+			} else {
+				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+				FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+			}
 		}
 	} else {
 		FileLogger.Printf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height)

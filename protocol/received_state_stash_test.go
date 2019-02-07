@@ -250,6 +250,22 @@ func TestStateStashSetWhenSizeOver50Entries(t *testing.T) {
 	}
 }
 
+func TestStateTransitionHash(t *testing.T){
+	var stateTransition1 = NewStateTransition(nil,10,5,[32]byte{'0'},nil,nil,
+	nil,nil)
+
+	var stateTransition2 = NewStateTransition(nil,10,5,[32]byte{'1'},nil,nil,
+		nil,nil)
+
+	hashST1 := stateTransition1.HashTransition()
+	hashST2 := stateTransition2.HashTransition()
+
+	if !reflect.DeepEqual(hashST1, hashST2){
+		t.Errorf("Error hashing state transitions - ST1: (%x) vs. ST2: (%x)",hashST1[0:8],hashST2[0:8])
+	}
+
+}
+
 //func HashSliceContains(slice [][32]byte, hash [32]byte) bool {
 //	for _, a := range slice {
 //		if a == hash {

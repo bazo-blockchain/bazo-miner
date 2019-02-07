@@ -386,7 +386,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					//broadcast the generated map to the other validators
 					/*broadcastValidatorShardMapping(ValidatorShardMap)*/
 					//logger.Printf("Broadcast epoch block (%x)\n", epochBlock.Hash[0:8])
-					//FileConnectionsLog.WriteString(fmt.Sprintf("Broadcast epoch block (%x)\n", epochBlock.Hash[0:8]))
+					FileLogger.Printf("Broadcast epoch block (%x)\n", epochBlock.Hash[0:8])
 					broadcastEpochBlock(epochBlock)
 					storage.WriteClosedEpochBlock(epochBlock)
 					storage.DeleteAllLastClosedEpochBlock()

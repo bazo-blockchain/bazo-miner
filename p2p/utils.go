@@ -2,14 +2,16 @@ package p2p
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"io/ioutil"
 	"net"
 	"strings"
 	"time"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func Connect(connectionString string) *net.TCPConn {
@@ -46,7 +48,6 @@ func RcvData(p *peer) (header *Header, payload []byte, err error) {
 	}
 
 	//logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload))
-	//FileConnectionsLog.WriteString(fmt.Sprintf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), LogMapping[header.TypeID], len(payload)))
 	return header, payload, nil
 }
 
@@ -112,6 +113,7 @@ func BuildPacket(typeID uint8, payload []byte) (packet []byte) {
 func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	//The first four bytes of any incoming messages is the length of the payload.
 	//Error catching after every read is necessary to avoid panicking.
+
 	var headerArr [HEADER_LEN]byte
 
 	//Reading byte by byte is surprisingly fast and works a lot better for concurrent connections.
@@ -125,10 +127,22 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	}
 
 	header := extractHeader(headerArr[:])
-	//logger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
 	//Check if the type is registered in the protocol.
 	if LogMapping[header.TypeID] == "" {
+
+		FileLogger.Printf("Reader Size: %d",reader.Size())
+
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(reader)
+		s := buf.String() // Does a complete copy of the bytes in the buffer.
+		FileLogger.Printf("Reader to String: %v",s)
+
+		if b, err := ioutil.ReadAll(reader); err == nil {
+			FileLogger.Printf("Whole reader to String: %v",b)
+		}
+
 		FileLogger.Printf("Header Length: %d -- Header TypeID: %d\n",header.Len,header.TypeID)
+
 		return nil, errors.New("Header: TypeID not found.")
 	}
 

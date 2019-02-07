@@ -130,7 +130,8 @@ func proofOfStake(diff uint8,
 				return -1, errors.New("Abort mining after epoch block, another block has been successfully validated in the meantime")
 			}
 		} else {
-			if prevHash != lastBlock.Hash && lastBlock.ShardId == storage.ThisShardID{ // also make sure that the last block is not an epoch block and the lastblock belongs to my shard
+			//if prevHash != lastBlock.Hash && lastBlock.ShardId == storage.ThisShardID{
+			if prevHash != lastBlock.Hash{
 				FileLogger.Printf("Abort mining, another block has been successfully validated in the meantime")
 				return -1, errors.New("Abort mining, another block has been successfully validated in the meantime")
 			}

@@ -54,6 +54,7 @@ func checkHealthService() {
 			if p == nil || err != nil {
 				logger.Printf("%v\n", err)
 			} else {
+				FileLogger.Printf("Within health check service...doing peerConn()")
 				go peerConn(p)
 			}
 		}
@@ -75,6 +76,7 @@ func checkHealthService() {
 			if p == nil || err != nil {
 				goto RETRY
 			}
+			FileLogger.Printf("Within health check service in RETRY...doing peerConn()")
 			go peerConn(p)
 			break
 		default:

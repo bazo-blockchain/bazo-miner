@@ -74,24 +74,32 @@ func (st *StateTransition) HashTransition() [32]byte {
 		return [32]byte{}
 	}
 
+	//stHash := struct {
+	//	RelativeStateChange				  map[[64]byte]*RelativeAccount
+	//	Height				  			  int
+	//	ShardID							  int
+	//	BlockHash						  [32]byte
+	//	ContractTxData  			[][32]byte
+	//	FundsTxData  				[][32]byte
+	//	ConfigTxData 				[][32]byte
+	//	StakeTxData  				[][32]byte
+	//}{
+	//	st.RelativeStateChange,
+	//	st.Height,
+	//	st.ShardID,
+	//	st.BlockHash,
+	//	st.ContractTxData,
+	//	st.FundsTxData,
+	//	st.ConfigTxData,
+	//	st.StakeTxData,
+	//}
+
 	stHash := struct {
-		RelativeStateChange				  map[[64]byte]*RelativeAccount
 		Height				  			  int
 		ShardID							  int
-		BlockHash						  [32]byte
-		ContractTxData  			[][32]byte
-		FundsTxData  				[][32]byte
-		ConfigTxData 				[][32]byte
-		StakeTxData  				[][32]byte
 	}{
-		st.RelativeStateChange,
 		st.Height,
 		st.ShardID,
-		st.BlockHash,
-		st.ContractTxData,
-		st.FundsTxData,
-		st.ConfigTxData,
-		st.StakeTxData,
 	}
 	return SerializeHashContent(stHash)
 }
