@@ -36,14 +36,21 @@ func incomingEpochData() {
 func processEpochBlock(eb []byte) {
 	var epochBlock *protocol.EpochBlock
 	epochBlock = epochBlock.Decode(eb)
-	logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
-	FileLogger.Printf("Received Epoch Block: %v\n", epochBlock.String())
-	ValidatorShardMap = epochBlock.ValMapping
-	NumberOfShards = epochBlock.NofShards
-	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
-	lastEpochBlock = epochBlock
-	broadcastEpochBlock(lastEpochBlock)
-	//p2p.EpochBlockOut <- eb
+
+	if(storage.ReadClosedEpochBlock(epochBlock.Hash) != nil){
+		logger.Printf("Received Epoch Block (%x) already in storage\n", epochBlock.Hash[0:8])
+		FileLogger.Printf("Received Epoch Block (%x) already in storage\n", epochBlock.Hash[0:8])
+		return
+	} else {
+		logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
+		FileLogger.Printf("Received Epoch Block: %v\n", epochBlock.String())
+		ValidatorShardMap = epochBlock.ValMapping
+		NumberOfShards = epochBlock.NofShards
+		storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
+		lastEpochBlock = epochBlock
+		storage.WriteClosedEpochBlock(epochBlock)
+		broadcastEpochBlock(lastEpochBlock)
+	}
 }
 
 func processStateData(payload []byte) {
@@ -73,6 +80,9 @@ func processBlock(payload []byte) {
 	block = block.Decode(payload)
 
 	if block.ShardId == storage.ThisShardID && block.Height > lastEpochBlock.Height {
+
+		FileLogger.Printf("Received block (%x) from own shard with height: %d \n", block.Hash[0:8],block.Height)
+
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
