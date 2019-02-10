@@ -628,6 +628,7 @@ func validate(b *protocol.Block, initialSetup bool) error {
 
 	//Get the right branch, and a list of blocks to rollback (if necessary).
 	blocksToRollback, blocksToValidate, err := getBlockSequences(b)
+
 	if err != nil {
 		return err
 	}
@@ -676,9 +677,10 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			if err := rollback(block); err != nil {
 				return err
 			}
-			logger.Printf("Rolled back block: %vState:\n%v", block, getState())
+			FileLogger.Printf("Rolled back block: %vState:\n%v", block, getState())
 		}
 		for _, block := range blocksToValidate {
+			FileLogger.Printf("Block to validate: (%x)\n", block.Hash[0:8])
 			//Fetching payload data from the txs (if necessary, ask other miners).
 			accTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
 
@@ -703,7 +705,8 @@ func validate(b *protocol.Block, initialSetup bool) error {
 			storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
 
 			postValidate(blockDataMap[block.Hash], initialSetup)
-			logger.Printf("Validated block (after rollback): %x", block.Hash[0:8])
+			FileLogger.Printf("Validated block (after rollback): %x\n", block.Hash[0:8])
+
 		}
 	}
 
@@ -1085,7 +1088,7 @@ func slashingCheck(slashedAddress [64]byte, conflictingBlockHash1, conflictingBl
 		}
 
 		ancestor, _ := getNewChain(conflictingBlock1)
-		if ancestor == nil {
+		if ancestor == [32]byte{} {
 			return false, errors.New(fmt.Sprintf(prefix + "Could not find a ancestor for the provided conflicting hash (1)."))
 		}
 	}
@@ -1109,7 +1112,7 @@ func slashingCheck(slashedAddress [64]byte, conflictingBlockHash1, conflictingBl
 		}
 
 		ancestor, _ := getNewChain(conflictingBlock2)
-		if ancestor == nil {
+		if ancestor == [32]byte{} {
 			return false, errors.New(fmt.Sprintf(prefix + "Could not find a ancestor for the provided conflicting hash (2)."))
 		}
 	}

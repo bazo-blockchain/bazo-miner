@@ -10,6 +10,7 @@ import (
 
 var (
 	lastBlock         *protocol.Block
+	dummyLastBlock	  = protocol.NewBlock([32]byte{},0)
 	blockBeingProcessed *protocol.Block
 	blocksReceived 		[]*protocol.Block
 	lastEpochBlock	  *protocol.EpochBlock
@@ -138,14 +139,14 @@ func collectStatisticsRollback(b *protocol.Block) {
 	if localBlockCount == 0 && globalBlockCount != 0 {
 		localBlockCount = int64(activeParameters.Diff_interval) - 1
 		//Target rollback
-		target = target[:len(target)-1]
-		currentTargetTime.first = targetTimes[len(targetTimes)-1].first
-		targetTimes = targetTimes[:len(targetTimes)-1]
+		if(len(targetTimes)>1){
+			target = target[:len(target)-1]
+			currentTargetTime.first = targetTimes[len(targetTimes)-1].first
+			targetTimes = targetTimes[:len(targetTimes)-1]
+		}
 	} else {
 		localBlockCount--
 	}
-
-	lastBlock = storage.ReadClosedBlock(b.PrevHash)
 }
 
 func calculateNewDifficulty(t *timerange) uint8 {

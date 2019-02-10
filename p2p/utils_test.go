@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"net"
 	"reflect"
 	"testing"
@@ -35,7 +36,16 @@ func TestExtractHeader(t *testing.T) {
 
 	if header.Len != uint32(payloadLen) ||
 		header.TypeID != BLOCK_BRDCST {
-		t.Errorf("Header not correctly extracted: %v\n", header)
+		t.Errorf("Header for Block Brdcst not correctly extracted: %v\n", header)
+	}
+
+	epochBlock := protocol.NewEpochBlock([][32]byte{},20)
+
+	ebPacket := BuildPacket(EPOCH_BLOCK_BRDCST,epochBlock.Encode())
+	headerEB := extractHeader(ebPacket)
+
+	if headerEB.TypeID != EPOCH_BLOCK_BRDCST {
+		t.Errorf("Header for Epoch Block Brdcst not correctly extracted: \n%v\n", headerEB)
 	}
 }
 

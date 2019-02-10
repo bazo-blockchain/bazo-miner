@@ -19,8 +19,11 @@ func seekSlashingProof(block *protocol.Block) error {
 		return errors.New("Latest block not found.")
 	}
 
+	lastEpochBlockHash := storage.ReadLastClosedEpochBlock().Hash
+
 	//When the block is added ontop of your chain then there is no slashing needed
-	if lastClosedBlock.Hash == block.Hash || lastClosedBlock.Hash == block.PrevHash {
+	if lastClosedBlock.Hash == block.Hash || lastClosedBlock.Hash == block.PrevHash ||
+		block.Hash == lastEpochBlockHash || block.PrevHash == lastEpochBlockHash{
 		return nil
 	} else {
 		//Get the latest blocks and check if there is proof for multi-voting within the slashing window

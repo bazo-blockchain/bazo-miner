@@ -91,7 +91,7 @@ func stateTransitionRes(p *peer, payload []byte) {
 			FileLogger.Printf("sent state transition response for height: %d\n",height)
 		} else {
 			packet = BuildPacket(NOT_FOUND,nil)
-			FileLogger.Printf("state transition was nil.\n",height)
+			FileLogger.Printf("state transition for height %d was nil.\n",height)
 		}
 	} else {
 		packet = BuildPacket(NOT_FOUND,nil)

@@ -101,7 +101,7 @@ func ReadLastClosedEpochBlock() (epochBlock *protocol.EpochBlock) {
 }
 
 func ReadReceivedBlockStash() (receivedBlocks []*protocol.Block){
-	return receivedBlockStash
+	return ReceivedBlockStash
 }
 
 func ReadINVALIDOpenTx(hash [32]byte) (transaction protocol.Transaction) {

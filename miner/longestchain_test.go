@@ -144,8 +144,8 @@ func TestGetNewChain(t *testing.T) {
 
 	ancestor, newChain := getNewChain(b2)
 
-	if ancestor.Hash != b.Hash {
-		t.Errorf("Hash mismatch: %x vs. %x\n", ancestor.Hash, b.Hash)
+	if ancestor != b.Hash {
+		t.Errorf("Hash mismatch: %x vs. %x\n", ancestor, b.Hash)
 	}
 	if len(newChain) != 1 || newChain[0].Hash != b2.Hash {
 		t.Error("Wrong new chain\n")

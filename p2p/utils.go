@@ -125,11 +125,16 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	//	FileLogger.Printf("Whole reader to String: %v",b)
 	//}
 
+	//var buf bytes.Buffer
+	//tee := io.TeeReader(reader, &buf)
+	//teeString, _ := ioutil.ReadAll(tee)
+	//FileLogger.Printf("Reader to String: %x\n",string(teeString))
 
 
 	//Reading byte by byte is surprisingly fast and works a lot better for concurrent connections.
 	for i := range headerArr {
 		extr, err := reader.ReadByte()
+		//FileLogger.Printf("Byte read at position %d: %x",i,string(extr))
 		if err != nil {
 			return nil, err
 		}

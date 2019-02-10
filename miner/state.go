@@ -332,7 +332,7 @@ func getInitialBlock(lastEpochBlock *protocol.EpochBlock) (initialBlock *protoco
 		//Append genesis block to the map and save in storage
 		storage.AllClosedBlocksAsc = append(storage.AllClosedBlocksAsc, initialBlock)
 
-		storage.DeleteAllLastClosedEpochBlock()
+		storage.DeleteAllLastClosedBlock()
 		storage.WriteLastClosedBlock(initialBlock)
 		storage.WriteClosedBlock(initialBlock)
 	}

@@ -61,6 +61,7 @@ var (
 func forwardBlockBrdcstToMiner() {
 	for {
 		block := <-BlockOut
+		FileLogger.Printf("Building block broadcast packet\n")
 		toBrdcst := BuildPacket(BLOCK_BRDCST, block)
 		minerBrdcstMsg <- toBrdcst
 	}

@@ -49,7 +49,12 @@ func processEpochBlock(eb []byte) {
 		storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 		lastEpochBlock = epochBlock
 		storage.WriteClosedEpochBlock(epochBlock)
+
+		storage.DeleteAllLastClosedEpochBlock()
+		storage.WriteLastClosedEpochBlock(epochBlock)
+
 		broadcastEpochBlock(lastEpochBlock)
+
 	}
 }
 
@@ -79,10 +84,17 @@ func processBlock(payload []byte) {
 	var block *protocol.Block
 	block = block.Decode(payload)
 
+	FileLogger.Printf("Received block (%x) from shard %d with height: %d\n", block.Hash[0:8],block.ShardId,block.Height)
+	//Append received Block to stash
+
+	if(!storage.BlockAlreadyInStash(storage.ReceivedBlockStash,block.Hash) && block.ShardId != storage.ThisShardID){
+		storage.WriteToReceivedStash(block)
+		broadcastBlock(block)
+	} else {
+		FileLogger.Printf("Received block (%x) already in block stash\n",block.Hash[0:8])
+	}
+
 	if block.ShardId == storage.ThisShardID && block.Height > lastEpochBlock.Height {
-
-		FileLogger.Printf("Received block (%x) from own shard with height: %d \n", block.Hash[0:8],block.Height)
-
 		//Block already confirmed and validated
 		if storage.ReadClosedBlock(block.Hash) != nil {
 			logger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
@@ -90,12 +102,10 @@ func processBlock(payload []byte) {
 			return
 		}
 
-		//Append received Block to stash
-		storage.WriteToReceivedStash(block)
-
 		//Start validation process
 		if(block.Height == lastEpochBlock.Height +1){
-			err := validateAfterEpoch(block, false)
+			//err := validateAfterEpoch(block, false)
+			err := validate(block, false)
 			if err == nil {
 				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
 				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
@@ -118,13 +128,14 @@ func processBlock(payload []byte) {
 				FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 			}
 		}
-	} else {
-		FileLogger.Printf("Writing block to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.ShardId,storage.ThisShardID,block.Height)
-		//broadcastBlock(block)
-		storage.ReceivedBlockStashFromOtherShards.Set(block.Hash,block)
-		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
-		FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
 	}
+	//else {
+	//	FileLogger.Printf("Writing block (%x) to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.Hash[0:8],block.ShardId,storage.ThisShardID,block.Height)
+	//	//broadcastBlock(block)
+	//	storage.ReceivedBlockStashFromOtherShards.Set(block.Hash,block)
+	//	FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
+	//	FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
+	//}
 }
 
 //p2p.BlockOut is a channel whose data get consumed by the p2p package

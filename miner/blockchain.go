@@ -73,6 +73,14 @@ func InitFirstStart(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 	FirstEpochBlock = initialEpochBlock
 	initialEpochBlock.State = storage.State
 	storage.WriteFirstEpochBlock(initialEpochBlock)
+
+	storage.WriteClosedEpochBlock(initialEpochBlock)
+
+	storage.DeleteAllLastClosedEpochBlock()
+	storage.WriteLastClosedEpochBlock(initialEpochBlock)
+
+	FileLogger.Printf("Last Epoch block hash: (%x)\n",storage.ReadLastClosedEpochBlock().Hash)
+
 	firstValMapping := protocol.NewMapping()
 	initialEpochBlock.ValMapping = firstValMapping
 	hashGenesis := [32]byte{}
@@ -145,8 +153,7 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 				storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
 				FirstStartAfterEpoch = true
 
-				var dummyLastblock = protocol.NewBlock([32]byte{},0)
-				lastBlock = dummyLastblock
+				lastBlock = dummyLastBlock
 				epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
 			}
 		}
@@ -364,7 +371,6 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	FileLogger.Printf("After preparing Block Height: %v\n",currentBlock.Height)
 	blockValidation.Unlock()
 
-
 	_, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
 		logger.Printf("%v\n", err)
@@ -386,7 +392,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 	if err == nil {
 		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
-			err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+			//err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
 			if err == nil{
 				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
 					currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)

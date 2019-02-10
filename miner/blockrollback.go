@@ -9,6 +9,7 @@ import (
 //Already validated block but not part of the current longest chain.
 //No need for an additional state mutex, because this function is called while the blockValidation mutex is actively held.
 func rollback(b *protocol.Block) error {
+	FileLogger.Printf("Rolling back block (%x)\n",b.Hash[0:8])
 	contractTxSlice, fundsTxSlice, configTxSlice, stakeTxSlice, err := preValidateRollback(b)
 	if err != nil {
 		return err
@@ -23,6 +24,8 @@ func rollback(b *protocol.Block) error {
 	validateStateRollback(data)
 
 	postValidateRollback(data)
+
+	FileLogger.Printf("Rolled back block (%x)\n",b.Hash[0:8])
 
 	return nil
 }
@@ -110,11 +113,24 @@ func postValidateRollback(data blockData) {
 
 	collectStatisticsRollback(data.block)
 
-	//For transactions we switch from closed to open. However, we do not write back blocks
-	//to open storage, because in case of rollback the chain they belonged to is likely to starve.
-	storage.DeleteClosedBlock(data.block.Hash)
+	lastBlock = storage.ReadClosedBlock(data.block.PrevHash) // May be an epoch block
 
-	//Save the previous block as the last closed block.
-	storage.DeleteAllLastClosedBlock()
-	storage.WriteLastClosedBlock(storage.ReadClosedBlock(data.block.PrevHash))
+	if(lastBlock == nil){
+		lastBlock = dummyLastBlock
+		//For transactions we switch from closed to open. However, we do not write back blocks
+		//to open storage, because in case of rollback the chain they belonged to is likely to starve.
+		storage.DeleteClosedBlock(data.block.Hash)
+
+		//Save the previous block as the last closed block.
+		storage.DeleteAllLastClosedBlock()
+		storage.WriteLastClosedBlock(lastBlock)
+	} else {
+		storage.DeleteClosedBlock(data.block.Hash)
+
+		//Save the previous block as the last closed block.
+		storage.DeleteAllLastClosedBlock()
+		storage.WriteLastClosedBlock(lastBlock)
+	}
+
+
 }
