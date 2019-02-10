@@ -50,6 +50,7 @@ func txRes(p *peer, payload []byte, txKind uint8) {
 
 //Here as well, checking open and closed block storage
 func blockRes(p *peer, payload []byte) {
+	FileLogger.Printf("Incoming block request of miner %v\n",p.getIPPort())
 	var packet []byte
 	var block *protocol.Block
 	var blockHash [32]byte
@@ -57,6 +58,7 @@ func blockRes(p *peer, payload []byte) {
 	//If no specific block is requested, send latest
 	if len(payload) > 0 {
 		copy(blockHash[:], payload[:32])
+		FileLogger.Printf("Checking block for hash (%x) \n",blockHash[0:8])
 		if block = storage.ReadClosedBlock(blockHash); block == nil {
 			block = storage.ReadOpenBlock(blockHash)
 		}
@@ -65,11 +67,12 @@ func blockRes(p *peer, payload []byte) {
 	}
 
 	if block != nil {
+		FileLogger.Printf("Returning block with hash (%x)\n",block.Hash[0:8])
 		packet = BuildPacket(BLOCK_RES, block.Encode())
+		FileLogger.Printf("Sending following data for block req (%x) - %v\n",block.Hash[0:8],packet)
 	} else {
 		packet = BuildPacket(NOT_FOUND, nil)
 	}
-
 	sendData(p, packet)
 }
 

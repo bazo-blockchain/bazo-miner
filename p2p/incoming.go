@@ -73,6 +73,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
+		FileLogger.Printf("Writing following data into channel BlockReqChan: - %v\n",payload)
 		forwardBlockReqToMiner(p, payload)
 	case STATE_TRANSITION_RES:
 		forwardStateTransitionShardReqToMiner(p,payload)

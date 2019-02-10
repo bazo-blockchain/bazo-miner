@@ -30,6 +30,9 @@ func BlockReq(hash [32]byte) error {
 		if p == nil {
 			return errors.New("Couldn't get a connection, request not transmitted.")
 		}
+
+		FileLogger.Printf("Building block request packet for miner: %v\n",p.getIPPort())
+
 		packet := BuildPacket(BLOCK_REQ, hash[:])
 		sendData(p, packet)
 	}

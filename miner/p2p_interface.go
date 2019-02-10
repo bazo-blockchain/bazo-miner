@@ -102,33 +102,54 @@ func processBlock(payload []byte) {
 			return
 		}
 
-		//Start validation process
-		if(block.Height == lastEpochBlock.Height +1){
-			//err := validateAfterEpoch(block, false)
-			err := validate(block, false)
-			if err == nil {
-				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],block.Hash[0:8],block.Height))
-				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
-				broadcastBlock(block)
-			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-				FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			}
+		err := validate(block, false)
+		if err == nil {
+			logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+			FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
 		} else {
-			err := validate(block, false)
-			if err == nil {
-				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-				FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
-				broadcastBlock(block)
-			} else {
-				logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-				FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			}
+			logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+			FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
 		}
+
+		if(block.Height == lastEpochBlock.Height +1){
+			FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],block.Hash[0:8],block.Height))
+			FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
+		} else {
+			FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
+		}
+
+		////Start validation process
+		//if(block.Height == lastEpochBlock.Height +1){
+		//	//err := validateAfterEpoch(block, false)
+		//	err := validate(block, false)
+		//	if err == nil {
+		//		logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+		//		FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+		//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],block.Hash[0:8],block.Height))
+		//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
+		//		broadcastBlock(block)
+		//	} else {
+		//		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		//		FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		//	}
+		//} else {
+		//	err := validate(block, false)
+		//	if err == nil {
+		//		logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+		//		FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
+		//		FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
+		//		broadcastBlock(block)
+		//	} else {
+		//		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		//		FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
+		//	}
+		//}
 	}
+
+
+
+
+
 	//else {
 	//	FileLogger.Printf("Writing block (%x) to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.Hash[0:8],block.ShardId,storage.ThisShardID,block.Height)
 	//	//broadcastBlock(block)

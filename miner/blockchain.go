@@ -391,47 +391,74 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 	}
 
 	if err == nil {
-		if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
-			//err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
-			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
-			if err == nil{
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
-					currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
-				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				broadcastStateTransition(stateTransition)
-				storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+		err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+		if err == nil{
+			stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
+				currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
 
-				FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
-				broadcastBlock(currentBlock)
+			FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+			broadcastStateTransition(stateTransition)
+			storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+
+			FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
+			broadcastBlock(currentBlock)
+
+			if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
 				FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
-				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
-				FileLogger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
 			} else {
-				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
-				FileLogger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
-			}
-		} else {
-			err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
-			if err == nil {
-				stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
-					currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
-				//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
-				broadcastStateTransition(stateTransition)
-				storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
-				FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
-				broadcastBlock(currentBlock)
-				logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
-				FileLogger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
-				//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
 				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],currentBlock.Height-1,currentBlock.Hash[0:8],currentBlock.Height))
-			} else {
-				logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
-				FileLogger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
 			}
+
+			logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+			FileLogger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+			broadcastBlock(currentBlock)
+		} else {
+			logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+			FileLogger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
 		}
+
+		//if (prevBlockIsEpochBlock == true || FirstStartAfterEpoch==true) {
+		//	//err := validateAfterEpoch(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+		//	err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+		//	if err == nil{
+		//		stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
+		//			currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
+		//		//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+		//		FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+		//		broadcastStateTransition(stateTransition)
+		//		storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+		//
+		//		FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
+		//		broadcastBlock(currentBlock)
+		//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],currentBlock.Hash[0:8],currentBlock.Height))
+		//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",currentBlock.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
+		//		logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+		//		FileLogger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+		//	} else {
+		//		logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+		//		FileLogger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+		//	}
+		//} else {
+		//	err := validate(currentBlock, false) //here, block is written to closed storage and globalblockcount increased
+		//	if err == nil {
+		//		stateTransition := protocol.NewStateTransition(storage.RelativeState,int(currentBlock.Height),storage.ThisShardID,currentBlock.Hash,
+		//			currentBlock.ContractTxData,currentBlock.FundsTxData,currentBlock.ConfigTxData,currentBlock.StakeTxData)
+		//		//logger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+		//		FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
+		//		broadcastStateTransition(stateTransition)
+		//		storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+		//		FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
+		//		broadcastBlock(currentBlock)
+		//		logger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+		//		FileLogger.Printf("Validated block: %vState:\n%v\n", currentBlock, getState())
+		//		//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", currentBlock.PrevHash[0:15], currentBlock.Hash[0:15]))
+		//		FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", currentBlock.PrevHash[0:8],currentBlock.Height-1,currentBlock.Hash[0:8],currentBlock.Height))
+		//	} else {
+		//		logger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+		//		FileLogger.Printf("Mined block (%x) could not be validated: %v\n", currentBlock.Hash[0:8], err.Error())
+		//	}
+		//}
 	}
 
 	FirstStartAfterEpoch = false

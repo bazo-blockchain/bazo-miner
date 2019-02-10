@@ -21,6 +21,18 @@ func HashSliceToString(inputSlice [][32]byte) string {
 	return returnString
 }
 
+func CommitmentProofSliceToString(inputSlice [][256]byte) string {
+
+	returnString := ""
+
+	for _, hash := range inputSlice {
+		returnString += fmt.Sprintf("(%x)",hash[0:8])
+		returnString += " | "
+	}
+
+	return returnString
+}
+
 func BlockSequenceToString(blockSeq []*protocol.Block) string {
 	hashSlice := [][32]byte{}
 
@@ -127,9 +139,11 @@ func getNewChain(newBlock *protocol.Block) (ancestor [32]byte, newChain []*proto
 OUTER:
 	for {
 		newChain = append(newChain, newBlock)
+		FileLogger.Printf("Appended block (%x) to newChain\n",newBlock.Hash[0:8])
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
+		FileLogger.Printf("PrevBlockHash of newBlock is (%x)\n",prevBlockHash[0:8])
 
 		//Search in closed (Validated) blocks first
 		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
@@ -139,14 +153,16 @@ OUTER:
 			newChain = InvertBlockArray(newChain)
 			return potentialAncestor.Hash, newChain
 		} else {
+			FileLogger.Printf("Potential ancestor not found in closed storage.Looking in epoch blocks.\n")
 			//Check if ancestor is an epoch block
-			potentialEpochAncestor := storage.ReadClosedEpochBlock(prevBlockHash)
-			if potentialEpochAncestor != nil {
+			potentialEpochAncestorHash := storage.ReadLastClosedEpochBlock().Hash
+			if prevBlockHash == potentialEpochAncestorHash {
 				//Found ancestor because it is found in our closed block storage.
 				//We went back in time, so reverse order.
 				newChain = InvertBlockArray(newChain)
-				return potentialEpochAncestor.Hash, newChain
+				return potentialEpochAncestorHash, newChain
 			}
+			FileLogger.Printf("Potential ancestor also not found in closed epoch block storage.\n")
 		}
 
 
@@ -172,13 +188,15 @@ OUTER:
 		p2p.BlockReq(prevBlockHash)
 
 		FileLogger.Printf("Requesting block with hash (%x)\n",prevBlockHash[0:8])
+		FileLogger.Printf("Length of BlockReqChan: %d\n",len(p2p.BlockReqChan))
 
 		//Blocking wait
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
+			newBlock = nil
 			newBlock = newBlock.Decode(encodedBlock)
 			storage.WriteToReceivedStash(newBlock)
-			FileLogger.Printf("Received requested block with hash (%x)\n",prevBlockHash[0:8])
+			FileLogger.Printf("Received requested block with hash (%x)\n",newBlock.Hash[0:8])
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
 			return [32]byte{}, nil
