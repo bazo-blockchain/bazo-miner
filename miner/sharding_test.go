@@ -3,6 +3,8 @@ package miner
 import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
 	"testing"
@@ -43,13 +45,17 @@ func TestShardingWith20Nodes(t *testing.T) {
 		}
 	}
 
+	storage.State = nil
+	storage.State = make(map[[64]byte]*protocol.Account)
 	//Start the miners
 	validatorPubKey1,_ := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+"Node_1/wallet.key")
 	commPrivKey1,_ := crypto.ExtractRSAKeyFromFile(NodesDirectory+"Node_1/commitment.key")
-	InitFirstStart(validatorPubKey1,commPrivKey1)
+	go InitFirstStart(validatorPubKey1,commPrivKey1)
 
-	//validatorPubKey2,_ := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+"Node2/wallet.key")
-	//commPrivKey2,_ := crypto.ExtractRSAKeyFromFile(NodesDirectory+"Node2/commitment.key")
+	validatorPubKey2,_ := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+"Node_2/wallet.key")
+	commPrivKey2,_ := crypto.ExtractRSAKeyFromFile(NodesDirectory+"Node_2/commitment.key")
+	p2p.Init(TestIpPortNodeB)
+	Init(validatorPubKey2,commPrivKey2)
 	//
 	//validatorPubKey3,_ := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+"Node3/wallet.key")
 	//commPrivKey3,_ := crypto.ExtractRSAKeyFromFile(NodesDirectory+"Node3/commitment.key")
