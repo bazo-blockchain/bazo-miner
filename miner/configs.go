@@ -30,5 +30,5 @@ const (
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
 	//Parameters for sharding concept
 	EPOCH_LENGTH         = 9 //blocks
-	VALIDATORS_PER_SHARD = 2 //validators
+	VALIDATORS_PER_SHARD = 1 //validators
 )

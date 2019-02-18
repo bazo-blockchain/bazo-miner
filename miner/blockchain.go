@@ -132,28 +132,19 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", initialBlock.PrevHash[0:8],initialBlock.Height-1,initialBlock.Hash[0:8],initialBlock.Height))
 		lastBlock = initialBlock
 	} else {
-		/*//Request last epoch block to check if I am already in the validator set, if so, then no need to wait for the next epoch
-		lastEpochBlock, err = getLastEpochBlock()
-		if err != nil {
-			return err
-		}
-		if acc := lastEpochBlock.State[validatorAccAddress]; acc != nil{
-			if(acc.IsStaking == true){
-				storage.State = lastEpochBlock.State
-			}
-		}*/
-
 		for{
 			//Wait until I receive the last epoch block as well as the validator assignment
 			// The global variables 'lastEpochBlock' and 'ValidatorShardMap' are being set when they are received by the network
 			if(lastEpochBlock != nil && ValidatorShardMap != nil){
-				storage.State = lastEpochBlock.State
-				NumberOfShards = lastEpochBlock.NofShards
-				storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
-				FirstStartAfterEpoch = true
+				if(lastEpochBlock.Height > 0){
+					storage.State = lastEpochBlock.State
+					NumberOfShards = lastEpochBlock.NofShards
+					storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress] //Save my ShardID
+					FirstStartAfterEpoch = true
 
-				lastBlock = dummyLastBlock
-				epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
+					lastBlock = dummyLastBlock
+					epochMining(lastEpochBlock.Hash,lastEpochBlock.Height) //start mining based on the received Epoch Block
+				}
 			}
 		}
 	}
