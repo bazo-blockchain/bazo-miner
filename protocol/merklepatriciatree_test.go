@@ -12,11 +12,6 @@ import (
 	"testing"
 )
 
-func TestMPT(t *testing.T){
-	//storage.DeleteAll()
-	fmt.Printf("Starting testrun...")
-}
-
 func TestEthereumMPTInsertNodes(t *testing.T){
 	Trie, _ := initTrie()
 

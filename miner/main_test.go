@@ -7,10 +7,9 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
-	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/bazo-blockchain/bazo-miner/p2p"
@@ -169,8 +168,6 @@ func cleanAndPrepare() {
 	storage.State = tmpState
 	storage.RootKeys = tmpRootKeys
 
-	lastBlock = nil
-
 	globalBlockCount = -1
 	localBlockCount = -1
 
@@ -201,8 +198,17 @@ func cleanAndPrepare() {
 		crypto.GetAddressFromPubKey(&PrivKeyRoot.PublicKey),
 		crypto.GetBytesFromRSAPubKey(&CommPrivKeyRoot.PublicKey))
 
-	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
-	initialBlock = newBlock(genesis.Hash(), commitmentProof, 0)
+	lastEpochBlock = protocol.NewEpochBlock([][32]byte{genesis.Hash()}, 0)
+	storage.WriteClosedEpochBlock(lastEpochBlock)
+
+	storage.DeleteAllLastClosedEpochBlock()
+	storage.WriteLastClosedEpochBlock(lastEpochBlock)
+
+	commitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "1")
+	initialBlock = newBlock(lastEpochBlock.HashEpochBlock(), commitmentProof, 1)
+	storage.WriteClosedBlock(initialBlock)
+	lastBlock = initialBlock
+	lastBlock.Hash = lastBlock.HashBlock()
 
 	collectStatistics(initialBlock)
 	if err := storage.WriteClosedBlock(initialBlock); err != nil {
@@ -218,18 +224,31 @@ func cleanAndPrepare() {
 	accB.Balance = 823237654321
 	accA.TxCnt = 0
 	accB.TxCnt = 0
+
+	NumberOfShards = DetNumberOfShards()
+
+	var validatorShardMapping = protocol.NewMapping()
+	validatorShardMapping.ValMapping = AssignValidatorsToShards()
+	validatorShardMapping.EpochHeight = int(lastEpochBlock.Height)
+	ValidatorShardMap = validatorShardMapping
 }
 
 func TestMain(m *testing.M) {
 	storage.Init(TestDBFileName, TestIpPort)
 	p2p.Init(TestIpPort)
+	p2p.InitLogging()
+
+	logger = storage.InitLogger()
+	FileLogger = storage.InitFileLogger()
+	FileConnectionsLog, _ = os.OpenFile(fmt.Sprintf("hlog-for-%v.txt",strings.Split(p2p.Ipport, ":")[1]), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	FileLogger.SetOutput(FileConnectionsLog)
 
 	cleanAndPrepare()
 	addTestingAccounts()
 	addRootAccounts()
-	//We don't want logging msgs when testing, we have designated messages
-	logger = log.New(nil, "", 0)
-	logger.SetOutput(ioutil.Discard)
+	////We don't want logging msgs when testing, we have designated messages
+	//logger = log.New(nil, "", 0)
+	//logger.SetOutput(ioutil.Discard)
 	retCode := m.Run()
 
 	//Teardown

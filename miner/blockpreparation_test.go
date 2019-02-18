@@ -49,7 +49,8 @@ func TestPrepareAndSortTxs(t *testing.T) {
 		}
 	}
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	prepareBlock(b)
 	finalizeBlock(b)
 

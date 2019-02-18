@@ -193,7 +193,6 @@ OUTER:
 		//Blocking wait
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
-			newBlock = nil
 			newBlock = newBlock.Decode(encodedBlock)
 			storage.WriteToReceivedStash(newBlock)
 			FileLogger.Printf("Received requested block with hash (%x)\n",newBlock.Hash[0:8])

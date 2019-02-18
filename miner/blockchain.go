@@ -129,7 +129,6 @@ func Init(wallet *ecdsa.PublicKey, commitment *rsa.PrivateKey) error {
 		if err != nil {
 			return err
 		}
-		//FileConnections.WriteString(fmt.Sprintf("'%x' -> '%x'\n", initialBlock.PrevHash[0:15], initialBlock.Hash[0:15]))
 		FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", initialBlock.PrevHash[0:8],initialBlock.Height-1,initialBlock.Hash[0:8],initialBlock.Height))
 		lastBlock = initialBlock
 	} else {

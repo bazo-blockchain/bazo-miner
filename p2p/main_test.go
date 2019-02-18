@@ -31,6 +31,10 @@ func TestMain(m *testing.M) {
 	go checkHealthService()
 	go timeService()
 	go forwardBlockBrdcstToMiner()
+	go forwardStateTransitionShardToMiner()
+	go forwardStateTransitionBrdcstToMiner()
+	go forwardEpochBlockBrdcstToMiner()
+	go forwardBlockHeaderBrdcstToMiner()
 	go peerService()
 
 	//Bootstrap server

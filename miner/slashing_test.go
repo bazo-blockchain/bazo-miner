@@ -13,7 +13,9 @@ func TestSlashingCondition(t *testing.T) {
 	myAcc, _ := storage.ReadAccount(validatorAccAddress)
 	initBalance := myAcc.Balance
 
-	forkBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//forkBlock := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	forkBlock := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+
 	if err := finalizeBlock(forkBlock); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", forkBlock, err)
 	}
@@ -22,7 +24,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	// genesis <- forkBlock <- b
-	b := newBlock(forkBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+	b := newBlock(forkBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, forkBlock.Height+1)
 	if err := finalizeBlock(b); err != nil {
 		t.Errorf("Block finalization for b1 (%v) failed: %v\n", b, err)
 	}
@@ -34,7 +36,7 @@ func TestSlashingCondition(t *testing.T) {
 	lastBlock = forkBlock
 
 	// genesis <- forkBlock <- b2
-	b2 := newBlock(forkBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+	b2 := newBlock(forkBlock.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, forkBlock.Height+1)
 	if err := finalizeBlock(b2); err != nil {
 		t.Errorf("Block finalization for b2 (%v) failed: %v\n", b2, err)
 	}
@@ -52,7 +54,7 @@ func TestSlashingCondition(t *testing.T) {
 	}
 
 	//third block contains the slashing proof
-	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 3)
+	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
 	if err := finalizeBlock(b3); err != nil {
 		t.Errorf("Block finalization for b3 (%v) failed: %v\n", b3, err)
 	}

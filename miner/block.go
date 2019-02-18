@@ -72,12 +72,12 @@ func finalizeBlock(block *protocol.Block) error {
 	//logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
 	FileLogger.Printf("Before Block proofofstake for height: %d\n",block.Height)
 
-	FileLogger.Printf("FINALIZE-BLOCK: Difficulty: %d\n",getDifficulty())
-	FileLogger.Printf("FINALIZE-BLOCK: Previous Hash: (%x) \n",block.PrevHash[0:8])
-	FileLogger.Printf("FINALIZE-BLOCK: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
-	FileLogger.Printf("FINALIZE-BLOCK: Block Height: %d\n",block.Height)
-	FileLogger.Printf("FINALIZE-BLOCK: Acc Balance: %d\n",validatorAcc.Balance)
-	FileLogger.Printf("FINALIZE-BLOCK: Block Commitmentproof: (%x)\n",commitmentProof[0:8])
+	//FileLogger.Printf("FINALIZE-BLOCK: Difficulty: %d\n",getDifficulty())
+	//FileLogger.Printf("FINALIZE-BLOCK: Previous Hash: (%x) \n",block.PrevHash[0:8])
+	//FileLogger.Printf("FINALIZE-BLOCK: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
+	//FileLogger.Printf("FINALIZE-BLOCK: Block Height: %d\n",block.Height)
+	//FileLogger.Printf("FINALIZE-BLOCK: Acc Balance: %d\n",validatorAcc.Balance)
+	//FileLogger.Printf("FINALIZE-BLOCK: Block Commitmentproof: (%x)\n",commitmentProof[0:8])
 
 	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
@@ -912,12 +912,12 @@ func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*p
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
 	//PoS validation
-	FileLogger.Printf("PRE-VALIDATE: Difficulty: %d\n",getDifficulty())
-	FileLogger.Printf("PRE-VALIDATE: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
-	FileLogger.Printf("PRE-VALIDATE: Block Height: %d\n",block.Height)
-	FileLogger.Printf("PRE-VALIDATE: Acc Balance: %d\n",acc.Balance)
-	FileLogger.Printf("PRE-VALIDATE: Block Commitmentproof: %x\n",block.CommitmentProof[0:8])
-	FileLogger.Printf("PRE-VALIDATE: Timestamp: %d\n",block.Timestamp)
+	//FileLogger.Printf("PRE-VALIDATE: Difficulty: %d\n",getDifficulty())
+	//FileLogger.Printf("PRE-VALIDATE: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
+	//FileLogger.Printf("PRE-VALIDATE: Block Height: %d\n",block.Height)
+	//FileLogger.Printf("PRE-VALIDATE: Acc Balance: %d\n",acc.Balance)
+	//FileLogger.Printf("PRE-VALIDATE: Block Commitmentproof: %x\n",block.CommitmentProof[0:8])
+	//FileLogger.Printf("PRE-VALIDATE: Timestamp: %d\n",block.Timestamp)
 	if !validateProofOfStake(getDifficulty(), prevProofs, block.Height, acc.Balance, block.CommitmentProof, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
 	}

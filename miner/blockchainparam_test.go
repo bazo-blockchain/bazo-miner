@@ -19,7 +19,11 @@ func TestTargetHistory(t *testing.T) {
 	var tmpBlock *protocol.Block
 	tmpBlock = new(protocol.Block)
 	for cnt := 0; cnt < 10; cnt++ {
-		tmpBlock = newBlock(tmpBlock.Hash, [crypto.COMM_KEY_LENGTH]byte{}, tmpBlock.Height+1)
+		if(cnt == 0){
+			tmpBlock = newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+		} else {
+			tmpBlock = newBlock(tmpBlock.Hash, [crypto.COMM_KEY_LENGTH]byte{}, tmpBlock.Height+1)
+		}
 		finalizeBlock(tmpBlock)
 		validate(tmpBlock, false)
 		blocks = append(blocks, tmpBlock)
@@ -70,9 +74,10 @@ func TestTimestamps(t *testing.T) {
 	activeParameters.Diff_interval = 5
 	activeParameters.Block_interval = 10
 
-	prevHash := [32]byte{}
+	prevHash := lastBlock.HashBlock()
 	for cnt := 0; cnt < 0; cnt++ {
-		b := newBlock(prevHash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+		//b := newBlock(prevHash, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+		b := newBlock(prevHash, [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 
 		if cnt == 8 {
 			tx, err := protocol.ConstrConfigTx(0, protocol.DIFF_INTERVAL_ID, 20, 2, 0, PrivKeyRoot)

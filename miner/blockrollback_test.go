@@ -13,7 +13,8 @@ import (
 func TestValidateBlockRollback(t *testing.T) {
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 
 	//Make state snapshot
 	accsBefore := make(map[[64]byte]protocol.Account)
@@ -72,7 +73,8 @@ func TestMultipleBlocksRollback(t *testing.T) {
 	var paramb2 []Parameters
 	var paramb3 []Parameters
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	if err := validate(b, false); err != nil {

@@ -12,7 +12,8 @@ func TestGetBlockSequences(t *testing.T) {
 
 	cleanAndPrepare()
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	validate(b, false)
@@ -40,8 +41,10 @@ func TestGetBlockSequences(t *testing.T) {
 	}
 
 	//PoW needs lastBlock, have to set it manually
-	lastBlock = storage.ReadClosedBlock([32]byte{})
-	c := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//lastBlock = storage.ReadClosedBlock([32]byte{})
+	lastBlock = initialBlock
+	//c := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	c := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(c)
 	if err := finalizeBlock(c); err != nil {
 		t.Error(err)
@@ -86,7 +89,9 @@ func TestGetBlockSequences(t *testing.T) {
 
 	cleanAndPrepare()
 	//Make sure that another chain of equal length does not get activated
-	b = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	lastBlock = initialBlock
+	b = newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	validate(b, false)
@@ -103,8 +108,11 @@ func TestGetBlockSequences(t *testing.T) {
 
 	//Blockchain now: genesis <- b <- b2 <- b3
 	//Competing chain: genesis <- c <- c2 <- c3
-	lastBlock = storage.ReadClosedBlock([32]byte{})
-	c = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//lastBlock = storage.ReadClosedBlock([32]byte{})
+	lastBlock = initialBlock
+
+	//c = newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	c = newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(c)
 	finalizeBlock(c)
 	storage.WriteOpenBlock(c)
@@ -133,7 +141,8 @@ func TestGetBlockSequences(t *testing.T) {
 func TestGetNewChain(t *testing.T) {
 
 	cleanAndPrepare()
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	createBlockWithTxs(b)
 	finalizeBlock(b)
 	validate(b, false)
@@ -153,8 +162,11 @@ func TestGetNewChain(t *testing.T) {
 
 	//Blockchain now: genesis <- b
 	//New chain: genesis <- c <- c2
-	lastBlock = storage.ReadClosedBlock([32]byte{})
-	c := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//lastBlock = storage.ReadClosedBlock([32]byte{})
+	//c := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	lastBlock = initialBlock
+	c := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+
 	createBlockWithTxs(c)
 	finalizeBlock(c)
 	storage.WriteOpenBlock(c)
@@ -167,8 +179,8 @@ func TestGetNewChain(t *testing.T) {
 	lastBlock = b
 	ancestor, newChain = getNewChain(c2)
 
-	if ancestor.Hash != [32]byte{} {
-		t.Errorf("Hash mismatch")
+	if ancestor != initialBlock.Hash{
+		t.Errorf("Hash mismatch - ancestor (%x)\n",ancestor[0:8])
 	}
 
 	if len(newChain) != 2 || newChain[0].Hash != c.Hash || newChain[1].Hash != c2.Hash {

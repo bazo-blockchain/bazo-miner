@@ -3,6 +3,7 @@ package miner
 import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -42,27 +43,37 @@ func TestGetLatestProofs(t *testing.T) {
 
 	var proofs [][crypto.COMM_PROOF_LENGTH]byte
 	genesisCommitmentProof, _ := crypto.SignMessageWithRSAKey(CommPrivKeyRoot, "0")
-	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
+	//proofs = append([][crypto.COMM_PROOF_LENGTH]byte{genesisCommitmentProof}, proofs...)
 	//Initially we expect only the genesis commitment proof
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
+	if err := finalizeBlock(b); err != nil {
+		t.Error("Error finalizing b1", err)
+	}
+	storage.WriteClosedBlock(b)
+	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b.CommitmentProof}, proofs...)
 
 	prevProofs := GetLatestProofs(1, b)
 
-	if !reflect.DeepEqual(prevProofs[0], genesisCommitmentProof) {
-		t.Error("Could not retrieve the genesis commitment proof.", prevProofs[0], genesisCommitmentProof)
+	if !reflect.DeepEqual(prevProofs[0], initialBlock.CommitmentProof) {
+		t.Error("Could not retrieve the initial block commitment proof.", prevProofs[0], genesisCommitmentProof)
 	}
 	if !reflect.DeepEqual(1, len(prevProofs)) {
 		t.Error("Could not retrieve the correct amount of previous proofs (all proofs).", 1, len(prevProofs))
 	}
 
 	//Two new blocks are added with random commitment proofs
-	b1 := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b1 := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	lastBlock = b
+	b1 := newBlock(b.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, 3)
 	if err := finalizeBlock(b1); err != nil {
 		t.Error("Error finalizing b1", err)
 	}
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b1.CommitmentProof}, proofs...)
 	validate(b1, false)
+	storage.WriteClosedBlock(b1)
+	lastBlock = b1
 
 	b2 := newBlock(b1.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b1.Height+1)
 	if err := finalizeBlock(b2); err != nil {
@@ -71,9 +82,17 @@ func TestGetLatestProofs(t *testing.T) {
 	validate(b2, false)
 	proofs = append([][crypto.COMM_PROOF_LENGTH]byte{b2.CommitmentProof}, proofs...)
 
+	t.Log("Proofs Slice:\n")
+	t.Logf("%v",CommitmentProofSliceToString(proofs))
+
+	storage.WriteClosedBlock(b2)
+
 	b3 := newBlock(b2.Hash, [crypto.COMM_PROOF_LENGTH]byte{}, b2.Height+1)
+	storage.WriteClosedBlock(b3)
 
 	prevProofs = GetLatestProofs(3, b3)
+	t.Log("prevProofs Slice with n=3 :\n")
+	t.Logf("%v",CommitmentProofSliceToString(prevProofs))
 
 	//Two new blocks are added with random commitment proofs
 	if !reflect.DeepEqual(prevProofs, proofs) {
@@ -85,20 +104,11 @@ func TestGetLatestProofs(t *testing.T) {
 
 	prevProofs = GetLatestProofs(2, b3)
 
-	if !reflect.DeepEqual(prevProofs, proofs[0:2]) {
-		t.Error("Could not retrieve previous proofs correctly (n < block height).", prevProofs, proofs[0:2])
+	if !reflect.DeepEqual(prevProofs, proofs[:2]) {
+		t.Errorf("Could not retrieve previous proofs correctly (n < block height)\n prevProofs: %v\nProofs: %v\n",
+			CommitmentProofSliceToString(prevProofs), CommitmentProofSliceToString(proofs[1:]))
 	}
 	if !reflect.DeepEqual(2, len(prevProofs)) {
 		t.Error("Could not retrieve the correct amount of previous proofs  (n < block height).", 2, len(prevProofs))
-	}
-
-	//5 proofs are expected since only 5 blocks are in the blockchain
-	prevProofs = GetLatestProofs(5, b3)
-
-	if !reflect.DeepEqual(prevProofs, proofs[0:3]) {
-		t.Errorf("Could not retrieve previous proofs correctly (all proofs).\n%x\n%x", prevProofs, proofs[0:3])
-	}
-	if !reflect.DeepEqual(3, len(prevProofs)) {
-		t.Error("Could not retrieve the correct amount of previous proofs (n > block height).", 3, len(prevProofs))
 	}
 }

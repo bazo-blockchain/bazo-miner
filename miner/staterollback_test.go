@@ -20,7 +20,8 @@ func TestFundsStateChangeRollback(t *testing.T) {
 	var testSize uint32
 	testSize = 1000
 
-	b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	//b := newBlock([32]byte{}, [crypto.COMM_PROOF_LENGTH]byte{}, 1)
+	b := newBlock(lastBlock.HashBlock(), [crypto.COMM_PROOF_LENGTH]byte{}, 2)
 	var funds []*protocol.FundsTx
 
 	var feeA, feeB uint64
