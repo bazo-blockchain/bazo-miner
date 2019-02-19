@@ -9,6 +9,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
 	"testing"
+	"time"
 )
 
 const(
@@ -46,42 +47,48 @@ func TestShardingWith20Nodes(t *testing.T) {
 		}
 	}
 
+	txCount := 0
+
 	//Create a goroutine for each wallet and send TX to the miner
 	for i := 1; i <= TotalNodes; i++ {
 		strNode := fmt.Sprintf("Node_%d",i)
 		go func() {
-			t.Logf("Spawning Go Routine of Node %v\n",strNode)
-			fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")
-			if err != nil {
-				return
-			}
+			for{
+				//t.Logf("Spawning Go Routine of Node %v\n",strNode)
+				fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")
+				if err != nil {
+					return
+				}
 
-			toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+strNode+"/wallet.key")
-			if err != nil {
-				return
-			}
+				toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+strNode+"/wallet.key")
+				if err != nil {
+					return
+				}
 
-			fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
-			t.Logf("fromAddress: (%x)\n",fromAddress[0:8])
-			toAddress := crypto.GetAddressFromPubKey(toPubKey)
-			t.Logf("toAddress: (%x)\n",toAddress[0:8])
+				fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
+				//t.Logf("fromAddress: (%x)\n",fromAddress[0:8])
+				toAddress := crypto.GetAddressFromPubKey(toPubKey)
+				//t.Logf("toAddress: (%x)\n",toAddress[0:8])
 
-			tx, err := protocol.ConstrFundsTx(
-				byte(0),
-				uint64(1),
-				uint64(0),
-				uint32(0),
-				fromAddress,
-				toAddress,
-				fromPrivKey,
-				nil)
+				tx, err := protocol.ConstrFundsTx(
+					byte(0),
+					uint64(1),
+					uint64(0),
+					uint32(txCount),
+					fromAddress,
+					toAddress,
+					fromPrivKey,
+					nil)
 
-			if err := SendTx("127.0.0.1:8000", tx, p2p.FUNDSTX_BRDCST); err != nil {
-				return
+				if err := SendTx("127.0.0.1:8000", tx, p2p.FUNDSTX_BRDCST); err != nil {
+					return
+				}
+				txCount += 1
 			}
 		}()
 	}
 
+	time.Sleep(25*time.Second)
 
 
 	//storage.State = nil
