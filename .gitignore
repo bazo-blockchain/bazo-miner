@@ -35,3 +35,4 @@ hash-prevhash-*.txt
 hlog-*.txt
 walletMinerA.key
 miner/nodes/*
+miner/walletMinerA.key

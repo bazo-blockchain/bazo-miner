@@ -19,10 +19,11 @@ import (
 
 const (
 	TestDBFileName   = "test.db"
-	TestIpPort       = "127.0.0.1:8000"
-	TestIpPortNodeB       = "127.0.0.1:8001"
-	TestIpPortNodeC       = "127.0.0.1:8002"
-	TestIpPortNodeD       = "127.0.0.1:8003"
+	TestIpPort       = "127.0.0.1:8010"
+	TestIpPortNodeA       = "127.0.0.1:8001"
+	TestIpPortNodeB       = "127.0.0.1:8002"
+	TestIpPortNodeC       = "127.0.0.1:8003"
+	TestIpPortNodeD       = "127.0.0.1:8004"
 	TestKeyFileName  = "test_root"
 )
 
