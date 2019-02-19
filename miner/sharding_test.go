@@ -47,20 +47,20 @@ func TestShardingWith20Nodes(t *testing.T) {
 		}
 	}
 
-	txCount := 0
+	transferFundsToWallets()
 
-	//Create a goroutine for each wallet and send TX to the miner
+	//Create a goroutine for each wallet and send TX from corresponding wallet to root account
 	for i := 1; i <= TotalNodes; i++ {
 		strNode := fmt.Sprintf("Node_%d",i)
 		go func() {
+			txCount := 0
 			for{
-				//t.Logf("Spawning Go Routine of Node %v\n",strNode)
-				fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")
+				fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(NodesDirectory+strNode+"/wallet.key")
 				if err != nil {
 					return
 				}
 
-				toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+strNode+"/wallet.key")
+				toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
 				if err != nil {
 					return
 				}
@@ -108,6 +108,42 @@ func TestShardingWith20Nodes(t *testing.T) {
 	//commPrivKey3,_ := crypto.ExtractRSAKeyFromFile(NodesDirectory+"Node3/commitment.key")
 
 	t.Log("Done...")
+}
+func transferFundsToWallets() {
+	//Transfer 1 Mio. funds to all wallets from root account
+	txCountRootAccBeginning := 0
+	for i := 1; i <= TotalNodes; i++ {
+		strNode := fmt.Sprintf("Node_%d",i)
+		fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")
+		if err != nil {
+			return
+		}
+
+		toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+strNode+"/wallet.key")
+		if err != nil {
+			return
+		}
+
+		fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
+		//t.Logf("fromAddress: (%x)\n",fromAddress[0:8])
+		toAddress := crypto.GetAddressFromPubKey(toPubKey)
+		//t.Logf("toAddress: (%x)\n",toAddress[0:8])
+
+		tx, err := protocol.ConstrFundsTx(
+			byte(0),
+			uint64(1000000),
+			uint64(0),
+			uint32(txCountRootAccBeginning),
+			fromAddress,
+			toAddress,
+			fromPrivKey,
+			nil)
+
+		if err := SendTx("127.0.0.1:8000", tx, p2p.FUNDSTX_BRDCST); err != nil {
+			return
+		}
+		txCountRootAccBeginning += 1
+	}
 }
 
 func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {

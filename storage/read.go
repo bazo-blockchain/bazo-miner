@@ -148,6 +148,8 @@ func ReadState() (state map[[64]byte]*protocol.Account){
 
 //Needed for the miner to prepare a new block
 func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
+	memPoolMutex.Lock()
+	defer memPoolMutex.Unlock()
 	for key := range txMemPool {
 		allOpenTxs = append(allOpenTxs, txMemPool[key])
 	}

@@ -51,7 +51,7 @@ func prepareBlock(block *protocol.Block) {
 					err := addTx(block, tx)
 					if err != nil {
 						//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
-						storage.DeleteOpenTx(tx)
+						//storage.DeleteOpenTx(tx)
 					}
 				}
 			case *protocol.ContractTx, *protocol.FundsTx, *protocol.ConfigTx:
@@ -60,7 +60,7 @@ func prepareBlock(block *protocol.Block) {
 					//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
 					//storage.DeleteOpenTx(tx)
 					storage.WriteINVALIDOpenTx(tx)
-					storage.DeleteOpenTx(tx)
+					//storage.DeleteOpenTx(tx)
 				}
 			}
 
