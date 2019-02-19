@@ -22,7 +22,11 @@ var (
 )
 
 func TestShardingWith20Nodes(t *testing.T) {
-	TotalNodes = 20 //Set number of nodes for this test
+	/**
+	Set Total Number of desired nodes. They will be generated automatically. And for each node, a separate go routine is being created.
+	This enables parallel issuance of transactions
+	 */
+	TotalNodes = 20
 
 	//Generate wallet directories for all nodes, i.e., validators and non-validators
 	for i := 1; i <= TotalNodes; i++ {
@@ -88,8 +92,7 @@ func TestShardingWith20Nodes(t *testing.T) {
 		}()
 	}
 
-	time.Sleep(25*time.Second)
-
+	time.Sleep(60*time.Second)
 
 	//storage.State = nil
 	//storage.State = make(map[[64]byte]*protocol.Account)

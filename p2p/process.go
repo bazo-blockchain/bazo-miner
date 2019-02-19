@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+var(
+	writtenTXCount 				= 0
+)
+
 //Process tx broadcasts from other miners. We can't broadcast incoming messages directly, first check if
 //the tx has already been broadcast before, whether it is a valid tx etc.
 func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
@@ -66,6 +70,11 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	FileLogger.Printf("Writing transaction (%x) in the mempool.\n", tx.Hash())
 	logger.Printf("Writing transaction at time: %d\n", time.Now().Unix())
 	FileLogger.Printf("Writing transaction at time: %d\n", time.Now().Unix())
+
+	writtenTXCount += 1
+
+	logger.Printf("Written tx count: %d\n", writtenTXCount)
+	FileLogger.Printf("Written tx count: %d\n", writtenTXCount)
 
 	storage.WriteOpenTx(tx)
 
