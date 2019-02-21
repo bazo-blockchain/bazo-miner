@@ -30,7 +30,6 @@ func prepareBlock(block *protocol.Block) {
 		txAssignedShard := assignTransactionToShard(tx)
 
 		if int(txAssignedShard) == ValidatorShardMap.ValMapping[validatorAccAddress]{
-			//logger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShardAbs)
 			FileLogger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShard)
 			//Prevent block size to overflow.
 			//if block.GetSize()+tx.Size() > activeParameters.Block_size {
@@ -40,7 +39,6 @@ func prepareBlock(block *protocol.Block) {
 			//FileConnectionsLog.WriteString(fmt.Sprintf("current block size: %d\n", int(block.GetSize())))
 			//if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 			if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
-				//FileConnectionsLog.WriteString(fmt.Sprintf("break - cannot add transaction - block size: %d - block size param: %d\n", int(block.GetSize()+10)+(int(len(tx.Hash()))), int(activeParameters.Block_size)))
 				break
 			}
 
@@ -147,24 +145,28 @@ func DeleteTransactionFromMempool(contractData [][32]byte, fundsData [][32]byte,
 	for _,fundsTX := range fundsData{
 		if(storage.ReadOpenTx(fundsTX) != nil){
 			storage.DeleteOpenTx(storage.ReadOpenTx(fundsTX))
+			FileLogger.Printf("Deleted transaction (%x) from the MemPool.\n",fundsTX)
 		}
 	}
 
 	for _,configTX := range configData{
 		if(storage.ReadOpenTx(configTX) != nil){
 			storage.DeleteOpenTx(storage.ReadOpenTx(configTX))
+			FileLogger.Printf("Deleted transaction (%x) from the MemPool.\n",configTX)
 		}
 	}
 
 	for _,stakeTX := range stakeData{
 		if(storage.ReadOpenTx(stakeTX) != nil){
 			storage.DeleteOpenTx(storage.ReadOpenTx(stakeTX))
+			FileLogger.Printf("Deleted transaction (%x) from the MemPool.\n",stakeTX)
 		}
 	}
 
 	for _,contractTX := range contractData{
 		if(storage.ReadOpenTx(contractTX) != nil){
 			storage.DeleteOpenTx(storage.ReadOpenTx(contractTX))
+			FileLogger.Printf("Deleted transaction (%x) from the MemPool.\n",contractTX)
 		}
 	}
 

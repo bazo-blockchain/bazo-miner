@@ -180,7 +180,7 @@ func forwardBlockReqToMiner(p *peer, payload []byte) {
 }
 
 func forwardStateTransitionShardReqToMiner(p *peer, payload []byte) {
-	FileLogger.Printf("received state transition response for heigh\n")
+	FileLogger.Printf("received state transition response..\n")
 	StateTransitionShardReqChan <- payload
 }
 

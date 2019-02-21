@@ -204,7 +204,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				break
 			}
 
-			time.Sleep(5 * time.Second)
+			//time.Sleep(3 * time.Second)
 
 			stateStashForHeight := protocol.ReturnStateTransitionForHeight(storage.ReceivedStateStash,lastBlock.Height)
 
@@ -247,8 +247,8 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 						storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
 
 						//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-					case <-time.After(3 * time.Second):
-						FileLogger.Printf("have been waiting for 3 seconds for lastblock height: %d\n",lastBlock.Height)
+					case <-time.After(5 * time.Second):
+						FileLogger.Printf("have been waiting for 5 seconds for lastblock height: %d\n",lastBlock.Height)
 						continue
 					}
 				}
@@ -315,6 +315,8 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					FileLogger.Printf("Created Validator Shard Mapping :\n")
 					FileLogger.Printf(ValidatorShardMap.String()+"\n")
 					FileLogger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
+
+					//broadcastEpochBlock(epochBlock)
 
 					for _, prevHash := range epochBlock.PrevShardHashes {
 						//FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
@@ -388,7 +390,8 @@ func mining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 
 			FileLogger.Printf("Broadcast state transition for height %d\n", currentBlock.Height)
 			broadcastStateTransition(stateTransition)
-			storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
+			storage.WriteToOwnStateTransitionkStash(stateTransition)
+			//storage.OwnStateTransitionStash = append(storage.OwnStateTransitionStash,stateTransition)
 
 			FileLogger.Printf("Broadcast block for height %d\n", currentBlock.Height)
 			broadcastBlock(currentBlock)

@@ -2,6 +2,8 @@ package p2p
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -78,10 +80,32 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 
 	storage.WriteOpenTx(tx)
 
+	for p := range peers.minerConns {
+		if err := SendTx(p.getIPPort(), tx, FUNDSTX_BRDCST); err != nil {
+			return
+		}
+	}
 
+	//toBrdcst := BuildPacket(brdcstType, payload)
+	//minerBrdcstMsg <- toBrdcst
+}
 
-	toBrdcst := BuildPacket(brdcstType, payload)
-	minerBrdcstMsg <- toBrdcst
+func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
+	if conn := Connect(dial); conn != nil {
+		packet := BuildPacket(typeID, tx.Encode())
+		conn.Write(packet)
+
+		header, payload, err := RcvData_(conn)
+		if err != nil || header.TypeID == NOT_FOUND {
+			err = errors.New(string(payload[:]))
+		}
+		conn.Close()
+
+		return err
+	}
+
+	txHash := tx.Hash()
+	return errors.New(fmt.Sprintf("Sending tx %x failed.", txHash[:8]))
 }
 
 func processTimeRes(p *peer, payload []byte) {
