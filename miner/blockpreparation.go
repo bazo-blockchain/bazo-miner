@@ -25,7 +25,9 @@ func prepareBlock(block *protocol.Block) {
 
 	sort.Sort(tmpCopy)
 
-	for i, tx := range opentxs {
+	txFromThisShard := 0
+
+	for _, tx := range opentxs {
 		/*When fetching and adding Txs from the MemPool, first check if it belongs to my shard. Only if so, then add tx to the block*/
 		txAssignedShard := assignTransactionToShard(tx)
 
@@ -38,7 +40,7 @@ func prepareBlock(block *protocol.Block) {
 			//Prevent block size to overflow. +10 Because of the bloomFilter
 			//FileConnectionsLog.WriteString(fmt.Sprintf("current block size: %d\n", int(block.GetSize())))
 			//if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
-			if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
+			if int(block.GetSize()+10)+(txFromThisShard*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 				break
 			}
 
@@ -61,7 +63,7 @@ func prepareBlock(block *protocol.Block) {
 					//storage.DeleteOpenTx(tx)
 				}
 			}
-
+			txFromThisShard += 1
 		}
 	}
 }

@@ -112,6 +112,7 @@ func (tx *FundsTx) Size() uint64  { return FUNDSTX_SIZE }
 func (tx FundsTx) String() string {
 	return fmt.Sprintf(
 		"\nHeader: %v\n"+
+			"Hash: %x\n"+
 			"Amount: %v\n"+
 			"Fee: %v\n"+
 			"TxCnt: %v\n"+
@@ -120,6 +121,7 @@ func (tx FundsTx) String() string {
 			"Sig: %x\n"+
 			"Data: %v\n",
 		tx.Header,
+		tx.Hash(),
 		tx.Amount,
 		tx.Fee,
 		tx.TxCnt,

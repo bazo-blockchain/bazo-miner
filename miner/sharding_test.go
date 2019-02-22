@@ -21,6 +21,33 @@ var (
 	TotalNodes			int
 )
 
+func TestGenerateNodes(t *testing.T) {
+	TotalNodes = 10
+
+	//Generate wallet directories for all nodes, i.e., validators and non-validators
+	for i := 1; i <= TotalNodes; i++ {
+		strNode := fmt.Sprintf("Node_%d",i)
+		if(!stringAlreadyInSlice(NodeNames,strNode)){
+			NodeNames = append(NodeNames,strNode)
+		}
+		if _, err := os.Stat(NodesDirectory+strNode); os.IsNotExist(err) {
+			err = os.MkdirAll(NodesDirectory+strNode, 0755)
+			if err != nil {
+				t.Errorf("Error while creating node directory %v\n",err)
+			}
+		}
+		storage.Init(NodesDirectory+strNode+"/storage.db", TestIpPort)
+		_, err := crypto.ExtractECDSAPublicKeyFromFile(NodesDirectory+strNode+"/wallet.key")
+		if err != nil {
+			return
+		}
+		_, err = crypto.ExtractRSAKeyFromFile(NodesDirectory+strNode+"/commitment.key")
+		if err != nil {
+			return
+		}
+	}
+}
+
 func TestShardingWith20Nodes(t *testing.T) {
 	/**
 	Set Total Number of desired nodes. They will be generated automatically. And for each node, a separate go routine is being created.
@@ -90,12 +117,14 @@ func TestShardingWith20Nodes(t *testing.T) {
 				if err := SendTx("127.0.0.1:8000", tx, p2p.FUNDSTX_BRDCST); err != nil {
 					return
 				}
+				if err := SendTx("127.0.0.1:8001", tx, p2p.FUNDSTX_BRDCST); err != nil {
+					return
+				}
 				txCount += 1
 			}
 			wg.Done()
 		}()
 	}
-
 	wg.Wait()
 	t.Log("Done...")
 }

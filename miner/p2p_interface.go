@@ -54,7 +54,6 @@ func processEpochBlock(eb []byte) {
 		storage.WriteLastClosedEpochBlock(epochBlock)
 
 		broadcastEpochBlock(lastEpochBlock)
-
 	}
 }
 
