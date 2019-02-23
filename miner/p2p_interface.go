@@ -28,6 +28,7 @@ func incomingEpochData() {
 	for {
 		//receive Epoch Block
 		epochBlock := <-p2p.EpochBlockIn
+		FileLogger.Printf("Retrieved Epoch block from channel EpochBlockIn.\n")
 		processEpochBlock(epochBlock)
 	}
 }
@@ -171,6 +172,7 @@ func broadcastStateTransition(st *protocol.StateTransition) {
 }
 
 func broadcastEpochBlock(epochBlock *protocol.EpochBlock) {
+	FileLogger.Printf("Writing Epoch block (%x) to channel EpochBlockOut\n", epochBlock.Hash[0:8])
 	p2p.EpochBlockOut <- epochBlock.Encode()
 }
 

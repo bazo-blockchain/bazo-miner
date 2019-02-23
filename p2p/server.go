@@ -162,7 +162,7 @@ func handleNewConn(p *peer) {
 		FileLogger.Printf("Failed to handle incoming connection: %v\n", err)
 		return
 	}
-
+	FileLogger.Printf("Starting function processIncomingMsg.\n")
 	processIncomingMsg(p, header, payload)
 }
 
@@ -197,7 +197,7 @@ func peerConn(p *peer) {
 			disconnect <- p
 			return
 		}
-
+		FileLogger.Printf("Starting go routine processIncomingMsg.\n")
 		go processIncomingMsg(p, header, payload)
 	}
 }

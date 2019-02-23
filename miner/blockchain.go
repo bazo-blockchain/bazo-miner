@@ -199,7 +199,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 		}
 
 		for{
-
+			//If there is only one shard, then skip synchronisation mechanism
 			if(NumberOfShards == 1){
 				break
 			}
@@ -213,9 +213,8 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				for _,st := range stateStashForHeight{
 					if(shardIDStateBoolMap[st.ShardID] == false){
 						storage.State = storage.ApplyRelativeState(storage.State,st.RelativeStateChange)
-						//Delete transactions from mempool, which were validated by the other shards
+						//Delete transactions from mempool, which were validated by the other shards to avoid starvation in the mempool
 						DeleteTransactionFromMempool(st.ContractTxData,st.FundsTxData,st.ConfigTxData,st.StakeTxData)
-
 						shardIDStateBoolMap[st.ShardID] = true
 
 						FileLogger.Printf("Processed state transition of shard: %d\n",st.ShardID)
@@ -241,10 +240,16 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 						stateTransition = stateTransition.DecodeTransition(encodedStateTransition)
 
 						storage.State = storage.ApplyRelativeState(storage.State,stateTransition.RelativeStateChange)
-						shardIDStateBoolMap[stateTransition.ShardID] = true
 
 						FileLogger.Printf("Writing state back to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",stateTransition.ShardID,storage.ThisShardID,stateTransition.Height)
 						storage.ReceivedStateStash.Set(stateTransition.HashTransition(),stateTransition)
+
+						//Delete transactions from mempool, which were validated by the other shards
+						DeleteTransactionFromMempool(stateTransition.ContractTxData,stateTransition.FundsTxData,stateTransition.ConfigTxData,stateTransition.StakeTxData)
+
+						shardIDStateBoolMap[stateTransition.ShardID] = true
+
+						FileLogger.Printf("Processed state transition of shard: %d\n",stateTransition.ShardID)
 
 						//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 					case <-time.After(5 * time.Second):

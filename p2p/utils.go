@@ -95,6 +95,7 @@ func peerSelfConn(newIpport string) bool {
 }
 
 func BuildPacket(typeID uint8, payload []byte) (packet []byte) {
+	FileLogger.Printf("BuildPacket: typeID - %d ¦ payload length - %d\n",typeID,len(payload))
 	var payloadLen [4]byte
 
 	packet = make([]byte, HEADER_LEN+len(payload))

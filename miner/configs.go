@@ -29,6 +29,6 @@ const (
 	SLASH_REWARD         = 0       //Coins
 	NUM_INCL_PREV_PROOFS = 5       //Number of previous proofs included in the PoS condition
 	//Parameters for sharding concept
-	EPOCH_LENGTH         = 14 //blocks
+	EPOCH_LENGTH         = 9 //blocks
 	VALIDATORS_PER_SHARD = 1 //validators
 )

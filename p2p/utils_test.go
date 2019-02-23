@@ -63,6 +63,26 @@ func TestRcvData(t *testing.T) {
 		header.Len != uint32(payloadLen) ||
 		header.TypeID != BLOCK_BRDCST ||
 		!reflect.DeepEqual([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, payload) {
-		t.Error("Receiving data routine failed\n")
+		t.Error("Receiving BLOCK_BRDCST failed\n")
 	}
+
+	//epochBlock := protocol.NewEpochBlock([][32]byte{},10)
+	//acc1 := protocol.NewAccount([64]byte{'0'},[64]byte{},4000,true,[256]byte{},nil,nil)
+	//acc2 := protocol.NewAccount([64]byte{'1'},[64]byte{},4000,true,[256]byte{},nil,nil)
+	//storage.State[[64]byte{'0'}] = &acc1
+	//storage.State[[64]byte{'0'}] = &acc2
+	//epochBlock.State = storage.State
+	//
+	//ebPacket := BuildPacket(EPOCH_BLOCK_BRDCST, epochBlock.Encode())
+	//go conn2.Write(ebPacket)
+	//
+	//header, payload, err = RcvData(&p1)
+	//if err != nil ||
+	//	header.Len != uint32(len(ebPacket)) ||
+	//	header.TypeID != EPOCH_BLOCK_BRDCST ||
+	//	!reflect.DeepEqual(epochBlock.Encode(), payload) {
+	//	t.Log(header.Len)
+	//	t.Log(header.TypeID)
+	//	t.Error("Receiving EPOCH_BLOCK_BRDCST failed\n")
+	//}
 }

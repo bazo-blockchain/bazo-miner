@@ -3,7 +3,6 @@ package p2p
 //All incoming messages are processed here and acted upon accordingly
 func processIncomingMsg(p *peer, header *Header, payload []byte) {
 
-
 	switch header.TypeID {
 	//BROADCASTING
 	case FUNDSTX_BRDCST:
@@ -96,5 +95,7 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		forwardEpochBlockToMiner(p,payload)
 	case LAST_EPOCH_BLOCK_RES:
 		forwardLastEpochBlockToMiner(p,payload)
+	default:
+		FileLogger.Printf("Incoming message with unrecognized header Type ID: %d - Payload Len: %d\n",header.TypeID,len(payload))
 	}
 }

@@ -197,6 +197,7 @@ func forwardEpochBlockToMiner(p *peer, payload []byte) {
 }
 
 func forwardEpochBlockToMinerIn(p *peer, payload []byte) {
+	FileLogger.Printf("Writing Epoch block to channel EpochBlockIn.\n")
 	EpochBlockIn <- payload
 }
 

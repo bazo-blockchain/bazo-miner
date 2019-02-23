@@ -49,9 +49,8 @@ func prepareBlock(block *protocol.Block) {
 				//Add StakeTXs only when preparing the last block before the next epoch block
 				if (int(lastBlock.Height) == int(lastEpochBlock.Height) + int(activeParameters.epoch_length) - 1) {
 					err := addTx(block, tx)
-					if err != nil {
-						//If the tx is invalid, we remove it completely, prevents starvation in the mempool.
-						//storage.DeleteOpenTx(tx)
+					if err == nil {
+						txFromThisShard += 1
 					}
 				}
 			case *protocol.ContractTx, *protocol.FundsTx, *protocol.ConfigTx:
@@ -61,9 +60,11 @@ func prepareBlock(block *protocol.Block) {
 					//storage.DeleteOpenTx(tx)
 					storage.WriteINVALIDOpenTx(tx)
 					//storage.DeleteOpenTx(tx)
+				} else {
+					txFromThisShard += 1
 				}
 			}
-			txFromThisShard += 1
+
 		}
 	}
 }
