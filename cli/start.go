@@ -72,13 +72,13 @@ func GetStartCommand() cli.Command {
 }
 
 func Start(args *startArgs) error {
-	var firstStart = false
+	//var firstStart = false
 	if _, err := os.Stat(args.dataDirectory); os.IsNotExist(err) {
 		err = os.MkdirAll(args.dataDirectory, 0755)
 		if err != nil {
 			return err
 		}
-		firstStart = true
+		//firstStart = true
 	}
 
 	const (
@@ -93,13 +93,13 @@ func Start(args *startArgs) error {
 	var validatorPubKey *ecdsa.PublicKey
 	var err error
 
-	if(p2p.IsBootstrap()){
-		validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
-	} else {
-		validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
-	}
+	//if(p2p.IsBootstrap()){
+	//	validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
+	//} else {
+	//	validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
+	//}
 
-	//validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
+	validatorPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.dataDirectory + "/" + wallet)
 	//validatorPubKey, err := crypto.ExtractECDSAPublicKeyFromFile("walletMinerA.key")
 	if err != nil {
 		return err
@@ -111,7 +111,8 @@ func Start(args *startArgs) error {
 	}
 
 	// Check if executor is root and if it's the first start
-	if p2p.IsBootstrap() && firstStart {
+	//if p2p.IsBootstrap() && firstStart {
+	if p2p.IsBootstrap(){
 		return miner.InitFirstStart(validatorPubKey, commPrivKey)
 	} else {
 		return miner.Init(validatorPubKey, commPrivKey)

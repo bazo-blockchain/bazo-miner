@@ -8,8 +8,8 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"os"
-	"sync"
 	"testing"
+	"time"
 )
 
 const(
@@ -80,15 +80,16 @@ func TestShardingWith20Nodes(t *testing.T) {
 	//transferFundsToWallets()
 	//
 	//time.Sleep(15*time.Second)
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 
 	//Create a goroutine for each wallet and send TX from corresponding wallet to root account
 	for i := 1; i <= TotalNodes; i++ {
 		strNode := fmt.Sprintf("Node_%d",i)
-		wg.Add(1)
+		//wg.Add(1)
 		go func() {
 			txCount := 0
-			for i := 1; i <= 500; i++ {
+			//for i := 1; i <= 500; i++ {
+			for {
 				fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(NodesDirectory+strNode+"/wallet.key")
 				if err != nil {
 					return
@@ -122,10 +123,13 @@ func TestShardingWith20Nodes(t *testing.T) {
 				}
 				txCount += 1
 			}
-			wg.Done()
+			//wg.Done()
 		}()
 	}
-	wg.Wait()
+
+	time.Sleep(60*time.Second)
+
+	//wg.Wait()
 	t.Log("Done...")
 }
 
@@ -136,7 +140,7 @@ func TestSendingFundsTo20Nodes(t *testing.T) {
 
 func transferFundsToWallets() {
 	//Transfer 1 Mio. funds to all wallets from root account
-	txCountRootAccBeginning := 0
+	txCountRootAccBeginning := 1
 	for i := 1; i <= TotalNodes; i++ {
 		strNode := fmt.Sprintf("Node_%d",i)
 		fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")

@@ -86,8 +86,8 @@ func processTxBrdcst(p *peer, payload []byte, brdcstType uint8) {
 	//	}
 	//}
 
-	//toBrdcst := BuildPacket(brdcstType, payload)
-	//minerBrdcstMsg <- toBrdcst
+	toBrdcst := BuildPacket(brdcstType, payload)
+	minerBrdcstMsg <- toBrdcst
 }
 
 func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {

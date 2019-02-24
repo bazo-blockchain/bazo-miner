@@ -321,7 +321,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 					FileLogger.Printf(ValidatorShardMap.String()+"\n")
 					FileLogger.Printf("Inserting EPOCH BLOCK: %v\n", epochBlock.String())
 
-					//broadcastEpochBlock(epochBlock)
+					broadcastEpochBlock(epochBlock)
 
 					for _, prevHash := range epochBlock.PrevShardHashes {
 						//FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n", prevHash[0:15], epochBlock.Hash[0:15]))
