@@ -57,7 +57,7 @@ func Init(validatorPubKey, multisig *ecdsa.PublicKey, seedFileName string) {
 
 //Mining is a constant process, trying to come up with a successful PoW.
 func mining(initialBlock *protocol.Block) {
-	currentBlock := protocol.NewBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
+	currentBlock := newBlock(initialBlock.Hash, [32]byte{}, [32]byte{}, initialBlock.Height+1)
 
 	for {
 		err := finalizeBlock(currentBlock)
