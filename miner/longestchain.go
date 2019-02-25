@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+/**
+	Helper function for logging purposes. Converts a slice of hashes to a human readable form
+ */
 func HashSliceToString(inputSlice [][32]byte) string {
 
 	returnString := ""
@@ -20,7 +23,9 @@ func HashSliceToString(inputSlice [][32]byte) string {
 
 	return returnString
 }
-
+/**
+	Helper function for logging purposes. Similarly to the above function, of commitment proofs to a human readable form
+ */
 func CommitmentProofSliceToString(inputSlice [][256]byte) string {
 
 	returnString := ""
@@ -93,47 +98,6 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 	}
 }
 
-/*My version: getNewChain*/
-//Returns the ancestor from which the split occurs (if a split occurred, if not it's just our last block) and a list
-//of blocks that belong to a new chain.
-//func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain []*protocol.Block) {
-//	for {
-//		newChain = append(newChain, newBlock)
-//
-//		//Search for an ancestor (which needs to be in closed storage -> validated block).
-//		prevBlockHash := newBlock.PrevHash
-//		potentialAncestor := storage.ReadClosedBlock(prevBlockHash) // look in closed block storage
-//
-//		if potentialAncestor != nil {
-//			//Found ancestor because it is found in our closed block storage.
-//			//We went back in time, so reverse order.
-//			newChain = InvertBlockArray(newChain)
-//
-//			return potentialAncestor, newChain
-//		}
-//
-//		//It might be the case that we already started a sync and the block is in the openblock storage.
-//		newBlock = storage.ReadOpenBlock(prevBlockHash)
-//		if newBlock != nil {
-//			continue
-//		}
-//
-//		//TODO Optimize code (duplicated)
-//		//Fetch the block we apparently missed from the network.
-//		p2p.BlockReq(prevBlockHash)
-//
-//		//Blocking wait
-//		select {
-//		case encodedBlock := <-p2p.BlockReqChan:
-//			newBlock = newBlock.Decode(encodedBlock)
-//			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-//		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-//			return nil, nil
-//		}
-//	}
-//
-//	return nil, nil
-//}
 
 func getNewChain(newBlock *protocol.Block) (ancestor [32]byte, newChain []*protocol.Block) {
 OUTER:

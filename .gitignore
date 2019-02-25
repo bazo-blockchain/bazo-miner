@@ -23,6 +23,8 @@
 # Test files
 **/test_root
 **/test.db
+**/test_commitment.txt
+**/test_key.txt
 
 # Put commitment key, miner databases and other stuff that should not be visible
 # to others into the folder tmp.

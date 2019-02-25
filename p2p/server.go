@@ -118,14 +118,6 @@ func PrepareHandshake(pingType uint8, localPort int) ([]byte, error) {
 	return packet, nil
 }
 
-func PrepareStateExchange(pingType uint8, localPort int) ([]byte, error) {
-	portBuf := make([]byte, PORT_SIZE)
-	binary.BigEndian.PutUint16(portBuf[:], uint16(localPort))
-	packet := BuildPacket(pingType, portBuf)
-
-	return packet, nil
-}
-
 func listener(ipport string) {
 	//Listen on all interfaces, this NAT stuff easier
 	listener, err := net.Listen("tcp", ":"+strings.Split(ipport, ":")[1])

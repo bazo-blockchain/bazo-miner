@@ -16,18 +16,10 @@ var (
 	//State transition from the network to the miner
 	StateTransitionIn = make(chan []byte)
 
-	//TX hashes of validated TXs to the network
-	TxPayloadOut = make(chan []byte)
-
-	//TX hashes of validated TXs from the network
-	TxPayloadIn = make(chan []byte)
-
 	//EpochBlock from the network, to the miner
 	EpochBlockIn = make(chan []byte)
 	//EpochBlock from the miner, to the network
 	EpochBlockOut = make(chan []byte)
-
-
 
 	//BlockHeader from the miner, to the clients
 	BlockHeaderOut = make(chan []byte)
@@ -50,9 +42,6 @@ var (
 	LastEpochBlockReqChan 	= make(chan []byte)
 
 	ValidatorShardMapReq 	= make(chan []byte)
-
-	ValidatorShardMapChanOut = make(chan []byte) // validator assignment out to the miners
-	ValidatorShardMapChanIn = make(chan []byte) // validator assignment received from the bootstrapping node
 
 	receivedTXStash = make([]*protocol.FundsTx, 0)
 )
@@ -118,10 +107,6 @@ func txAlreadyInStash(slice []*protocol.FundsTx, newTXHash [32]byte) bool {
 		}
 	}
 	return false
-}
-
-func forwardAssignmentToMiner(p *peer, payload []byte) {
-	ValidatorShardMapChanIn <- payload
 }
 
 //These are transactions the miner specifically requested.
@@ -205,9 +190,6 @@ func forwardStateTransitionToMiner(p *peer, payload []byte) () {
 	StateTransitionIn <- payload
 }
 
-func forwardTxPayloadToMiner(p *peer, payload []byte) {
-	TxPayloadIn <- payload
-}
 
 func forwardLastEpochBlockToMiner(p *peer, payload []byte)  {
 	LastEpochBlockReqChan <- payload

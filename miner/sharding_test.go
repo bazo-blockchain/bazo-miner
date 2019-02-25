@@ -22,6 +22,7 @@ var (
 )
 
 func TestGenerateNodes(t *testing.T) {
+	t.Skip("Skipping TestGenerateNodes...")
 	TotalNodes = 10
 
 	//Generate wallet directories for all nodes, i.e., validators and non-validators
@@ -49,6 +50,7 @@ func TestGenerateNodes(t *testing.T) {
 }
 
 func TestShardingWith20Nodes(t *testing.T) {
+	t.Skip("Skipping TestShardingWith20Nodes...")
 	/**
 	Set Total Number of desired nodes. They will be generated automatically. And for each node, a separate go routine is being created.
 	This enables parallel issuance of transactions
@@ -134,6 +136,7 @@ func TestShardingWith20Nodes(t *testing.T) {
 }
 
 func TestSendingFundsTo20Nodes(t *testing.T) {
+	t.Skip("Skipping TestSendingFundsTo20Nodes...")
 	TotalNodes = 20
 	transferFundsToWallets()
 }

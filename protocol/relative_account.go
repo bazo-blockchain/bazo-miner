@@ -7,6 +7,10 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 )
 
+/**
+	The State Transition is the main data type needed in the synchronisation mechnism. It contains all data needed to update the local
+	state with the state of the other shards and free the Mempool from already validated transactions.
+ */
 type StateTransition struct {
 	RelativeStateChange			map[[64]byte]*RelativeAccount
 	Height						int
@@ -18,6 +22,9 @@ type StateTransition struct {
 	StakeTxData  				[][32]byte
 }
 
+/**
+	This datastructure keeps track of relative change in the account information during the creation of a block
+ */
 type RelativeAccount struct {
 	Address            [64]byte              // 64 Byte
 	Issuer             [64]byte              // 64 Byte
@@ -73,26 +80,6 @@ func (st *StateTransition) HashTransition() [32]byte {
 	if st == nil {
 		return [32]byte{}
 	}
-
-	//stHash := struct {
-	//	RelativeStateChange				  map[[64]byte]*RelativeAccount
-	//	Height				  			  int
-	//	ShardID							  int
-	//	BlockHash						  [32]byte
-	//	ContractTxData  			[][32]byte
-	//	FundsTxData  				[][32]byte
-	//	ConfigTxData 				[][32]byte
-	//	StakeTxData  				[][32]byte
-	//}{
-	//	st.RelativeStateChange,
-	//	st.Height,
-	//	st.ShardID,
-	//	st.BlockHash,
-	//	st.ContractTxData,
-	//	st.FundsTxData,
-	//	st.ConfigTxData,
-	//	st.StakeTxData,
-	//}
 
 	stHash := struct {
 		Height				  			  int

@@ -45,14 +45,6 @@ func WriteINVALIDOpenTx(transaction protocol.Transaction) {
 }
 
 func WriteToReceivedStash(block *protocol.Block) {
-	//Only write it to stash if it is not in there already.
-	//if !BlockAlreadyInStash(ReceivedBlockStash, block.Hash) {
-	//	ReceivedBlockStash = append(ReceivedBlockStash, block)
-	//	//When lenght of stash is > 50 --> Remove first added Block
-	//	if len(ReceivedBlockStash) > 50 {
-	//		ReceivedBlockStash = append(ReceivedBlockStash[:0], ReceivedBlockStash[1:]...)
-	//	}
-	//}
 	ReceivedBlockStash = append(ReceivedBlockStash, block)
 	//When lenght of stash is > 50 --> Remove first added Block
 	if len(ReceivedBlockStash) > 50 {
@@ -119,20 +111,6 @@ func WriteGenesis(genesis *protocol.Genesis) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(GENESIS_BUCKET))
 		return b.Put([]byte("genesis"), genesis.Encode())
-	})
-}
-
-func WriteState(state *protocol.State) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(STATE_BUCKET))
-		return b.Put([]byte("state"), state.Encode())
-	})
-}
-
-func WriteValidatorMapping(mapping *protocol.ValShardMapping) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(VALIDATOR_SHARD_MAPPING_BUCKET))
-		return b.Put([]byte("valshardmapping"), mapping.Encode())
 	})
 }
 

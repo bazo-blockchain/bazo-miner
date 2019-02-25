@@ -15,15 +15,11 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 		processTxBrdcst(p, payload, STAKETX_BRDCST)
 	case BLOCK_BRDCST:
 		forwardBlockToMiner(p, payload)
-	case TX_PAYLOAD_BRDCST:
-		forwardTxPayloadToMiner(p, payload)
 	case EPOCH_BLOCK_BRDCST:
 		FileLogger.Printf("Incoming Epoch block broadcast.\n")
 		forwardEpochBlockToMinerIn(p, payload)
 	case STATE_TRANSITION_BRDCST:
 		forwardStateTransitionToMiner(p,payload)
-	case VALIDATOR_SHARD_BRDCST:
-		forwardAssignmentToMiner(p, payload)
 	case TIME_BRDCST:
 		processTimeRes(p, payload)
 
@@ -41,14 +37,10 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case STATE_TRANSITION_REQ:
 		FileLogger.Printf("Incoming state transition request.\n")
 		stateTransitionRes(p,payload)
-	case VALIDATOR_SHARD_REQ:
-		valShardRes(p, payload)
 	case BLOCK_HEADER_REQ:
 		blockHeaderRes(p, payload)
 	case ACC_REQ:
 		accRes(p, payload)
-	case STATE_REQ:
-		stateRes(p, payload)
 	case ROOTACC_REQ:
 		rootAccRes(p, payload)
 	case MINER_PING:

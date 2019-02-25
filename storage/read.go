@@ -142,10 +142,6 @@ func GetMemPoolSize() int {
 	return len(txMemPool)
 }
 
-func ReadState() (state map[[64]byte]*protocol.Account){
-	return State
-}
-
 //Needed for the miner to prepare a new block
 func ReadAllOpenTxs() (allOpenTxs []protocol.Transaction) {
 	memPoolMutex.Lock()
@@ -225,32 +221,6 @@ func ReadFirstEpochBlock() (firstEpochBlock *protocol.EpochBlock, err error) {
 		return nil
 	})
 	return firstEpochBlock, err
-}
-
-func ReadClosedState() (state *protocol.State, err error) {
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(STATE_BUCKET))
-		encoded := b.Get([]byte("state"))
-		state = state.Decode(encoded)
-		return nil
-	})
-	return state, err
-}
-
-func ReadValidatorMapping() (mapping *protocol.ValShardMapping, err error) {
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(VALIDATOR_SHARD_MAPPING_BUCKET))
-		encoded := b.Get([]byte("valshardmapping"))
-
-		mapping = mapping.Decode(encoded)
-		return nil
-	})
-
-	return mapping, err
-}
-
-func ReadReceivedBlockStashFromOtherShards() (*protocol.BlockStash){
-	return ReceivedBlockStashFromOtherShards
 }
 
 func ReadBlockFromOwnStash(height int) *protocol.Block {

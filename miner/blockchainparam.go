@@ -12,7 +12,6 @@ var (
 	lastBlock         *protocol.Block
 	dummyLastBlock	  = protocol.NewBlock([32]byte{},0)
 	blockBeingProcessed *protocol.Block
-	blocksReceived 		[]*protocol.Block
 	lastEpochBlock	  *protocol.EpochBlock
 	firstEpochOver	  bool
 	globalBlockCount  = int64(-1)

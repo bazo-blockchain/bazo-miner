@@ -14,11 +14,9 @@ var (
 	logger             *log.Logger
 	State              = make(map[[64]byte]*protocol.Account)
 	//This map keeps track of the relative account adjustments within a shard, such as balance, txcount and stakingheight
-	PreviousState                     = make(map[[64]byte]*protocol.Account)
 	RelativeState                     = make(map[[64]byte]*protocol.RelativeAccount)
 	RootKeys                          = make(map[[64]byte]*protocol.Account)
 	txMemPool                         = make(map[[32]byte]protocol.Transaction)
-	ReceivedBlockStashFromOtherShards = protocol.NewBlockStash()
 	ReceivedStateStash                      = protocol.NewStateStash()
 	OwnBlockStash           []*protocol.Block
 	OwnStateTransitionStash []*protocol.StateTransition
@@ -44,8 +42,6 @@ const (
 	CLOSEDEPOCHBLOCK_BUCKET = "closedepochblocks"
 	LASTCLOSEDEPOCHBLOCK_BUCKET = "lastclosedepochblocks"
 	OPENEPOCHBLOCK_BUCKET	= "openepochblock"
-	STATE_BUCKET	= "statebucket"
-	VALIDATOR_SHARD_MAPPING_BUCKET = "valshardmapping"
 )
 
 //Entry function for the storage package
@@ -65,8 +61,6 @@ func Init(dbname string, bootstrapIpport string) error {
 		CLOSEDEPOCHBLOCK_BUCKET,
 		LASTCLOSEDEPOCHBLOCK_BUCKET,
 		OPENEPOCHBLOCK_BUCKET,
-		STATE_BUCKET,
-		VALIDATOR_SHARD_MAPPING_BUCKET,
 	}
 
 	var err error
@@ -75,14 +69,6 @@ func Init(dbname string, bootstrapIpport string) error {
 		logger.Fatal(ERROR_MSG, err)
 		return err
 	}
-
-	//for _, bucket := range Buckets{
-	//	err = DeleteBucket(bucket,db)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-
 	for _, bucket := range Buckets {
 		err = db.View(func(tx *bolt.Tx) error {
 			b := tx.Bucket([]byte(bucket))

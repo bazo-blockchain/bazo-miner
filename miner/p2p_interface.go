@@ -9,21 +9,21 @@ import (
 
 //The code in this source file communicates with the p2p package via channels
 
-//Constantly listen to incoming data from the network
+//Constantly listen to incoming block data from the network
 func incomingData() {
 	for {
 		block := <-p2p.BlockIn
 		processBlock(block)
 	}
 }
-
+//Constantly listen to incoming state transition data from the network
 func incomingStateData(){
 	for{
 		stateTransition := <- p2p.StateTransitionIn
 		processStateData(stateTransition)
 	}
 }
-
+//Constantly listen to incoming epoch block data from the network
 func incomingEpochData() {
 	for {
 		//receive Epoch Block
@@ -43,6 +43,8 @@ func processEpochBlock(eb []byte) {
 		FileLogger.Printf("Received Epoch Block (%x) already in storage\n", epochBlock.Hash[0:8])
 		return
 	} else {
+		//Accept the last received epoch block as the valid one. From the epoch block, retrieve the global state and the
+		//valiadator-shard mapping. Upon successful acceptance, broadcast the epoch block
 		logger.Printf("Received Epoch Block: %v\n", epochBlock.String())
 		FileLogger.Printf("Received Epoch Block: %v\n", epochBlock.String())
 		ValidatorShardMap = epochBlock.ValMapping
@@ -63,6 +65,7 @@ func processStateData(payload []byte) {
 	stateTransition = stateTransition.DecodeTransition(payload)
 
 	if(lastEpochBlock != nil){
+		//Only process state transition data form other shards and from the current epoch
 		if (stateTransition.ShardID != storage.ThisShardID && stateTransition.Height > int(lastEpochBlock.Height)){
 			stateHash := stateTransition.HashTransition()
 			if (storage.ReceivedStateStash.StateTransitionIncluded(stateHash) == false){
@@ -101,7 +104,7 @@ func processBlock(payload []byte) {
 				FileLogger.Printf("Received block (%x) has already been validated.\n", block.Hash[0:8])
 				return
 			}
-
+			//If block belongs to my shard, validate it
 			err := validate(block, false)
 			if err == nil {
 				logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
@@ -117,42 +120,8 @@ func processBlock(payload []byte) {
 			} else {
 				FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
 			}
-
-			////Start validation process
-			//if(block.Height == lastEpochBlock.Height +1){
-			//	//err := validateAfterEpoch(block, false)
-			//	err := validate(block, false)
-			//	if err == nil {
-			//		logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			//		FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8],block.Hash[0:8],block.Height))
-			//		FileConnections.WriteString(fmt.Sprintf(`"EPOCH BLOCK: \n Hash : %x \n Height : %d \nMPT : %x"`+`[color = red, shape = box]`+"\n",block.PrevHash[0:8],lastEpochBlock.Height,lastEpochBlock.MerklePatriciaRoot[0:8]))
-			//		broadcastBlock(block)
-			//	} else {
-			//		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			//		FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			//	}
-			//} else {
-			//	err := validate(block, false)
-			//	if err == nil {
-			//		logger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			//		FileLogger.Printf("Received Validated block: %vState:\n%v\n", block, getState())
-			//		FileConnections.WriteString(fmt.Sprintf(`"Hash : %x \n Height : %d" -> "Hash : %x \n Height : %d"`+"\n", block.PrevHash[0:8],block.Height-1,block.Hash[0:8],block.Height))
-			//		broadcastBlock(block)
-			//	} else {
-			//		logger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			//		FileLogger.Printf("Received block (%x) could not be validated: %v\n", block.Hash[0:8], err)
-			//	}
-			//}
 		}
 	}
-	//else {
-	//	FileLogger.Printf("Writing block (%x) to stash Shard ID: %v  VS my shard ID: %v - Height: %d\n",block.Hash[0:8],block.ShardId,storage.ThisShardID,block.Height)
-	//	//broadcastBlock(block)
-	//	storage.ReceivedBlockStashFromOtherShards.Set(block.Hash,block)
-	//	FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
-	//	FileLogger.Printf("Length block stash: %d\n",len(storage.ReceivedBlockStashFromOtherShards.M))
-	//}
 }
 
 //p2p.BlockOut is a channel whose data get consumed by the p2p package
@@ -185,22 +154,4 @@ func broadcastVerifiedTxs(txs []*protocol.FundsTx) {
 	}
 
 	p2p.VerifiedTxsOut <- protocol.Encode(verifiedTxs, protocol.FUNDSTX_SIZE)
-}
-
-func HashSliceContains(slice [][32]byte, hash [32]byte) bool {
-	for _, a := range slice {
-		if a == hash {
-			return true
-		}
-	}
-	return false
-}
-
-func IntSliceContains(slice []int, id int) bool {
-	for _, a := range slice {
-		if a == id {
-			return true
-		}
-	}
-	return false
 }

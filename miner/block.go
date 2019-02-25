@@ -61,7 +61,7 @@ func finalizeBlock(block *protocol.Block) error {
 	copy(block.Beneficiary[:], validatorAcc.Address[:])
 
 	// Cryptographic Sortition for PoS in Bazo
-	// The commitment proof stores a signed message of the Height that this block was created at.
+	// The commitment proof stores a signed message of the Height at which this block was created.
 	commitmentProof, err := crypto.SignMessageWithRSAKey(commPrivKey, fmt.Sprint(block.Height))
 	if err != nil {
 		return err
@@ -69,21 +69,11 @@ func finalizeBlock(block *protocol.Block) error {
 
 	partialHash := block.HashBlock()
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
-	//logger.Printf("Before Block proofofstake for height: %d\n",block.Height)
 	FileLogger.Printf("Before Block proofofstake for height: %d\n",block.Height)
-
-	//FileLogger.Printf("FINALIZE-BLOCK: Difficulty: %d\n",getDifficulty())
-	//FileLogger.Printf("FINALIZE-BLOCK: Previous Hash: (%x) \n",block.PrevHash[0:8])
-	//FileLogger.Printf("FINALIZE-BLOCK: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
-	//FileLogger.Printf("FINALIZE-BLOCK: Block Height: %d\n",block.Height)
-	//FileLogger.Printf("FINALIZE-BLOCK: Acc Balance: %d\n",validatorAcc.Balance)
-	//FileLogger.Printf("FINALIZE-BLOCK: Block Commitmentproof: (%x)\n",commitmentProof[0:8])
-
 	nonce, err := proofOfStake(getDifficulty(), block.PrevHash, prevProofs, block.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
-	//logger.Printf("After proofofstake for height: %d\n",block.Height)
 	FileLogger.Printf("After proofofstake for height: %d\n",block.Height)
 
 	var nonceBuf [8]byte
@@ -105,14 +95,10 @@ func finalizeBlock(block *protocol.Block) error {
 	return nil
 }
 
+/**
+	Prepare the epoch block to be broadcasteet to the network. It is a slight adjustment of the function 'finalizeBlock()'
+ */
 func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
-
-	//Add Merkle Patricia Tree hash in the block
-	//stateMPT, err := protocol.BuildMPT(storage.State)
-	//if err != nil {
-	//	return err
-	//}
-	//epochBlock.MerklePatriciaRoot = stateMPT.Hash()
 
 	validatorAcc, err := storage.ReadAccount(validatorAccAddress)
 	if err != nil {
@@ -132,7 +118,7 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	/*Determine new number of shards needed based on current state*/
 	NumberOfShards = DetNumberOfShards()
 
-	//generate new validator mapping and attach mappping to the epoch block
+	//generate new validator mapping and include mappping in the epoch block
 	valMapping := protocol.NewMapping()
 	valMapping.ValMapping = AssignValidatorsToShards()
 	valMapping.EpochHeight = int(epochBlock.Height)
@@ -144,15 +130,12 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 	storage.ThisShardID = ValidatorShardMap.ValMapping[validatorAccAddress]
 
 	epochBlock.State = storage.State
-	//logger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 	FileLogger.Printf("Before Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 
 	nonce, err := proofOfStakeEpoch(getDifficulty(), lastEpochBlock.Hash, epochBlock.Height, validatorAcc.Balance, commitmentProof)
 	if err != nil {
 		return err
 	}
-
-	//logger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 	FileLogger.Printf("After Epoch Block proofofstake for height: %d\n",epochBlock.Height)
 
 	var nonceBuf [8]byte
@@ -171,10 +154,6 @@ func finalizeEpochBlock(epochBlock *protocol.EpochBlock) error {
 //We do not operate global state because the work might get interrupted by receiving a block that needs validation
 //which is done on the global state.
 func addTx(b *protocol.Block, tx protocol.Transaction) error {
-
-	//logger.Printf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height)
-	//FileConnectionsLog.WriteString(fmt.Sprintf("Adding Tx (%x) for blockheight: %d\n", tx.Hash(),b.Height))
-
 	//ActiveParameters is a datastructure that stores the current system parameters, gets only changed when
 	//configTxs are broadcast in the network.
 	if tx.TxFee() < activeParameters.Fee_minimum {
@@ -200,28 +179,24 @@ func addTx(b *protocol.Block, tx protocol.Transaction) error {
 	case *protocol.ContractTx:
 		err := addContractTx(b, tx.(*protocol.ContractTx))
 		if err != nil {
-			//logger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
 			FileLogger.Printf("Adding contractTx tx failed (%v): %v\n", err, tx.(*protocol.ContractTx))
 			return err
 		}
 	case *protocol.FundsTx:
 		err := addFundsTx(b, tx.(*protocol.FundsTx))
 		if err != nil {
-			//logger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
 			FileLogger.Printf("Adding fundsTx tx failed (%v): %v\n", err, tx.(*protocol.FundsTx))
 			return err
 		}
 	case *protocol.ConfigTx:
 		err := addConfigTx(b, tx.(*protocol.ConfigTx))
 		if err != nil {
-			//logger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
 			FileLogger.Printf("Adding configTx tx failed (%v): %v\n", err, tx.(*protocol.ConfigTx))
 			return err
 		}
 	case *protocol.StakeTx:
 		err := addStakeTx(b, tx.(*protocol.StakeTx))
 		if err != nil {
-			//logger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			FileLogger.Printf("Adding stakeTx tx failed (%v): %v\n", err, tx.(*protocol.StakeTx))
 			return err
 		}
@@ -284,38 +259,6 @@ func addFundsTx(b *protocol.Block, tx *protocol.FundsTx) error {
 			return errors.New("Not enough funds to complete the transaction!")
 		}
 	}
-
-	///*Verify included MPT Proof with the MPT root hash of the last block*/
-	////Get MPT root hash of last block
-	//MPTRootLastBlock := storage.ReadLastClosedBlock().MerklePatriciaRoot
-
-	////Get Proof DB of MPT proof in the transaction
-	//
-	//proofDB := protocol.MPTMapToMemDB(tx.MPT_Proof.Proofs)
-	//
-	//val, _, err := trie.VerifyProof(MPTRootLastBlock, tx.From[:], proofDB)
-	//
-	//if err != nil {
-	//	err := fmt.Sprintf("prover: failed to verify proof for key: %x", tx.From)
-	//	return errors.New(err)
-	//}
-	//
-	//if val == nil {
-	//	err := fmt.Sprintf("prover: MPT does not contain the key: %x", tx.From)
-	//	return errors.New(err)
-	//}
-	//
-	//valInt, err := strconv.Atoi(string(val))
-	//if err != nil {
-	//	err := fmt.Sprintf("Parsing value failed: %v\n", err)
-	//	return errors.New(err)
-	//}
-	//
-	//if !storage.IsRootKey(tx.From) {
-	//	if (tx.Amount + tx.Fee) > uint64(valInt) {
-	//		return errors.New("Not enough funds to complete the transaction!")
-	//	}
-	//}
 
 	//Transaction count need to match the state, preventing replay attacks.
 	if b.StateCopy[tx.From].TxCnt != tx.TxCnt {
@@ -474,31 +417,6 @@ func fetchFundsTxData(block *protocol.Block, fundsTxSlice []*protocol.FundsTx, i
 				return
 			}
 		}
-
-		////TODO Optimize code (duplicated)
-		/*My version: read open tx*/
-		//tx = storage.ReadOpenTx(txHash)
-		//if tx != nil {
-		//	fundsTx = tx.(*protocol.FundsTx)
-		//} else {
-		//	err := p2p.TxReq(txHash, p2p.FUNDSTX_REQ)
-		//	if err != nil {
-		//		errChan <- errors.New(fmt.Sprintf("FundsTx could not be read: %v", err))
-		//		return
-		//	}
-		//
-		//	select {
-		//	case fundsTx = <-p2p.FundsTxChan:
-		//	case <-time.After(TXFETCH_TIMEOUT * time.Second):
-		//		errChan <- errors.New("FundsTx fetch timed out.")
-		//		return
-		//	}
-		//	if fundsTx.Hash() != txHash {
-		//		errChan <- errors.New("Received txHash did not correspond to our request.")
-		//	}
-		//}
-		//
-		//fundsTxSlice[cnt] = fundsTx
 		//TODO Optimize code (duplicated)
 		tx = storage.ReadOpenTx(txHash)
 		txINVALID := storage.ReadINVALIDOpenTx(txHash)
@@ -718,48 +636,6 @@ func validate(b *protocol.Block, initialSetup bool) error {
 		}
 	}
 
-	/*My version: validate*/
-	//if len(blocksToRollback) > 0 {
-	//	for _, block := range blocksToRollback {
-	//		if err := rollback(block); err != nil {
-	//			return err
-	//		}
-	//		logger.Printf("Rolled back block: %vState:\n%v", block, getState())
-	//		FileLogger.Printf("Rolled back block: %vState:\n%v", block, getState())
-	//	}
-	//}
-	//for _, block := range blocksToValidate {
-	//	//Fetching payload data from the txs (if necessary, ask other miners).
-	//	contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(block, initialSetup)
-	//
-	//	//Check if the validator that added the block has previously voted on different competing chains (find slashing proof).
-	//	//The proof will be stored in the global slashing dictionary.
-	//	if block.Height > 0 {
-	//		seekSlashingProof(block)
-	//	}
-	//
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	blockDataMap[block.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, block}
-	//	//Save state before and after validateState() in order to generate state transition which is sent to the other shards
-	//	var previousStateCopy = CopyState(storage.State)
-	//
-	//	if err := validateState(blockDataMap[block.Hash]); err != nil {
-	//		return err
-	//	}
-	//
-	//	storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
-	//	//for k, v := range storage.RelativeState {
-	//	//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
-	//	//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
-	//	//	fmt.Println("k:", k, "v:", v)
-	//	//}
-	//
-	//	postValidate(blockDataMap[block.Hash], initialSetup)
-	//}
-
 	err = deleteZeroBalanceAccounts()
 	if err != nil {
 		return err
@@ -777,47 +653,6 @@ func CopyState(state map[[64]byte]*protocol.Account) map[[64]byte]protocol.Accou
 	}
 
 	return copyState
-}
-
-func validateAfterEpoch(b *protocol.Block, initialSetup bool) error {
-	//This mutex is necessary that own-mined blocks and received blocks from the network are not
-	//validated concurrently.
-	blockValidation.Lock()
-	defer blockValidation.Unlock()
-
-	//Prepare data structure to fill tx payloads.
-	blockDataMap := make(map[[32]byte]blockData)
-
-	contractTxs, fundsTxs, configTxs, stakeTxs, err := preValidate(b, false)
-	if(err != nil){
-		return err
-	}
-	blockDataMap[b.Hash] = blockData{contractTxs, fundsTxs, configTxs, stakeTxs, b}
-
-	//Save state before and after validateState() in order to generate state transition which is sent to the other shards
-	var previousStateCopy = CopyState(storage.State)
-	//storage.PreviousState = storage.State
-
-	if err := validateState(blockDataMap[b.Hash]); err != nil {
-		return err
-	}
-
-	storage.RelativeState = storage.GetRelativeState(previousStateCopy,storage.State)
-
-	//for k, v := range storage.RelativeState {
-	//	logger.Printf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String())
-	//	FileConnectionsLog.WriteString(fmt.Sprintf("Generated State Transition for account: %x: %v\n", v.Address[0:8],v.String()))
-	//	fmt.Println("k:", k, "v:", v)
-	//}
-
-	postValidate(blockDataMap[b.Hash], false)
-
-	err = deleteZeroBalanceAccounts()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 //Doesn't involve any state changes.
@@ -912,12 +747,6 @@ func preValidate(block *protocol.Block, initialSetup bool) (contractTxSlice []*p
 	prevProofs := GetLatestProofs(activeParameters.num_included_prev_proofs, block)
 
 	//PoS validation
-	//FileLogger.Printf("PRE-VALIDATE: Difficulty: %d\n",getDifficulty())
-	//FileLogger.Printf("PRE-VALIDATE: prevProofs: %v\n",CommitmentProofSliceToString(prevProofs))
-	//FileLogger.Printf("PRE-VALIDATE: Block Height: %d\n",block.Height)
-	//FileLogger.Printf("PRE-VALIDATE: Acc Balance: %d\n",acc.Balance)
-	//FileLogger.Printf("PRE-VALIDATE: Block Commitmentproof: %x\n",block.CommitmentProof[0:8])
-	//FileLogger.Printf("PRE-VALIDATE: Timestamp: %d\n",block.Timestamp)
 	if !validateProofOfStake(getDifficulty(), prevProofs, block.Height, acc.Balance, block.CommitmentProof, block.Timestamp) {
 		return nil, nil, nil, nil, errors.New("The nonce is incorrect.")
 	}

@@ -27,13 +27,6 @@ func DeleteClosedEpochBlock(hash [32]byte) error {
 	})
 }
 
-func DeleteState() error {
-	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(STATE_BUCKET))
-		return b.Delete([]byte("state"))
-	})
-}
-
 func DeleteOpenEpochBlock(hash [32]byte) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(OPENEPOCHBLOCK_BUCKET))

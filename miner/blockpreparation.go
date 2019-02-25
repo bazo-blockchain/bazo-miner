@@ -25,6 +25,8 @@ func prepareBlock(block *protocol.Block) {
 
 	sort.Sort(tmpCopy)
 
+	//Keep track of transactions from assigned for my shard and which are valid. Only consider these ones when filling a block
+	//Otherwhise we would also count invalid transactions from my shard, this prevents well-filled blocks.
 	txFromThisShard := 0
 
 	for _, tx := range opentxs {
@@ -34,12 +36,6 @@ func prepareBlock(block *protocol.Block) {
 		if int(txAssignedShard) == ValidatorShardMap.ValMapping[validatorAccAddress]{
 			FileLogger.Printf("---- Transaction (%x) in shard: %d\n", tx.Hash(),txAssignedShard)
 			//Prevent block size to overflow.
-			//if block.GetSize()+tx.Size() > activeParameters.Block_size {
-			//	break
-			//}
-			//Prevent block size to overflow. +10 Because of the bloomFilter
-			//FileConnectionsLog.WriteString(fmt.Sprintf("current block size: %d\n", int(block.GetSize())))
-			//if int(block.GetSize()+10)+(i*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 			if int(block.GetSize()+10)+(txFromThisShard*int(len(tx.Hash()))) > int(activeParameters.Block_size){
 				break
 			}
@@ -69,6 +65,9 @@ func prepareBlock(block *protocol.Block) {
 	}
 }
 
+/**
+	Transactions are sharded based on the public address of the sender
+ */
 func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 	//Convert Address/Issuer ([64]bytes) included in TX to bigInt for the modulo operation to determine the assigned shard ID.
 	switch transaction.(type) {
@@ -97,7 +96,7 @@ func assignTransactionToShard(transaction protocol.Transaction) (shardNr int) {
 			calculatedInt = int(binary.BigEndian.Uint64(byteToConvert[:8]))
 			return int((Abs(int32(calculatedInt)) % int32(NumberOfShards)) + 1)
 		default:
-			return 1 // default shard Nr.
+			return 1 // default shard ID
 		}
 }
 
@@ -144,6 +143,10 @@ func (f openTxs) Less(i, j int) bool {
 	return f[i].(*protocol.FundsTx).TxCnt < f[j].(*protocol.FundsTx).TxCnt
 }
 
+/**
+	During the synchronisation phase at every block height, the validator also receives the transaction hashes which were validated
+	by the other shards. To avoid starvation, delete those transactions from the mempool
+ */
 func DeleteTransactionFromMempool(contractData [][32]byte, fundsData [][32]byte, configData [][32]byte, stakeData [][32]byte) {
 	for _,fundsTX := range fundsData{
 		if(storage.ReadOpenTx(fundsTX) != nil){

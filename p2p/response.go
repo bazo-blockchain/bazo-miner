@@ -3,7 +3,6 @@ package p2p
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"strconv"
@@ -115,23 +114,6 @@ func genesisRes(p *peer, payload []byte) {
 	sendData(p, packet)
 }
 
-func valShardRes(p *peer, payload []byte) {
-	var packet []byte
-
-	valMapping,err := storage.ReadValidatorMapping()
-
-	if err == nil && valMapping != nil {
-		newValMapping := protocol.NewMapping()
-		newValMapping = valMapping
-
-		packet = BuildPacket(VALIDATOR_SHARD_RES, newValMapping.Encode())
-	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
-	}
-
-	sendData(p, packet)
-}
-
 func FirstEpochBlockRes(p *peer, payload []byte) {
 	var packet []byte
 	firstEpochBlock, err := storage.ReadFirstEpochBlock()
@@ -181,52 +163,6 @@ func EpochBlockRes(p *peer, payload []byte) {
 	packet = BuildPacket(EPOCH_BLOCK_RES, eb.Encode())
 
 	sendData(p, packet)
-}
-
-func stateRes(p *peer, payload []byte) {
-	ipport := strings.Split(string(payload), ":")[1]
-	//port := _pongRes(payload)
-
-	if ipport != "" {
-		p.listenerPort = ipport
-	} else {
-		p.conn.Close()
-		return
-	}
-
-	/*port := _pongRes(payload)
-
-	if port != "" {
-		p.listenerPort = port
-	} else {
-		p.conn.Close()
-		return
-	}*/
-	var packet []byte
-	state := storage.ReadState()
-	if state != nil {
-		buffer := new(bytes.Buffer)
-		gob.NewEncoder(buffer).Encode(state)
-		packet = BuildPacket(STATE_RES, buffer.Bytes())
-	} else {
-		packet = BuildPacket(NOT_FOUND, nil)
-	}
-
-	sendData(p, packet)
-
-
-	/*if conn := Connect(clientIP); conn != nil {
-		conn.Write(packet)
-
-		header, payload, err := RcvData_(conn)
-		if err != nil || header.TypeID == p2p.NOT_FOUND {
-			err = errors.New(string(payload[:]))
-		}
-		conn.Close()
-
-		return err
-	}
-	return errors.New(fmt.Sprintf("Sending state response failed at: %x.", clientIP))*/
 }
 
 //Response the requested block SPV header

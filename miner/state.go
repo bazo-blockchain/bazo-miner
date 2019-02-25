@@ -105,6 +105,9 @@ func GetState() (state map[[64]byte]*protocol.Account){
 	return stateMap
 }
 
+/**
+	Retrieve total number of participants from the network which are staking
+ */
 func GetValidatorsCount() (validatorsCount int) {
 	var returnValCounts int
 	returnValCounts = 0
@@ -114,10 +117,6 @@ func GetValidatorsCount() (validatorsCount int) {
 		}
 	}
 	return returnValCounts
-}
-
-func GetTotalAccountsCount() (accountsCount int) {
-	return len(storage.State)
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
@@ -144,8 +143,6 @@ func initState() (initialBlock *protocol.Block, err error) {
 	}
 
 	storage.State = lastEpochBlock.State
-
-	//FileConnections.WriteString(fmt.Sprintf("'%x' -> 'EPOCH BLOCK: %x'\n",[32]byte{},initialEpochBlock.Hash[0:15]))
 
 	initRootAccounts(genesis)
 	err = initClosedBlocks(lastEpochBlock)
@@ -463,74 +460,6 @@ func fundsStateChange(txSlice []*protocol.FundsTx) (err error) {
 
 	return nil
 }
-func applyFundsChange(txSlice []*protocol.FundsTx){
-	for _, tx := range txSlice {
-		//var rootAcc *protocol.Account
-		////Check if we have to issue new coins (in case a root account signed the tx)
-		//if rootAcc, err = storage.ReadRootAccount(tx.From); err != nil {
-		//	return err
-		//}
-		//
-		//if rootAcc != nil && rootAcc.Balance+tx.Amount+tx.Fee > MAX_MONEY {
-		//	return errors.New("transaction amount would lead to balance overflow at the receiver (root) account")
-		//}
-		//
-		////Will not be reached if errors occurred
-		//if rootAcc != nil {
-		//	rootAcc.Balance += tx.Amount
-		//	rootAcc.Balance += tx.Fee
-		//}
-
-		accSender, _ := storage.ReadAccount(tx.From)
-		if accSender == nil {
-			newFromAcc := protocol.NewAccount(tx.From, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
-			accSender = &newFromAcc
-			storage.WriteAccount(accSender)
-		}
-
-		accReceiver, _ := storage.ReadAccount(tx.To)
-		if accReceiver == nil {
-			newToAcc := protocol.NewAccount(tx.To, [64]byte{}, 0, false, [crypto.COMM_KEY_LENGTH]byte{}, nil, nil)
-			accReceiver = &newToAcc
-			storage.WriteAccount(accReceiver)
-		}
-
-		////Check transaction counter
-		//if tx.TxCnt != accSender.TxCnt {
-		//	err = errors.New(fmt.Sprintf("sender txCnt does not match: %v (tx.txCnt) vs. %v (state txCnt)", tx.TxCnt, accSender.TxCnt))
-		//}
-		//
-		////Check sender balance
-		//if (tx.Amount + tx.Fee) > accSender.Balance {
-		//	err = errors.New(fmt.Sprintf("sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v", accSender.Balance, tx.Amount, tx.Fee))
-		//}
-		//
-		////After Tx fees, account must still have more than the minimum staking amount
-		//if accSender.IsStaking && ((tx.Fee + protocol.MIN_STAKING_MINIMUM + tx.Amount) > accSender.Balance) {
-		//	err = errors.New("sender is staking and does not have enough funds in order to fulfill the required staking minimum")
-		//}
-		//
-		////Overflow protection
-		//if tx.Amount+accReceiver.Balance > MAX_MONEY {
-		//	err = errors.New("transaction amount would lead to balance overflow at the receiver account")
-		//}
-		//
-		//if err != nil {
-		//	if rootAcc != nil {
-		//		//Rollback root's credits if error occurs
-		//		rootAcc.Balance -= tx.Amount
-		//		rootAcc.Balance -= tx.Fee
-		//	}
-		//
-		//	return err
-		//}
-
-		//We're manipulating pointer, no need to write back
-		accSender.TxCnt += 1
-		accSender.Balance -= tx.Amount
-		accReceiver.Balance += tx.Amount
-	}
-}
 
 //We accept config slices with unknown id, but don't act on the payload. This is in case we have not updated to a new
 //software with corresponding code to act on the configTx id/payload
@@ -552,24 +481,7 @@ func configStateChange(configTxSlice []*protocol.ConfigTx, blockHash [32]byte) {
 		FileLogger.Printf("Config parameters changed. New configuration: %v\n", *activeParameters)
 	}
 }
-func applyConfigChange(configTxSlice []*protocol.ConfigTx) {
-	var newParameters Parameters
-	//Initialize it to state right now (before validating config txs)
-	newParameters = *activeParameters
 
-	if len(configTxSlice) == 0 {
-		return
-	}
-
-	//Only add a new parameter struct if a relevant system parameter changed
-	if CheckAndChangeParameters(&newParameters, &configTxSlice) {
-		newParameters.BlockHash = [32]byte{}
-		parameterSlice = append(parameterSlice, newParameters)
-		activeParameters = &parameterSlice[len(parameterSlice)-1]
-		logger.Printf("Config parameters changed. New configuration: %v\n", *activeParameters)
-		FileLogger.Printf("Config parameters changed. New configuration: %v\n", *activeParameters)
-	}
-}
 func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 	for _, tx := range txSlice {
 		var accSender *protocol.Account
@@ -589,38 +501,6 @@ func stakeStateChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
 		if tx.Fee > accSender.Balance {
 			err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, 0, tx.Fee))
 		}
-
-		if err != nil {
-			return err
-		}
-
-		//We're manipulating pointer, no need to write back
-		accSender.IsStaking = tx.IsStaking
-		accSender.CommitmentKey = tx.CommitmentKey
-		accSender.StakingBlockHeight = height
-	}
-
-	return nil
-}
-func applyStakeChange(txSlice []*protocol.StakeTx, height uint32) (err error) {
-	for _, tx := range txSlice {
-		var accSender *protocol.Account
-		accSender, err = storage.ReadAccount(tx.Account)
-
-		////Check staking state
-		//if tx.IsStaking == accSender.IsStaking {
-		//	err = errors.New("IsStaking state is already set to " + strconv.FormatBool(accSender.IsStaking) + ".")
-		//}
-		//
-		////Check minimum amount
-		//if tx.IsStaking && accSender.Balance < tx.Fee+activeParameters.Staking_minimum {
-		//	err = errors.New(fmt.Sprintf("Sender wants to stake but does not have enough funds (%v) in order to fulfill the required staking minimum (%v).", accSender.Balance, STAKING_MINIMUM))
-		//}
-		//
-		////Check sender balance
-		//if tx.Fee > accSender.Balance {
-		//	err = errors.New(fmt.Sprintf("Sender does not have enough funds for the transaction: Balance = %v, Amount = %v, Fee = %v.", accSender.Balance, 0, tx.Fee))
-		//}
 
 		if err != nil {
 			return err

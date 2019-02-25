@@ -124,9 +124,6 @@ func processNeighborRes(p *peer, payload []byte) {
 	ipportList := _processNeighborRes(payload)
 
 	for _, ipportIter := range ipportList {
-		//logger.Printf("IP/Port received: %v\n", ipportIter)
-		//FileConnectionsLog.WriteString(fmt.Sprintf("IP/Port received: %v\n", ipportIter))
-		//iplistChan is a buffered channel to handle ips asynchronously.
 		iplistChan <- ipportIter
 	}
 }

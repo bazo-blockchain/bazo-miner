@@ -105,75 +105,6 @@ func TestStateStashSetMethod(t *testing.T) {
 	}
 }
 
-//func TestCheckHeightCharacteristics(t *testing.T) {
-//	var sampleStash= NewBlockStash()
-//
-//	var blockHash= [32]byte{'0'}
-//	var block= NewBlock([32]byte{'0'}, 0)
-//
-//	/*Fill the stash with 50 blocks*/
-//	for i := 0; i < 40; i++ {
-//		blockHash = [32]byte{byte(i)}
-//		block = NewBlock(blockHash, uint32(i))
-//		block.Hash = blockHash
-//
-//		sampleStash.Set(blockHash, block)
-//	}
-//
-//	var expectedHeightCount = 1
-//	var retrievedHeightCountForHeight5 = CheckForHeight(sampleStash,5)
-//	var retrievedHeightCountForHeight10 = CheckForHeight(sampleStash,10)
-//	var retrievedHeightCountForHeight15 = CheckForHeight(sampleStash,15)
-//	var retrievedHeightCountForHeight20 = CheckForHeight(sampleStash,20)
-//	var retrievedHeightCountForHeight25 = CheckForHeight(sampleStash,25)
-//	var retrievedHeightCountForHeight30 = CheckForHeight(sampleStash,30)
-//	var retrievedHeightCountForHeight35 = CheckForHeight(sampleStash,35)
-//
-//	if(expectedHeightCount != retrievedHeightCountForHeight5 || expectedHeightCount != retrievedHeightCountForHeight10 ||
-//		expectedHeightCount != retrievedHeightCountForHeight15 || expectedHeightCount != retrievedHeightCountForHeight20 ||
-//		expectedHeightCount != retrievedHeightCountForHeight25 || expectedHeightCount != retrievedHeightCountForHeight30 ||
-//		expectedHeightCount != retrievedHeightCountForHeight35){
-//		t.Errorf("Error counting entries with distinct heights")
-//	}
-//
-//	/*Add three more entries with height 10*/
-//	for i := 40; i < 42; i++ {
-//		blockHash = [32]byte{byte(i)}
-//		block = NewBlock(blockHash, 10)
-//		block.Hash = blockHash
-//
-//		sampleStash.Set(blockHash, block)
-//	}
-//
-//	var expectedHeightCountForHeight10 = 3
-//	retrievedHeightCountForHeight10 = CheckForHeight(sampleStash,10)
-//
-//	if(expectedHeightCountForHeight10 != retrievedHeightCountForHeight10){
-//		t.Errorf("Error counting entries height 10")
-//	}
-//
-//	var expectedHashesForHeight10 = [][32]byte{[32]byte{byte(10)},[32]byte{byte(40)},[32]byte{byte(41)}}
-//	var retrievedHashesForHeight10 = ReturnHashesForHeight(sampleStash,10)
-//
-//	var hashesCorrect = true
-//
-//	for _, expectedHash := range expectedHashesForHeight10 {
-//		if(HashSliceContains(retrievedHashesForHeight10,expectedHash) == false){
-//			hashesCorrect = false
-//		}
-//	}
-//
-//	for _, retrievedHash := range retrievedHashesForHeight10 {
-//		if(HashSliceContains(expectedHashesForHeight10,retrievedHash) == false){
-//			hashesCorrect = false
-//		}
-//	}
-//
-//	if(hashesCorrect == false){
-//		t.Errorf("Expected and Retrieved Hashes do not match")
-//	}
-//}
-
 
 func TestStateStashSetWhenSizeOver50Entries(t *testing.T) {
 	var sampleStash = NewStateStash()
@@ -265,12 +196,3 @@ func TestStateTransitionHash(t *testing.T){
 	}
 
 }
-
-//func HashSliceContains(slice [][32]byte, hash [32]byte) bool {
-//	for _, a := range slice {
-//		if a == hash {
-//			return true
-//		}
-//	}
-//	return false
-//}
