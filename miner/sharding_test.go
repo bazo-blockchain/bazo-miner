@@ -22,7 +22,9 @@ var (
 )
 
 func TestGenerateNodes(t *testing.T) {
-	t.Skip("Skipping TestGenerateNodes...")
+	if testing.Short() {
+		t.Skip("Skipping TestGenerateNodes...")
+	}
 	TotalNodes = 10
 
 	//Generate wallet directories for all nodes, i.e., validators and non-validators
@@ -50,7 +52,9 @@ func TestGenerateNodes(t *testing.T) {
 }
 
 func TestShardingWith20Nodes(t *testing.T) {
-	t.Skip("Skipping TestShardingWith20Nodes...")
+	if testing.Short() {
+		t.Skip("Skipping TestShardingWith20Nodes...")
+	}
 	/**
 	Set Total Number of desired nodes. They will be generated automatically. And for each node, a separate go routine is being created.
 	This enables parallel issuance of transactions
@@ -118,10 +122,13 @@ func TestShardingWith20Nodes(t *testing.T) {
 					nil)
 
 				if err := SendTx("127.0.0.1:8000", tx, p2p.FUNDSTX_BRDCST); err != nil {
-					return
+					continue
 				}
 				if err := SendTx("127.0.0.1:8001", tx, p2p.FUNDSTX_BRDCST); err != nil {
-					return
+					continue
+				}
+				if err := SendTx("127.0.0.1:8002", tx, p2p.FUNDSTX_BRDCST); err != nil {
+					continue
 				}
 				txCount += 1
 			}
@@ -129,21 +136,23 @@ func TestShardingWith20Nodes(t *testing.T) {
 		}()
 	}
 
-	time.Sleep(60*time.Second)
+	time.Sleep(45*time.Second)
 
 	//wg.Wait()
 	t.Log("Done...")
 }
 
 func TestSendingFundsTo20Nodes(t *testing.T) {
-	t.Skip("Skipping TestSendingFundsTo20Nodes...")
+	if testing.Short() {
+		t.Skip("Skipping TestSendingFundsTo20Nodes...")
+	}
 	TotalNodes = 20
 	transferFundsToWallets()
 }
 
 func transferFundsToWallets() {
 	//Transfer 1 Mio. funds to all wallets from root account
-	txCountRootAccBeginning := 1
+	txCountRootAccBeginning := 0
 	for i := 1; i <= TotalNodes; i++ {
 		strNode := fmt.Sprintf("Node_%d",i)
 		fromPrivKey, err := crypto.ExtractECDSAKeyFromFile("walletMinerA.key")

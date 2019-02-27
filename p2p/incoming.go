@@ -16,7 +16,6 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case BLOCK_BRDCST:
 		forwardBlockToMiner(p, payload)
 	case EPOCH_BLOCK_BRDCST:
-		FileLogger.Printf("Incoming Epoch block broadcast.\n")
 		forwardEpochBlockToMinerIn(p, payload)
 	case STATE_TRANSITION_BRDCST:
 		forwardStateTransitionToMiner(p,payload)
@@ -35,7 +34,6 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case BLOCK_REQ:
 		blockRes(p, payload)
 	case STATE_TRANSITION_REQ:
-		FileLogger.Printf("Incoming state transition request.\n")
 		stateTransitionRes(p,payload)
 	case BLOCK_HEADER_REQ:
 		blockHeaderRes(p, payload)
@@ -66,10 +64,8 @@ func processIncomingMsg(p *peer, header *Header, payload []byte) {
 	case NEIGHBOR_RES:
 		processNeighborRes(p, payload)
 	case BLOCK_RES:
-		FileLogger.Printf("Writing following data into channel BlockReqChan: - %v\n",payload)
 		forwardBlockReqToMiner(p, payload)
 	case STATE_TRANSITION_RES:
-		FileLogger.Printf("Incoming state transition response.\n")
 		forwardStateTransitionShardReqToMiner(p,payload)
 	case FUNDSTX_RES:
 		forwardTxReqToMiner(p, payload, FUNDSTX_RES)

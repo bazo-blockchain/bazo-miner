@@ -59,9 +59,6 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		return nil, nil, errors.New("Common ancestorHash not found.")
 	}
 
-	FileLogger.Printf("Ancestor of block (%x) is block (%x)\n",newBlock.Hash[0:8], ancestorHash[0:8])
-	FileLogger.Printf("Newchain for block (%x): %v \n",newBlock.Hash[0:8],BlockSequenceToString(newChain))
-
 	//Count how many blocks there are on the currently active chain.
 	tmpBlock := lastBlock
 
@@ -84,15 +81,12 @@ func getBlockSequences(newBlock *protocol.Block) (blocksToRollback, blocksToVali
 		}
 	}
 
-	FileLogger.Printf("Blocks to rollback: %v \n",BlockSequenceToString(blocksToRollback))
 
 	//Compare current length with new chain length.
 	if len(blocksToRollback) >= len(newChain) {
 		//Current chain length is longer or equal (our consensus protocol states that in this case we reject the block).
 		return nil, nil, errors.New(fmt.Sprintf("Block belongs to shorter or equally long chain (blocks to rollback %d vs block of new chain %d)", len(blocksToRollback), len(newChain)))
 	} else {
-		FileLogger.Printf("Returning blocksToRollback: %v\n",BlockSequenceToString(blocksToRollback))
-		FileLogger.Printf("Returning blocksToValidate: %v\n",BlockSequenceToString(newChain))
 		//New chain is longer, rollback and validate new chain.
 		return blocksToRollback, newChain, nil
 	}
@@ -103,11 +97,9 @@ func getNewChain(newBlock *protocol.Block) (ancestor [32]byte, newChain []*proto
 OUTER:
 	for {
 		newChain = append(newChain, newBlock)
-		FileLogger.Printf("Appended block (%x) to newChain\n",newBlock.Hash[0:8])
 
 		//Search for an ancestor (which needs to be in closed storage -> validated block).
 		prevBlockHash := newBlock.PrevHash
-		FileLogger.Printf("PrevBlockHash of newBlock is (%x)\n",prevBlockHash[0:8])
 
 		//Search in closed (Validated) blocks first
 		potentialAncestor := storage.ReadClosedBlock(prevBlockHash)
@@ -117,7 +109,6 @@ OUTER:
 			newChain = InvertBlockArray(newChain)
 			return potentialAncestor.Hash, newChain
 		} else {
-			FileLogger.Printf("Potential ancestor not found in closed storage.Looking in epoch blocks.\n")
 			//Check if ancestor is an epoch block
 			potentialEpochAncestorHash := storage.ReadLastClosedEpochBlock().Hash
 			if prevBlockHash == potentialEpochAncestorHash {
@@ -126,7 +117,6 @@ OUTER:
 				newChain = InvertBlockArray(newChain)
 				return potentialEpochAncestorHash, newChain
 			}
-			FileLogger.Printf("Potential ancestor also not found in closed epoch block storage.\n")
 		}
 
 
@@ -151,15 +141,11 @@ OUTER:
 		//Fetch the block we apparently missed from the network.
 		p2p.BlockReq(prevBlockHash)
 
-		FileLogger.Printf("Requesting block with hash (%x)\n",prevBlockHash[0:8])
-		FileLogger.Printf("Length of BlockReqChan: %d\n",len(p2p.BlockReqChan))
-
 		//Blocking wait
 		select {
 		case encodedBlock := <-p2p.BlockReqChan:
 			newBlock = newBlock.Decode(encodedBlock)
 			storage.WriteToReceivedStash(newBlock)
-			FileLogger.Printf("Received requested block with hash (%x)\n",newBlock.Hash[0:8])
 			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
 		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
 			return [32]byte{}, nil
