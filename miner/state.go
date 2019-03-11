@@ -191,7 +191,7 @@ func initState() (initialBlock *protocol.Block, err error) {
 
 func accStateChange(txSlice []*protocol.AccTx) error {
 	for _, tx := range txSlice {
-		if tx.Header != 2 {
+		if tx.Header == 0 || tx.Header == 1 || tx.Header == 2 {
 			newAcc := protocol.NewAccount(tx.PubKey, 0, false, [32]byte{})
 			newAccHash := newAcc.Hash()
 
@@ -204,21 +204,16 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 			//If acc does not exist, write to state
 			storage.State[newAccHash] = &newAcc
 
-			if tx.Header == 1 {
+			switch tx.Header {
+			case 1:
 				//First bit set, given account will be a new root account
 				//It might be cleaner to move this to the storage package (e.g., storage.Delete(...))
 				//leave it here for now (not fully convinced yet)
 				storage.RootKeys[newAccHash] = &newAcc
+			case 2:
+				//Second bit set, delete account from root account
+				delete(storage.RootKeys, newAccHash)
 			}
-		} else if tx.Header == 2 {
-			accHash := protocol.SerializeHashContent(tx.PubKey)
-			_, err := storage.GetAccount(accHash)
-			if err != nil {
-				return err
-			}
-
-			//Second bit set, delete account from root account
-			delete(storage.RootKeys, accHash)
 		}
 	}
 
