@@ -1,3 +1,5 @@
+github.com/bazo-blockchain/bazo-vm v1.0.0 h1:CA8UfppOROa5UBakJbJGfdqgU+EERC/FJ8Vwkv+u3sM=
+github.com/bazo-blockchain/bazo-vm v1.0.0/go.mod h1:RbxtPiYrrYrLvOegXTcBb6TSuQAZlWPcASmYrVAqBMw=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=

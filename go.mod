@@ -3,6 +3,7 @@ module github.com/bazo-blockchain/bazo-miner
 go 1.12
 
 require (
+	github.com/bazo-blockchain/bazo-vm v1.0.0
 	github.com/boltdb/bolt v1.3.1
 	github.com/pkg/errors v0.8.1
 	github.com/spaolacci/murmur3 v1.1.0 // indirect

@@ -9,7 +9,7 @@ import (
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/bazo-blockchain/bazo-miner/vm"
+	"github.com/bazo-blockchain/bazo-vm/vm"
 )
 
 // This test deploys a smart contract in the first block and calls the smart contract in the second block
