@@ -16,7 +16,7 @@ type Account struct {
 	CommitmentKey      [crypto.COMM_KEY_LENGTH]byte // represents the modulus N of the RSA public key
 	StakingBlockHeight uint32                // 4 Byte
 	Contract           []byte                // Arbitrary length
-	ContractVariables  []ByteArray           // Arbitrary length
+	ContractVariables  [][]byte           // Arbitrary length
 }
 
 func NewAccount(address [64]byte,
@@ -25,7 +25,7 @@ func NewAccount(address [64]byte,
 	isStaking bool,
 	commitmentKey [crypto.COMM_KEY_LENGTH]byte,
 	contract []byte,
-	contractVariables []ByteArray) Account {
+	contractVariables [][]byte) Account {
 
 	newAcc := Account{
 		address,

@@ -28,4 +28,12 @@
 # to others into the folder tmp.
 keystore/
 bazo-miner
+
+# Do not add vendor packages to repo
 vendor/
+
+# Generated files
+*.log
+commitment.txt
+store.db
+wallet.txt

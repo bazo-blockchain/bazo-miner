@@ -2,11 +2,10 @@ package vm
 
 import (
 	"errors"
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 type Stack struct {
-	Stack       []protocol.ByteArray
+	Stack       [][]byte
 	memoryUsage uint32 // In bytes
 	memoryMax   uint32
 }

@@ -702,7 +702,7 @@ func TestVM_Exec_Sload(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = []protocol.ByteArray{[]byte("Hi There!!"), []byte{26}, []byte{0}}
+	mc.ContractVariables = [][]byte{[]byte("Hi There!!"), []byte{26}, []byte{0}}
 	vm.context = mc
 
 	vm.Exec(false)
@@ -742,7 +742,7 @@ func TestVM_Exec_Sstore(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = []protocol.ByteArray{[]byte("Something")}
+	mc.ContractVariables = [][]byte{[]byte("Something")}
 	vm.context = mc
 	mc.Fee = 100000
 	vm.Exec(false)
