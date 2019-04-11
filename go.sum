@@ -1,7 +1,11 @@
+github.com/bazo-blockchain/bazo-miner v0.0.0-20190411120411-4ccce5c0a1c0/go.mod h1:xnPO3uP6OVnQDBxm+3R8VWQRFAVBUO4eqFNcok0/vCk=
 github.com/bazo-blockchain/bazo-vm v1.0.0 h1:CA8UfppOROa5UBakJbJGfdqgU+EERC/FJ8Vwkv+u3sM=
 github.com/bazo-blockchain/bazo-vm v1.0.0/go.mod h1:RbxtPiYrrYrLvOegXTcBb6TSuQAZlWPcASmYrVAqBMw=
+github.com/bazo-blockchain/bazo-vm v1.0.1-0.20190411130133-c91940b2223a h1:WcmFpnD2JwCZLuHkEr+lL0jnEdfD4/xnOSConrWvEbc=
+github.com/bazo-blockchain/bazo-vm v1.0.1-0.20190411130133-c91940b2223a/go.mod h1:E0dMZR3XVzEA0/3ZIxEthpwJAtQE1JP5eNl7nNIGVBI=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
+github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
@@ -16,3 +20,6 @@ golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 h1:bselrhR0Or1vomJZC8ZIjW
 golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5/go.mod h1:WFFai1msRO1wXaEeE5yQxYXgSfI8pQAWXbQop6sCtWE=
 golang.org/x/sys v0.0.0-20190403152447-81d4e9dc473e h1:nFYrTHrdrAOpShe27kaFHjsqYSEQ0KWqdWLu3xuZJts=
 golang.org/x/sys v0.0.0-20190403152447-81d4e9dc473e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20190410235845-0ad05ae3009d h1:+9jagSGtlJZAaZGdRvJikXNpc5lh2/rq9eyMN/5kmwA=
+golang.org/x/sys v0.0.0-20190410235845-0ad05ae3009d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=
