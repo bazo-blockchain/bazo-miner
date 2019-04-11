@@ -20,10 +20,10 @@ type AccTx struct {
 	PubKey            [64]byte
 	Sig               [64]byte
 	Contract          []byte
-	ContractVariables []ByteArray
+	ContractVariables [][]byte
 }
 
-func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables []ByteArray) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
+func ConstrAccTx(header byte, fee uint64, address [64]byte, rootPrivKey *ecdsa.PrivateKey, contract []byte, contractVariables [][]byte) (tx *AccTx, newAccAddress *ecdsa.PrivateKey, err error) {
 	tx = new(AccTx)
 	tx.Header = header
 	tx.Fee = fee
@@ -77,7 +77,7 @@ func (tx *AccTx) Hash() [32]byte {
 		Fee               uint64
 		PubKey            [64]byte
 		Contract          []byte
-		ContractVariables []ByteArray
+		ContractVariables [][]byte
 	}{
 		tx.Header,
 		tx.Issuer,

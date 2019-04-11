@@ -7,7 +7,7 @@ import (
 
 func TestVMContext_GetContractVariable_EncapsulationBreach(t *testing.T) {
 	c := Context{}
-	c.ContractVariables = []ByteArray{[]byte{0x00, 0x00, 0x00}}
+	c.ContractVariables = [][]byte{[]byte{0x00, 0x00, 0x00}}
 
 	slice1, _ := c.GetContractVariable(0)
 
@@ -30,7 +30,7 @@ func TestVMContext_GetContractVariable_EncapsulationBreach(t *testing.T) {
 
 func TestVMContext_SetContractVariable_EncapsulationBreach(t *testing.T) {
 	c := Context{}
-	c.ContractVariables = []ByteArray{[]byte{0x00, 0x00, 0x00}}
+	c.ContractVariables = [][]byte{[]byte{0x00, 0x00, 0x00}}
 
 	slice1, _ := c.GetContractVariable(0)
 
