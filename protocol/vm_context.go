@@ -41,6 +41,13 @@ func (c *Context) GetContractVariable(index int) ([]byte, error) {
 		return []byte{}, errors.New("Index out of bounds")
 	}
 	variable := []byte(c.ContractVariables[index])
+
+	// Check if variables are overwritten, if so return the change instead of the initial value
+	change := c.findChangeByIndex(index)
+	if change != nil {
+		variable = change.value
+	}
+
 	cp := make([]byte, len(variable))
 	copy(cp, variable)
 
@@ -97,4 +104,14 @@ func (c *Context) GetFee() uint64 {
 
 func (c *Context) GetSig1() [64]byte {
 	return c.Sig1
+}
+
+func (c *Context) findChangeByIndex(index int) *Change {
+	for _, change := range c.changes {
+		i, _ := change.GetChange()
+		if i == index {
+			return &change
+		}
+	}
+	return nil
 }
