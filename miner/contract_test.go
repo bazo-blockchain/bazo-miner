@@ -166,7 +166,7 @@ func TestMultipleBlocksWithTokenizationContractTx(t *testing.T) {
 	var minter = accAHash[:]
 	contractVariables[1] = minter
 
-	m := vm.CreateMap()
+	m := vm.NewMap()
 	m.Append(receiver, []byte{0x00, 0x01})
 	contractVariables[2] = []byte(m)
 
@@ -222,7 +222,7 @@ func TestMultipleBlocksWithTokenizationContractTxWhichAddsKey(t *testing.T) {
 	var minter = accAHash[:]
 	contractVariables[1] = minter
 
-	m := vm.CreateMap()
+	m := vm.NewMap()
 	//m.Append(receiver, []byte{0x00, 0x01})
 	contractVariables[2] = []byte(m)
 
