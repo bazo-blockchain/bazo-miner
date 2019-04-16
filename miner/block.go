@@ -10,7 +10,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"github.com/bazo-blockchain/bazo-miner/vm"
+	"github.com/bazo-blockchain/bazo-vm/vm"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"golang.org/x/crypto/sha3"
 )
