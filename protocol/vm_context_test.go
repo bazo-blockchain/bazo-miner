@@ -28,6 +28,21 @@ func TestVMContext_GetContractVariable_EncapsulationBreach(t *testing.T) {
 	}
 }
 
+func TestVMContext_GetContractVariable_RespectChanges(t *testing.T) {
+	c := Context{}
+	c.ContractVariables = [][]byte{[]byte{0x00, 0x00, 0x00}}
+	c.changes = []Change{{
+		index: 0,
+		value: []byte{0x00, 0x00, 0x01},
+	}}
+
+	expected := []byte{0x00, 0x00, 0x01}
+	actual, _ := c.GetContractVariable(0)
+	if !bytes.Equal(expected, actual) {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
 func TestVMContext_SetContractVariable_EncapsulationBreach(t *testing.T) {
 	c := Context{}
 	c.ContractVariables = [][]byte{[]byte{0x00, 0x00, 0x00}}
