@@ -63,7 +63,14 @@ func (c *Context) SetContractVariable(index int, value []byte) error {
 	copy(cp, value)
 
 	change := NewChange(index, cp)
-	c.changes = append(c.changes, change)
+
+	storedChange := c.findChangeByIndex(index)
+	if storedChange != nil {
+		storedChange = &change
+	} else {
+		c.changes = append(c.changes, change)
+	}
+
 	return nil
 }
 
