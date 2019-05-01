@@ -117,6 +117,7 @@ func (c *Context) replaceChange(newChange Change) {
 	for i, change := range c.changes {
 		if change.index == newChange.index {
 			c.changes[i] = newChange
+			return
 		}
 	}
 }
