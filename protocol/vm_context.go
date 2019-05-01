@@ -63,7 +63,6 @@ func (c *Context) SetContractVariable(index int, value []byte) error {
 	copy(cp, value)
 
 	change := NewChange(index, cp)
-
 	storedChange := c.findChangeByIndex(index)
 
 	if storedChange != nil {
@@ -116,8 +115,7 @@ func (c *Context) GetSig1() [64]byte {
 
 func (c *Context) replaceChange(newChange Change) {
 	for i, change := range c.changes {
-		j,_ := change.GetChange()
-		if j == newChange.index {
+		if change.index == newChange.index {
 			c.changes[i] = newChange
 		}
 	}
@@ -125,8 +123,7 @@ func (c *Context) replaceChange(newChange Change) {
 
 func (c *Context) findChangeByIndex(index int) *Change {
 	for _, change := range c.changes {
-		i, _ := change.GetChange()
-		if i == index {
+		if change.index == index {
 			return &change
 		}
 	}
