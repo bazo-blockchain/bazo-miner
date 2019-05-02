@@ -66,3 +66,54 @@ func TestVMContext_SetContractVariable_EncapsulationBreach(t *testing.T) {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
 }
+
+func TestVMContext_SetContractVariable_Simple(t *testing.T) {
+	c := Context{}
+	c.ContractVariables = [][]byte{{0x00, 0x00, 0x00}}
+
+	newValue := []byte{0x01, 0x01, 0x01}
+	c.SetContractVariable(0, newValue)
+
+	if len(c.changes) != 1 {
+		t.Errorf("Only 1 change with index 0 expected but got %v", len(c.changes))
+	}
+
+	actual, _ := c.GetContractVariable(0)
+	if !bytes.Equal(newValue, actual) {
+		t.Errorf("Expected result to be '%v' but was '%v'", newValue, actual)
+	}
+
+	c.PersistChanges()
+	actual = c.ContractVariables[0]
+	if !bytes.Equal(newValue, actual) {
+		t.Errorf("Contract variable should be updated to '%v' but was '%v'", newValue, actual)
+	}
+}
+
+func TestVMContext_SetContractVariable_ReplaceChange(t *testing.T) {
+	c := Context{}
+	c.ContractVariables = [][]byte{{0x00, 0x00, 0x00}}
+
+	// Change values for the first time
+	newValue1 := []byte{0x01}
+	c.SetContractVariable(0, newValue1)
+
+	// Change values for the second time
+	newValue2 := []byte{0x02}
+	c.SetContractVariable(0, newValue2)
+
+	if len(c.changes) != 1 {
+		t.Errorf("Only 1 change with index 0 expected but got %v", len(c.changes))
+	}
+
+	expected := []byte{0x02}
+	actual, _ := c.GetContractVariable(0)
+	if !bytes.Equal(expected, actual) {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+	c.PersistChanges()
+	actual = c.ContractVariables[0]
+	if !bytes.Equal(newValue2, actual) {
+		t.Errorf("Contract variable should be updated to '%v' but was '%v'", newValue2, actual)
+	}
+}
