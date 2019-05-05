@@ -86,9 +86,6 @@ func getState() (state string) {
 }
 
 func initState() (initialBlock *protocol.Block, err error) {
-	var seed [32]byte
-	copy(seed[:], storage.GENESIS_SEED)
-
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
 		allClosedBlocks = storage.ReadAllClosedBlocks()
@@ -142,6 +139,9 @@ func initState() (initialBlock *protocol.Block, err error) {
 		//Set the last closed block as the initial block
 		initialBlock = storage.AllClosedBlocksAsc[len(storage.AllClosedBlocksAsc)-1]
 	} else {
+		var seed [32]byte
+		copy(seed[:], storage.GENESIS_SEED)
+
 		initialBlock = newBlock([32]byte{}, seed, protocol.SerializeHashContent(seed), 0)
 
 		//Append genesis block to the map and save in storage
