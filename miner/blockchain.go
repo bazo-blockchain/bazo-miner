@@ -247,7 +247,7 @@ func epochMining(hashPrevBlock [32]byte, heightPrevBlock uint32) {
 				if(id != storage.ThisShardID && shardIDStateBoolMap[id] == false){
 					var stateTransition *protocol.StateTransition
 
-					FileLogger.Printf("requesting state transition for lastblock height: %d\n",lastBlock.Height)
+					FileLogger.Printf("requesting state transition from shard %d for lastblock height: %d\n",id,lastBlock.Height)
 
 					p2p.StateTransitionReqShard(id,int(lastBlock.Height))
 					//Blocking wait
