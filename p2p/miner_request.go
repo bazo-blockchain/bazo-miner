@@ -34,6 +34,8 @@ func StateTransitionReqShard(shardID int,height int) {
 	strRequest += ":"
 	strRequest += strHeight
 
+	FileLogger.Printf("strRequest: %s\n",strRequest)
+
 	StateTransitionShardOut <- []byte(strRequest)
 }
 

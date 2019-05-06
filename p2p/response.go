@@ -80,11 +80,12 @@ func stateTransitionRes(p *peer, payload []byte) {
 	var st *protocol.StateTransition
 
 	strPayload := string(payload)
+	FileLogger.Printf("strPayload: %s\n",strPayload)
 	shardID,_ := strconv.ParseInt(strings.Split(strPayload,":")[0],10,64)
-
+	FileLogger.Printf("shardID: %d\n",shardID)
 	height,_ := strconv.ParseInt(strings.Split(strPayload,":")[1],10,64)
-
-	FileLogger.Printf("responding state transition request for height: %d\n",height)
+	FileLogger.Printf("height: %d\n",height)
+	FileLogger.Printf("responding state transition request to peer (%d) for height: %d\n",p.getIPPort(),height)
 
 	if(shardID == int64(storage.ThisShardID)){
 		st = storage.ReadStateTransitionFromOwnStash(int(height))
@@ -97,6 +98,7 @@ func stateTransitionRes(p *peer, payload []byte) {
 		}
 	} else {
 		packet = BuildPacket(NOT_FOUND,nil)
+		FileLogger.Printf("requested shardID (%d) not mine (%d).\n",shardID,storage.ThisShardID)
 	}
 
 	sendData(p, packet)
