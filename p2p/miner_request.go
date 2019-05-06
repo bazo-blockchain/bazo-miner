@@ -18,18 +18,6 @@ func BlockReq(hash []byte) error {
 	return nil
 }
 
-func LastBlockReq() error {
-
-	p := peers.getRandomPeer(PEERTYPE_MINER)
-	if p == nil {
-		return errors.New("Couldn't get a connection, request not transmitted.")
-	}
-
-	packet := BuildPacket(BLOCK_REQ, nil)
-	sendData(p, packet)
-	return nil
-}
-
 //Request specific transaction
 func TxReq(hash [32]byte, reqType uint8) error {
 
