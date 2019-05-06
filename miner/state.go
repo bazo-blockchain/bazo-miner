@@ -89,51 +89,25 @@ func initState() (initialBlock *protocol.Block, err error) {
 	var allClosedBlocks []*protocol.Block
 	if p2p.IsBootstrap() {
 		allClosedBlocks = storage.ReadAllClosedBlocks()
+		allClosedBlocks = InvertBlockArray(allClosedBlocks)
 	} else {
-		p2p.LastBlockReq()
-		var lastBlock *protocol.Block
-		//Blocking wait
-		select {
-		case encodedBlock := <-p2p.BlockReqChan:
-			lastBlock = lastBlock.Decode(encodedBlock)
-			//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-		case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-			return nil, nil
+		var lastDB *protocol.Block
+		var lastDBHash [32]byte
+
+		if lastDB = storage.ReadLastClosedBlock(); lastDB != nil {
+			lastDBHash = lastDB.Hash
+			var loadedDB []*protocol.Block
+			loadedDB = loadDB(lastDB, [32]byte{}, loadedDB)
+			allClosedBlocks = append(allClosedBlocks, loadedDB...)
 		}
 
-		storage.WriteClosedBlock(lastBlock)
-		storage.WriteLastClosedBlock(lastBlock)
-		if len(allClosedBlocks) > 0 && allClosedBlocks[len(allClosedBlocks)-1].Hash == lastBlock.Hash {
-			fmt.Printf("Block with height %v already exists", lastBlock.Height)
-		} else {
-			allClosedBlocks = append(allClosedBlocks, lastBlock)
-		}
-
-		for {
-			p2p.BlockReq(lastBlock.PrevHash)
-			select {
-			case encodedBlock := <-p2p.BlockReqChan:
-				lastBlock = lastBlock.Decode(encodedBlock)
-				//Limit waiting time to BLOCKFETCH_TIMEOUT seconds before aborting.
-			case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
-				logger.Println("Timed out")
-			}
-
-			storage.WriteClosedBlock(lastBlock)
-			if len(allClosedBlocks) > 0 && allClosedBlocks[len(allClosedBlocks)-1].Hash == lastBlock.Hash {
-				fmt.Printf("Block with height %v already exists", lastBlock.Height)
-			} else {
-				allClosedBlocks = append(allClosedBlocks, lastBlock)
-			}
-			fmt.Println("Last block: ", lastBlock.Height)
-			if lastBlock.Height == 0 {
-				break
-			}
-		}
+		lastNetwork := fetchBlock(nil)
+		var loadedNetwork []*protocol.Block
+		loadedNetwork = InvertBlockArray(loadNetwork(lastNetwork, lastDBHash, loadedNetwork))
+		allClosedBlocks = append(allClosedBlocks, loadedNetwork...)
 	}
 
-	//Switch array order to validate genesis block first
-	storage.AllClosedBlocksAsc = InvertBlockArray(allClosedBlocks)
+	storage.AllClosedBlocksAsc = allClosedBlocks
 
 	if len(storage.AllClosedBlocksAsc) > 0 {
 		//Set the last closed block as the initial block
@@ -187,6 +161,76 @@ func initState() (initialBlock *protocol.Block, err error) {
 	logger.Printf("%v block(s) validated. Chain good to go.", len(storage.AllClosedBlocksAsc))
 
 	return initialBlock, nil
+}
+
+func loadDB(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	var ancestor *protocol.Block
+
+	if last.Hash != abort {
+		if ancestor = storage.ReadClosedBlock(last.PrevHash); ancestor == nil {
+			logger.Fatal()
+		}
+
+		loaded = loadDB(ancestor, abort, loaded)
+	}
+
+	logger.Printf("Block %x with height %v loaded from DB\n",
+		last.Hash[:8],
+		last.Height)
+
+	loaded = append(loaded, last)
+
+	return loaded
+}
+
+func loadNetwork(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	var ancestor *protocol.Block
+	if ancestor = fetchBlock(last.PrevHash[:]); ancestor == nil {
+		for ancestor == nil {
+			logger.Printf("Try to fetch block %x with height %v again\n", last.Hash[:8], last.Height)
+			ancestor = fetchBlock(last.PrevHash[:])
+		}
+	}
+
+	storage.WriteClosedBlock(last)
+	logger.Printf("Block %x with height %v loaded from network\n",
+		last.Hash[:8],
+		last.Height)
+
+	//Make each block is only added once.
+	if len(loaded) > 0 && loaded[len(loaded)-1].Hash == last.Hash {
+		fmt.Printf("Block with height %v already exists\n", last.Height)
+	} else {
+		loaded = append(loaded, last)
+	}
+
+	if last.PrevHash != abort || (last.Hash != [32]byte{} && last.PrevHash == [32]byte{}) {
+		loaded = loadNetwork(ancestor, abort, loaded)
+	}
+
+	return loaded
+}
+
+func fetchBlock(blockHash []byte) (block *protocol.Block) {
+	var errormsg string
+	if blockHash != nil {
+		errormsg = fmt.Sprintf("Loading block %x failed: ", blockHash[:8])
+	}
+
+	err := p2p.BlockReq(blockHash)
+	if err != nil {
+		logger.Println(errormsg + err.Error())
+		return nil
+	}
+
+	select {
+	case encodedBlock := <-p2p.BlockReqChan:
+		block = block.Decode(encodedBlock)
+	case <-time.After(BLOCKFETCH_TIMEOUT * time.Second):
+		logger.Println("Fetching timed out.")
+	}
+
+	return block
 }
 
 func accStateChange(txSlice []*protocol.AccTx) error {
