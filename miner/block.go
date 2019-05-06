@@ -812,7 +812,7 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		conflictingBlock1 = storage.ReadOpenBlock(conflictingBlockHash1)
 		if conflictingBlock1 == nil {
 			//Fetch the block we apparently missed from the network.
-			p2p.BlockReq(conflictingBlockHash1)
+			p2p.BlockReq(conflictingBlockHash1[:])
 
 			//Blocking wait
 			select {
@@ -836,7 +836,7 @@ func slashingCheck(slashedAddress, conflictingBlockHash1, conflictingBlockHash2 
 		conflictingBlock2 = storage.ReadOpenBlock(conflictingBlockHash2)
 		if conflictingBlock2 == nil {
 			//Fetch the block we apparently missed from the network.
-			p2p.BlockReq(conflictingBlockHash2)
+			p2p.BlockReq(conflictingBlockHash2[:])
 
 			//Blocking wait
 			select {

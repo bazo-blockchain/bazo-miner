@@ -68,7 +68,7 @@ func getNewChain(newBlock *protocol.Block) (ancestor *protocol.Block, newChain [
 
 		//TODO Optimize code (duplicated)
 		//Fetch the block we apparently missed from the network.
-		p2p.BlockReq(prevBlockHash)
+		p2p.BlockReq(prevBlockHash[:])
 
 		//Blocking wait
 		select {

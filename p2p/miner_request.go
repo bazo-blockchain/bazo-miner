@@ -6,7 +6,7 @@ import (
 
 //Both block and tx requests are handled asymmetricaly, using channels as inter-communication
 //All the request in this file are specifically initiated by the miner package
-func BlockReq(hash [32]byte) error {
+func BlockReq(hash []byte) error {
 
 	p := peers.getRandomPeer(PEERTYPE_MINER)
 	if p == nil {
