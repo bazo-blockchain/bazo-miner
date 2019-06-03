@@ -54,6 +54,17 @@ type Header struct {
 	TypeID uint8
 }
 
+func GetPongID(pingID uint8) uint8 {
+	switch pingID {
+	case MINER_PING:
+		return MINER_PONG
+	case CLIENT_PING:
+		return CLIENT_PONG
+	default:
+		return 0
+	}
+}
+
 func (header Header) String() string {
 	return fmt.Sprintf(
 		"Length: %v\n"+
