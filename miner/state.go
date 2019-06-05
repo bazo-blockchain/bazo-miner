@@ -240,7 +240,7 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 			newAccHash := newAcc.Hash()
 
 			acc, _ := storage.GetAccount(newAccHash)
-			if acc != nil {
+			if acc != nil && tx.Header != 2 {
 				//Shouldn't happen, because this should have been prevented when adding an accTx to the block
 				return errors.New("Address already exists in the state.")
 			}
@@ -256,7 +256,9 @@ func accStateChange(txSlice []*protocol.AccTx) error {
 				storage.RootKeys[newAccHash] = &newAcc
 			case 2:
 				//Second bit set, delete account from root account
-				delete(storage.RootKeys, newAccHash)
+				if acc != nil {
+					delete(storage.RootKeys, acc.Hash())
+				}
 			}
 		}
 	}
